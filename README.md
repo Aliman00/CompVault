@@ -1,6 +1,6 @@
 # CompVault
 
-<img src="docs/images/CompVault.png" alt="CompVault Logo" width="200"/>
+<img src="docs/images/CompVault.png" alt="CompVault Logo" width="450"/>
 
 [![Build and Test](https://github.com/aliman00/CompVault/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/aliman00/CompVault/actions/workflows/build-and-test.yml)
 [![Build and Push Docker Images](https://github.com/aliman00/CompVault/actions/workflows/docker-build-push.yml/badge.svg)](https://github.com/aliman00/CompVault/actions/workflows/docker-build-push.yml)
