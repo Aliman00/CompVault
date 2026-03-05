@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: compvault-db
+    environment:
+      POSTGRES_USER: compvault_user
+      POSTGRES_PASSWORD: compvault_dev_pass
+      POSTGRES_DB: compvault_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U compvault_user -d compvault_db -h localhost -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - compvault-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: CompVault.Backend/Dockerfile
+    container_name: compvault-backend
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=compvault_db;Username=compvault_user;Password=compvault_dev_pass
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - compvault-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: CompVault.Frontend/Dockerfile
+    container_name: compvault-frontend
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - BackendUrl=http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - compvault-network
+
+  adminer:
+    image: adminer
+    container_name: compvault-adminer
+    ports:
+      - "5002:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - compvault-network
+
+volumes:
+  postgres_data:
+
+networks:
+  compvault-network:
+    driver: bridge

@@ -1,0 +1,74 @@
+# Navn på workflow-en slik den vises i GitHub Actions-fanen
+name: Build and Test
+
+# Definerer når denne workflow-en skal kjøre automatisk
+on:
+  # Kjør ved push (commit) direkte til main-grenen
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+  # Kjør også når det opprettes eller oppdateres en pull request mot main
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+
+
+# Tillatelser som workflow-en trenger for å gjøre jobben sin
+permissions:
+  contents: read        # Lese kildekoden i repoet
+  checks: write         # Skrive tilbake status (grønn/rød hake) på commits
+  pull-requests: write  # Legge til kommentarer med testresultater på pull requests
+
+jobs:
+  build-and-test:
+    # Kjør jobben på en fersk Ubuntu-runner hos GitHub
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Steg 1: Last ned kildekoden fra repoet til runner-maskinen
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Steg 2: Installer .NET 10 SDK på runner-maskinen
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+    
+    # Steg 3: Last ned alle NuGet-pakker (avhengigheter) som prosjektet trenger
+    - name: Restore dependencies
+      run: dotnet restore CompVault.slnx
+    
+    # Steg 4: Sjekk at koden følger standard C#-formatering
+    # Feiler hvis noen har committed kode med feil innrykk eller spacing
+    - name: Check code formatting
+      run: dotnet format CompVault.slnx --verify-no-changes --verbosity diagnostic
+    
+    # Steg 5: Kompiler hele løsningen i Release-modus
+    # --no-restore hopper over restore siden vi allerede gjorde det i forrige steg
+    - name: Build solution
+      run: dotnet build CompVault.slnx --configuration Release --no-restore
+    
+    # Steg 6: Kjør alle enhetstester og lagre resultatet i en .trx-fil
+    # --no-build hopper over bygging siden vi allerede kompilerte i forrige steg
+    - name: Run tests
+      run: dotnet test CompVault.slnx --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+    
+    # Steg 7: Publiser testresultatene som en lesbar rapport i GitHub Actions
+    # "if: always()" sørger for at rapporten vises selv om testene feiler
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Test Results
+        path: '**/test-results.trx'
+        reporter: dotnet-trx
+        fail-on-error: true

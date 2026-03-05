@@ -1,0 +1,46 @@
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln.docstates
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+LICENSE
+docs/
+*.md
+.kilo/
+
+# Tests
+**/*Tests/
+**/*Test/
+**/TestResults/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development
+*.log
+*.tmp
+*.cache
