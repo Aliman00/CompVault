@@ -89,3 +89,4 @@ Ferdige images publiseres automatisk til GitHub Container Registry ved push til 
 ## Dokumentasjon
 
 Se [prosjektplan](./docs/kommerEtterHvert.md) for fullstendig kravspesifikasjon og arkitektur.
+
