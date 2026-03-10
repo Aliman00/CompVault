@@ -1,9 +1,10 @@
 ﻿using System.Net;
 using CompVault.Backend.Infrastructure.Email;
+using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.Email.Templates;
 using CompVault.Shared.Result;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Resend;
 
@@ -18,25 +19,24 @@ public class EmailServiceTest
     // Systemet vi tester
     private readonly EmailService _sut;
     
-    // Mocker config fra AppSettings
+    // Mottaker og avsender epost for testing
     private const string FromEmail = "donotreply@compvault.com";
-    
-    // Mocker mottaker epost - påvirker ikke testene
     private const string RecipientEmail = "test@example.com";
+    
+    // Mocker config fra AppSettings
+    private static readonly EmailSettings EmailSettings = new()
+    {
+        ApiKey = "test-api-key",
+        FromAddress = FromEmail
+    };
     
     // Oppretter en konstruktør for å kunne teste EmailService med mockede servicer
     public EmailServiceTest()
     {
-        Mock<IConfiguration> configurationMock = new Mock<IConfiguration>();
         _loggerMock = new Mock<ILogger<EmailService>>();
         _resendMock = new Mock<IResend>();
         
-        // Mocker IConfiguration slik at ["Email:FromAddress"] returnerer testadressen vår
-        configurationMock
-            .Setup(c => c["Email:FromAddress"])
-            .Returns(FromEmail);
-
-        _sut = new EmailService(configurationMock.Object, _loggerMock.Object, _resendMock.Object);
+        _sut = new EmailService(Options.Create(EmailSettings), _loggerMock.Object, _resendMock.Object);
     }
     
     /// <summary>

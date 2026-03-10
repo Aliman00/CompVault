@@ -1,5 +1,7 @@
-﻿using CompVault.Backend.Infrastructure.Email.Models;
+﻿using CompVault.Backend.Infrastructure.Email.Config;
+using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Shared.Result;
+using Microsoft.Extensions.Options;
 using Resend;
 
 namespace CompVault.Backend.Infrastructure.Email;
@@ -8,7 +10,7 @@ namespace CompVault.Backend.Infrastructure.Email;
 /// Service som sender epost med Resend
 /// </summary>
 public class EmailService(
-    IConfiguration configuration,
+    IOptions<EmailSettings> emailSettings,
     ILogger<EmailService> logger,
     IResend resend) : IEmailService
 {
@@ -16,7 +18,7 @@ public class EmailService(
     /// <summary>
     /// Henter avsender epost fra appsettings.json. Eks: "donotreply@compvault.com"
     /// </summary>
-    private readonly string _fromEmail = configuration["Email:FromAddress"]!;
+    private readonly string _fromEmail = emailSettings.Value.FromAddress;
     
     /// <inheritdoc />
     public async Task<Result> SendAsync(string recipientEmail, EmailBody emailBody)

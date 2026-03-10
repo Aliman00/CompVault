@@ -7,6 +7,7 @@ using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Data.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Email;
+using CompVault.Backend.Infrastructure.Email.Config;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -101,14 +102,17 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddEmail(this IServiceCollection services, IConfiguration configuration)
     {
-        // Email Service Resend
-        var resendApiKey = configuration["Email:ApiKey"]
-                           ?? throw new InvalidOperationException(
-                               "Email:ApiKey is not configured. " +
-                               "Add RESEND_API_KEY to environment variables or appsettings.json");
+        // Henter config fra AppSettings
+        EmailSettings emailSettings = configuration
+            .GetSection(EmailSettings.SectionName)
+            .Get<EmailSettings>() ?? throw new InvalidOperationException("Email configuration is missing");
+        
+        if (string.IsNullOrEmpty(emailSettings.ApiKey))
+            throw new InvalidOperationException("Email:ApiKey is not confiugred");
         
         // Register Resend options
-        services.Configure<ResendClientOptions>(o => o.ApiToken = resendApiKey);
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
+        services.Configure<ResendClientOptions>(o => o.ApiToken = emailSettings.ApiKey);
         
         // HttpClient for Resend
         services.AddHttpClient<IResend, ResendClient>();
