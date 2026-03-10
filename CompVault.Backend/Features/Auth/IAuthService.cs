@@ -1,0 +1,33 @@
+using CompVault.Backend.Common;
+using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.Result;
+
+namespace CompVault.Backend.Features.Auth;
+
+/// <summary>
+/// Alt som har med innlogging og tokens å gjøre havner her.
+/// </summary>
+public interface IAuthService
+{
+    /// <summary>
+    /// Steg 1: Sender en engangs-kode (OTP) til brukeren via valgt kanal.
+    /// Returnerer alltid suksess for å unngå at angripere kan kartlegge hvilke
+    /// e-poster som er registrert i systemet.
+    /// </summary>
+    Task<Result<bool>> RequestOtpAsync(RequestOtpRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Steg 2: Verifiserer OTP-koden og utsteder et JWT token-par ved suksess.
+    /// </summary>
+    Task<Result<LoginResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Utsteder et nytt access token ved hjelp av et gyldig refresh token.
+    /// </summary>
+    Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ugyldiggjør et refresh token — i praksis logger brukeren ut.
+    /// </summary>
+    Task<Result<bool>> RevokeRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
+}
