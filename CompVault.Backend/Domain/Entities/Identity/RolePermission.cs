@@ -21,6 +21,7 @@ public class RolePermission
 
     // ======================== Navigasjonsegenskaper ========================
     public ApplicationRole Role { get; set; } = null!;
-    public ApplicationRole GrantedBy { get; set; } = null!;
+    
+    public ApplicationUser GrantedBy { get; set; } = null!;
     public Permission Permission { get; set; } = null!;
 }
