@@ -21,7 +21,7 @@ public class TestController(IEmailService emailService) : BaseController
         var template = EmailTemplates.SimpleText("Test tittel", "Test body");
         var result = await emailService.SendAsync(request.RecipientEmail, template);
         if (result.IsFailure)
-            HandleFailure(result);
+            return HandleFailure(result);
 
         return Ok();
     }
