@@ -108,7 +108,7 @@ public static class ServiceCollectionExtensions
             .Get<EmailSettings>() ?? throw new InvalidOperationException("Email configuration is missing");
         
         if (string.IsNullOrEmpty(emailSettings.ApiKey))
-            throw new InvalidOperationException("Email:ApiKey is not confiugred");
+            throw new InvalidOperationException("Email:ApiKey is not configured");
         
         // Register Resend options
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));

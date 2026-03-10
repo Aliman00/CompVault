@@ -113,7 +113,7 @@ public class EmailServiceTest
     
     /// <summary>
     /// Tester logging når resend sin EmailSendAsync kaster en exception som vi fanger opp i try-catch.
-    /// Viktig med en logging test for å verfisere at vi klarer å fange opp hvis en epost ikke blir sendt
+    /// Viktig med en logging test for å verifisere at vi klarer å fange opp hvis en epost ikke blir sendt
     /// </summary>
     [Fact]
     public async Task SendAsync_WhenResendThrowsException_LogsError()

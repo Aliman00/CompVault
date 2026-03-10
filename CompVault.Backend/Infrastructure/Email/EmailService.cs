@@ -21,7 +21,7 @@ public class EmailService(
     private readonly string _fromEmail = emailSettings.Value.FromAddress;
     
     /// <inheritdoc />
-    public async Task<Result> SendAsync(string recipientEmail, EmailBody emailBody)
+    public async Task<Result> SendAsync(string recipientEmail, EmailBody emailBody, CancellationToken ct = default)
     {
         try
         {
@@ -37,7 +37,7 @@ public class EmailService(
             };
 
             // Sender epost med EmailSendAsync. Returnerer et response objekt
-            var response = await resend.EmailSendAsync(message);
+            var response = await resend.EmailSendAsync(message, ct);
             if (!response.Success)
             {
                 logger.LogError("Email sending failed to {Email}", recipientEmail);
