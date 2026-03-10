@@ -1,9 +1,9 @@
-using CompVault.Backend.Common.Middleware;
 using CompVault.Backend.Infrastructure.Extensions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.ConfigureSwagger();
+builder.ConfigureLogging();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
