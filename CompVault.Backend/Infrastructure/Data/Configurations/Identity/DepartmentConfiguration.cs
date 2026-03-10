@@ -22,5 +22,11 @@ internal sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departm
             .WithMany(d => d.SubDepartments)
             .HasForeignKey(d => d.ParentDepartmentId)
             .OnDelete(DeleteBehavior.SetNull);
+        
+        // Referer til ApplicationUser som har opprettet avdelingen
+        builder.HasOne(d => d.CreatedBy)
+            .WithMany()
+            .HasForeignKey(d => d.CreatedById)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
