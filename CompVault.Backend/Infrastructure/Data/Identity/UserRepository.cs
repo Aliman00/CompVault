@@ -20,7 +20,6 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
     public async Task<IReadOnlyList<ApplicationUser>> GetActiveUsersAsync(CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()
-            .Where(u => u.IsActive && u.DeletedAt == null)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
@@ -29,7 +28,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
         CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()
-            .Where(u => u.ManagerId == managerId && u.DeletedAt == null)
+            .Where(u => u.ManagerId == managerId)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
