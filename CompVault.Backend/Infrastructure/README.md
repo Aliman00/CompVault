@@ -16,5 +16,6 @@ Infrastructure/
 ## Regler
 
 - Ingen kode utenfor `Infrastructure` skal importere EF Core-navnerom direkte
-- `AppDbContext` er kun tilgjengelig innenfor `Infrastructure`
+- `AppDbContext` brukes kun fra `Infrastructure` og eventuelt entrypoint 
+(`Program.cs`) for f.eks. health checks
 - Repositories kaller aldri `SaveChangesAsync()` — det eies av service-laget via `IUnitOfWork`
