@@ -1,15 +1,14 @@
 # Common
 
-Delt kode uten forretningsverdi — brukes på tvers av alle features i Backend.
+> Delt infrastrukturkode uten forretningsverdi, brukt på tvers av alle features i Backend.
 
-**Innhold:**
-- `Result.cs` — OperationResult<T>, bruk denne som returtype fra alle services
-- `Errors/` — AppError og ErrorCode enum
-- `Middleware/` — GlobalExceptionMiddleware
-- `Pagination/` — PagedResult<T> for liste-endepunkter (legges til ved behov)
+## Innhold
 
-> **Merk:** Permissions-konstanter (f.eks. `"users:read"`) ligger i
-> `CompVault.Shared/Constants/Permissions.cs` — ikke her — fordi
-> Frontend også trenger dem for å vise/skjule UI-elementer.
+| Fil | Ansvar |
+|---|---|
+| `Middleware/GlobalExceptionHandler.cs` | Fanger opp ubehandlede exceptions og returnerer et strukturert feilsvar |
 
-Legg IKKE feature-spesifikk kode her.
+## Regler
+
+- Legg **ikke** feature-spesifikk kode her
+- Legg **ikke** domene-typer (DTOs, enums, konstanter) her — de hører hjemme i `CompVault.Shared`

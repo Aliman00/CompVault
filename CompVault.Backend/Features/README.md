@@ -1,17 +1,34 @@
 # Features
 
-Én mappe per domene-feature. Her lever all forretningslogikk.
+> All forretningslogikk i Backend. Én mappe per domene-feature med et interface og én implementasjon.
 
-**Struktur per feature:**
-- `IXyzService.cs` — interface (kontrakten)
-- `XyzService.cs` — implementasjon
+## Struktur
 
-**Ny feature? Opprett:**
 ```
-Features/MinFeature/IMinFeatureService.cs
-Features/MinFeature/MinFeatureService.cs
+Features/
+  Auth/    <- IAuthService, AuthService   — autentisering og OTP-flyt
+  Users/   <- IUserService, UserService   — brukeradministrasjon
+  Test/    <- TestController, dtos        — utviklingsverktøy, fjernes før produksjon
 ```
 
-> **Merk:** DTOs og request-modeller legges **ikke** i Features-mappa.
-> De hører hjemme i `CompVault.Shared/DTOs/<FeatureName>/` slik at
-> Frontend kan bruke de samme typene uten å duplisere kode.
+## Mønster per feature
+
+```
+Features/<FeatureName>/
+  I<FeatureName>Service.cs   <- interface (kontrakten som controllers og tester bruker)
+  <FeatureName>Service.cs    <- implementasjon
+```
+
+## Regler
+
+- Services injiseres alltid via interface — aldri direkte implementasjon
+- Bruk `Result<T>` fra `CompVault.Shared/Result/` som returtype fra alle public metoder
+- DTOs og request-modeller legges i `CompVault.Shared/DTOs/<FeatureName>/` — ikke her
+- Alle asynkrone metoder skal ta en `CancellationToken ct = default`-parameter
+
+## Ny feature? Gjør slik
+
+1. Opprett `Features/<FeatureName>/I<FeatureName>Service.cs`
+2. Opprett `Features/<FeatureName>/<FeatureName>Service.cs`
+3. Registrer i `Infrastructure/Extensions/ServiceCollectionExtensions.cs`
+4. Opprett tilhørende DTO-mappe i `CompVault.Shared/DTOs/<FeatureName>/`

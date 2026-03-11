@@ -1,68 +1,51 @@
-# Infrastructure/Data/Repositories
+# Infrastructure/Repositories
 
-Konkrete implementasjoner av repository-interfacene. Her skjer alle direkte database-operasjoner via EF Core.
+> Generisk repository-base. Alle domenespesifikke repositories extender disse.
 
-## Struktur
+## Innhold
 
-- `IRepository.cs` — generisk base-interface med standard CRUD-operasjoner
-- `BaseRepository.cs` — generisk implementasjon av `IRepository<T>`, extender denne for alle repositories
-- `Identity/` — repositories for Identity-domenet (IUserRepository, UserRepository)
-- `Competencies/` — opprettes i fase 4
-- (osv. per domeneområde i takt med fasene)
+| Fil | Ansvar |
+|---|---|
+| `IRepository.cs` | Generisk base-interface med standard CRUD-operasjoner |
+| `BaseRepository.cs` | Implementasjon av `IRepository<T>` — extender denne for alle repositories |
 
-Domainespecifikke repositories gruppers i undermapper som speiler `Domain/Entities/`-strukturen.
-`BaseRepository.cs` og `IRepository.cs` beholder rot-namespacet siden de er generiske og ikke domenespesifikke.
+## Domenespesifikke repositories
 
-## Unit of Work
+Domenespesifikke repositories opprettes i `Infrastructure/Data/<Domene>/` — ikke her:
 
-Prosjektet bruker **Unit of Work-mønsteret** for å gi service-laget eierskap over transaksjoner.
+```
+Infrastructure/Data/
+  Identity/        <- IUserRepository, UserRepository
+  <Domene>/        <- ny undermappe per domeneomraade som legges til
+```
 
-- Repositories **legger til, oppdaterer og sletter entiteter** i EF Cores change-tracker, men **kaller aldri `SaveChangesAsync()`**.
-- Service-laget injiserer `IUnitOfWork` og kaller `SaveChangesAsync()` når alle operasjoner i en use-case er fullført.
-- Dette sikrer **atomiske transaksjoner** — enten persisteres alt, eller ingenting.
+## Unit of Work-mønsteret
+
+Repositories registrerer endringer i EF Cores change-tracker, men kaller aldri `SaveChangesAsync()`. Service-laget eier transaksjonen via `IUnitOfWork`:
 
 ```csharp
 public class MinService(IMinRepository repo, IUnitOfWork unitOfWork) : IMinService
 {
-    public async Task OppdaterAsync(...)
+    public async Task OppdaterAsync(MinEntity entity, CancellationToken ct)
     {
         await repo.UpdateAsync(entity, ct);
-        // Eventuelt flere repo-kall her...
-        await unitOfWork.SaveChangesAsync(ct); // Én atomisk lagring
+        await unitOfWork.SaveChangesAsync(ct); // én atomisk lagring
     }
 }
 ```
 
 `IUnitOfWork` og `UnitOfWork` ligger i `Infrastructure/Data/`.
 
-## Ny feature? Gjør slik:
+## Ny feature? Gjør slik
 
-1. Opprett `MinDomene/IMinFeatureRepository.cs` med feature-spesifikke metoder
-2. Opprett `MinDomene/MinFeatureRepository.cs` som extender `BaseRepository<MinFeatureEntity>`
-3. Registrer i `Infrastructure/Extensions/ServiceCollectionExtensions.cs`:
-   
-   ```csharp
-   services.AddScoped<IMinFeatureRepository, MinFeatureRepository>();
-    ```
-
-4. Injiser `IUnitOfWork` i servicen som bruker repository-et
-
-
-## Regler
-
- - Ingen forretningslogikk her — kun datahenting og change-tracking
- - Bruk IQueryable internt, men returner alltid materialiserte lister (List<T>) ut av metoden
- - Alle metoder skal være async med CancellationToken-parameter
- - **Ikke kall `SaveChangesAsync()` i repository-metoder** — la service-laget eie transaksjonen via `IUnitOfWork`
-
-
-# Eksempel
+1. Opprett `Infrastructure/Data/<Domene>/I<Feature>Repository.cs` med domenespesifikke metoder
+2. Opprett `Infrastructure/Data/<Domene>/<Feature>Repository.cs` og extend `BaseRepository<T>`
+3. Registrer i `Infrastructure/Extensions/ServiceCollectionExtensions.cs`
 
 ```csharp
 public interface IUserRepository : IRepository<ApplicationUser>
 {
     Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken ct = default);
-    Task<List<ApplicationUser>> GetByDepartmentAsync(Guid departmentId, CancellationToken ct = default);
 }
 
 public class UserRepository : BaseRepository<ApplicationUser>, IUserRepository
@@ -74,5 +57,9 @@ public class UserRepository : BaseRepository<ApplicationUser>, IUserRepository
 }
 ```
 
+## Regler
 
-Den viktigste regelen er **«la service-laget eie transaksjonen»** via `IUnitOfWork` — aldri kall `SaveChangesAsync()` inne i en repository-metode.
+- Ingen forretningslogikk — kun datahenting og change-tracking
+- Bruk `IQueryable` internt, men returner alltid materialiserte lister (`List<T>`) ut av metoden
+- Alle metoder skal ha `CancellationToken ct = default`-parameter
+- Kall aldri `SaveChangesAsync()` inne i en repository-metode

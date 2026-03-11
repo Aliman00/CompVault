@@ -1,15 +1,15 @@
 # Infrastructure/Extensions
 
-Extension-metoder på `IServiceCollection` og `IApplicationBuilder` som samler all DI-registrering og middleware-oppsett. Kalles fra `Program.cs` for å holde oppstartskoden kortfattet.
+> Samler all DI-registrering og middleware-konfigurasjon. Kalles fra `Program.cs` for aa holde oppstartskoden kortfattet.
 
-## Filer
+## Innhold
 
-- `ServiceCollectionExtensions.cs` — registrerer databaser, autentisering, repositories og services
-- `ApplicationBuilderExtensions.cs` — konfigurerer middleware-pipeline (f.eks. global exception handling)
+| Fil | Ansvar |
+|---|---|
+| `ServiceCollectionExtensions.cs` | Registrerer database, autentisering, e-post, repositories og services |
+| `WebApplicationBuilderExtensions.cs` | Konfigurerer middleware-pipeline (f.eks. global exception handling) |
 
----
-
-## Ny feature? Du må gjøre to ting her
+## Ny feature? Gjør slik
 
 ### 1. Registrer repository i `AddRepositories()`
 
@@ -17,7 +17,7 @@ Extension-metoder på `IServiceCollection` og `IApplicationBuilder` som samler a
 public static IServiceCollection AddRepositories(this IServiceCollection services)
 {
     services.AddScoped<IUserRepository, UserRepository>();
-    services.AddScoped<IMinFeatureRepository, MinFeatureRepository>(); // ← legg til
+    services.AddScoped<IMinFeatureRepository, MinFeatureRepository>(); // <- legg til
     return services;
 }
 ```
@@ -29,13 +29,12 @@ public static IServiceCollection AddApplicationServices(this IServiceCollection 
 {
     services.AddScoped<IAuthService, AuthService>();
     services.AddScoped<IUserService, UserService>();
-    services.AddScoped<IMinFeatureService, MinFeatureService>(); // ← legg til
+    services.AddScoped<IMinFeatureService, MinFeatureService>(); // <- legg til
     return services;
 }
 ```
 
----
+## Regler
 
-## Levetid
-
-Alle repositories og services registreres med `AddScoped` — én instans per HTTP-request. Ikke bruk `AddSingleton` for noe som holder tilstand eller bruker `AppDbContext`.
+- Bruk `AddScoped` for repositories og services — én instans per HTTP-request
+- Bruk aldri `AddSingleton` for klasser som holder tilstand eller bruker `AppDbContext`

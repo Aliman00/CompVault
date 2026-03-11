@@ -1,11 +1,20 @@
 # Infrastructure
 
-Alt som snakker med omverdenen: database, filsystem, e-post, bakgrunnsjobber.
+> Alt som kommuniserer med omverdenen: database, e-post og autentisering. Ingen kode utenfor denne mappen skal ha direkte kjennskap til EF Core.
 
-**Undermapper:**
-- `Data/` — AppDbContext, migrasjoner, repository-implementasjoner, EF-konfigurasjoner
-- `Auth/` — JWT-generering og token-håndtering
-- `Extensions/` — ServiceCollection-extensions som registrerer alt i DI
-- `BackgroundJobs/` — nattlige jobber (kompetansestatus, e-postvarsler)
+## Struktur
 
-Ingen kode utenfor Infrastructure skal kjenne til EF Core direkte.
+```
+Infrastructure/
+  Data/           <- AppDbContext, IUnitOfWork, UnitOfWork, EF-konfigurasjoner og domenerepos
+  Auth/           <- IJwtService, JwtService, JwtSettings
+  Email/          <- IEmailService, EmailService, konfig, maler og modeller
+  Repositories/   <- IRepository<T> og BaseRepository<T> (generisk base)
+  Extensions/     <- ServiceCollectionExtensions, WebApplicationBuilderExtensions
+```
+
+## Regler
+
+- Ingen kode utenfor `Infrastructure` skal importere EF Core-navnerom direkte
+- `AppDbContext` er kun tilgjengelig innenfor `Infrastructure`
+- Repositories kaller aldri `SaveChangesAsync()` — det eies av service-laget via `IUnitOfWork`
