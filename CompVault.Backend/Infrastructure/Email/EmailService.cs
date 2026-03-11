@@ -40,7 +40,8 @@ public class EmailService(
             var response = await resend.EmailSendAsync(message, ct);
             if (!response.Success)
             {
-                logger.LogError("Email sending failed to {Email}", recipientEmail);
+                logger.LogError("Email sending failed to {Email}. Resend response: {@Response}", 
+                    recipientEmail, response);
                 return Result.Failure(AppError.Create(ErrorCode.EmailSendFailed, "Failed to send email"));
             }
 
