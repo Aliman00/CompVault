@@ -1,10 +1,14 @@
-using CompVault.Frontend.Components;
+using CompVault.Frontend;
+using CompVault.Frontend.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Forretningslogikk
+builder.Services.AddFrontendServices();
 
 var app = builder.Build();
 
@@ -23,5 +27,8 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+
+
 
 app.Run();

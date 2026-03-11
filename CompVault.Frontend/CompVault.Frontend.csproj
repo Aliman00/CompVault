@@ -8,6 +8,18 @@
     <PackageReference Include="MudBlazor" Version="9.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Common\" />
+    <Folder Include="Features\Auth\Components\" />
+    <Folder Include="Features\Users\Components\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Layout\MainLayout.razor" />
+    <AdditionalFiles Include="Layout\NavMenu.razor" />
+    <AdditionalFiles Include="Layout\ReconnectModal.razor" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
