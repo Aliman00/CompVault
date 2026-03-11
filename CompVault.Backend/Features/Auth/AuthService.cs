@@ -3,13 +3,14 @@ using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace CompVault.Backend.Features.Auth;
 
 /// <summary>
 /// Implementerer passwordless autentisering med engangs-kode (OTP) og JWT.
 /// </summary>
-public sealed class AuthService(UserManager<ApplicationUser> userManager, IJwtService jwtService) : IAuthService
+public sealed class AuthService(UserManager<ApplicationUser> userManager, IJwtService jwtService, IOptions<JwtSettings> jwtOptions) : IAuthService
 {
     /// <inheritdoc />
     public async Task<Result<bool>> RequestOtpAsync(
@@ -85,7 +86,7 @@ public sealed class AuthService(UserManager<ApplicationUser> userManager, IJwtSe
         {
             AccessToken = newAccessToken,
             RefreshToken = jwtService.GenerateRefreshToken(),
-            AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15),
+            AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(jwtOptions.Value.AccessTokenMinutes),
             UserId = user.Id,
             FullName = $"{user.FirstName} {user.LastName}".Trim(),
             Roles = roles.ToList()
