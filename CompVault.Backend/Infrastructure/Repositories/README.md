@@ -16,7 +16,7 @@ Domenespesifikke repositories opprettes i `Infrastructure/Data/<Domene>/` — ik
 ```
 Infrastructure/Data/
   Identity/        <- IUserRepository, UserRepository
-  <Domene>/        <- ny undermappe per domeneomraade som legges til
+  <Domene>/        <- ny undermappe per domeneområde som legges til
 ```
 
 ## Unit of Work-mønsteret

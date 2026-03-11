@@ -1,6 +1,6 @@
 # CompVault.Shared
 
-> Delt kontraktsbibliotek referert av **baade** `CompVault.Backend` og `CompVault.Frontend`. Gir én enkelt kilde til sannhet for alle typer som flyter mellom lagene.
+> Delt kontraktsbibliotek referert av **både** `CompVault.Backend` og `CompVault.Frontend`. Gir én enkelt kilde til sannhet for alle typer som flyter mellom lagene.
 
 ## Struktur
 
@@ -30,7 +30,7 @@ CompVault.Shared/
 | Request-modeller | `CreateUserRequest`, `RequestOtpRequest` | En felles definisjon holder Frontend og Backend synkronisert |
 | Enums | `EmploymentType`, `OtpDeliveryMethod` | Brukes av begge lag — dropdowns i Frontend, validering i Backend |
 | Konstanter | `Permissions.cs` | Backend: autorisasjonspolicyer. Frontend: vise/skjule UI-elementer |
-| Result-typer | `Result<T>`, `AppError`, `ErrorCode` | Backend returnerer disse; Frontend bruker dem til feilhaandtering |
+| Result-typer | `Result<T>`, `AppError`, `ErrorCode` | Backend returnerer disse; Frontend bruker dem til feilhåndtering |
 
 ## Hva hører IKKE hjemme her
 

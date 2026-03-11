@@ -9,7 +9,7 @@ Undermapper speiler `Domain/Entities/`-strukturen 1-til-1:
 ```
 Configurations/
   Identity/        <- ApplicationUser, ApplicationRole, Department, Permission, RolePermission
-  <Domene>/        <- ny undermappe per domeneomraade, speiler Domain/Entities/-strukturen
+  <Domene>/        <- ny undermappe per domeneområde, speiler Domain/Entities/-strukturen
 ```
 
 ## Automatisk oppdaging
@@ -42,7 +42,7 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
 
 ## Regler
 
-- Klassen skal alltid vaere `internal sealed`
+- Klassen skal alltid være `internal sealed`
 - Ingen forretningslogikk — kun kolonneoppsett og relasjoner
-- Bruk `HasConversion<string>()` paa enums slik at DB-verdier er lesbare
-- Bruk `HasQueryFilter` for soft-delete-filtrering paa entiteter med `DeletedAt`
+- Bruk `HasConversion<string>()` på enums slik at DB-verdier er lesbare
+- Bruk `HasQueryFilter` for soft-delete-filtrering på entiteter med `DeletedAt`

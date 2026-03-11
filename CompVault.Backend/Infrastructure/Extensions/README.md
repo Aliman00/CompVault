@@ -1,6 +1,6 @@
 # Infrastructure/Extensions
 
-> Samler all DI-registrering og middleware-konfigurasjon. Kalles fra `Program.cs` for aa holde oppstartskoden kortfattet.
+> Samler all DI-registrering og middleware-konfigurasjon. Kalles fra `Program.cs` for å holde oppstartskoden kortfattet.
 
 ## Innhold
 

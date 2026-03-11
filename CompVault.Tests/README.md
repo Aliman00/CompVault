@@ -31,4 +31,4 @@ CompVault.Tests/
 
 1. Opprett testklasse i riktig undermappe (speil `CompVault.Backend`-strukturen)
 2. Injiser avhengigheter som `Mock<T>` i konstruktøren
-3. Følg Arrange / Act / Assert — én paastand per testmetode
+3. Følg Arrange / Act / Assert — én påstand per testmetode

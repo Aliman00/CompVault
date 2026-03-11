@@ -14,7 +14,7 @@
 
 - Kall kun services via interface (f.eks. `IAuthService`) — aldri direkte implementasjon
 - Returner alltid `ActionResult<T>` eller `IActionResult`
-- Bruk `[ApiController]` og `[Route("api/[controller]")]` paa alle klasser
+- Bruk `[ApiController]` og `[Route("api/[controller]")]` på alle klasser
 - Valider input via DataAnnotations — ikke manuelt i controlleren
 
 ## Ny controller? Gjør slik
