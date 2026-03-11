@@ -11,18 +11,17 @@ namespace CompVault.Backend.Infrastructure.Extensions;
 public static  class WebApplicationBuilderExtensions
 {
     /// <summary>
-    /// Setter opp Serilog med consolelogging
+    /// Setter opp Serilog med consolelogging fra appsettings
     /// </summary>
     public static void ConfigureLogging(this WebApplicationBuilder builder)
     {
-        // Fjerner Microsoft standard logging.
+        // Fjerner Microsoft standard logging
         builder.Logging.ClearProviders();
         
-        // Setter opp Serilog med kun Console-logging
+        // Setter opp Serilog med appsettings
         builder.Host.UseSerilog((context, config) =>
         {
             config.ReadFrom.Configuration(context.Configuration);
-            config.WriteTo.Console();
         });
     }
     
