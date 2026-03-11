@@ -11,6 +11,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddInfrastructure();
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddAuth(builder.Configuration);
+builder.Services.AddEmail(builder.Configuration);
 builder.Services.AddRepositories();
 builder.Services.AddApplicationServices();
 

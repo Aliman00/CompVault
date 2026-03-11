@@ -60,6 +60,7 @@ public abstract class BaseController : ControllerBase
             ErrorCode.AccountLocked      => 403,
             ErrorCode.AccountInactive    => 403,
             ErrorCode.EmailNotConfirmed  => 403,
+            ErrorCode.EmailSendFailed    => 500,
             ErrorCode.Validation         => 422,
             ErrorCode.PasswordTooWeak    => 422,
             _                            => 400
