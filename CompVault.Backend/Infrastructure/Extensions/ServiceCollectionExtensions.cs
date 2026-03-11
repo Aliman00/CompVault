@@ -110,6 +110,9 @@ public static class ServiceCollectionExtensions
         if (string.IsNullOrEmpty(emailSettings.ApiKey))
             throw new InvalidOperationException("Email:ApiKey is not configured");
         
+        if (string.IsNullOrWhiteSpace(emailSettings.FromAddress))
+            throw new InvalidOperationException("Email:FromAddress is not configured");
+        
         // Register Resend options
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
         services.Configure<ResendClientOptions>(o => o.ApiToken = emailSettings.ApiKey);
