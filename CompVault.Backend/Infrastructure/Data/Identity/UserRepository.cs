@@ -20,6 +20,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
     public async Task<IReadOnlyList<ApplicationUser>> GetActiveUsersAsync(CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()
+            .Where(u => u.IsActive)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
@@ -28,16 +29,14 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
         CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()
-            .Where(u => u.ManagerId == managerId)
+            .Where(u => u.ManagerId == managerId && u.IsActive)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
-    public async Task SoftDeleteAsync(Guid userId, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(ApplicationUser user, CancellationToken cancellationToken = default)
     {
-        ApplicationUser? user = await DbSet.FindAsync(new object[] { userId }, cancellationToken);
-        if (user is null) return;
-
         user.DeletedAt = DateTime.UtcNow;
         user.IsActive = false;
+        return Task.CompletedTask;
     }
 }

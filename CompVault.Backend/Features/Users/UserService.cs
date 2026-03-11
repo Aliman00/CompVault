@@ -96,7 +96,7 @@ public sealed class UserService(
     {
         ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
 
-        if (user is null || user.DeletedAt is not null || !user.IsActive)
+        if (user is null || user.DeletedAt is not null || (!user.IsActive && request.IsActive != true))
             return Result<UserDto>.Failure(
                 AppError.NotFound($"User with ID '{userId}' was not found."));
 
@@ -126,7 +126,7 @@ public sealed class UserService(
             return Result<bool>.Failure(
                 AppError.NotFound($"User with ID '{userId}' was not found."));
 
-        await userRepository.SoftDeleteAsync(userId, cancellationToken);
+        await userRepository.SoftDeleteAsync(user, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }
