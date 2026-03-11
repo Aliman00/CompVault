@@ -18,7 +18,7 @@ public static  class WebApplicationBuilderExtensions
         // Fjerner Microsoft standard logging
         builder.Logging.ClearProviders();
         
-        // Setter opp Serilog med appsettings
+        // Setter opp Serilog med innstillinger fra appsettings
         builder.Host.UseSerilog((context, config) =>
         {
             config.ReadFrom.Configuration(context.Configuration);
@@ -33,7 +33,7 @@ public static  class WebApplicationBuilderExtensions
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(options =>
         { 
-            // Lager er jwtSecurityScheme
+            // Lager et jwtSecurityScheme
             var jwtSecurityScheme = new OpenApiSecurityScheme
             {
                 // Setter det at bearer skal inneholde JWT
@@ -48,8 +48,6 @@ public static  class WebApplicationBuilderExtensions
                 Description = "Enter your JWT Access Token",
                 // Vi finner tokenet i headeren
                 In = ParameterLocation.Header,
-                // Lager en refereanse slik at alle endepunkter med [Authorize] refe rer til samme oppsett, eller så fyller
-                // det seg opp med slike oppsett pr endepunkt
             };
             
             // Inkluderer summary-tagger
@@ -65,10 +63,7 @@ public static  class WebApplicationBuilderExtensions
             options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
                 {
-                    new OpenApiSecuritySchemeReference(
-                        JwtBearerDefaults.AuthenticationScheme,
-                        document),
-                    []
+                    new OpenApiSecuritySchemeReference(JwtBearerDefaults.AuthenticationScheme, document), []
                 }
             });
         });
