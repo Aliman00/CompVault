@@ -1,4 +1,3 @@
-using CompVault.Backend.Common;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 

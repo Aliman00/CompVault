@@ -17,6 +17,6 @@ public interface IUserRepository : IRepository<ApplicationUser>
     /// <summary>Henter alle direkte underansatte til en gitt leder.</summary>
     Task<IReadOnlyList<ApplicationUser>> GetDirectReportsAsync(Guid managerId, CancellationToken cancellationToken = default);
 
-    /// <summary>Soft-sletter brukeren ved å sette <see cref="ApplicationUser.DeletedAt"/>.</summary>
-    Task SoftDeleteAsync(Guid userId, CancellationToken cancellationToken = default);
+    /// <summary>Soft-sletter brukeren ved å sette <see cref="ApplicationUser.DeletedAt"/> og <see cref="ApplicationUser.IsActive"/>.</summary>
+    Task SoftDeleteAsync(ApplicationUser user, CancellationToken cancellationToken = default);
 }

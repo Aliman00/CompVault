@@ -24,6 +24,9 @@ public sealed class UsersController(IUserService userService) : BaseController
     {
         Result<IReadOnlyList<UserDto>> result = await userService.GetAllUsersAsync(cancellationToken);
 
+        if (result.IsFailure)
+            return HandleFailure(result);
+
         return Ok(result.Value);
     }
 

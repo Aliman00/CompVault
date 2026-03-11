@@ -19,7 +19,7 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
         // Lagrer enum som streng i DB så det er lesbart uten å slå opp i kode
         builder.Property(u => u.EmploymentType).HasConversion<string>().HasMaxLength(20);
         builder.Property(u => u.CreatedAt).IsRequired();
-        // Global filter — soft-slettede brukere filtreres bort automatisk overalt
+        // Global filter — soft-slettede brukere filtreres bort automatisk overalt.
         builder.HasQueryFilter(u => u.DeletedAt == null);
 
         // Selvrefererende relasjon: en bruker kan ha en leder som også er en bruker
@@ -31,6 +31,12 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
         builder.HasOne(u => u.Department)
             .WithMany(d => d.Members)
             .HasForeignKey(u => u.DepartmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Selvrefererende relasjon: hvem opprettet denne brukeren
+        builder.HasOne(u => u.CreatedBy)
+            .WithMany()
+            .HasForeignKey(u => u.CreatedById)
             .OnDelete(DeleteBehavior.SetNull);
     }
 }

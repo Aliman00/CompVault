@@ -1,22 +1,25 @@
 # Domain / Entities
 
-Rene C#-klasser som representerer databasetabellene.
+> Rene C#-klasser som representerer databasetabellene. Ingen rammeverksavhengigheter her.
 
 ## Struktur
 
 Entiteter er gruppert etter domeneområde i undermapper:
 
-- `Identity/` — ApplicationUser, ApplicationRole, Department, Permission, RolePermission
-- `Competencies/` — opprettes i fase 4
-- `Documents/` — opprettes i fase 5
-- `Equipment/` — opprettes i fase 6
-- `Requirements/` — opprettes i fase 7
-- `Onboarding/` — opprettes i fase 8
-- `Notifications/` — opprettes i fase 10
-- `Audit/` — opprettes i fase 11
+```
+Domain/Entities/
+  Identity/        <- ApplicationUser, ApplicationRole, Department, Permission, RolePermission
+  <Domene>/        <- ny undermappe per domeneområde som legges til
+```
 
-**Regler:**
-- Ingen import av EF Core, ASP.NET eller andre rammeverk her
-- Ingen avhengighet til andre lag
-- Enkel forretningslogikk som kun bruker egne felt er OK
-- Enums legges **ikke** her — de hører hjemme i `CompVault.Shared/Enums/` så Frontend kan bruke dem
+## Regler
+
+- Ingen import av EF Core, ASP.NET eller andre rammeverk
+- Ingen avhengighet til andre lag i prosjektet
+- Enkel forretningslogikk som kun opererer på egne felt er OK
+- Enums legges i `CompVault.Shared/Enums/` slik at Frontend også kan bruke dem
+
+## Ny entitet? Gjør slik
+
+1. Opprett filen i riktig undermappe under `Domain/Entities/<Domene>/`
+2. Opprett tilhørende EF Core-konfigurasjon i `Infrastructure/Data/Configurations/<Domene>/`
