@@ -16,5 +16,11 @@ internal sealed class ApplicationRoleConfiguration : IEntityTypeConfiguration<Ap
         builder.Property(r => r.Description).HasMaxLength(250);
         builder.Property(r => r.Name).HasMaxLength(256);
         builder.Property(r => r.NormalizedName).HasMaxLength(256);
+
+        // Relasjon til brukeren som opprettet rollen
+        builder.HasOne(r => r.CreatedBy)
+            .WithMany()
+            .HasForeignKey(r => r.CreatedById)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

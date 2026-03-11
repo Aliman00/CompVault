@@ -32,5 +32,11 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
             .WithMany(d => d.Members)
             .HasForeignKey(u => u.DepartmentId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Selvrefererende relasjon: hvem opprettet denne brukeren
+        builder.HasOne(u => u.CreatedBy)
+            .WithMany()
+            .HasForeignKey(u => u.CreatedById)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
