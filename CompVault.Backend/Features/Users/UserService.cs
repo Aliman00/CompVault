@@ -1,7 +1,7 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Backend.Infrastructure.Data;
-using CompVault.Backend.Infrastructure.Data.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Identity;
 

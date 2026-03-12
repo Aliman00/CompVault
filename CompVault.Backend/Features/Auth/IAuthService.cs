@@ -12,13 +12,16 @@ public interface IAuthService
     /// Steg 1: Sender en engangs-kode (OTP) til brukeren via valgt kanal.
     /// Returnerer alltid suksess for å unngå at angripere kan kartlegge hvilke
     /// e-poster som er registrert i systemet.
+    /// Bruker StopWatch for å sikre at metoden bruker like lang tid om brukeren eksisterer eller ikke
     /// </summary>
-    Task<Result<bool>> RequestOtpAsync(RequestOtpRequest request, CancellationToken cancellationToken = default);
+    Task<Result> RequestOtpAsync(RequestOtpRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Steg 2: Verifiserer OTP-koden og utsteder et JWT token-par ved suksess.
+    /// Returnerer Failure hvis brukeren ikke eksisterer, feil kode eller ingen aktiv kode
+    /// Bruker StopWatch for å sikre at metoden bruker like lang tid om brukeren eksisterer eller ikke
     /// </summary>
-    Task<Result<LoginResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken cancellationToken = default);
+    Task<Result<LoginResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Utsteder et nytt access token ved hjelp av et gyldig refresh token.
