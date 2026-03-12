@@ -8,6 +8,7 @@ using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
+using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -135,6 +136,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
 
         return services;
     }
@@ -146,6 +148,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IOtpCodeService, OtpCodeService>();
 
         return services;
     }
