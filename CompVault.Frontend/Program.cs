@@ -1,5 +1,5 @@
 using CompVault.Frontend;
-using CompVault.Frontend.Infrastructure.Extensions;
+using CompVault.Frontend.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 

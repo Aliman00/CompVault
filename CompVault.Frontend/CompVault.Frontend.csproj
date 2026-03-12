@@ -9,15 +9,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Common\" />
+    <Folder Include="Common\Services\" />
     <Folder Include="Features\Auth\Components\" />
     <Folder Include="Features\Users\Components\" />
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="Layout\MainLayout.razor" />
-    <AdditionalFiles Include="Layout\NavMenu.razor" />
-    <AdditionalFiles Include="Layout\ReconnectModal.razor" />
+    <_ContentIncludedByDefault Remove="Layout\Errors\Error.razor" />
+    <_ContentIncludedByDefault Remove="Layout\Errors\NotFound.razor" />
+    <_ContentIncludedByDefault Remove="Layout\MainLayout.razor" />
+    <_ContentIncludedByDefault Remove="Layout\NavMenu.razor" />
+    <_ContentIncludedByDefault Remove="Layout\ReconnectModal.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Common\Layout\Errors\Error.razor" />
+    <AdditionalFiles Include="Common\Layout\Errors\NotFound.razor" />
   </ItemGroup>
 
   <PropertyGroup>

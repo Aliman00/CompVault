@@ -1,6 +1,6 @@
 ﻿using CompVault.Frontend.Features.Auth.Services;
 
-namespace CompVault.Frontend.Infrastructure.Extensions;
+namespace CompVault.Frontend.Extensions;
 
 /// <summary>
 /// Extension-metoder på <see cref="IServiceCollection"/> som grupperer service-registreringer i Frontend.
