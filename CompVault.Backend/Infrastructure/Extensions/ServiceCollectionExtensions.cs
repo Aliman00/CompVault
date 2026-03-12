@@ -2,6 +2,7 @@ using System.Text;
 using CompVault.Backend.Common.Middleware;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth;
+using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Users;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
@@ -57,6 +58,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.Configure<OtpOptions>(configuration.GetSection(OtpOptions.SectionName));
 
         JwtSettings jwtSettings = configuration
             .GetSection(JwtSettings.SectionName)
