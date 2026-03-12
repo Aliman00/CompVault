@@ -1,5 +1,6 @@
 ﻿using CompVault.Backend.Controllers;
 using CompVault.Shared.Result;
+using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompVault.Tests.Backend.Controllers;
