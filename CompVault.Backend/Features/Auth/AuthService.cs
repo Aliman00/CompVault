@@ -97,7 +97,7 @@ public sealed class AuthService(
             // Hvis grensen på forsøk er nådd, så får sender vi egen feilmelding til frontend
             if (user == null || !user.IsActive || user.DeletedAt != null)
                 return Result<LoginResponse>.Failure(
-                    AppError.Create(ErrorCode.OtpInvalid, "Invalid or expired code"));
+                    AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
 
             var otpResult = await otpCodeService.VerifyOtpCodeAsync(user.Id, request.OtpCode, ct);
             if (otpResult.IsFailure)

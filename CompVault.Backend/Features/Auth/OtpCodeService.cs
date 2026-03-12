@@ -77,7 +77,7 @@ public class OtpCodeService(
         {
             logger.LogWarning("User {UserId} is attempting to verify Otp without an active code", userId);
             // Lik feilmelding som hvis koden ikke er korrekt
-            return Result.Failure(AppError.Create(ErrorCode.OtpInvalid, "Invalid or expired code"));
+            return Result.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
         }
         
         // Sjekker om det er flere forsøk igjen
@@ -101,7 +101,7 @@ public class OtpCodeService(
             await unitOfWork.SaveChangesAsync(ct);
             
             // Lik feilmelding som ikke-eksisterende bruker
-            return Result.Failure(AppError.Create(ErrorCode.OtpInvalid, "Invalid or expired code")); 
+            return Result.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code")); 
         }
         
         // Korrekt kode

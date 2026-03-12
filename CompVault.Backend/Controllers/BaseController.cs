@@ -65,7 +65,7 @@ public abstract class BaseController : ControllerBase
             ErrorCode.PasswordTooWeak        => 422,
             ErrorCode.OtpMaxAttemptsExceeded => 429,
             ErrorCode.OtpCooldown            => 429,
-            ErrorCode.OtpInvalid             => 401,
+            ErrorCode.OtpInvalidOrExpired             => 401,
             _                                => 400
         };
 
