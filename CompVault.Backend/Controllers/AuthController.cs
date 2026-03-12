@@ -24,10 +24,14 @@ public sealed class AuthController(IAuthService authService) : BaseController
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> RequestOtpAsync(
         [FromBody] RequestOtpRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        await authService.RequestOtpAsync(request, cancellationToken);
-        // Returnerer alltid 200 — se IAuthService.RequestOtpAsync
+        var result = await authService.RequestOtpAsync(request, ct);
+        
+        if (result.IsFailure)
+            return HandleFailure(result);
+        
+        // Returnerer alltid 200 så fremt ingen interne feil — se IAuthService.RequestOtpAsync
         return Ok();
     }
 
@@ -36,15 +40,17 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// </summary>
     /// <response code="200">Innlogging vellykket.</response>
     /// <response code="401">Ugyldig eller utgått kode.</response>
+    /// <response code="429">For mange forsøk eller cooldown aktiv</response>
     [HttpPost("verify-otp")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<LoginResponse>> VerifyOtpAsync(
         [FromBody] VerifyOtpRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        Result<LoginResponse> result = await authService.VerifyOtpAsync(request, cancellationToken);
+        var result = await authService.VerifyOtpAsync(request, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);

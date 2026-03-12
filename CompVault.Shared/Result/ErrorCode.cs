@@ -20,8 +20,9 @@ public enum ErrorCode
     TokenExpired = 2003,
     InvalidToken = 2004,
     EmailNotConfirmed = 2005,
-    OtpInvalid = 2006,
-    OtpExpired = 2007,
+    OtpInvalidOrExpired = 2006,
+    OtpCooldown = 2008,
+    OtpMaxAttemptsExceeded = 2009,
 
     // Brukere
     UserNotFound = 3000,

@@ -1,3 +1,4 @@
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -10,9 +11,14 @@ namespace CompVault.Backend.Infrastructure.Data;
 /// </summary>
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
 {
+    // ============= IDENTITY ==============
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    
+    // ============= AUTH ==============
+    public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
+
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)

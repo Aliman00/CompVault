@@ -3,7 +3,7 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-namespace CompVault.Backend.Infrastructure.Data.Repositories.Identity;
+namespace CompVault.Backend.Infrastructure.Repositories.Identity;
 
 /// <summary>
 /// EF Core-implementasjon av <see cref="IUserRepository"/>.

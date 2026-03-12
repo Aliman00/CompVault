@@ -1,7 +1,7 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data.Repositories;
 
-namespace CompVault.Backend.Infrastructure.Data.Repositories.Identity;
+namespace CompVault.Backend.Infrastructure.Repositories.Identity;
 
 /// <summary>
 /// Repository for brukere med ekstra spørringer utover standard CRUD.

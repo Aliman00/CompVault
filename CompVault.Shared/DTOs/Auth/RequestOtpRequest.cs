@@ -10,14 +10,15 @@ namespace CompVault.Shared.DTOs.Auth;
 public sealed class RequestOtpRequest
 {
     /// <summary>E-postadressen til brukeren.</summary>
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Email must be a valid format")]
+    [MaxLength(256, ErrorMessage = "Email cannot exceed 256 characters")]
+    public string Email { get; init => field = value.Trim(); } = null!;
 
     /// <summary>
     /// Hvilken kanal OTP-koden sendes på.
     /// SMS-valget vises kun i Frontend hvis brukeren har et mobilnummer registrert.
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "DeliveryMethod is required")]
     public OtpDeliveryMethod DeliveryMethod { get; set; } = OtpDeliveryMethod.Email;
 }

@@ -2,12 +2,14 @@ using System.Text;
 using CompVault.Backend.Common.Middleware;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth;
+using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Users;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
-using CompVault.Backend.Infrastructure.Data.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
+using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -57,6 +59,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.Configure<OtpOptions>(configuration.GetSection(OtpOptions.SectionName));
 
         JwtSettings jwtSettings = configuration
             .GetSection(JwtSettings.SectionName)
@@ -133,6 +136,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
 
         return services;
     }
@@ -144,6 +148,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IOtpCodeService, OtpCodeService>();
 
         return services;
     }

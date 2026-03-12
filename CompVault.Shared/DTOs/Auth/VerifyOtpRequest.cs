@@ -9,12 +9,14 @@ namespace CompVault.Shared.DTOs.Auth;
 public sealed class VerifyOtpRequest
 {
     /// <summary>E-postadressen til brukeren — må matche adressen fra steg 1.</summary>
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Email must be a valid format")]
+    [MaxLength(256, ErrorMessage = "Email cannot exceed 256 characters")]
+    public string Email { get; init => field = value.Trim(); } = null!;
 
     /// <summary>Den 6-sifrede engangs-koden brukeren mottok.</summary>
-    [Required]
-    [StringLength(6, MinimumLength = 6)]
+    [Required(ErrorMessage = "OtpCode is required")]
+    [StringLength(6, MinimumLength = 6, ErrorMessage = "OtpCode must be 6-digits")]
+    [RegularExpression("^[0-9]{6}$", ErrorMessage = "OtpCode must consist of exactly 6 digits")]
     public string OtpCode { get; set; } = string.Empty;
 }

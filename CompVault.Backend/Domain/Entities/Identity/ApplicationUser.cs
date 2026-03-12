@@ -1,3 +1,4 @@
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Shared.Enums;
 using Microsoft.AspNetCore.Identity;
 
@@ -63,4 +64,5 @@ public class ApplicationUser : IdentityUser<Guid>
     public ApplicationUser? CreatedBy { get; set; }
     public Department? Department { get; set; }
     public ICollection<ApplicationUser> DirectReports { get; set; } = new List<ApplicationUser>();
+    public ICollection<OtpCode> OtpCodes { get; set; } = new List<OtpCode>();
 }
