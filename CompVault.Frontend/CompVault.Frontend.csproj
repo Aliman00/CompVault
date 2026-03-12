@@ -23,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="Common\Layout\Errors\Error.razor" />
-    <AdditionalFiles Include="Common\Layout\Errors\NotFound.razor" />
+    <AdditionalFiles Include="Common\Layouts\Errors\Error.razor" />
+    <AdditionalFiles Include="Common\Layouts\Errors\NotFound.razor" />
   </ItemGroup>
 
   <PropertyGroup>
