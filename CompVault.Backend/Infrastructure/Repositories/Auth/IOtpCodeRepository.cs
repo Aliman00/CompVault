@@ -8,6 +8,6 @@ public interface IOtpCodeRepository : IRepository<OtpCode>
     /// <summary>
     /// Henter siste ubrukte, gyldige kode for en bruker
     /// </summary>
-    /// <returns>En OptCode? eller null</returns>
+    /// <returns>En OtpCode eller null</returns>
     Task<OtpCode?> GetActiveCodeAsync(Guid userId, CancellationToken ct = default);
 }

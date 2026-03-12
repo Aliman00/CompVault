@@ -40,7 +40,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// </summary>
     /// <response code="200">Innlogging vellykket.</response>
     /// <response code="401">Ugyldig eller utgått kode.</response>
-    /// /// <response code="429">For mange forsøk eller cooldown aktiv</response>
+    /// <response code="429">For mange forsøk eller cooldown aktiv</response>
     [HttpPost("verify-otp")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
