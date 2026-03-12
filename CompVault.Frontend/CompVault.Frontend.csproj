@@ -21,12 +21,7 @@
     <_ContentIncludedByDefault Remove="Layout\NavMenu.razor" />
     <_ContentIncludedByDefault Remove="Layout\ReconnectModal.razor" />
   </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="Common\Layouts\Errors\Error.razor" />
-    <AdditionalFiles Include="Common\Layouts\Errors\NotFound.razor" />
-  </ItemGroup>
-
+  
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
