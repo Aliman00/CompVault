@@ -20,7 +20,6 @@ builder.ConfigureSwagger();
 builder.ConfigureLogging();
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("db");
 builder.Services.AddInfrastructure();
@@ -38,7 +37,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.MapOpenApi();
 }
 
 
