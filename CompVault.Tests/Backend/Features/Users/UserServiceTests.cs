@@ -146,7 +146,7 @@ public class UserServiceTests
         };
 
         _userRepositoryMock
-            .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<ApplicationUser, bool>>>(),
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
