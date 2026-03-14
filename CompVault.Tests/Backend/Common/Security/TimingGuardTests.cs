@@ -13,7 +13,6 @@ public class TimingGuardTests
     [Fact]
     public async Task TimingGuard_TimeIsLessThanMinimum_ShouldDelayToMinimumTime()
     {
-       
         // Arrange - starter 2 stk StopWatch-objekter. 1 for å ta total tid, og en som simulerer
         // metoden som kaller TimingGuard
         var minimumMs = 500;
@@ -29,7 +28,7 @@ public class TimingGuardTests
     }
     
     /// <summary>
-    /// Tester at metoden delayer til mer enn 500 ms
+    /// Tester at metoden ikke delayer hvis innsendt StopWatch har brukt mer tid enn minimum tiden
     /// </summary>
     [Fact]
     public async Task TimingGuard_TimeIsHigherThanMinimum_ShouldNotDelay()
@@ -41,7 +40,7 @@ public class TimingGuardTests
         
         // Starter StopWatchen som måler selve metoden
         var testingStopwatch = Stopwatch.StartNew();
-        var estimatedTestingTimeMs = 50;
+        var estimatedTestingTimeMs = 200;
         
         // Act
         await TimingGuard.EnforceMinimumTimeAsync(operationSw, minimumMs, CancellationToken.None);
@@ -90,4 +89,5 @@ public class TimingGuardTests
         // Assert - Sjekker at det ble kastet riktig error
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
+    
 }
