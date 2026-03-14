@@ -56,7 +56,7 @@ public class AuthServiceRequestOtpAsyncTests
     }
     
     // -------------------------------------------------------------------------
-    // Hjelpemetoder for RequestOtpAsyncTests
+    // Hjelpemetoder
     // -------------------------------------------------------------------------
     
     /// <summary>
@@ -237,7 +237,7 @@ public class AuthServiceRequestOtpAsyncTests
         // Arrange
         var request = CreateRequest();
         var user = CreateActiveUser();
-        var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, "Max attemps exceeded");
+        var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, "Max attempts exceeded");
         
         // mocker UserManager til å returerne opprettet bruker
         _userManagerMock
