@@ -38,6 +38,8 @@ public class UserServiceTests
 
         // UserManager krever en IUserStore-mock for å kunne instansieres
         var storeMock = new Mock<IUserStore<ApplicationUser>>();
+        // UserManager har ingen tom konstruktør — IUserStore er eneste påkrevde parameter.
+        // Resten settes til null! siden de ikke brukes i disse testene.
         _userManagerMock = new Mock<UserManager<ApplicationUser>>(
             storeMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 

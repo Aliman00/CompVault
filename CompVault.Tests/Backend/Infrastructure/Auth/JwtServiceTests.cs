@@ -90,11 +90,12 @@ public class JwtServiceTests
     }
 
     /// <summary>
-    /// Tester at GetPrincipalFromExpiredToken klarer å lese claims fra et utløpt token
-    /// ved å lage tokenet normalt, men validere med ClockSkew = 0 og bakoverforskjøvet tid
+    /// Tester at GetPrincipalFromExpiredToken klarer å lese claims korrekt.
+    /// Metoden bruker ValidateLifetime = false internt, så den fungerer
+    /// uavhengig av om tokenet er utløpt eller ikke.
     /// </summary>
     [Fact]
-    public void GetPrincipalFromExpiredToken_WithExpiredToken_ReturnsPrincipalWithClaims()
+    public void GetPrincipalFromExpiredToken_ReturnsPrincipalWithClaims()
     {
         // Arrange - Generer et normalt token — GetPrincipalFromExpiredToken
         // validerer uansett med ValidateLifetime = false, så det holder

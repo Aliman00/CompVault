@@ -25,24 +25,6 @@ public class DomainModelTests
         Assert.Empty(user.OtpCodes);
     }
 
-    /// <summary>
-    /// Tester at en bruker som soft-slettes får DeletedAt satt og IsActive = false
-    /// </summary>
-    [Fact]
-    public void ApplicationUser_WhenSoftDeleted_IsNoLongerActive()
-    {
-        // Arrange
-        var user = new ApplicationUser { IsActive = true };
-
-        // Act - Simulerer hva SoftDeleteAsync gjør
-        user.DeletedAt = DateTime.UtcNow;
-        user.IsActive = false;
-
-        // Assert
-        Assert.False(user.IsActive);
-        Assert.NotNull(user.DeletedAt);
-    }
-
     // ======================== OtpCode ========================
 
     /// <summary>

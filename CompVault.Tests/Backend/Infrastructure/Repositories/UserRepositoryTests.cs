@@ -107,6 +107,19 @@ public class UserRepositoryTests : IDisposable
     }
 
     /// <summary>
+    /// Tester at GetByEmailAsync returnerer null når e-posten ikke eksisterer
+    /// </summary>
+    [Fact]
+    public async Task GetByEmailAsync_WhenEmailDoesNotExist_ReturnsNull()
+    {
+        // Act
+        var result = await _sut.GetByEmailAsync("ikkeeksisterende@example.com");
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    /// <summary>
     /// Tester at SoftDeleteAsync setter DeletedAt og IsActive = false uten å fjerne raden
     /// </summary>
     [Fact]
