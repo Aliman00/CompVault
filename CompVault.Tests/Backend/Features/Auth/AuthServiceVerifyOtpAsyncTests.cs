@@ -30,7 +30,6 @@ public class AuthServiceVerifyOtpAsyncTests
 
         // Mocker de andre DI-avhengighetene
         Mock<ILogger<IAuthService>> loggerMock = new Mock<ILogger<IAuthService>>();
-        Mock<IJwtService> jwtServiceMock = new Mock<IJwtService>();
         _otpCodeServiceMock = new Mock<IOtpCodeService>();
         Mock<IEmailService> emailServiceMock = new Mock<IEmailService>();
         _jwtServiceMock = new Mock<IJwtService>();
@@ -138,9 +137,9 @@ public class AuthServiceVerifyOtpAsyncTests
         
         // Verfiserer at alle servicene ble kalt engang
         _userManagerMock.Verify(x => x.FindByEmailAsync(It.IsAny<string>()), Times.Once);
-        _userManagerMock.Verify(x => x.GetRolesAsync(user), Times.Once);
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(user.Id, request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Once);
+        _userManagerMock.Verify(x => x.GetRolesAsync(user), Times.Once);
         _jwtServiceMock.Verify(x => x.GenerateAccessToken(user, roles), Times.Once());
         _jwtServiceMock.Verify(x => x.GenerateRefreshToken(), Times.Once());
     }
@@ -150,8 +149,8 @@ public class AuthServiceVerifyOtpAsyncTests
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Tester happy path - bruker eksisterer, koden blir verifisert som korrekt, Access og Refresh-token blir
-    /// opprettet og vi returnerer LoginResponse
+    /// Tester at en emailen fra Requesten ikke tilhører en bruker og kallet til FindByEmailAsync
+    /// returnerer null
     /// </summary>
     [Fact]
     public async Task VerifyOtpAsync_UnknownEmail_ReturnsFailure()
@@ -164,23 +163,55 @@ public class AuthServiceVerifyOtpAsyncTests
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync((ApplicationUser?)null);
         
+        // Act
+        var result = await _sut.VerifyOtpAsync(request);
+ 
+        // Assert - Sjekker at Result er Failure og at error-koden er OtpInvalidOrExpired
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+        
+        // Verfiserer at kun FindByEmailAsync blir kalt, og OtpCodeService ikke blir kalt
+        _userManagerMock.Verify(x => x.FindByEmailAsync(It.IsAny<string>()), Times.Once);
+        _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(It.IsAny<Guid>(), request.OtpCode,
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+    
+    /// <summary>
+    /// Tester at OtpCodeService returnerer Failure og at vi videresender AppError til
+    /// kalleren og at ingen flere metoder blir kalt
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtpAsync_OtpCodeServiceFails_ReturnsFailure()
+    {
+        // Arrange
+        var request = CreateRequest();
+        var user = CreateActiveUser();
+        var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, 
+            "Too many failed attemps");
+        
+        // mocker UserManager til å returerne opprettet bruker
+        _userManagerMock
+            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync(user);
+        
+        // mocker OtpCodeService til å returnere Result med Failure
+        _otpCodeServiceMock
+            .Setup(x => x.VerifyOtpCodeAsync(user.Id, request.OtpCode, 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(otpCodeError));
         
         // Act
         var result = await _sut.VerifyOtpAsync(request);
  
-        // Assert - Sjekker at Result er Success og at LoginResponse inneholder korrekte verdier
+        // Assert - Sjekker at Result er Failure og at error-koden er OtpMaxAttemptsExceeded
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+        result.Error!.Code.Should().Be(ErrorCode.OtpMaxAttemptsExceeded);
         
-        // Verfiserer at alle servicene ble kalt engang
+        // Verifiserer at FindByEmailAsync og VerifyOtpCodeAsync blir kalt, men ikke GetRolesAsync
         _userManagerMock.Verify(x => x.FindByEmailAsync(It.IsAny<string>()), Times.Once);
-        _userManagerMock.Verify(x => x.GetRolesAsync(It.IsAny<ApplicationUser>()), 
-            Times.Never);
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(It.IsAny<Guid>(), request.OtpCode,
-            It.IsAny<CancellationToken>()), Times.Never);
-        _jwtServiceMock.Verify(x => x.GenerateAccessToken(It.IsAny<ApplicationUser>(), 
-            It.IsAny<ApplicationRole>()), Times.Never());
-        _jwtServiceMock.Verify(x => x.GenerateRefreshToken(), Times.Never());
+            It.IsAny<CancellationToken>()), Times.Once);
+        _userManagerMock.Verify(x => x.GetRolesAsync(user), Times.Never);
     }
     
 }
