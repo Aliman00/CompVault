@@ -58,7 +58,10 @@ public class AuthServiceRequestOtpAsyncTests
     // -------------------------------------------------------------------------
     // Hjelpemetoder for RequestOtpAsyncTests
     // -------------------------------------------------------------------------
-
+    
+    /// <summary>
+    /// Oppretter en ApplicationUser med påkrevde og relevante felt
+    /// </summary>
     private static ApplicationUser CreateActiveUser(string email = "test@compvault.no") => new()
     {
         Id = Guid.NewGuid(),
@@ -69,7 +72,10 @@ public class AuthServiceRequestOtpAsyncTests
         IsActive = true,
         DeletedAt = null
     };
-
+    
+    /// <summary>
+    /// Oppretter en RequestOtpRequest med samme epost som opprettet bruker og epost som DeliveryMethod
+    /// </summary>
     private static RequestOtpRequest CreateRequest(string email = "test@compvault.no") => new()
     {
         Email = email,
