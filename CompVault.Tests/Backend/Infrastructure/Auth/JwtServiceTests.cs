@@ -11,6 +11,15 @@ public class JwtServiceTests
     // Systemet vi tester
     private readonly JwtService _sut;
 
+    // Testbruker som gjenbrukes på tvers av testene
+    private readonly ApplicationUser _testUser = new()
+    {
+        Id = Guid.NewGuid(),
+        Email = "test@example.com",
+        FirstName = "Ola",
+        LastName = "Nordmann"
+    };
+
     // Test-innstillinger for JWT
     private static readonly JwtSettings JwtSettings = new()
     {
@@ -34,23 +43,16 @@ public class JwtServiceTests
     public void GenerateAccessToken_WithValidUser_ContainsCorrectClaims()
     {
         // Arrange
-        var user = new ApplicationUser
-        {
-            Id = Guid.NewGuid(),
-            Email = "test@example.com",
-            FirstName = "Ola",
-            LastName = "Nordmann"
-        };
         var roles = new[] { "Admin" };
 
         // Act
-        var token = _sut.GenerateAccessToken(user, roles);
+        var token = _sut.GenerateAccessToken(_testUser, roles);
         var handler = new JwtSecurityTokenHandler();
         var parsed = handler.ReadJwtToken(token);
 
         // Assert
-        Assert.Equal(user.Id.ToString(), parsed.Subject);
-        Assert.Equal(user.Email, parsed.Claims.First(c => c.Type == JwtRegisteredClaimNames.Email).Value);
+        Assert.Equal(_testUser.Id.ToString(), parsed.Subject);
+        Assert.Equal(_testUser.Email, parsed.Claims.First(c => c.Type == JwtRegisteredClaimNames.Email).Value);
         Assert.Equal("Ola", parsed.Claims.First(c => c.Type == "firstName").Value);
         Assert.Equal("Nordmann", parsed.Claims.First(c => c.Type == "lastName").Value);
         Assert.Contains(parsed.Claims, c => c.Type == ClaimTypes.Role && c.Value == "Admin");
@@ -62,17 +64,8 @@ public class JwtServiceTests
     [Fact]
     public void GenerateAccessToken_WithValidUser_HasCorrectIssuerAndAudience()
     {
-        // Arrange
-        var user = new ApplicationUser
-        {
-            Id = Guid.NewGuid(),
-            Email = "test@example.com",
-            FirstName = "Ola",
-            LastName = "Nordmann"
-        };
-
         // Act
-        var token = _sut.GenerateAccessToken(user, []);
+        var token = _sut.GenerateAccessToken(_testUser, []);
         var handler = new JwtSecurityTokenHandler();
         var parsed = handler.ReadJwtToken(token);
 
@@ -103,25 +96,16 @@ public class JwtServiceTests
     [Fact]
     public void GetPrincipalFromExpiredToken_WithExpiredToken_ReturnsPrincipalWithClaims()
     {
-        // Arrange - Lager et gyldig token, men med kun 1 minutt levetid
-        var user = new ApplicationUser
-        {
-            Id = Guid.NewGuid(),
-            Email = "expired@example.com",
-            FirstName = "Test",
-            LastName = "User"
-        };
-
-        // Generer et normalt token — GetPrincipalFromExpiredToken
+        // Arrange - Generer et normalt token — GetPrincipalFromExpiredToken
         // validerer uansett med ValidateLifetime = false, så det holder
-        var token = _sut.GenerateAccessToken(user, []);
+        var token = _sut.GenerateAccessToken(_testUser, []);
 
         // Act
         var principal = _sut.GetPrincipalFromExpiredToken(token);
 
         // Assert - Skal kunne lese claims uavhengig av levetid
         Assert.NotNull(principal);
-        Assert.Equal(user.Id.ToString(), principal.FindFirstValue(ClaimTypes.NameIdentifier));
+        Assert.Equal(_testUser.Id.ToString(), principal.FindFirstValue(ClaimTypes.NameIdentifier));
     }
 
 
@@ -132,14 +116,7 @@ public class JwtServiceTests
     public void GetPrincipalFromExpiredToken_WithTamperedToken_ReturnsNull()
     {
         // Arrange
-        var user = new ApplicationUser
-        {
-            Id = Guid.NewGuid(),
-            Email = "test@example.com",
-            FirstName = "Ola",
-            LastName = "Nordmann"
-        };
-        var validToken = _sut.GenerateAccessToken(user, []);
+        var validToken = _sut.GenerateAccessToken(_testUser, []);
         var tamperedToken = validToken[..^5] + "XXXXX"; // Ødelegger signaturen
 
         // Act
