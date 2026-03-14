@@ -5,6 +5,7 @@ using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Identity;
+using System.Linq.Expressions;
 using Moq;
 
 namespace CompVault.Tests.Backend.Features.Users;
@@ -90,6 +91,44 @@ public class UserServiceTests
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorCode.NotFound, result.Error!.Code);
     }
+
+    /// <summary>
+    /// Tester at CreateUserAsync oppretter en bruker og returnerer riktig DTO når alt går bra
+    /// </summary>
+    [Fact]
+    public async Task CreateUserAsync_WhenEmailIsAvailable_ReturnsCreatedUser()
+    {
+        // Arrange
+        var request = new CreateUserRequest
+        {
+            Email = "ny@example.com",
+            FirstName = "Ny",
+            LastName = "Bruker",
+            Roles = []
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false); // E-post ikke tatt
+
+        _userManagerMock
+            .Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        _userManagerMock
+            .Setup(m => m.GetRolesAsync(It.IsAny<ApplicationUser>()))
+            .ReturnsAsync(new List<string>());
+
+        // Act
+        var result = await _sut.CreateUserAsync(request);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(request.Email.ToLowerInvariant(), result.Value!.Email);
+        Assert.Equal(request.FirstName, result.Value.FirstName);
+    }
+
 
     /// <summary>
     /// Tester at CreateUserAsync returnerer Conflict når e-posten allerede er i bruk

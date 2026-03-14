@@ -47,8 +47,12 @@ public class UserRepositoryTests : IDisposable
         _sut = new UserRepository(_dbContext);
 
         // Seeder testdata
-        _dbContext.Users.AddRange(_activeUser, _deletedUser);
-        _dbContext.SaveChanges();
+        // Task.Run brukes siden xUnit ikke støtter async konstruktører
+        Task.Run(async () =>
+        {
+            _dbContext.Users.AddRange(_activeUser, _deletedUser);
+            await _dbContext.SaveChangesAsync();
+        }).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -130,8 +134,9 @@ public class UserRepositoryTests : IDisposable
 
         // Act
         await _sut.SoftDeleteAsync(userToDelete!);
+        await _dbContext.SaveChangesAsync(); // Speiler virkeligheten — endringer må persisteres
 
-        // Assert - Raden skal fortsatt eksistere i DB men være markert som slettet
+        // Assert
         var userInDb = await _dbContext.Users.FindAsync(_activeUser.Id);
         Assert.NotNull(userInDb);
         Assert.False(userInDb.IsActive);
