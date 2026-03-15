@@ -1,6 +1,6 @@
-﻿using CompVault.Backend.Domain.Entities.Auth;
-using CompVault.Backend.Domain.Entities.Identity;
+﻿using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Tests.Common.Constants;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,8 +18,8 @@ public static class TestDataSeeder
     /// <param name="email">Optional string med Epost for å opprette forskjellige brukere</param>
     /// <param name="deletedAt">DateTime som bestemmer om brukeren er aktive/slettet</param>
     /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
-    public static ApplicationUser CreateApplicationUser(string email = "test@compvault.no", DateTime? deletedAt = null)
-        => new()
+    public static ApplicationUser CreateApplicationUser(string email = TestConstants.Users.DefaultEmailForActiveUser, 
+        DateTime? deletedAt = null) => new()
     {
         Id = Guid.NewGuid(),
         Email = email,
@@ -40,11 +40,12 @@ public static class TestDataSeeder
         
         // Seeder en aktiv og en inaktiv bruker
         await userManager.CreateAsync(CreateApplicationUser());
-        await userManager.CreateAsync(CreateApplicationUser(email: "test2@testing.no", deletedAt: DateTime.UtcNow));
+        await userManager.CreateAsync(CreateApplicationUser(email: TestConstants.Users.DefaultEmailForInactiveUser, 
+            deletedAt: DateTime.UtcNow));
     }
     
     /// <summary>
-    /// Rydder opp i databasen etter kjøring. Flere integrasjonstester, så må v
+    /// Rydder opp i databasen etter kjøring. Ved flere integrasjonstester, så må vi rydde opp mellom
     /// </summary>
     public static async Task ClearDatabaseAsync(IServiceProvider serviceProvider)
     {

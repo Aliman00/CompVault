@@ -6,6 +6,7 @@ using CompVault.Backend.Infrastructure.Email;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Common;
+using CompVault.Tests.Common.Constants;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -58,8 +59,8 @@ public class AuthServiceVerifyOtpAsyncTests
     /// <summary>
     /// Oppretter en VerifyOtpRequest med samme epost som brukeren og en tilfeldig kode
     /// </summary>
-    private static VerifyOtpRequest CreateRequest(string email = "test@compvault.no", 
-        string otpCode = "476859") => new()
+    private static VerifyOtpRequest CreateRequest(string email = TestConstants.Users.DefaultEmailForActiveUser, 
+        string otpCode = TestConstants.Otp.PlainTextOtpCode) => new()
     {
         Email = email,
         OtpCode = otpCode

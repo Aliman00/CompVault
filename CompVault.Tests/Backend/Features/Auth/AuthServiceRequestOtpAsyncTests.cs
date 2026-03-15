@@ -8,6 +8,7 @@ using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
 using CompVault.Tests.Common;
+using CompVault.Tests.Common.Constants;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -60,7 +61,8 @@ public class AuthServiceRequestOtpAsyncTests
     /// <summary>
     /// Oppretter en RequestOtpRequest med samme epost som opprettet bruker og epost som DeliveryMethod
     /// </summary>
-    private static RequestOtpRequest CreateRequest(string email = "test@compvault.no") => new()
+    private static RequestOtpRequest CreateRequest(string email = TestConstants.Users.DefaultEmailForActiveUser) 
+        => new()
     {
         Email = email,
         DeliveryMethod = OtpDeliveryMethod.Email
@@ -79,7 +81,7 @@ public class AuthServiceRequestOtpAsyncTests
         // Arrange
         var request = CreateRequest();
         var user = TestDataSeeder.CreateApplicationUser();
-        const string otpCode = "476859";
+        const string otpCode = TestConstants.Otp.PlainTextOtpCode;
         
         // mocker UserManager til å returerne opprettet bruker
         _userManagerMock
@@ -182,7 +184,7 @@ public class AuthServiceRequestOtpAsyncTests
         // Arrange
         var request = CreateRequest();
         var user = TestDataSeeder.CreateApplicationUser();
-        const string otpCode = "476859";
+        const string otpCode = TestConstants.Otp.PlainTextOtpCode;
         var emailError = AppError.Create(ErrorCode.EmailSendFailed, "Email service down");
         
         // mocker UserManager til å returerne opprettet bruker
