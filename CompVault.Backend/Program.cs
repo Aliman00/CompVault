@@ -58,3 +58,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Eksponerer Program for integrasjonstester
+public partial class Program;
