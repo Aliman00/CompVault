@@ -7,6 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Legger til Serilog
+builder.AddSerilogLogging();
+
+// HttpClienter
+builder.Services.AddHttpClients(builder.Configuration);
+
 // Forretningslogikk
 builder.Services.AddFrontendServices();
 

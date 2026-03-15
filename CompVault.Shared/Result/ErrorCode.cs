@@ -32,4 +32,8 @@ public enum ErrorCode
     // Epost
     EmailSendFailed = 4000,
     
+    
+    // Frontend
+    NetworkError = 5000
+    
 }
