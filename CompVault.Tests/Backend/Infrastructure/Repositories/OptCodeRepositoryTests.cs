@@ -18,6 +18,7 @@ public class OptCodeRepositoryTests : IDisposable
 
     public OptCodeRepositoryTests()
     {
+        // Setter opp InMemoryDatabase
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
@@ -64,10 +65,10 @@ public class OptCodeRepositoryTests : IDisposable
     }
     
     /// <summary>
-    /// Seeder en bruker
+    /// Seeder en bruker og lagrer den i InMemory-databasen
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="email"></param>
+    /// <param name="userId">Guid til brukerne</param>
+    /// <param name="email">Default epost, eller en annen epost hvis det er en annen bruker</param>
     private async Task SeedUserAsync(Guid userId, string email = "test@example.com")
     {
         _context.Users.Add(new ApplicationUser
