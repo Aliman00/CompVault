@@ -1,4 +1,5 @@
-﻿using CompVault.Shared.Result;
+﻿using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Identity.Data;
 
 namespace CompVault.Frontend.Features.Auth.Services;
@@ -13,5 +14,5 @@ public interface IAuthService
     /// <param name="request">Email og ønsket delivery method</param>
     /// <param name="ct"></param>
     /// <returns>Result med Success eller failure hvis noe gikk galt</returns>
-    Task<Result> RequestOtpAsync(LoginRequest request, CancellationToken ct);
+    Task<Result> RequestOtpAsync(RequestOtpRequest request, CancellationToken ct);
 }
