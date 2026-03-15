@@ -4,9 +4,8 @@ using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Models;
-using CompVault.Shared.DTOs.Auth;
-using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
+using CompVault.Tests.Backend.Features.Auth.Builders;
 using CompVault.Tests.Common;
 using CompVault.Tests.Common.Constants;
 using FluentAssertions;
@@ -55,20 +54,6 @@ public class AuthServiceRequestOtpAsyncTests
     }
     
     // -------------------------------------------------------------------------
-    // Hjelpemetoder
-    // -------------------------------------------------------------------------
-    
-    /// <summary>
-    /// Oppretter en RequestOtpRequest med samme epost som opprettet bruker og epost som DeliveryMethod
-    /// </summary>
-    private static RequestOtpRequest CreateRequest(string email = TestConstants.Users.DefaultEmailForActiveUser) 
-        => new()
-    {
-        Email = email,
-        DeliveryMethod = OtpDeliveryMethod.Email
-    };
-    
-    // -------------------------------------------------------------------------
     // Tester - Success
     // -------------------------------------------------------------------------
 
@@ -79,7 +64,7 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_ExistingUser_GeneratesOtpAndSendsEmail_ReturnsSuccess()
     {
         // Arrange
-        var request = CreateRequest();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
         
@@ -123,7 +108,7 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_UnknownEmail_ReturnsSuccess()
     {
         // Arrange
-        var request = CreateRequest();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
         
         // mocker UserManager til å returnere inaktive bruker
         _userManagerMock
@@ -152,7 +137,7 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_InactiveUser_ReturnsSuccess()
     {
         // Arrange
-        var request = CreateRequest();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         user.IsActive = false;
         
@@ -182,7 +167,7 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_EmailFailure_ReturnsFailure()
     {
         // Arrange
-        var request = CreateRequest();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
         var emailError = AppError.Create(ErrorCode.EmailSendFailed, "Email service down");
@@ -221,7 +206,7 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_GenerateOtpCodeAsyncFails_ReturnsSuccess()
     {
         // Arrange
-        var request = CreateRequest();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, "Max attempts exceeded");
         

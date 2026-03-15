@@ -3,10 +3,9 @@ using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Email;
-using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
+using CompVault.Tests.Backend.Features.Auth.Builders;
 using CompVault.Tests.Common;
-using CompVault.Tests.Common.Constants;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -53,20 +52,6 @@ public class AuthServiceVerifyOtpAsyncTests
     }
     
     // -------------------------------------------------------------------------
-    // Hjelpemetoder
-    // -------------------------------------------------------------------------
-    
-    /// <summary>
-    /// Oppretter en VerifyOtpRequest med samme epost som brukeren og en tilfeldig kode
-    /// </summary>
-    private static VerifyOtpRequest CreateRequest(string email = TestConstants.Users.DefaultEmailForActiveUser, 
-        string otpCode = TestConstants.Otp.PlainTextOtpCode) => new()
-    {
-        Email = email,
-        OtpCode = otpCode
-    };
-    
-    // -------------------------------------------------------------------------
     // Tester - Success
     // -------------------------------------------------------------------------
 
@@ -78,7 +63,7 @@ public class AuthServiceVerifyOtpAsyncTests
     public async Task VerifyOtpAsync_ExistingUserAndCorrectCode_ReturnsLoginResponse()
     {
         // Arrange
-        var request = CreateRequest();
+        var request = AuthRequestBuilder.CreateVerifyOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         var roles = new List<string>();
         const string accessToken = "access-token";
@@ -141,7 +126,7 @@ public class AuthServiceVerifyOtpAsyncTests
     public async Task VerifyOtpAsync_UnknownEmail_ReturnsFailure()
     {
         // Arrange
-        var request = CreateRequest();
+        var request = AuthRequestBuilder.CreateVerifyOtpRequest();
         
         // mocker UserManager til å returerne null
         _userManagerMock
@@ -169,7 +154,7 @@ public class AuthServiceVerifyOtpAsyncTests
     public async Task VerifyOtpAsync_OtpCodeServiceFails_ReturnsFailure()
     {
         // Arrange
-        var request = CreateRequest();
+        var request = AuthRequestBuilder.CreateVerifyOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, 
             "Too many failed attempts");
