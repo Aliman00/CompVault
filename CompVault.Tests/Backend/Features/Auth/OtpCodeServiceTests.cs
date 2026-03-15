@@ -1,4 +1,6 @@
-﻿using CompVault.Backend.Domain.Entities.Auth;
+﻿using System.Security.Cryptography;
+using System.Text;
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Infrastructure.Data;
@@ -17,6 +19,7 @@ public class OtpCodeServiceTests
     private readonly Mock<IOtpCodeRepository> _otpCodeRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly OtpCodeService _sut;
+    private readonly int _maxFailedAttempts = 3;
     
     public OtpCodeServiceTests()
     {
@@ -29,7 +32,7 @@ public class OtpCodeServiceTests
         var otpOptions = Options.Create(new OtpOptions
         {
             MinResponseTimeRequestOtpMs = 0,
-            MaxFailedAttempts = 3
+            MaxFailedAttempts = _maxFailedAttempts
         });
 
         _sut = new OtpCodeService(
@@ -43,9 +46,33 @@ public class OtpCodeServiceTests
     // Hjelpemetoder
     // -------------------------------------------------------------------------
     
+    /// <summary>
+    /// Henter samme metode som brukes i servicen - alternativ er å ha det i en helper-fil, men er det verdt det
+    /// for kun testing?
+    /// </summary>
+    private static string HashCode(string code)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
+        return Convert.ToHexString(bytes);
+    }
+
+    /// <summary>
+    /// Metode som oppretter en OtpCode for å følge DRY
+    /// </summary>
+    /// <param name="userId">En Guid tilhørende brukeren koden tilhører</param>
+    /// <param name="plainTextCode">Koden i klartekst for å kunne teste om koden er korrekt</param>
+    /// <param name="failedAttempts">Antall feilede forsøk. For å teste om antall forsøk er brukt opp</param>
+    /// <returns>En OtpCode med egenskaper vi bruker i testene</returns>
+    private static OtpCode CreateOtpCode(Guid userId, string plainTextCode,  int failedAttempts) => new OtpCode
+    {
+        UserId = userId,
+        Code = HashCode(plainTextCode),
+        ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+        FailedAttempts = failedAttempts
+    };
     
     // -------------------------------------------------------------------------
-    // GenerateOtpCodeAsync - Success test
+    // GenerateOtpCodeAsync - Success tester
     // -------------------------------------------------------------------------
     
     /// <summary>
@@ -125,12 +152,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId og variabelen for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        var otpCode = new OtpCode
-        {
-            UserId = userId,
-            Code = "secrethashedcode",
-            ExpiresAt = DateTime.UtcNow.AddMinutes(10)
-        };
+        var otpCode = CreateOtpCode(userId, "476583",0);
         
         // mocker at GetActiveCodeAsync returner eksisterende Otp-kode
         _otpCodeRepositoryMock
@@ -176,5 +198,153 @@ public class OtpCodeServiceTests
         result.Error!.Code.Should().Be(ErrorCode.OtpCooldown);
     }
     
+    // -------------------------------------------------------------------------
+    // VerifyOtpCodeAsync - Success test
+    // -------------------------------------------------------------------------
+    /// <summary>
+    /// Tester happypath. Sjekker at brukeren har en aktiv Otp-kode, og at koden matcer og at endringene
+    /// til OtpCode-objektet blir lagret i databasen
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtpCodeAsync_CodeIsCorrect_ReturnsSuccess()
+    {
+        // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
+        var userId = Guid.NewGuid();
+        // Til Otp-koden må vi ha koden i klartekst for metode-kallet, og CreateOtpCode hasher koden så det blir
+        // korrekt
+        var plainTextCode = "476583";
+        var otpCode = CreateOtpCode(userId, plainTextCode,0);
+        
+        // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
+        _otpCodeRepositoryMock
+            .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(otpCode);
+        
+        // Act
+        var result = await _sut.VerifyOtpCodeAsync(userId, plainTextCode);
+        
+        // Assert - Sjekker at Result er Success, IsUsed blir satt til true og at metodene blir kalt en gang
+        result.IsSuccess.Should().BeTrue();
+        otpCode.IsUsed.Should().BeTrue();
+        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
+            It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Once);
+    }
     
+    // -------------------------------------------------------------------------
+    // VerifyOtpCodeAsync - Failure tester
+    // -------------------------------------------------------------------------
+    /// <summary>
+    /// Tester at ingen aktiv Otp-kode eksisterer for brukeren og at vi returnerer ErrorCode = OtpInvalidOrExpired
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtpCodeAsync_NoActiveCode_ReturnsOtpInvalidOrExpired()
+    {
+        // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
+        var userId = Guid.NewGuid();
+        // Tilfeldig kode
+        var plainTextCode = "476583";
+        
+        // mocker at GetActiveCodeAsync returner null og ingen OtpCode-objekt fra databasen
+        _otpCodeRepositoryMock
+            .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OtpCode?)null);
+        
+        // Act
+        var result = await _sut.VerifyOtpCodeAsync(userId, plainTextCode);
+        
+        // Assert - Sjekker at Result er Failure og at ErrorCode er korrekt
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
+            It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Never);
+    }
+    
+    /// <summary>
+    /// Tester at vi har brukt opp max forsøk til å verifisere koden
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtpCodeAsync_MaxAttemptsExceeded_ReturnsOtpMaxAttemptsExceeded()
+    {
+        // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden. Otp-koden har max MaxFailedAttempts
+        var userId = Guid.NewGuid();
+        var plainTextCode = "476583";
+        var otpCode = CreateOtpCode(userId, plainTextCode,_maxFailedAttempts);
+        
+        // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
+        _otpCodeRepositoryMock
+            .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(otpCode);
+        
+        // Act
+        var result = await _sut.VerifyOtpCodeAsync(userId, plainTextCode);
+        
+        // Assert - Sjekker at Result er Failure, riktig ErrorCode og at SaveChangesAsync ikke blir kalt
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.OtpMaxAttemptsExceeded);
+        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
+            It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Never);
+    }
+    
+    
+    /// <summary>
+    /// Tester at innsendt kode fra bruker er feil. Sjekker at Result is Failure og ErrorCode er korrekt
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtpCodeAsync_CodeIsWrong_ReturnsOtpInvalidOrExpired()
+    {
+        // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
+        var userId = Guid.NewGuid();
+        // Lagret kode og innsendt kode er forskjellige
+        var plainTextCode = "476583";
+        var wrongCode = "111111";
+        var otpCode = CreateOtpCode(userId, plainTextCode,0);
+        
+        // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
+        _otpCodeRepositoryMock
+            .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(otpCode);
+        
+        // Act
+        var result = await _sut.VerifyOtpCodeAsync(userId, wrongCode);
+        
+        // Assert - Sjekker at Result er Failure og at det er riktig ErrorCode. Verifiserer at det blir lagret
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
+        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
+            It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Once);
+    }
+    
+    /// <summary>
+    /// Tester at innsendt kode fra bruker er feil. Sjekker at antall feilede forsøk økes
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtpCodeAsync_CodeIsWrong_IncrementsFailedAttempts()
+    {
+        // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
+        var userId = Guid.NewGuid();
+        var plainTextCode = "476583";
+        var wrongCode = "111111";
+        var otpCode = CreateOtpCode(userId, plainTextCode,0);
+        
+        // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
+        _otpCodeRepositoryMock
+            .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(otpCode);
+        
+        // Act
+        var result = await _sut.VerifyOtpCodeAsync(userId, wrongCode);
+        
+        // Assert - Sjekker at Result er Failure og at det er riktig ErrorCode. Verifiserer at det blir lagret
+        otpCode.FailedAttempts.Should().Be(1);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Once);
+    }
 }
