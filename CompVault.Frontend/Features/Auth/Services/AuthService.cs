@@ -4,20 +4,24 @@ using Microsoft.AspNetCore.Identity.Data;
 
 namespace CompVault.Frontend.Features.Auth.Services;
 
-public class AuthService(ILogger<AuthService> logger) : IAuthService
+public class AuthService(ILogger<AuthService> logger, IHttpClientFactory httpClientFactory) : IAuthService
 {
+    /// <summary>
+    /// HttpClient mot backend
+    /// </summary>
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("BackendApi");
+    
     /// <inheritdoc />
-    public async Task<Result<LoginResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<Result> RequestOtpAsync(LoginRequest request, CancellationToken ct)
     {
         try
         {
-            logger.LogInformation("Login attempt from Email: {@Payload}", new { email = request.Email});
+            logger.LogInformation("Request OTP: {@Payload}", request);
 
 
-            var response =
-                await _httpClient.PostAsJsonAsync(ApiEndpoints.AuthLogin, request, cancellationToken);
+            var response = await _httpClient.PostAsJsonAsync(, request, ct);
       
-            var result = await response.ToResultAsync<LoginResponse>(cancellationToken);
+            var result = await response.
 
 
             if (!result.IsSuccess || result.Data?.Token == null)
@@ -25,24 +29,18 @@ public class AuthService(ILogger<AuthService> logger) : IAuthService
                 logger.LogWarning("Login failed: {Error}", result.ErrorMessage);
                 return result;
             }
-
-
-            await tokenService.SetTokenAsync(result.Data.Token);
-
-
-            customAuthStateProvider.NotifyUserAuthentication(result.Data.Token);
       
             return result;
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Network error during login attempt");
-            return Result<LoginResponse>.Failure("Connection failed. Please check your internet.");
+            return Result.Failure("Connection failed. Please check your internet.");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error occured");
-            return Result<LoginResponse>.Failure("Unexpected error occured. Try again later.");
+            return Result.Failure("Unexpected error occured. Try again later.");
         }
     }
 
