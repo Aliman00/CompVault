@@ -46,8 +46,8 @@ public class OtpCodeService(
             ExpiresAt = DateTime.UtcNow.AddMinutes(_otp.ExpirationMinutes),
         };
         
-        // Try-catch for å stoppe race condition. Hvis en bruker kaller metoden samtidig i samme nettleser,
-        // så vil det ende opp 2 stk gyldige OtpKoder. Vi har et SQL-filter for dette
+        // Try-catch for å stoppe race condition. Hvis en bruker kaller metoden samtidig,
+        // så vil det ende opp 2 stk gyldige OtpKoder. Vi har et SQL-filter som sikrer at dette ikke skjer
         try
         {
             await otpCodeRepository.AddAsync(otpCode, ct);
@@ -113,7 +113,7 @@ public class OtpCodeService(
     // ======================== Hjelpemetoder ========================
     
     /// <summary>
-    /// Genererer en kryptografisk sikker 6-sifret kode med RandomNumberGenerator
+    /// Genererer en tilfeldig 6-sifret kode med RandomNumberGenerator
     /// </summary>
     private static string GenerateSecureCode() => RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
     

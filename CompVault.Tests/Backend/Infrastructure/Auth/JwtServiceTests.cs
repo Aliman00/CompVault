@@ -4,7 +4,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
 using Microsoft.Extensions.Options;
 
-namespace CompVault.Tests.Infrastructure.Auth;
+namespace CompVault.Tests.Backend.Infrastructure.Auth;
 
 public class JwtServiceTests
 {

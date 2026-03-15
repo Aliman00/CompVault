@@ -1,7 +1,6 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Tests.Backend.Infrastructure.Repositories;

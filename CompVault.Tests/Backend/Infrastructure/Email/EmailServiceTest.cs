@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Resend;
 
-namespace CompVault.Tests.Infrastructure.Email;
+namespace CompVault.Tests.Backend.Infrastructure.Email;
 
 public class EmailServiceTest
 {
