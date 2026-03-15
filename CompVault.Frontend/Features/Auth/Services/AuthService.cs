@@ -1,5 +1,5 @@
 ﻿using CompVault.Frontend.Common.Configuration;
-using CompVault.Frontend.Common.Constants;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 

@@ -1,5 +1,10 @@
-﻿using CompVault.Shared.DTOs.Auth;
+﻿using System.Net.Http.Json;
+using CompVault.Backend.Infrastructure.Email.Models;
+using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.Result;
+using CompVault.Tests.Backend.Features.Auth.Builders;
 using CompVault.Tests.Common;
+using Moq;
 
 namespace CompVault.Tests.Backend.Integrations.Controllers;
 
@@ -29,6 +34,16 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     public async Task RequestOtp_ExistingEmailWithNoExistingCode_Returns200()
     {
         // Arrange
-       
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
+        
+        // mocker EmailService til å returnere success
+        factory.EmailServiceMock
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+        
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/auth/request-otp", request);
+
     }
 }
