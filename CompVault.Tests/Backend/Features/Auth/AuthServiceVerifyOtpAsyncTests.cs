@@ -41,16 +41,13 @@ public class AuthServiceVerifyOtpAsyncTests
             MaxFailedAttempts = 3
         });
 
-        var jwtSettings = Options.Create(new JwtSettings());
-
         _sut = new AuthService(
             _userManagerMock.Object,
             loggerMock.Object,
             _jwtServiceMock.Object,
             _otpCodeServiceMock.Object,
             emailServiceMock.Object,
-            otpOptions,
-            jwtSettings);
+            otpOptions);
     }
     
     // -------------------------------------------------------------------------

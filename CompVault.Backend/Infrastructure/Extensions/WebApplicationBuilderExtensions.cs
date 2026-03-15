@@ -19,10 +19,10 @@ public static  class WebApplicationBuilderExtensions
         builder.Logging.ClearProviders();
         
         // Setter opp Serilog med innstillinger fra appsettings
-        builder.Host.UseSerilog((context, config) =>
-        {
-            config.ReadFrom.Configuration(context.Configuration);
-        });
+        builder.Host.UseSerilog((context, services, config) =>
+            config.ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext());
     }
     
     /// <summary>
