@@ -3,6 +3,7 @@ using CompVault.Backend.Infrastructure.Email;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
@@ -24,6 +25,13 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        
+        // Sikrer at appsettings.Testing.json blir funnet
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddJsonFile("appsettings.Testing.json", optional: false, reloadOnChange: false);
+        });
+
 
         builder.ConfigureServices(services =>
         {

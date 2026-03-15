@@ -1,9 +1,13 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net;
+using System.Net.Http.Json;
 using CompVault.Backend.Infrastructure.Email.Models;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Backend.Features.Auth.Builders;
 using CompVault.Tests.Common;
+using CompVault.Tests.Common.Constants;
+using FluentAssertions;
 using Moq;
 
 namespace CompVault.Tests.Backend.Integrations.Controllers;
@@ -43,7 +47,12 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
             .ReturnsAsync(Result.Success());
         
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/request-otp", request);
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        factory.EmailServiceMock.Verify(x => x.SendAsync(TestConstants.Users.DefaultEmailForActiveUser,
+            It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Once);
 
     }
 }
