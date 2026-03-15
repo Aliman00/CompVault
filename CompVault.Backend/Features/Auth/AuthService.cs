@@ -22,8 +22,7 @@ public sealed class AuthService(
     IJwtService jwtService, 
     IOtpCodeService otpCodeService,
     IEmailService emailService, 
-    IOptions<OtpOptions> otpOptions,
-    IOptions<JwtSettings> jwtSettings) : IAuthService
+    IOptions<OtpOptions> otpOptions) : IAuthService
 {
     private readonly OtpOptions _otp = otpOptions.Value;
     
@@ -158,7 +157,6 @@ public sealed class AuthService(
         {
             AccessToken = newAccessToken,
             RefreshToken = jwtService.GenerateRefreshToken(),
-            AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(jwtSettings.Value.AccessTokenMinutes),
             UserId = user.Id,
             FullName = $"{user.FirstName} {user.LastName}".Trim(),
             Roles = roles.ToList()
