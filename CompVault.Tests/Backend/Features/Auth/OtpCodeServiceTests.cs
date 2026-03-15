@@ -340,7 +340,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync(otpCode);
         
         // Act
-        var result = await _sut.VerifyOtpCodeAsync(userId, wrongCode);
+        await _sut.VerifyOtpCodeAsync(userId, wrongCode);
         
         // Assert - Sjekker at Result er Failure og at det er riktig ErrorCode. Verifiserer at det blir lagret
         otpCode.FailedAttempts.Should().Be(1);
