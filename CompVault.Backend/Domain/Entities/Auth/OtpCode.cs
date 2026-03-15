@@ -18,7 +18,7 @@ public class OtpCode
     
     // ======================== Egenskaper ========================
     /// <summary>
-    /// HA-256 hash (64 tegn, hex) av den 6-sifrede OTP-koden
+    /// 6-sifret kode hashet om til hex (64 tegn)
     /// </summary>
     public string Code { get; set; } = string.Empty; 
     
@@ -49,7 +49,7 @@ public class OtpCode
     /// <summary>
     /// Antall forsøk på å skrive korrekt kode
     /// </summary>
-    public int FailedAttempts { get; set; } = 0;
+    public int FailedAttempts { get; set; }
     
     /// <summary>
     /// Antall forsøk på å skrive korrekt kode

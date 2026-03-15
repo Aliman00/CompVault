@@ -113,7 +113,7 @@ public class OtpCodeService(
     // ======================== Hjelpemetoder ========================
     
     /// <summary>
-    /// Genererer en kryptografisk sikker 6-sifret kode med RandomNumberGenerator
+    /// Genererer en tilfeldig 6-sifret kode med RandomNumberGenerator
     /// </summary>
     private static string GenerateSecureCode() => RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
     
