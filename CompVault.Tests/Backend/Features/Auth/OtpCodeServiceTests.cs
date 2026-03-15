@@ -20,6 +20,7 @@ public class OtpCodeServiceTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly OtpCodeService _sut;
     private readonly int _maxFailedAttempts = 3;
+    private readonly string _plainTextCode = "476583";  // En kode i klartekst for gjenbrukes i mange tester
     
     public OtpCodeServiceTests()
     {
@@ -152,7 +153,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId og variabelen for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        var otpCode = CreateOtpCode(userId, "476583",0);
+        var otpCode = CreateOtpCode(userId, _plainTextCode,0);
         
         // mocker at GetActiveCodeAsync returner eksisterende Otp-kode
         _otpCodeRepositoryMock
@@ -212,8 +213,7 @@ public class OtpCodeServiceTests
         var userId = Guid.NewGuid();
         // Til Otp-koden må vi ha koden i klartekst for metode-kallet, og CreateOtpCode hasher koden så det blir
         // korrekt
-        var plainTextCode = "476583";
-        var otpCode = CreateOtpCode(userId, plainTextCode,0);
+        var otpCode = CreateOtpCode(userId, _plainTextCode,0);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -221,7 +221,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync(otpCode);
         
         // Act
-        var result = await _sut.VerifyOtpCodeAsync(userId, plainTextCode);
+        var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
         
         // Assert - Sjekker at Result er Success, IsUsed blir satt til true og at metodene blir kalt en gang
         result.IsSuccess.Should().BeTrue();
@@ -243,8 +243,6 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        // Tilfeldig kode
-        var plainTextCode = "476583";
         
         // mocker at GetActiveCodeAsync returner null og ingen OtpCode-objekt fra databasen
         _otpCodeRepositoryMock
@@ -252,7 +250,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync((OtpCode?)null);
         
         // Act
-        var result = await _sut.VerifyOtpCodeAsync(userId, plainTextCode);
+        var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
         
         // Assert - Sjekker at Result er Failure og at ErrorCode er korrekt
         result.IsFailure.Should().BeTrue();
@@ -271,8 +269,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden. Otp-koden har max MaxFailedAttempts
         var userId = Guid.NewGuid();
-        var plainTextCode = "476583";
-        var otpCode = CreateOtpCode(userId, plainTextCode,_maxFailedAttempts);
+        var otpCode = CreateOtpCode(userId, _plainTextCode,_maxFailedAttempts);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -280,7 +277,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync(otpCode);
         
         // Act
-        var result = await _sut.VerifyOtpCodeAsync(userId, plainTextCode);
+        var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
         
         // Assert - Sjekker at Result er Failure, riktig ErrorCode og at SaveChangesAsync ikke blir kalt
         result.IsFailure.Should().BeTrue();
@@ -300,10 +297,8 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        // Lagret kode og innsendt kode er forskjellige
-        var plainTextCode = "476583";
         var wrongCode = "111111";
-        var otpCode = CreateOtpCode(userId, plainTextCode,0);
+        var otpCode = CreateOtpCode(userId, _plainTextCode,0);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -347,4 +342,5 @@ public class OtpCodeServiceTests
         _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Once);
     }
+    
 }

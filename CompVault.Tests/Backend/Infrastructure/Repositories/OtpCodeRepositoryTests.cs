@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Tests.Backend.Infrastructure.Repositories;
 
-public class OptCodeRepositoryTests : IDisposable
+public class OtpCodeRepositoryTests : IDisposable
 {
     // Mocker AppDbContext og setter opp systemet for testing
     private readonly AppDbContext _context;
@@ -16,7 +16,7 @@ public class OptCodeRepositoryTests : IDisposable
     // Oppretter en UserId for testing
     private readonly Guid _userId = Guid.NewGuid();
 
-    public OptCodeRepositoryTests()
+    public OtpCodeRepositoryTests()
     {
         // Setter opp InMemoryDatabase
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -195,4 +195,5 @@ public class OptCodeRepositoryTests : IDisposable
     
     
     public void Dispose() => _context.Dispose();
+    
 }
