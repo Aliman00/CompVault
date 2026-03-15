@@ -1,7 +1,14 @@
-﻿using CompVault.Backend.Domain.Entities.Identity;
+﻿using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Infrastructure.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CompVault.Tests.Common;
 
+/// <summary>
+/// Oppretter ApplicationUsers for testing, og seeder inne i InMemory-databaser
+/// </summary>
 public static class TestDataSeeder
 {
     /// <summary>
@@ -22,4 +29,30 @@ public static class TestDataSeeder
         IsActive = deletedAt == null,
         DeletedAt = deletedAt
     };
+    
+    /// <summary>
+    /// Legger til en aktiv og en inaktiv bruker ved oppstart av integrasjonstestene
+    /// </summary>
+    public static async Task SeedUsersAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        
+        // Seeder en aktiv og en inaktiv bruker
+        await userManager.CreateAsync(CreateApplicationUser());
+        await userManager.CreateAsync(CreateApplicationUser(email: "test2@testing.no", deletedAt: DateTime.UtcNow));
+    }
+    
+    /// <summary>
+    /// Rydder opp i databasen etter kjøring. Flere integrasjonstester, så må v
+    /// </summary>
+    public static async Task ClearDatabaseAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context  = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        
+        // Nuker databasen
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
+    }
 }
