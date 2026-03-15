@@ -11,9 +11,6 @@ public sealed class LoginResponse
     /// <summary>Refresh token for å hente et nytt access token når det utgår.</summary>
     public string RefreshToken { get; set; } = string.Empty;
 
-    /// <summary>Når access token utgår (UTC).</summary>
-    public DateTime AccessTokenExpiresAt { get; set; }
-
     /// <summary>ID til innlogget bruker.</summary>
     public Guid UserId { get; set; }
 
