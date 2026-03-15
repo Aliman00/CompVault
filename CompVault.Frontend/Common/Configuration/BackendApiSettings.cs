@@ -6,5 +6,6 @@
 public sealed class BackendApiSettings
 {
     public const string SectionName = "BackendApi";
+    public const string ClientName = "BackendApi";
     public string BaseUrl { get; init; } = string.Empty;
 }

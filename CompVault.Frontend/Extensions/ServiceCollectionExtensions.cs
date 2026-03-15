@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
         if (string.IsNullOrWhiteSpace(settings.BaseUrl))
             throw new InvalidOperationException("BackendApi:BaseUrl does not exist in appsettings");
 
-        services.AddHttpClient("BackendApi", client =>
+        services.AddHttpClient(BackendApiSettings.ClientName, client =>
         {
             client.BaseAddress = new Uri(settings.BaseUrl);
             client.DefaultRequestHeaders.Add("Accept", "application/json");

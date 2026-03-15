@@ -1,4 +1,5 @@
-﻿using CompVault.Frontend.Common.Constants;
+﻿using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
@@ -9,7 +10,7 @@ public class AuthService(ILogger<AuthService> logger, IHttpClientFactory httpCli
     /// <summary>
     /// HttpClient mot backend
     /// </summary>
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("BackendApi");
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.ClientName);
     
     /// <inheritdoc />
     public async Task<Result> RequestOtpAsync(RequestOtpRequest request, CancellationToken ct)
