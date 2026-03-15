@@ -2,7 +2,7 @@
 
 namespace CompVault.Tests.Common;
 
-public class TestDataSeeder
+public static class TestDataSeeder
 {
     /// <summary>
     /// Oppretter en ApplicationUser for testing. Brukes i de fleste testene.

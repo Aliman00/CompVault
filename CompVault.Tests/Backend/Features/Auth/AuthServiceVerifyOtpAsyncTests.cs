@@ -5,6 +5,7 @@ using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
+using CompVault.Tests.Common;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -53,20 +54,6 @@ public class AuthServiceVerifyOtpAsyncTests
     // -------------------------------------------------------------------------
     // Hjelpemetoder
     // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Oppretter en ApplicationUser med påkrevde og relevante felt
-    /// </summary>
-    private static ApplicationUser CreateActiveUser(string email = "test@compvault.no") => new()
-    {
-        Id = Guid.NewGuid(),
-        Email = email,
-        UserName = email,
-        FirstName = "Fredrik",
-        LastName = "Magee",
-        IsActive = true,
-        DeletedAt = null
-    };
     
     /// <summary>
     /// Oppretter en VerifyOtpRequest med samme epost som brukeren og en tilfeldig kode
@@ -91,7 +78,7 @@ public class AuthServiceVerifyOtpAsyncTests
     {
         // Arrange
         var request = CreateRequest();
-        var user = CreateActiveUser();
+        var user = TestDataSeeder.CreateApplicationUser();
         var roles = new List<string>();
         const string accessToken = "access-token";
         const string refreshToken = "refresh-token";
@@ -182,7 +169,7 @@ public class AuthServiceVerifyOtpAsyncTests
     {
         // Arrange
         var request = CreateRequest();
-        var user = CreateActiveUser();
+        var user = TestDataSeeder.CreateApplicationUser();
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, 
             "Too many failed attempts");
         
