@@ -1,4 +1,3 @@
-using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 
 namespace CompVault.Backend.Infrastructure.Jobs;
@@ -41,17 +40,12 @@ public class TokenCleanupJob(
 
         var refreshTokenRepository = scope.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
         var otpCodeRepository = scope.ServiceProvider.GetRequiredService<IOtpCodeRepository>();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         try
         {
-            // Rydder opp begge tabeller i én operasjon
+            // ExecuteDeleteAsync sender SQL direkte mot DB — SaveChanges er ikke nødvendig
             await refreshTokenRepository.DeleteExpiredTokensAsync(ct);
             await otpCodeRepository.DeleteExpiredCodesAsync(ct);
-
-            // ExecuteDeleteAsync går direkte mot DB, men vi kaller SaveChanges for
-            // konsistens i tilfelle vi legger til flere operasjoner senere
-            await unitOfWork.SaveChangesAsync(ct);
 
             logger.LogInformation("TokenCleanupJob: utgåtte refresh tokens og OTP-koder er slettet");
         }
