@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Backend.Features.Auth.Builders;
 using CompVault.Tests.Common;
@@ -26,7 +27,13 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     public async Task InitializeAsync()
     {
         factory.EmailServiceMock.Reset(); // Resetter mocken for å sikre at EmailService resettes mellom kjøringer
-        await TestDataSeeder.CreateDbAndSeedUsersAsync(factory.Services);
+        await TestDataSeeder.CreateDb(factory.Services);
+        await TestDataSeeder.SeedUserAsync(factory.Services, // Seeder en aktiv bruker
+            id: TestConstants.Users.ActiveUserId); 
+        await TestDataSeeder.SeedUserAsync(factory.Services, // Seeder en inaktiv bruker
+            id: TestConstants.Users.InactiveUserId,
+            email: TestConstants.Users.DefaultEmailForInactiveUser,
+            deletedAt: DateTime.UtcNow);
     }
     public Task DisposeAsync() => Task.CompletedTask;
     
@@ -106,7 +113,26 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     }
     
     // -------------------------------------------------------------------------
-    // POST /api/auth/request-otp
+    // POST /api/auth/verify-otp
     // -------------------------------------------------------------------------
-    
+    [Fact]
+    public async Task VerifyOtp_OtpIsCorrect_Returns200()
+    {
+        // Arrange - seeder en Otp-kode i databasen til Default bruker
+        await TestDataSeeder.SeedOtpCodeAsync(factory.Services);
+        var request = AuthRequestBuilder.CreateVerifyOtpRequest();
+        
+        // Act
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
+        
+        // Assert - Sjekker at Result er 200 Ok og sjekker alle egenskapene på LoginResponse
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        body!.AccessToken.Should().NotBeNullOrEmpty();
+        body.RefreshToken.Should().NotBeNullOrEmpty();
+        body.UserId.Should().NotBeEmpty();
+        body.FullName.Should().NotBeEmpty();
+        body.Roles.Should().ContainSingle()
+            .Which.Should().Be(TestConstants.Roles.Default);
+    }
 }
