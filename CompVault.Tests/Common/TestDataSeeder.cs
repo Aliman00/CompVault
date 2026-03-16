@@ -31,29 +31,22 @@ public static class TestDataSeeder
     };
     
     /// <summary>
-    /// Legger til en aktiv og en inaktiv bruker ved oppstart av integrasjonstestene
+    /// Sletter en eksisterende database, og oppretter en ny database mellom hver integrasjonstest
+    /// Legger til en aktiv og en inaktiv bruker ved oppstart
     /// </summary>
-    public static async Task SeedUsersAsync(IServiceProvider serviceProvider)
+    public static async Task CreateDbAndSeedUsersAsync(IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        
+        // Nuker databasen og oppretter en ny database for hver integrasjonstest
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
         
         // Seeder en aktiv og en inaktiv bruker
         await userManager.CreateAsync(CreateApplicationUser());
         await userManager.CreateAsync(CreateApplicationUser(email: TestConstants.Users.DefaultEmailForInactiveUser, 
             deletedAt: DateTime.UtcNow));
-    }
-    
-    /// <summary>
-    /// Rydder opp i databasen etter kjøring. Ved flere integrasjonstester, så må vi rydde opp mellom
-    /// </summary>
-    public static async Task ClearDatabaseAsync(IServiceProvider serviceProvider)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var context  = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
-        // Nuker databasen
-        await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
     }
 }

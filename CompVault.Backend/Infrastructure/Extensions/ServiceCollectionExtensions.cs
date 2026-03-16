@@ -25,14 +25,20 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Setter opp databasekoblingen med Npgsql og registrerer ASP.NET Core Identity.
+    /// Ved testing så brukes ikke PostgreSQL med UseNpgsql, men InMemory
     /// </summary>
-    public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(
-                configuration.GetConnectionString("Default"),
-                npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
-
+    public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration,
+        IWebHostEnvironment environment)
+    {   
+        // Skipper oppsett av PostgreSQL hvis vi er i testing environment
+        if (!environment.IsEnvironment("Testing"))
+        {
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(
+                    configuration.GetConnectionString("Default"),
+                    npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
+        }
+        
         services.AddIdentityCore<ApplicationUser>(opts =>
             {
                 // Passordkrav er deaktivert — systemet bruker passordløs OTP-autentisering.
@@ -101,10 +107,15 @@ public static class ServiceCollectionExtensions
     }
     
     /// <summary>
-    /// Konfigurerer Epost med Resend
+    /// Konfigurerer Epost med Resend - Skippes ved testing
     /// </summary>
-    public static IServiceCollection AddEmail(this IServiceCollection services, IConfiguration configuration)
-    {
+    public static IServiceCollection AddEmail(this IServiceCollection services, IConfiguration configuration,
+        IWebHostEnvironment environment)
+    {   
+        // Vi mocker EmailService med en falsk nøkkel i testing - må skippes ved Test-miljø
+        if (environment.IsEnvironment("Testing"))
+            return services;
+        
         // Henter config fra AppSettings
         EmailSettings emailSettings = configuration
             .GetSection(EmailSettings.SectionName)

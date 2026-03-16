@@ -1,5 +1,6 @@
 ﻿using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
+using CompVault.Tests.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,9 @@ namespace CompVault.Tests.Backend.Integrations;
 /// </summary>
 public class BackendWebApplicationFactory : WebApplicationFactory<Program>
 {
+    // Databasenavn for å sikre at alle instanser bruker samme InMemory-databasenavn
+    private readonly string _dbName = Guid.NewGuid().ToString();
+    
     // Vi mocker EmailService for å mocke email kall
     public Mock<IEmailService> EmailServiceMock { get; } = new();
     
@@ -26,19 +30,25 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Testing");
         
-        // Sikrer at appsettings.Testing.json blir funnet
+        // Overstyrerer appsettings sine verdier med egne for testing
         builder.ConfigureAppConfiguration((_, config) =>
         {
-            config.AddJsonFile("appsettings.Testing.json", optional: false, reloadOnChange: false);
+            config.AddInMemoryCollection(TestConfiguration.Default);
         });
-
 
         builder.ConfigureServices(services =>
         {
-            // Vi bytter ut PostgreSQL med InMemory-database
-            services.RemoveAll<DbContextOptions<AppDbContext>>();
+            // Fjern alle DbContext-relaterte registreringer
+            var descriptors = services
+                .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+                            || d.ServiceType == typeof(AppDbContext))
+                .ToList();
+    
+            foreach (var descriptor in descriptors)
+                services.Remove(descriptor);
+            
             services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+                options.UseInMemoryDatabase(_dbName));
 
             // Bytter ut den ekte EmailService med mocken
             services.RemoveAll<IEmailService>();

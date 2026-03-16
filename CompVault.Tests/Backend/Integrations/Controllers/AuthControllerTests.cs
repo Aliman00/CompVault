@@ -2,7 +2,6 @@
 using System.Net.Http.Json;
 using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Shared.Constants;
-using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Backend.Features.Auth.Builders;
 using CompVault.Tests.Common;
@@ -24,15 +23,15 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     private readonly HttpClient _client = factory.CreateClient();
     
     // Initialiserer InMemory-databsen og rydder opp etter AuthController sin kjøring
-    public async Task InitializeAsync() => await TestDataSeeder.SeedUsersAsync(factory.Services);
-    public async Task DisposeAsync() => await TestDataSeeder.ClearDatabaseAsync(factory.Services);
+    public async Task InitializeAsync() => await TestDataSeeder.CreateDbAndSeedUsersAsync(factory.Services);
+    public Task DisposeAsync() => Task.CompletedTask;
     
     // -------------------------------------------------------------------------
     // POST /api/auth/request-otp
     // -------------------------------------------------------------------------
     
     /// <summary>
-    /// Tester happypath. Sjekker at 
+    /// Tester happypath. Sjekker at endepunktet returnerer Ok og EmailService blir kalt
     /// </summary>
     [Fact]
     public async Task RequestOtp_ExistingEmailWithNoExistingCode_Returns200()
