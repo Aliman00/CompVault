@@ -1,4 +1,5 @@
 using CompVault.Backend.Features.Auth;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Authorization;
@@ -19,7 +20,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// Returnerer alltid 200 OK uavhengig av om e-posten er registrert — for å unngå e-postkartlegging.
     /// </summary>
     /// <response code="200">Engangs-kode sendt (eller forespørsel behandlet).</response>
-    [HttpPost("request-otp")]
+    [HttpPost(ApiRoutes.Auth.RequestOtp)]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> RequestOtpAsync(
@@ -41,7 +42,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <response code="200">Innlogging vellykket.</response>
     /// <response code="401">Ugyldig eller utgått kode.</response>
     /// <response code="429">For mange forsøk eller cooldown aktiv</response>
-    [HttpPost("verify-otp")]
+    [HttpPost(ApiRoutes.Auth.VerifyOtp)]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

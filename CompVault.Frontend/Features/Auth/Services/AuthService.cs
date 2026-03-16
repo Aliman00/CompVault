@@ -1,5 +1,5 @@
 ﻿using CompVault.Frontend.Common.Configuration;
-using CompVault.Frontend.Common.Constants;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
@@ -20,7 +20,7 @@ public class AuthService(ILogger<AuthService> logger, IHttpClientFactory httpCli
             logger.LogInformation("Request OTP: {@Payload}", request);
             
             // Sender Http-forespørselen med requesten
-            var response = await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.RequestOtp, request, ct);
+            var response = await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request, ct);
             
             // Hvis det gikk galt, returner feilmeldingen
             if (!response.IsSuccessStatusCode)

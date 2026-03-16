@@ -23,9 +23,9 @@ builder.Services.AddControllers();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("db");
 builder.Services.AddInfrastructure();
-builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddDatabase(builder.Configuration, builder.Environment);
 builder.Services.AddAuth(builder.Configuration);
-builder.Services.AddEmail(builder.Configuration);
+builder.Services.AddEmail(builder.Configuration, builder.Environment);
 builder.Services.AddRepositories();
 builder.Services.AddApplicationServices();
 
@@ -58,3 +58,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Eksponerer Program for integrasjonstester
+public partial class Program;
