@@ -22,8 +22,12 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     // Oppretter en Httpclient for å sende forespørsler mot endepunktene våre
     private readonly HttpClient _client = factory.CreateClient();
     
-    // Initialiserer InMemory-databsen og rydder opp etter AuthController sin kjøring
-    public async Task InitializeAsync() => await TestDataSeeder.CreateDbAndSeedUsersAsync(factory.Services);
+    // Initialiserer InMemory-databsen og rydder opp databasen før AuthController kjører
+    public async Task InitializeAsync()
+    {
+        factory.EmailServiceMock.Reset(); // Resetter mocken for å sikre at EmailService resettes mellom kjøringer
+        await TestDataSeeder.CreateDbAndSeedUsersAsync(factory.Services);
+    }
     public Task DisposeAsync() => Task.CompletedTask;
     
     // -------------------------------------------------------------------------
@@ -54,4 +58,51 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
             It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Once);
 
     }
+    
+    /// <summary>
+    /// Tester at vi får Ok når eposten ikke eksisterer. Bruker får samme resulatet for å ikke avsløre om brukeren
+    /// eksisterer
+    /// </summary>
+    [Fact]
+    public async Task RequestOtp_UnknownEmail_Returns200()
+    {
+        // Arrange
+        var request = AuthRequestBuilder.CreateRequestOtpRequest(email: "eksisterer@ikke.se");
+        
+        // Act
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        factory.EmailServiceMock.Verify(x => x.SendAsync(TestConstants.Users.DefaultEmailForActiveUser,
+            It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Never);
+
+    }
+    
+    /// <summary>
+    /// Tester 2 kall etter hverandre for å sikre at det blir opprettet kun en kode, og at vi får 200 Ok når Error
+    /// er OtpCooldown
+    /// </summary>
+    [Fact]
+    public async Task RequestOtp_OtpCooldown_Returns200()
+    {
+        // Arrange
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
+        
+        // mocker EmailService til å returnere success
+        factory.EmailServiceMock
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+        
+        // Act - Utfører to kall til samme endepunkt
+        await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+        
+        // Assert - Sjekker at Result er 200 Ok og at vi kaller EmailService kun engang, ikke to
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        factory.EmailServiceMock.Verify(x => x.SendAsync(TestConstants.Users.DefaultEmailForActiveUser,
+            It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+    
 }
