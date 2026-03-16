@@ -105,4 +105,8 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
             It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Once);
     }
     
+    // -------------------------------------------------------------------------
+    // POST /api/auth/request-otp
+    // -------------------------------------------------------------------------
+    
 }
