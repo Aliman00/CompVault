@@ -221,29 +221,33 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     // -------------------------------------------------------------------------
     // POST /api/auth/request-otp → POST /api/auth/verify-otp (end-to-end)
     // -------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Tester ende-til-ende mellom RequestOtp og VerifyOtp. Sikrer at koden blir opprettet korrekt og verifisert
+    /// korrekt.
+    /// </summary>
     [Fact]
     public async Task RequestOtp_ThenVerifyOtp_Returns200WithTokens()
     {
-        // Arrange
+        // Arrange - Oppretter en OtpRequest
         var requestOtpRequest = AuthRequestBuilder.CreateRequestOtpRequest();
         
+        // mocker EmailService slik at iv kan fange opp koden som ligger i Subject på EmailBody
         string? capturedCode = null;
         factory.EmailServiceMock
             .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<string, EmailBody, CancellationToken>((_, body, _) =>
-            {
-                capturedCode = body.Html.Replace("<p>Din kode er: ", "").Replace("</p>", "").Trim();
-            })
+            .Callback<string, EmailBody, CancellationToken>((_, body, _) => // Koden skal alltid ligge etter ":"
+                capturedCode = body.Subject.Split(": ").Last())
             .ReturnsAsync(Result.Success());
         
-        // Act
+        // Act - Utfører et kall til RequestOtp først, lager en response med koden og kalelr deretter
+        // VerifyOtp
         await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, requestOtpRequest);
-        
         var verifyOtpRequest = AuthRequestBuilder.CreateVerifyOtpRequest(otpCode: capturedCode!);
         var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, verifyOtpRequest);
         
-        // Assert
+        // Assert - Sjekker at StatusCode er 200 Ok og at det er opprettet en LoginResponse
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
