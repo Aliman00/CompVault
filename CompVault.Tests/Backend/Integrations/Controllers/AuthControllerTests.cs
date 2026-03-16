@@ -157,7 +157,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         // Act
         var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
         
-        // Assert - Sjekker at Result er 401 Aunathorized
+        // Assert - Sjekker at Result er 401 Unauthorized
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         
         // Henter en Otp-kode for å verifisere at FailedAttempts har blitt økt fra 0 til 1
@@ -198,7 +198,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         // Act
         var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
         
-        // Assert - Sjekker at Result er 401 TooManyRequests
+        // Assert - Sjekker at Result er 401 Unauthorized
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
     
@@ -214,7 +214,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         // Act
         var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
         
-        // Assert - Sjekker at Result er 401 TooManyRequests
+        // Assert - Sjekker at Result er 401 Unauthorized
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
     
