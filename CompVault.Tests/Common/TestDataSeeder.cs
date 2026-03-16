@@ -45,8 +45,8 @@ public static class TestDataSeeder
     /// <param name="email">Optional string med Epost for å opprette forskjellige brukere</param>
     /// <param name="deletedAt">DateTime som bestemmer om brukeren er aktive/slettet</param>
     /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
-    public static ApplicationUser CreateApplicationUser(Guid? id = null, string email = TestConstants.Users.DefaultEmailForActiveUser, 
-        DateTime? deletedAt = null) => new()
+    public static ApplicationUser CreateApplicationUser(Guid? id = null, 
+        string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null) => new()
     {
         Id = id ?? Guid.NewGuid(),
         Email = email,
