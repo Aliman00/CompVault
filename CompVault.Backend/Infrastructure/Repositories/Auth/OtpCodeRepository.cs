@@ -13,5 +13,11 @@ public class OtpCodeRepository(AppDbContext context) : BaseRepository<OtpCode>(c
             .Where(o => o.UserId == userId && !o.IsUsed && o.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(o => o.CreatedAt)
             .FirstOrDefaultAsync(ct);
-    
+
+    /// <inheritdoc />
+    public async Task DeleteExpiredCodesAsync(CancellationToken ct = default) =>
+        await DbSet
+            .Where(o => o.IsUsed || o.ExpiresAt <= DateTime.UtcNow)
+            .ExecuteDeleteAsync(ct);
+
 }
