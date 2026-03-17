@@ -8,11 +8,9 @@ using Microsoft.Extensions.Options;
 namespace CompVault.Backend.Features.Auth.Services;
 
 public sealed class RefreshTokenService(
-    IOptions<JwtSettings> jwtSettings,
+    IJwtService jwtService,
     IRefreshTokenRepository refreshTokenRepository) : IRefreshTokenService
 {
-    private readonly JwtSettings _jwt = jwtSettings.Value;
-    
     /// <inheritdoc />
     public async Task<Result<string>> CreateRefreshTokenAsync(Guid userId, CancellationToken ct = default)
     {
@@ -24,14 +22,14 @@ public sealed class RefreshTokenService(
         {
             UserId = userId,
             Token = rawRefreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(_jwt.RefreshTokenDays)
+            ExpiresAt = DateTime.UtcNow.AddDays(jwtService.RefreshTokenLifetimeDays)
         };
         await refreshTokenRepository.AddAsync(refreshToken, ct);
 
         return Result<string>.Success(rawRefreshToken);
     }
-    
-    
+
+
     /// <inheritdoc />
     public string GenerateRefreshToken()
     {
