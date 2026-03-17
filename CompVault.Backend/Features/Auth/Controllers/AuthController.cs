@@ -62,7 +62,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <summary>Henter et nytt access token ved hjelp av refresh token.</summary>
     /// <response code="200">Nytt token utstedt.</response>
     /// <response code="401">Ugyldig eller utgått token.</response>
-    [HttpPost("refresh")]
+    [HttpPost(ApiRoutes.Auth.Refresh)]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -81,7 +81,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <summary>Ugyldiggjør refresh token og logger brukeren ut.</summary>
     /// <response code="204">Token ugyldiggjort.</response>
     /// <response code="401">Ikke innlogget.</response>
-    [HttpPost("revoke")]
+    [HttpPost(ApiRoutes.Auth.Revoke)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
