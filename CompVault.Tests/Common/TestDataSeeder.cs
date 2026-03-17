@@ -26,12 +26,12 @@ public static class TestDataSeeder
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
+
         // Nuker databasen og oppretter en ny database for hver integrasjonstest
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
     }
-    
+
     // -------------------------------------------------------------------------
     // Users
     // -------------------------------------------------------------------------
@@ -45,7 +45,7 @@ public static class TestDataSeeder
     /// <param name="email">Optional string med Epost for å opprette forskjellige brukere</param>
     /// <param name="deletedAt">DateTime som bestemmer om brukeren er aktive/slettet</param>
     /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
-    public static ApplicationUser CreateApplicationUser(Guid? id = null, 
+    public static ApplicationUser CreateApplicationUser(Guid? id = null,
         string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null) => new()
     {
         Id = id ?? Guid.NewGuid(),
@@ -86,13 +86,13 @@ public static class TestDataSeeder
     /// <param name="role"></param>
     /// <returns>En opprettet ApplicationUser som er seedet i databasen</returns>
     public static async Task<ApplicationUser> SeedUserAsync(IServiceProvider serviceProvider, Guid? id = null,
-        string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null, 
+        string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null,
         string role = TestConstants.Roles.Default)
     {
         using var scope = serviceProvider.CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
-        
+
         // Opprett rollen hvis den ikke eksisterer
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
@@ -102,11 +102,11 @@ public static class TestDataSeeder
         await userManager.AddToRoleAsync(user, role);
         return user;
     }
-    
+
     // -------------------------------------------------------------------------
     // OTP
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Seeder en Otp-kode inn i databasen. Har optional felt på plainTextcode og failedAttempts hvis
     /// vi ønsker å 
@@ -114,7 +114,7 @@ public static class TestDataSeeder
     /// <param name="serviceProvider"></param>
     /// <param name="plainTextCode"></param>
     /// <param name="failedAttempts"></param>
-    public static async Task SeedOtpCodeAsync(IServiceProvider serviceProvider, 
+    public static async Task SeedOtpCodeAsync(IServiceProvider serviceProvider,
         string plainTextCode = TestConstants.Otp.PlainTextOtpCode, int failedAttempts = 0)
     {
         using var scope = serviceProvider.CreateScope();

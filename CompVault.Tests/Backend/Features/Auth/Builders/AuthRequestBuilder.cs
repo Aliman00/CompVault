@@ -15,11 +15,11 @@ public static class AuthRequestBuilder
     public static RequestOtpRequest CreateRequestOtpRequest(
         string email = TestConstants.Users.DefaultEmailForActiveUser,
         OtpDeliveryMethod method = OtpDeliveryMethod.Email) => new()
-    {
-        Email = email,
-        DeliveryMethod = method
-    };
-    
+        {
+            Email = email,
+            DeliveryMethod = method
+        };
+
     /// <summary>
     /// Oppretter en VerifyOtpRequest for bruk i testing
     /// </summary>
@@ -28,8 +28,8 @@ public static class AuthRequestBuilder
     /// <returns>VerifyOtpRequest</returns>
     public static VerifyOtpRequest CreateVerifyOtpRequest(string email = TestConstants.Users.DefaultEmailForActiveUser,
         string otpCode = TestConstants.Otp.PlainTextOtpCode) => new()
-    {
-        Email = email,
-        OtpCode = otpCode
-    };
+        {
+            Email = email,
+            OtpCode = otpCode
+        };
 }

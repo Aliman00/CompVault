@@ -18,4 +18,7 @@ public interface IJwtService
     /// Brukes i refresh-flyten for å hente ut bruker-ID fra det gamle tokenet.
     /// </summary>
     System.Security.Claims.ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
+
+    /// <summary>Hvor lenge refresh token er gyldig (antall dager).</summary>
+    int RefreshTokenLifetimeDays { get; }
 }

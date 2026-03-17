@@ -13,7 +13,7 @@ public class OtpCodeRepositoryTests : IDisposable
     // Mocker AppDbContext og setter opp systemet for testing
     private readonly AppDbContext _context;
     private readonly OtpCodeRepository _sut;
-    
+
     public OtpCodeRepositoryTests()
     {
         // Setter opp InMemoryDatabase
@@ -24,11 +24,11 @@ public class OtpCodeRepositoryTests : IDisposable
         _context = new AppDbContext(options);
         _sut = new OtpCodeRepository(_context);
     }
-    
+
     // -------------------------------------------------------------------------
     // Hjelpemetoder
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Hjelpemetode for å seede en OtpCodeAsync i databasen for en bruker. Den har default verdier til en
     /// ikke-eksisterende OtpCode, men parameter for å endre koden
@@ -38,7 +38,7 @@ public class OtpCodeRepositoryTests : IDisposable
     /// <param name="expiresAt">Koden har enten en utgåttende tid eller ingen</param>
     /// <param name="createdAt">Koden har en opprettet tid hvis den eksisterer, eller så har den ikke det</param>
     /// <returns>En eksisterende OtpCode</returns>
-    private async Task<OtpCode> SeedOtpCodeAsync(Guid userId, bool isUsed = false, 
+    private async Task<OtpCode> SeedOtpCodeAsync(Guid userId, bool isUsed = false,
         DateTime? expiresAt = null, DateTime? createdAt = null)
     {
         var otpCode = new OtpCode
@@ -54,7 +54,7 @@ public class OtpCodeRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
         return otpCode;
     }
-    
+
     /// <summary>
     /// Seeder en bruker og lagrer den i InMemory-databasen
     /// </summary>
@@ -67,11 +67,11 @@ public class OtpCodeRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
         return user;
     }
-    
+
     // -------------------------------------------------------------------------
     // GetActiveCodeAsync - Finner eksisterende kode
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester at vi finner et aktivt OtpCode-objekt i databasen
     /// </summary>
@@ -81,7 +81,7 @@ public class OtpCodeRepositoryTests : IDisposable
         // Arrange - seeder en default kode
         var user = await SeedUserAsync();
         var otpCode = await SeedOtpCodeAsync(user.Id);
-        
+
         // Act
         var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
@@ -89,7 +89,7 @@ public class OtpCodeRepositoryTests : IDisposable
         existingOtpCode.Should().NotBeNull();
         existingOtpCode.Id.Should().Be(otpCode.Id);
     }
-    
+
     /// <summary>
     /// Tester at det metoden henter sist opprettet aktive OtpCode i databasen, hvis det eksisterer flere.
     /// Vi har et SQL-filter og logikk i servicen for å sikre at dette ikke vil skje i produksjon.
@@ -101,7 +101,7 @@ public class OtpCodeRepositoryTests : IDisposable
         var user = await SeedUserAsync();
         var newestCode = await SeedOtpCodeAsync(user.Id, createdAt: DateTime.UtcNow);
         await SeedOtpCodeAsync(user.Id, createdAt: DateTime.UtcNow.AddMinutes(-5));
-        
+
         // Act
         var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
@@ -109,11 +109,11 @@ public class OtpCodeRepositoryTests : IDisposable
         existingOtpCode.Should().NotBeNull();
         existingOtpCode.Id.Should().Be(newestCode.Id);
     }
-    
+
     // -------------------------------------------------------------------------
     // GetActiveCodeAsync - Finner ingen eksisterende kode
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester at brukeren ikke har noen eksisterende koder i databasen
     /// </summary>
@@ -122,14 +122,14 @@ public class OtpCodeRepositoryTests : IDisposable
     {
         // Arrange - Seeder en bruker
         var user = await SeedUserAsync();
-        
+
         // Act
         var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
         // Assert
         existingOtpCode.Should().BeNull();
     }
-    
+
     /// <summary>
     /// Tester at metoden filterer bort utgåtte Otp-koder
     /// </summary>
@@ -139,14 +139,14 @@ public class OtpCodeRepositoryTests : IDisposable
         // Arrange - seeder en Otp-kode som er utgått for 1 minutt siden
         var user = await SeedUserAsync();
         await SeedOtpCodeAsync(user.Id, expiresAt: DateTime.UtcNow.AddMinutes(-1));
-        
+
         // Act
         var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
         // Assert
         existingOtpCode.Should().BeNull();
     }
-    
+
     /// <summary>
     /// Sjekker at metoden filterer bort brukte koder
     /// </summary>
@@ -156,14 +156,14 @@ public class OtpCodeRepositoryTests : IDisposable
         // Arrange - seeder en Otp-kode som er utgått for 1 minutt siden
         var user = await SeedUserAsync();
         await SeedOtpCodeAsync(user.Id, isUsed: true);
-        
+
         // Act
         var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
         // Assert
         existingOtpCode.Should().BeNull();
     }
-    
+
     /// <summary>
     /// Tester at vi ikke henter en aktiv OtpCode for en annen bruker
     /// </summary>
@@ -173,18 +173,18 @@ public class OtpCodeRepositoryTests : IDisposable
         // Arrange - seeder en Otp-kode til bruker A
         var userWithCode = await SeedUserAsync();
         await SeedOtpCodeAsync(userWithCode.Id);
-        
+
         // Oppretter bruker B uten kode
         var userWithoutCode = await SeedUserAsync("test123@example.com");
-        
+
         // Act - Kaller metoden med en annen brukerId
         var existingOtpCode = await _sut.GetActiveCodeAsync(userWithoutCode.Id);
 
         // Assert
         existingOtpCode.Should().BeNull();
     }
-    
-    
+
+
     public void Dispose() => _context.Dispose();
-    
+
 }

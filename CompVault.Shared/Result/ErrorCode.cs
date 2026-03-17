@@ -29,12 +29,12 @@ public enum ErrorCode
     UserNotFound = 3000,
     UserAlreadyExists = 3001,
     PasswordTooWeak = 3002,
-    
+
     // Epost
     EmailSendFailed = 4000,
-    
-    
+
+
     // Frontend
     NetworkError = 5000
-    
+
 }

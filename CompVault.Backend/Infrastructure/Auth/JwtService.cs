@@ -28,10 +28,10 @@ public sealed class JwtService(IOptions<JwtSettings> settings) : IJwtService
         ];
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-        
+
         // Setter en DateTime til nå slik at notBefore og expires får samme tid
         DateTime now = DateTime.UtcNow;
-        
+
         JwtSecurityToken token = new(
             issuer: settings.Value.Issuer,
             audience: settings.Value.Audience,
@@ -77,4 +77,7 @@ public sealed class JwtService(IOptions<JwtSettings> settings) : IJwtService
             return null;
         }
     }
+
+    /// <inheritdoc />
+    public int RefreshTokenLifetimeDays => settings.Value.RefreshTokenDays;
 }

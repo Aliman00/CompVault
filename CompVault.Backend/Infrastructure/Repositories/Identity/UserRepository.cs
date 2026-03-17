@@ -16,6 +16,27 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await DbSet
+            .AsNoTracking()
+            .Where(u => u.IsActive && u.DeletedAt == null)
+            .Select(u => new
+            {
+                User = u,
+                Roles = DbContext.UserRoles
+                    .Where(ur => ur.UserId == u.Id)
+                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                    .Where(name => name != null)
+                    .Select(name => name!)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        return result.Select(x => (x.User, x.Roles)).ToList();
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<ApplicationUser>> GetActiveUsersAsync(CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()

@@ -10,11 +10,11 @@ public class Permission
     // ======================== Primary Key ========================
     /// <summary>Unik ID.</summary>
     public Guid Id { get; set; } = Guid.NewGuid();
-    
+
     // ======================== Permission egenskaper ========================
     /// <summary>Unikt navn på tillatelsen, f.eks. "users:read".</summary>
     public string Name { get; set; } = string.Empty;
-    
+
     /// <summary>Hva tillatelsen egentlig gir tilgang til.</summary>
     [StringLength(250)]
     public string Description { get; set; } = string.Empty;

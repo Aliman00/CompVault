@@ -18,7 +18,7 @@ public class OtpCodeServiceTests
     private readonly OtpCodeService _sut;
     private readonly int _maxFailedAttempts = 3;
     private readonly string _plainTextCode = "476583";  // En kode i klartekst for gjenbrukes i mange tester
-    
+
     public OtpCodeServiceTests()
     {
         // Mocker DI-avhengighetene
@@ -41,7 +41,7 @@ public class OtpCodeServiceTests
     // -------------------------------------------------------------------------
     // GenerateOtpCodeAsync - Success tester
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester happy path. Sjekker at ingen Otp-kode allerede eksisterer, at koden lagres korrekt og at
     /// vi returnerer Result med Success med ritkige egenskaper. Sjekker at koden er korrekt lengde og at
@@ -52,25 +52,25 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId og variabelen for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        
+
         // mocker at GetActiveCodeAsync returner null - ingen eksisterende OtpCode for brukeren
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OtpCode?)null);
-        
+
         // Act
         var result = await _sut.GenerateOtpCodeAsync(userId);
-        
+
         // Assert - Sjekker at Result er Success, og at metodene blir kalt en gang
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveLength(6);
         result.Value.Should().MatchRegex(@"^\d{6}$");
-        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
+        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId,
             It.IsAny<CancellationToken>()), Times.Once);
-        _otpCodeRepositoryMock.Verify(x => x.AddAsync(It.IsAny<OtpCode>(), 
+        _otpCodeRepositoryMock.Verify(x => x.AddAsync(It.IsAny<OtpCode>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
-    
+
     /// <summary>
     /// Tester happy path. Sjekker at ingen OtpKoden som blir lagret er korrekt med riktige egenskaper og at hashen
     /// har fungert
@@ -81,30 +81,30 @@ public class OtpCodeServiceTests
         // Arrange - Setter opp en brukerId og variabelen for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
         OtpCode? capturedOtpCode = null;
-        
+
         // mocker at GetActiveCodeAsync returner null - ingen eksisterende OtpCode for brukeren
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OtpCode?)null);
-            
+
         // mocker AddAsync og returnerer OtpCode-objektet som blir lagt til
         _otpCodeRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<OtpCode>(), It.IsAny<CancellationToken>()))
             .Callback<OtpCode, CancellationToken>((otp, _) => capturedOtpCode = otp);
-        
+
         // Act
         var result = await _sut.GenerateOtpCodeAsync(userId);
-        
+
         // Assert - Sjekker at objektet ikke er null, at hashen har fungert,og at det har riktig verdier
         capturedOtpCode.Should().NotBeNull();
         capturedOtpCode.Code.Should().HaveLength(64); // Code skal være 64 hvis hash fungerer
         // Sjekker at otp-koden metoden lagrer ikke er lik som koden som returnes. 
-        capturedOtpCode.Code.Should().NotBe(result.Value); 
+        capturedOtpCode.Code.Should().NotBe(result.Value);
         capturedOtpCode.UserId.Should().Be(userId); // Sjekker at userId er riktig userId
     }
-    
-    
-    
+
+
+
     // -------------------------------------------------------------------------
     // GenerateOtpCodeAsync - Failure tester
     // -------------------------------------------------------------------------'
@@ -123,18 +123,18 @@ public class OtpCodeServiceTests
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(otpCode);
-        
+
         // Act
         var result = await _sut.GenerateOtpCodeAsync(userId);
-        
+
         // Assert - Sjekker at objektet ikke er null, at hashen har fungert,og at det har riktig verdier.
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.OtpCooldown);
         // Sjekker at ingen flere metoder blir kalt
-        _otpCodeRepositoryMock.Verify(x => x.AddAsync(It.IsAny<OtpCode>(), 
+        _otpCodeRepositoryMock.Verify(x => x.AddAsync(It.IsAny<OtpCode>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
-    
+
     /// <summary>
     /// Mocker en Race Condition hvor to kall treffer nesten samtidig. Vi har lagt inn en kode i databasen, som sikrer
     /// at kun en av kallene får en kode.
@@ -144,7 +144,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId
         var userId = Guid.NewGuid();
-        
+
         // mocker at GetActiveCodeAsync returner null - ingen eksisterende OtpCode for brukeren
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
@@ -154,15 +154,15 @@ public class OtpCodeServiceTests
         _otpCodeRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<OtpCode>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DbUpdateException());
-        
+
         // Act
         var result = await _sut.GenerateOtpCodeAsync(userId);
-        
+
         // Assert - Sjekker at Result er Failure og at vi får OtpCooldown som Error
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.OtpCooldown);
     }
-    
+
     // -------------------------------------------------------------------------
     // VerifyOtpCodeAsync - Success test
     // -------------------------------------------------------------------------
@@ -183,7 +183,7 @@ public class OtpCodeServiceTests
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(otpCode);
-        
+
         // Act
         var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
         
@@ -195,7 +195,7 @@ public class OtpCodeServiceTests
             It.IsAny<CancellationToken>()), Times.Once);
         
     }
-    
+
     // -------------------------------------------------------------------------
     // VerifyOtpCodeAsync - Failure tester
     // -------------------------------------------------------------------------
@@ -207,24 +207,24 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        
+
         // mocker at GetActiveCodeAsync returner null og ingen OtpCode-objekt fra databasen
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OtpCode?)null);
-        
+
         // Act
         var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
-        
+
         // Assert - Sjekker at Result er Failure og at ErrorCode er korrekt
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
-        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
+        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId,
             It.IsAny<CancellationToken>()), Times.Once);
         _otpCodeRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Never);
     }
-    
+
     /// <summary>
     /// Tester at vi har brukt opp max forsøk til å verifisere koden
     /// </summary>
@@ -240,20 +240,20 @@ public class OtpCodeServiceTests
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(otpCode);
-        
+
         // Act
         var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
-        
+
         // Assert - Sjekker at Result er Failure, riktig ErrorCode og at SaveChangesAsync ikke blir kalt
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.OtpMaxAttemptsExceeded);
-        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
+        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId,
             It.IsAny<CancellationToken>()), Times.Once);
         _otpCodeRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Never);
     }
-    
-    
+
+
     /// <summary>
     /// Tester at innsendt kode fra bruker er feil. Sjekker at Result is Failure og ErrorCode er korrekt
     /// </summary>
@@ -269,19 +269,19 @@ public class OtpCodeServiceTests
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(otpCode);
-        
+
         // Act
         var result = await _sut.VerifyOtpCodeAsync(userId, wrongCode);
-        
+
         // Assert - Sjekker at Result er Failure og at det er riktig ErrorCode. Verifiserer at det blir lagret
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
-        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
+        _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId,
             It.IsAny<CancellationToken>()), Times.Once);
         _otpCodeRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Once);
     }
-    
+
     /// <summary>
     /// Tester at innsendt kode fra bruker er feil. Sjekker at antall feilede forsøk økes
     /// </summary>
@@ -297,14 +297,14 @@ public class OtpCodeServiceTests
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(otpCode);
-        
+
         // Act
         await _sut.VerifyOtpCodeAsync(userId, wrongCode);
-        
+
         // Assert - Sjekker at Result er Failure og at det er riktig ErrorCode. Verifiserer at det blir lagret
         otpCode.FailedAttempts.Should().Be(1);
         _otpCodeRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Once);
     }
-    
+
 }

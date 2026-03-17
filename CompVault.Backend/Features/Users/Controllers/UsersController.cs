@@ -52,6 +52,7 @@ public sealed class UsersController(IUserService userService) : BaseController
     /// <response code="400">Validering feilet.</response>
     /// <response code="409">E-posten er allerede i bruk.</response>
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -72,6 +73,7 @@ public sealed class UsersController(IUserService userService) : BaseController
     /// <response code="400">Validering feilet.</response>
     /// <response code="404">Ingen bruker med den ID-en.</response>
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin,Manager")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -92,6 +94,7 @@ public sealed class UsersController(IUserService userService) : BaseController
     /// <response code="204">Bruker slettet.</response>
     /// <response code="404">Ingen bruker med den ID-en.</response>
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)

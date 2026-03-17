@@ -8,7 +8,7 @@ namespace CompVault.Backend.Infrastructure.Extensions;
 /// <summary>
 /// Extension-metoder på <see cref="WebApplicationBuilder"/> for oppsett av applikasjonen.
 /// </summary>
-public static  class WebApplicationBuilderExtensions
+public static class WebApplicationBuilderExtensions
 {
     /// <summary>
     /// Setter opp Serilog med consolelogging fra appsettings
@@ -17,14 +17,14 @@ public static  class WebApplicationBuilderExtensions
     {
         // Fjerner Microsoft standard logging
         builder.Logging.ClearProviders();
-        
+
         // Setter opp Serilog med innstillinger fra appsettings
         builder.Host.UseSerilog((context, services, config) =>
             config.ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services)
                 .Enrich.FromLogContext());
     }
-    
+
     /// <summary>
     /// Konfigurerer Swagger med mulighet for Bearer Token og synlighet av Summary til metodene
     /// </summary>
@@ -32,7 +32,7 @@ public static  class WebApplicationBuilderExtensions
     {
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(options =>
-        { 
+        {
             // Lager et jwtSecurityScheme
             var jwtSecurityScheme = new OpenApiSecurityScheme
             {
@@ -49,7 +49,7 @@ public static  class WebApplicationBuilderExtensions
                 // Vi finner tokenet i headeren
                 In = ParameterLocation.Header,
             };
-            
+
             // Inkluderer summary-tagger
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
@@ -68,6 +68,6 @@ public static  class WebApplicationBuilderExtensions
             });
         });
     }
-    
-    
+
+
 }

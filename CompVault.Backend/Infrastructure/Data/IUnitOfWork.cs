@@ -21,7 +21,7 @@ public interface IUnitOfWork
     /// <returns>Result med Success eller Failure</returns>
     Task<Result> ExecuteInTransactionAsync(Func<Task<Result>> operation,
         CancellationToken ct = default);
-    
+
     /// <summary>
     /// For generiske ResultT som returnerer verdier:
     /// Oppretter en transaksjon i databasen, og lar oss kjøre en eller flere operasjoner innenfor denne.

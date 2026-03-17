@@ -10,8 +10,8 @@ namespace CompVault.Backend.Infrastructure.Data;
 /// </summary>
 public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logger) : IUnitOfWork
 {
-   
-    
+
+
     /// <inheritdoc />
     public async Task<Result> ExecuteInTransactionAsync(Func<Task<Result>> operation,
         CancellationToken ct = default)
@@ -22,14 +22,14 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
         {
             // Får et result-objekt etter en operasjon
             var result = await operation();
-            
+
             // er dette Result-objektet en Failure, roll tilbake
             if (result.IsFailure)
             {
                 await transaction.RollbackAsync(ct);
                 return result;
             }
-            
+
             // Alt er vellykket. Lagre og commit transaksjonen
             await SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -43,8 +43,8 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
             return Result.Failure(
                 AppError.Create(ErrorCode.InternalError, "An unexpected error occurred. Try again."));
         }
-    } 
-    
+    }
+
     /// <inheritdoc />
     public async Task<Result<T>> ExecuteInTransactionAsync<T>(Func<Task<Result<T>>> operation,
         CancellationToken ct = default)
@@ -55,15 +55,15 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
         {
             // Får et result-objekt etter en operasjon
             var result = await operation();
-            
+
             // er dette Result-objektet en Failure, roll tilbake
             if (result.IsFailure)
             {
                 await transaction.RollbackAsync(ct);
                 return result;
             }
-                
-            
+
+
             // Alt er vellykket. Lagre og commit transaksjonen
             await SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -77,8 +77,8 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
             return Result<T>.Failure(
                 AppError.Create(ErrorCode.InternalError, "An unexpected error occurred. Try again."));
         }
-    }   
-    
+    }
+
     private Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => dbContext.SaveChangesAsync(cancellationToken);
 }

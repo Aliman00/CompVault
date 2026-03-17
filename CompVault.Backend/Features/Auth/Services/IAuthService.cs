@@ -21,7 +21,7 @@ public interface IAuthService
     /// Returnerer Failure hvis brukeren ikke eksisterer, feil kode eller ingen aktiv kode
     /// Bruker StopWatch for å sikre at metoden bruker like lang tid om brukeren eksisterer eller ikke
     /// </summary>
-    Task<Result<LoginResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default);
+    Task<Result<RefreshTokenResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Utsteder et nytt access token ved hjelp av et gyldig refresh token.
@@ -31,6 +31,7 @@ public interface IAuthService
 
     /// <summary>
     /// Ugyldiggjør et refresh token — i praksis logger brukeren ut.
+    /// Sjekker at tokenet tilhører den innloggede brukeren.
     /// </summary>
-    Task<Result> RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
+    Task<Result> RevokeRefreshTokenAsync(RevokeTokenRequest request, Guid currentUserId, CancellationToken ct = default);
 }
