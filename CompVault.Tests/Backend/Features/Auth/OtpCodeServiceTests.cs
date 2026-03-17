@@ -1,11 +1,9 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
-using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
-using CompVault.Backend.Features.Helpers;
-using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.Result;
+using CompVault.Tests.Common;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -17,7 +15,6 @@ namespace CompVault.Tests.Backend.Features.Auth;
 public class OtpCodeServiceTests
 {
     private readonly Mock<IOtpCodeRepository> _otpCodeRepositoryMock;
-    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly OtpCodeService _sut;
     private readonly int _maxFailedAttempts = 3;
     private readonly string _plainTextCode = "476583";  // En kode i klartekst for gjenbrukes i mange tester
@@ -27,7 +24,6 @@ public class OtpCodeServiceTests
         // Mocker DI-avhengighetene
         Mock<ILogger<OtpCodeService>> loggerMock = new Mock<ILogger<OtpCodeService>>();
         _otpCodeRepositoryMock = new Mock<IOtpCodeRepository>();
-        _unitOfWorkMock = new Mock<IUnitOfWork>();
         
         // Oppretter configuration OtpOptions - trenger ingen delay i tester
         var otpOptions = Options.Create(new OtpOptions
@@ -39,28 +35,8 @@ public class OtpCodeServiceTests
         _sut = new OtpCodeService(
             loggerMock.Object,
             otpOptions,
-            _otpCodeRepositoryMock.Object,
-            _unitOfWorkMock.Object);
+            _otpCodeRepositoryMock.Object);
     }
-    
-    // -------------------------------------------------------------------------
-    // Hjelpemetoder
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Metode som oppretter en OtpCode for å følge DRY
-    /// </summary>
-    /// <param name="userId">En Guid tilhørende brukeren koden tilhører</param>
-    /// <param name="plainTextCode">Koden i klartekst for å kunne teste om koden er korrekt</param>
-    /// <param name="failedAttempts">Antall feilede forsøk. For å teste om antall forsøk er brukt opp</param>
-    /// <returns>En OtpCode med egenskaper vi bruker i testene</returns>
-    private static OtpCode CreateOtpCode(Guid userId, string plainTextCode,  int failedAttempts) => new OtpCode
-    {
-        UserId = userId,
-        Code = OtpHasher.HashCode(plainTextCode),
-        ExpiresAt = DateTime.UtcNow.AddMinutes(10),
-        FailedAttempts = failedAttempts
-    };
     
     // -------------------------------------------------------------------------
     // GenerateOtpCodeAsync - Success tester
@@ -93,8 +69,6 @@ public class OtpCodeServiceTests
             It.IsAny<CancellationToken>()), Times.Once);
         _otpCodeRepositoryMock.Verify(x => x.AddAsync(It.IsAny<OtpCode>(), 
             It.IsAny<CancellationToken>()), Times.Once);
-        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
-            Times.Once);
     }
     
     /// <summary>
@@ -143,7 +117,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId og variabelen for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        var otpCode = CreateOtpCode(userId, _plainTextCode,0);
+        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode);
         
         // mocker at GetActiveCodeAsync returner eksisterende Otp-kode
         _otpCodeRepositoryMock
@@ -176,9 +150,9 @@ public class OtpCodeServiceTests
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OtpCode?)null);
         
-        // mocker at unitOfWorkMock kaster DbUpdateException()
-        _unitOfWorkMock
-            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+        // mocker at repository kaster DbUpdateException()
+        _otpCodeRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<OtpCode>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DbUpdateException());
         
         // Act
@@ -203,7 +177,7 @@ public class OtpCodeServiceTests
         var userId = Guid.NewGuid();
         // Til Otp-koden må vi ha koden i klartekst for metode-kallet, og CreateOtpCode hasher koden så det blir
         // korrekt
-        var otpCode = CreateOtpCode(userId, _plainTextCode,0);
+        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -213,13 +187,13 @@ public class OtpCodeServiceTests
         // Act
         var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
         
-        // Assert - Sjekker at Result er Success, IsUsed blir satt til true og at metodene blir kalt en gang
+        // Assert - Sjekker at Result er Success og at Otp-koden blr returnert riktig med UserId satt korrekt
         result.IsSuccess.Should().BeTrue();
-        otpCode.IsUsed.Should().BeTrue();
+        result.Value.Should().Be(otpCode);
+        result.Value!.UserId.Should().Be(userId);
         _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
             It.IsAny<CancellationToken>()), Times.Once);
-        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
-            Times.Once);
+        
     }
     
     // -------------------------------------------------------------------------
@@ -247,7 +221,7 @@ public class OtpCodeServiceTests
         result.Error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
         _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
             It.IsAny<CancellationToken>()), Times.Once);
-        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+        _otpCodeRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Never);
     }
     
@@ -259,7 +233,8 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden. Otp-koden har max MaxFailedAttempts
         var userId = Guid.NewGuid();
-        var otpCode = CreateOtpCode(userId, _plainTextCode,_maxFailedAttempts);
+        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode, failedAttempts: _maxFailedAttempts);
+
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -274,7 +249,7 @@ public class OtpCodeServiceTests
         result.Error!.Code.Should().Be(ErrorCode.OtpMaxAttemptsExceeded);
         _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
             It.IsAny<CancellationToken>()), Times.Once);
-        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+        _otpCodeRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Never);
     }
     
@@ -288,7 +263,7 @@ public class OtpCodeServiceTests
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
         var wrongCode = "111111";
-        var otpCode = CreateOtpCode(userId, _plainTextCode,0);
+        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -303,7 +278,7 @@ public class OtpCodeServiceTests
         result.Error!.Code.Should().Be(ErrorCode.OtpInvalidOrExpired);
         _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId, 
             It.IsAny<CancellationToken>()), Times.Once);
-        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+        _otpCodeRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Once);
     }
     
@@ -316,7 +291,7 @@ public class OtpCodeServiceTests
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
         var wrongCode = "111111";
-        var otpCode = CreateOtpCode(userId, _plainTextCode,0);
+        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -328,7 +303,7 @@ public class OtpCodeServiceTests
         
         // Assert - Sjekker at Result er Failure og at det er riktig ErrorCode. Verifiserer at det blir lagret
         otpCode.FailedAttempts.Should().Be(1);
-        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+        _otpCodeRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), 
             Times.Once);
     }
     

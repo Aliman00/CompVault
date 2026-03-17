@@ -56,6 +56,23 @@ public static class TestDataSeeder
         IsActive = deletedAt == null,
         DeletedAt = deletedAt
     };
+    
+    /// <summary>
+    /// Oppretter en Otp-kode tilhørende en bruker
+    /// </summary>
+    /// <param name="userId">Brukeren som Otp-koden tilhører</param>
+    /// <param name="plainTextCode">Koden i plaintext som blir hashet i metoden</param>
+    /// <param name="expiresAtMin">Antall minutter til den utgår</param>
+    /// <param name="failedAttempts">Antall feilede forsøk</param>
+    /// <returns>En opprettet OtpCode</returns>
+    public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode, 
+        int expiresAtMin = 10, int failedAttempts = 0) => new OtpCode
+    {
+        UserId = userId ?? TestConstants.Users.ActiveUserId,
+        Code = OtpHasher.HashCode(plainTextCode),
+        ExpiresAt = DateTime.UtcNow.AddMinutes(expiresAtMin),
+        FailedAttempts = failedAttempts
+    };
 
 
     /// <summary>
@@ -103,13 +120,8 @@ public static class TestDataSeeder
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        context.Set<OtpCode>().Add(new OtpCode
-        {
-            UserId = TestConstants.Users.ActiveUserId,
-            Code = OtpHasher.HashCode(plainTextCode),
-            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
-            FailedAttempts = failedAttempts
-        });
+        context.Set<OtpCode>().Add(CreateOtpCode(userId: TestConstants.Users.ActiveUserId,
+            plainTextCode: plainTextCode, failedAttempts: failedAttempts));
 
         await context.SaveChangesAsync();
     }

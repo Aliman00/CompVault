@@ -23,10 +23,10 @@ public sealed class AuthService(
     UserManager<ApplicationUser> userManager, 
     ILogger<IAuthService> logger,
     IJwtService jwtService, 
-    IRefreshTokenService refreshTokenService,
     IOtpCodeService otpCodeService,
     IEmailService emailService,
     IOptions<OtpOptions> otpOptions,
+    IRefreshTokenService refreshTokenService,
     IRefreshTokenRepository refreshTokenRepository,
     IUnitOfWork unitOfWork) : IAuthService
 {

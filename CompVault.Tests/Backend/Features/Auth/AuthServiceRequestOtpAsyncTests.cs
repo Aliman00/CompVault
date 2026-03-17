@@ -1,10 +1,11 @@
 ﻿using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Auth;
+using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Models;
+using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Backend.Features.Auth.Builders;
 using CompVault.Tests.Common;
@@ -31,12 +32,23 @@ public class AuthServiceRequestOtpAsyncTests
         var storeMock = new Mock<IUserStore<ApplicationUser>>();
         _userManagerMock = new Mock<UserManager<ApplicationUser>>(
             storeMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
-
+        
+       
         // Mocker de andre DI-avhengighetene
         Mock<ILogger<IAuthService>> loggerMock = new Mock<ILogger<IAuthService>>();
         Mock<IJwtService> jwtServiceMock = new Mock<IJwtService>();
         _otpCodeServiceMock = new Mock<IOtpCodeService>();
         _emailServiceMock = new Mock<IEmailService>();
+        Mock<IRefreshTokenService> refreshTokenService = new Mock<IRefreshTokenService>();
+        Mock<IRefreshTokenRepository> refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
+        Mock<IUnitOfWork> unitOfWorkMock = new Mock<IUnitOfWork>();
+
+        // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
+        unitOfWorkMock
+            .Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns<Func<Task<Result>>, CancellationToken>((operation, _) => operation());
+
         
         // Oppretter configuration OtpOptions - trenger ingen delay i tester
         var otpOptions = Options.Create(new OtpOptions
@@ -51,7 +63,10 @@ public class AuthServiceRequestOtpAsyncTests
             jwtServiceMock.Object,
             _otpCodeServiceMock.Object,
             _emailServiceMock.Object,
-            otpOptions);
+            otpOptions,
+            refreshTokenService.Object,
+            refreshTokenRepositoryMock.Object,
+            unitOfWorkMock.Object);
     }
     
     // -------------------------------------------------------------------------
