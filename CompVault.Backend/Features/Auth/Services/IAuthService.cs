@@ -31,6 +31,7 @@ public interface IAuthService
 
     /// <summary>
     /// Ugyldiggjør et refresh token — i praksis logger brukeren ut.
+    /// Sjekker at tokenet tilhører den innloggede brukeren.
     /// </summary>
-    Task<Result> RevokeRefreshTokenAsync(RevokeTokenRequest request, CancellationToken ct = default);
+    Task<Result> RevokeRefreshTokenAsync(RevokeTokenRequest request, Guid currentUserId, CancellationToken ct = default);
 }

@@ -1,7 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -85,11 +88,19 @@ public sealed class AuthController(IAuthService authService) : BaseController
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeAsync(
         [FromBody] RevokeTokenRequest request,
         CancellationToken cancellationToken)
     {
-        await authService.RevokeRefreshTokenAsync(request, cancellationToken);
+        var userIdStr = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (!Guid.TryParse(userIdStr, out var currentUserId))
+            return Unauthorized();
+
+        var result = await authService.RevokeRefreshTokenAsync(request, currentUserId, cancellationToken);
+        if (result.IsFailure)
+            return HandleFailure(result);
+
         return NoContent();
     }
 }

@@ -179,7 +179,7 @@ public sealed class AuthService(
     }
 
     /// <inheritdoc />
-    public async Task<Result> RevokeRefreshTokenAsync(RevokeTokenRequest request, CancellationToken ct = default)
+    public async Task<Result> RevokeRefreshTokenAsync(RevokeTokenRequest request, Guid currentUserId, CancellationToken ct = default)
     {
         // Henter tokenet fra databasen — kun gyldige tokens kan revokers
         RefreshToken? storedToken = await refreshTokenRepository
@@ -188,6 +188,11 @@ public sealed class AuthService(
         if (storedToken is null)
             return Result.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
+
+        // Verifiser at tokenet tilhører den innloggede brukeren
+        if (storedToken.UserId != currentUserId)
+            return Result.Failure(
+                AppError.Create(ErrorCode.Forbidden, "Token tilhører ikke innlogget bruker."));
 
         // Markerer tokenet som revokert — dette logger brukeren effektivt ut
         storedToken.IsRevoked = true;
