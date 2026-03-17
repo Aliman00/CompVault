@@ -8,6 +8,7 @@ using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
+using CompVault.Backend.Infrastructure.Jobs;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -29,7 +30,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration,
         IWebHostEnvironment environment)
-    {   
+    {
         // Skipper oppsett av PostgreSQL hvis vi er i testing environment
         if (!environment.IsEnvironment("Testing"))
         {
@@ -38,7 +39,7 @@ public static class ServiceCollectionExtensions
                     configuration.GetConnectionString("Default"),
                     npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
         }
-        
+
         services.AddIdentityCore<ApplicationUser>(opts =>
             {
                 // Passordkrav er deaktivert — systemet bruker passordløs OTP-autentisering.
@@ -93,7 +94,7 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    
+
     /// <summary>
     /// Legger til generell infrastruktur
     /// </summary>
@@ -102,38 +103,42 @@ public static class ServiceCollectionExtensions
         // ============ ERROR HANDLING ============
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
-        
+
+        // ============ BAKGRUNNSJOBBER ============
+        // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
+        services.AddHostedService<TokenCleanupJob>();
+
         return services;
     }
-    
+
     /// <summary>
     /// Konfigurerer Epost med Resend - Skippes ved testing
     /// </summary>
     public static IServiceCollection AddEmail(this IServiceCollection services, IConfiguration configuration,
         IWebHostEnvironment environment)
-    {   
+    {
         // Vi mocker EmailService med en falsk nøkkel i testing - må skippes ved Test-miljø
         if (environment.IsEnvironment("Testing"))
             return services;
-        
+
         // Henter config fra AppSettings
         EmailSettings emailSettings = configuration
             .GetSection(EmailSettings.SectionName)
             .Get<EmailSettings>() ?? throw new InvalidOperationException("Email configuration is missing");
-        
+
         if (string.IsNullOrEmpty(emailSettings.ApiKey))
             throw new InvalidOperationException("Email:ApiKey is not configured");
-        
+
         if (string.IsNullOrWhiteSpace(emailSettings.FromAddress))
             throw new InvalidOperationException("Email:FromAddress is not configured");
-        
+
         // Register Resend options
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
         services.Configure<ResendClientOptions>(o => o.ApiToken = emailSettings.ApiKey);
-        
+
         // HttpClient for Resend
         services.AddHttpClient<IResend, ResendClient>();
-        
+
         // Registerer EmailService som scoped
         services.AddScoped<IEmailService, EmailService>();
 
@@ -148,6 +153,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         return services;
     }

@@ -1,10 +1,13 @@
 using System.Diagnostics;
 using CompVault.Backend.Common.Security;
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Infrastructure.Auth;
+using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Templates;
+using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -21,11 +24,15 @@ public sealed class AuthService(
     ILogger<IAuthService> logger,
     IJwtService jwtService, 
     IOtpCodeService otpCodeService,
-    IEmailService emailService, 
-    IOptions<OtpOptions> otpOptions) : IAuthService
+    IEmailService emailService,
+    IOptions<OtpOptions> otpOptions,
+    IOptions<JwtSettings> jwtSettings,
+    IRefreshTokenRepository refreshTokenRepository,
+    IUnitOfWork unitOfWork) : IAuthService
 {
     private readonly OtpOptions _otp = otpOptions.Value;
-    
+    private readonly JwtSettings _jwt = jwtSettings.Value;
+
     /// <inheritdoc />
     public async Task<Result> RequestOtpAsync(RequestOtpRequest request, CancellationToken ct = default)
     {
@@ -49,7 +56,7 @@ public sealed class AuthService(
             {
                 Result deliverCodeResult;
                 if (request.DeliveryMethod == OtpDeliveryMethod.Email)
-                {   
+                {
                     // Oppretter en EmailBody med ferdig template
                     var emailBody = EmailTemplates.OtpCode(codeResult.Value!);
                     
@@ -67,7 +74,7 @@ public sealed class AuthService(
                 //     deliverCodeResult = await smsService.SendAsync();
             }
         }
-        
+
         // Avslutter stopwatchen. Vi setter en delay uansett slik at metoden bruker en minimum tid (Dette må testest
         // grunding for å justere til riktig tid)
         await TimingGuard.EnforceMinimumTimeAsync(sw, _otp.MinResponseTimeRequestOtpMs, ct);
@@ -75,7 +82,7 @@ public sealed class AuthService(
         return Result.Success();
     }
 
-     /// <inheritdoc />
+    /// <inheritdoc />
     public async Task<Result<LoginResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default)
     {
         // Starter en stopwatch for å bruke like lang tid uansett
@@ -104,16 +111,30 @@ public sealed class AuthService(
             // Henter roller for å bygge response og tokens
             var roles = await userManager.GetRolesAsync(user);
 
+            // Generer tokens
+            string accessToken = jwtService.GenerateAccessToken(user, roles);
+            string rawRefreshToken = jwtService.GenerateRefreshToken();
+
+            // Lagrer refresh token i databasen slik at vi kan validere og revoker det senere
+            var refreshToken = new RefreshToken
+            {
+                UserId = user.Id,
+                Token = rawRefreshToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(_jwt.RefreshTokenDays)
+            };
+            await refreshTokenRepository.AddAsync(refreshToken, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+
             // Bygger LoginResponse med Access token, refresh token og annen nødvendig informasjon frontend trenger
             var response = new LoginResponse
             {
-                AccessToken = jwtService.GenerateAccessToken(user, roles),
-                RefreshToken = jwtService.GenerateRefreshToken(),
+                AccessToken = accessToken,
+                RefreshToken = rawRefreshToken,
                 UserId = user.Id,
                 FullName = $"{user.FirstName} {user.LastName}",
                 Roles = roles.ToList()
             };
-            
+
             return Result<LoginResponse>.Success(response);
         }
         finally
@@ -129,33 +150,43 @@ public sealed class AuthService(
         RefreshTokenRequest request,
         CancellationToken cancellationToken = default)
     {
-        System.Security.Claims.ClaimsPrincipal? principal =
-            jwtService.GetPrincipalFromExpiredToken(request.AccessToken);
+        // Henter og validerer refresh token fra databasen — tidligere ble dette ikke sjekket mot DB
+        RefreshToken? storedToken = await refreshTokenRepository
+            .GetValidTokenAsync(request.RefreshToken, cancellationToken);
 
-        if (principal is null)
+        if (storedToken is null)
             return Result<LoginResponse>.Failure(
-                AppError.Create(ErrorCode.InvalidToken, "Ugyldig access token."));
+                AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
 
-        string? userId = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                         ?? principal.FindFirst("sub")?.Value;
-
-        if (userId is null || !Guid.TryParse(userId, out Guid parsedUserId))
-            return Result<LoginResponse>.Failure(
-                AppError.Create(ErrorCode.InvalidToken, "Ugyldige token-claims."));
-
-        ApplicationUser? user = await userManager.FindByIdAsync(parsedUserId.ToString());
+        ApplicationUser? user = await userManager.FindByIdAsync(storedToken.UserId.ToString());
 
         if (user is null || !user.IsActive || user.DeletedAt is not null)
             return Result<LoginResponse>.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Bruker ikke funnet eller inaktiv."));
 
+        // Token rotation — revoker det gamle tokenet og utsteder et nytt.
+        // Dette sikrer at hvert refresh token kun kan brukes én gang, og at
+        // stjålne tokens oppdages ved neste forsøk på bruk.
+        storedToken.IsRevoked = true;
+
+        string newRawRefreshToken = jwtService.GenerateRefreshToken();
+        var newRefreshToken = new RefreshToken
+        {
+            UserId = user.Id,
+            Token = newRawRefreshToken,
+            ExpiresAt = DateTime.UtcNow.AddDays(_jwt.RefreshTokenDays)
+        };
+        await refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
+
         IList<string> roles = await userManager.GetRolesAsync(user);
-        string newAccessToken = jwtService.GenerateAccessToken(user, roles);
+
+        // Lagrer det nye tokenet og revokeringen av det gamle i én transaksjon
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         LoginResponse response = new()
         {
-            AccessToken = newAccessToken,
-            RefreshToken = jwtService.GenerateRefreshToken(),
+            AccessToken = jwtService.GenerateAccessToken(user, roles),
+            RefreshToken = newRawRefreshToken,
             UserId = user.Id,
             FullName = $"{user.FirstName} {user.LastName}".Trim(),
             Roles = roles.ToList()
@@ -165,11 +196,22 @@ public sealed class AuthService(
     }
 
     /// <inheritdoc />
-    public Task<Result<bool>> RevokeRefreshTokenAsync(
+    public async Task<Result<bool>> RevokeRefreshTokenAsync(
         string refreshToken,
         CancellationToken cancellationToken = default)
     {
-        // TODO: implementer token-familie-sporing når vi persister refresh tokens.
-        return Task.FromResult(Result<bool>.Success(true));
+        // Henter tokenet fra databasen — kun gyldige tokens kan revokers
+        RefreshToken? storedToken = await refreshTokenRepository
+            .GetValidTokenAsync(refreshToken, cancellationToken);
+
+        if (storedToken is null)
+            return Result<bool>.Failure(
+                AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
+
+        // Markerer tokenet som revokert — dette logger brukeren effektivt ut
+        storedToken.IsRevoked = true;
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true);
     }
 }
