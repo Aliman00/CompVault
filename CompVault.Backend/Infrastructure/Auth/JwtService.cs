@@ -1,6 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 using CompVault.Backend.Domain.Entities.Identity;
 using Microsoft.Extensions.Options;
@@ -19,14 +18,14 @@ public sealed class JwtService(IOptions<JwtSettings> settings) : IJwtService
         SymmetricSecurityKey key = new(Encoding.UTF8.GetBytes(settings.Value.Secret));
         SigningCredentials credentials = new(key, SecurityAlgorithms.HmacSha256);
 
-        List<Claim> claims = new()
-        {
+        List<Claim> claims =
+        [
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("firstName", user.FirstName),
             new Claim("lastName", user.LastName)
-        };
+        ];
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
         
