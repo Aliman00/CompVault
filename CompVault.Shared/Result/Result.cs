@@ -49,7 +49,7 @@ public sealed class Result
 
     /// <summary>True hvis noe gikk galt.</summary>
     public bool IsFailure => !IsSuccess;
-    
+
 
     /// <summary>En AppError-objekt ved feil. Bare gyldig når <see cref="IsFailure"/> er true.</summary>
     public AppError? Error { get; }

@@ -20,19 +20,19 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
 
         var (status, code, message) = exception switch
         {
-            ArgumentException argEx         => (400, ErrorCode.Validation, argEx.Message),
-            KeyNotFoundException            => (404, ErrorCode.NotFound, "Ressursen ble ikke funnet."),
-            UnauthorizedAccessException     => (403, ErrorCode.Forbidden, "Du har ikke tilgang."),
-            NotImplementedException         => (501, ErrorCode.Unknown, "Denne funksjonen er ikke tilgjengelig ennå."),
-            OperationCanceledException      => (499, ErrorCode.Unknown, "Forespørselen ble avbrutt."),
-            _                               => (500, ErrorCode.Unknown, "Noe gikk galt på vår side." +
+            ArgumentException argEx => (400, ErrorCode.Validation, argEx.Message),
+            KeyNotFoundException => (404, ErrorCode.NotFound, "Ressursen ble ikke funnet."),
+            UnauthorizedAccessException => (403, ErrorCode.Forbidden, "Du har ikke tilgang."),
+            NotImplementedException => (501, ErrorCode.Unknown, "Denne funksjonen er ikke tilgjengelig ennå."),
+            OperationCanceledException => (499, ErrorCode.Unknown, "Forespørselen ble avbrutt."),
+            _ => (500, ErrorCode.Unknown, "Noe gikk galt på vår side." +
                                                                         " Prøv igjen litt senere.")
         };
 
         var problem = new ProblemDetail
         {
-            Status  = status,
-            Code    = code.ToString(),
+            Status = status,
+            Code = code.ToString(),
             Message = message
         };
 

@@ -13,7 +13,7 @@ public interface IRefreshTokenService
     /// <param name="ct"></param>
     /// <returns>Et Result med en Refresh Token som string</returns>
     Task<Result<string>> CreateRefreshTokenAsync(Guid userId, CancellationToken ct = default);
-    
+
     /// <summary>Lager et tilfeldig refresh token (base64-kodet).</summary>
     /// <returns>Refresh token-strengen.</returns>
     string GenerateRefreshToken();

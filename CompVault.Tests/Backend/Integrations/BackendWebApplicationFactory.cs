@@ -18,10 +18,10 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>
 {
     // Databasenavn for å sikre at alle instanser bruker samme InMemory-databasenavn
     private readonly string _dbName = Guid.NewGuid().ToString();
-    
+
     // Vi mocker EmailService for å mocke email kall
     public Mock<IEmailService> EmailServiceMock { get; } = new();
-    
+
     /// <summary>
     /// Overstyrer tjenester i Program.cs før applikasjonen starter.
     /// Her fjerner vi  PostgreSQL-databasen og bruker InMemory
@@ -29,7 +29,7 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        
+
         // Overstyrerer appsettings sine verdier med egne for testing
         builder.ConfigureAppConfiguration((_, config) =>
         {
@@ -43,10 +43,10 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>
                 .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)
                             || d.ServiceType == typeof(AppDbContext))
                 .ToList();
-    
+
             foreach (var descriptor in descriptors)
                 services.Remove(descriptor);
-            
+
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(_dbName));
 

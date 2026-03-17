@@ -25,7 +25,7 @@ internal sealed class RolePermissionConfiguration : IEntityTypeConfiguration<Rol
             .WithMany(p => p.RolePermissions)
             .HasForeignKey(rp => rp.PermissionId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         // Relasjon mellom ApplicationUser og hvem som opprettet rolle tillatelsen
         builder.HasOne(rp => rp.GrantedBy)
             .WithMany()
