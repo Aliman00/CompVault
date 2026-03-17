@@ -47,7 +47,7 @@ public class EmailServiceTest
     public async Task SendAsync_WhenResendSucceeds_ReturnsSuccess()
     {
         // Arrange
-        var emailBody = EmailTemplates.OtpCode("TestCode");
+        var emailBody = EmailTemplates.SimpleText("TestSubject", "TestMessage");
         
         // Mocker en success melding fra ResendResponse-objektet
         _resendMock
@@ -70,7 +70,7 @@ public class EmailServiceTest
     public async Task SendAsync_WhenResendFails_ReturnsFailure()
     {
         // Arrange
-        var emailBody = EmailTemplates.OtpCode("TestCode");
+        var emailBody = EmailTemplates.SimpleText("TestSubject", "TestMessage");
         
         // Mocker en failure melding fra ResendResponse-objektet
         _resendMock
@@ -94,7 +94,7 @@ public class EmailServiceTest
     public async Task SendAsync_WhenResendThrowsException_ReturnsFailure()
     {
         // Arrange
-        var emailBody = EmailTemplates.OtpCode("TestCode");
+        var emailBody = EmailTemplates.SimpleText("TestSubject", "TestMessage");
         var exception = new Exception("Resend is down for maintenance");
         
         // Mocker en failure melding fra ResendResponse-objektet
@@ -119,7 +119,7 @@ public class EmailServiceTest
     public async Task SendAsync_WhenResendThrowsException_LogsError()
     {
         // Arrange
-        var emailBody = EmailTemplates.OtpCode("TestCode");
+        var emailBody = EmailTemplates.SimpleText("TestSubject", "TestMessage");
         var exception = new Exception("Resend is down for maintenance");
         
         // Mocker en failure melding fra ResendResponse-objektet
@@ -150,8 +150,12 @@ public class EmailServiceTest
     public async Task SendAsync_SendsCorrectEmailMessage()
     {
         // Arrange
-        var code = "244309";
-        var emailBody = EmailTemplates.OtpCode(code);
+        var subject = "TestSubject";
+        var message = "TestMessage";
+        var emailBody = EmailTemplates.SimpleText(subject, message);
+        
+        // EmailTemplate endrer meldingen til Http
+        var emailTemplateMessage = $"<p>{message}</p>";
         
         EmailMessage? capturedMessage = null;
         
@@ -171,7 +175,7 @@ public class EmailServiceTest
         Assert.NotNull(capturedMessage);
         Assert.Equal(FromEmail, capturedMessage.From);
         Assert.Contains(RecipientEmail, capturedMessage.To);
-        Assert.Equal($"Din engangskode: {code}", capturedMessage.Subject);
-        Assert.Equal($"<p>Din engangskode er: <strong>{code}</strong></p>", capturedMessage.HtmlBody);
+        Assert.Equal(subject, capturedMessage.Subject);
+        Assert.Equal(emailTemplateMessage, capturedMessage.HtmlBody);
     }
 }

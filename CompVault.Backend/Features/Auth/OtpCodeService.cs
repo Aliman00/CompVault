@@ -2,7 +2,6 @@
 using System.Text;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
-using CompVault.Backend.Features.Helpers;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.Result;
@@ -43,7 +42,7 @@ public class OtpCodeService(
         var otpCode = new OtpCode
         {
             UserId = userId,
-            Code = OtpHasher.HashCode(code), // Hasher koden for lagring
+            Code = HashCode(code), // Hasher koden for lagring
             ExpiresAt = DateTime.UtcNow.AddMinutes(_otp.ExpirationMinutes),
         };
         
@@ -71,7 +70,7 @@ public class OtpCodeService(
         OtpCode? otpCode = await otpCodeRepository.GetActiveCodeAsync(userId, ct);
         
         // Hasher koden 
-        string hashedInput = OtpHasher.HashCode(userOtpCode);
+        string hashedInput = HashCode(userOtpCode);
         
         // Ikke korrekt epost - enten skrevet feil eller ondsinnet angrep
         if (otpCode == null)
@@ -118,5 +117,14 @@ public class OtpCodeService(
     /// </summary>
     private static string GenerateSecureCode() => RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
     
-    
+    /// <summary>
+    /// Hasher en kode for å slippe å lagre koden i klartekst med tanke på databasebrudd
+    /// </summary>
+    /// <param name="code">String med en kode</param>
+    /// <returns>En hashet string med 64-tegn</returns>
+    private static string HashCode(string code)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
+        return Convert.ToHexString(bytes);
+    }
 }

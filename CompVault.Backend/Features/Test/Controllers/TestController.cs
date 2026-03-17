@@ -20,7 +20,7 @@ public class TestController(IEmailService emailService) : BaseController
     public async Task<ActionResult> TestEmailService([FromBody] TestEmailRequest request,
         CancellationToken ct = default)
     {
-        var template = EmailTemplates.OtpCode("testkode");
+        var template = EmailTemplates.SimpleText("Test tittel", "Test body");
         var result = await emailService.SendAsync(request.RecipientEmail, template, ct);
         if (result.IsFailure)
             return HandleFailure(result);

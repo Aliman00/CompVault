@@ -1,7 +1,8 @@
-﻿using CompVault.Backend.Domain.Entities.Auth;
+﻿using System.Security.Cryptography;
+using System.Text;
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
-using CompVault.Backend.Features.Helpers;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.Result;
@@ -45,6 +46,16 @@ public class OtpCodeServiceTests
     // -------------------------------------------------------------------------
     // Hjelpemetoder
     // -------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Henter samme metode som brukes i servicen - alternativ er å ha det i en helper-fil, men er det verdt det
+    /// for kun testing?
+    /// </summary>
+    private static string HashCode(string code)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
+        return Convert.ToHexString(bytes);
+    }
 
     /// <summary>
     /// Metode som oppretter en OtpCode for å følge DRY
@@ -56,7 +67,7 @@ public class OtpCodeServiceTests
     private static OtpCode CreateOtpCode(Guid userId, string plainTextCode,  int failedAttempts) => new OtpCode
     {
         UserId = userId,
-        Code = OtpHasher.HashCode(plainTextCode),
+        Code = HashCode(plainTextCode),
         ExpiresAt = DateTime.UtcNow.AddMinutes(10),
         FailedAttempts = failedAttempts
     };

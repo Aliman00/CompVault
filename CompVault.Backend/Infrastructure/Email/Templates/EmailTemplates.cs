@@ -6,14 +6,8 @@ namespace CompVault.Backend.Infrastructure.Email.Templates;
 /// </summary>
 public static class EmailTemplates
 {
-    /// <summary>
-    /// Brukes til å sende OtpCode. Koden i subject og body, for best bruker opplevelse.
-    /// Viktig at code er i Subject etter : for testing
-    /// </summary>
-    /// <param name="code">Otp-kode</param>
-    /// <returns>Ferdig bygget EmailBody</returns>
-    public static EmailBody OtpCode(string code) => new(
-        Subject: $"Din engangskode: {code}",
-        Html: $"<p>Din engangskode er: <strong>{code}</strong></p>"
+    public static EmailBody SimpleText(string subject, string message) => new(
+        Subject: subject,
+        Html: $"<p>{message}</p>"
     );
 }

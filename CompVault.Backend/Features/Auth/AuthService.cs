@@ -51,7 +51,8 @@ public sealed class AuthService(
                 if (request.DeliveryMethod == OtpDeliveryMethod.Email)
                 {   
                     // Oppretter en EmailBody med ferdig template
-                    var emailBody = EmailTemplates.OtpCode(codeResult.Value!);
+                    var emailBody = EmailTemplates.SimpleText("Din engangskode", 
+                        $"Din kode er: {codeResult.Value}");
                     
                     // Sender epost og sjekker at det er ingen feil med epost sending
                     deliverCodeResult = await emailService.SendAsync(request.Email, emailBody, ct);
