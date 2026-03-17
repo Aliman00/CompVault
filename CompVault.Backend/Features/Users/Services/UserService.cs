@@ -23,7 +23,7 @@ public sealed class UserService(
         foreach (ApplicationUser user in users)
         {
             IList<string> roles = await userManager.GetRolesAsync(user);
-            dtos.Add(MapToDto(user, roles));
+            dtos.Add(UserMapper.ToDto(user, roles));
         }
 
         return Result<IReadOnlyList<UserDto>>.Success(dtos);
@@ -41,7 +41,7 @@ public sealed class UserService(
                 AppError.NotFound($"User with ID '{userId}' was not found."));
 
         IList<string> roles = await userManager.GetRolesAsync(user);
-        return Result<UserDto>.Success(MapToDto(user, roles));
+        return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
     }
 
     /// <inheritdoc />
@@ -83,7 +83,7 @@ public sealed class UserService(
         }
 
         IList<string> roles = await userManager.GetRolesAsync(newUser);
-        return Result<UserDto>.Success(MapToDto(newUser, roles));
+        return Result<UserDto>.Success(UserMapper.ToDto(newUser, roles));
     }
 
     /// <inheritdoc />
@@ -110,7 +110,7 @@ public sealed class UserService(
         await userRepository.SaveChangesAsync(cancellationToken);
 
         IList<string> roles = await userManager.GetRolesAsync(user);
-        return Result<UserDto>.Success(MapToDto(user, roles));
+        return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
     }
 
     /// <inheritdoc />
@@ -128,20 +128,4 @@ public sealed class UserService(
         await userRepository.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }
-
-    private static UserDto MapToDto(ApplicationUser user, IList<string> roles) =>
-        new()
-        {
-            Id = user.Id,
-            Email = user.Email ?? string.Empty,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            JobTitle = user.JobTitle,
-            EmploymentType = user.EmploymentType,
-            IsActive = user.IsActive,
-            DepartmentId = user.DepartmentId,
-            ManagerId = user.ManagerId,
-            CreatedAt = user.CreatedAt,
-            Roles = roles.ToList()
-        };
 }
