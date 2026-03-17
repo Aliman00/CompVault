@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace CompVault.Backend.Features.Auth.Services;
 
-public class RefreshTokenService(
+public sealed class RefreshTokenService(
     IOptions<JwtSettings> jwtSettings,
     IRefreshTokenRepository refreshTokenRepository) : IRefreshTokenService
 {
