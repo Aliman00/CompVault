@@ -3,7 +3,6 @@ using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using FluentAssertions;
-using Microsoft.Extensions.Options;
 using Moq;
 
 namespace CompVault.Tests.Backend.Features.Auth;
@@ -15,16 +14,16 @@ public class RefreshTokenServiceTests
 
     public RefreshTokenServiceTests()
     {
-        // Mocker JwtSettings fra appsettings
-        var jwtSettings = Options.Create(new JwtSettings
-        {
-            RefreshTokenDays = 7
-        });
-        
         _repositoryMock = new Mock<IRefreshTokenRepository>();
+        Mock<IJwtService> jwtServiceMock = new Mock<IJwtService>();
+
+        // Mocker RefreshTokenLifetimeDays fra IJwtService
+        jwtServiceMock
+            .Setup(x => x.RefreshTokenLifetimeDays)
+            .Returns(7);
         
         _sut = new RefreshTokenService(
-            jwtSettings,
+            jwtServiceMock.Object,
             _repositoryMock.Object);
     }
     
