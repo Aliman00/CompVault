@@ -204,10 +204,9 @@ public sealed class AuthService(
                 AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
 
         // Markerer tokenet som revokert — dette logger brukeren effektivt ut
-        return await unitOfWork.ExecuteInTransactionAsync( () =>
-        {
-            storedToken.IsRevoked = true;
-            return Task.FromResult(Result.Success());
-        }, ct);
+        storedToken.IsRevoked = true;
+        await refreshTokenRepository.SaveChangesAsync(ct);
+
+        return Result.Success();
     }
 }

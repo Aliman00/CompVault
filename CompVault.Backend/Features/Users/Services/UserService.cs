@@ -1,5 +1,4 @@
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -12,8 +11,7 @@ namespace CompVault.Backend.Features.Users.Services;
 /// </summary>
 public sealed class UserService(
     IUserRepository userRepository,
-    UserManager<ApplicationUser> userManager,
-    IUnitOfWork unitOfWork) : IUserService
+    UserManager<ApplicationUser> userManager) : IUserService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
@@ -109,7 +107,7 @@ public sealed class UserService(
         if (request.ManagerId.HasValue) user.ManagerId = request.ManagerId;
 
         await userRepository.UpdateAsync(user, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await userRepository.SaveChangesAsync(cancellationToken);
 
         IList<string> roles = await userManager.GetRolesAsync(user);
         return Result<UserDto>.Success(MapToDto(user, roles));
@@ -127,7 +125,7 @@ public sealed class UserService(
                 AppError.NotFound($"User with ID '{userId}' was not found."));
 
         await userRepository.SoftDeleteAsync(user, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await userRepository.SaveChangesAsync(cancellationToken);
         return Result<bool>.Success(true);
     }
 

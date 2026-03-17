@@ -9,12 +9,6 @@ namespace CompVault.Backend.Infrastructure.Data;
 public interface IUnitOfWork
 {
     /// <summary>
-    /// Persisterer alle ventende endringer i den gjeldende DbContext-instansen.
-    /// Kall denne fra service-laget etter at alle repository-operasjoner er utført.
-    /// </summary>
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// For vanlig, ikke-generisk Result-metoder:
     /// Oppretter en transaksjon i databasen, og lar oss kjøre en eller flere operasjoner innenfor denne.
     /// Rulles tilbake hvis noe går galt (feks feil under lagring i database,

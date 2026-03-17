@@ -3,7 +3,6 @@ using System.Text;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Helpers;
-using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.Result;
 using Microsoft.EntityFrameworkCore;
@@ -14,8 +13,7 @@ namespace CompVault.Backend.Features.Auth.Services;
 public class OtpCodeService(
     ILogger<OtpCodeService> logger, 
     IOptions<OtpOptions> otpOptions,
-    IOtpCodeRepository otpCodeRepository,
-    IUnitOfWork unitOfWork) : IOtpCodeService
+    IOtpCodeRepository otpCodeRepository) : IOtpCodeService
 {
     private readonly OtpOptions _otp = otpOptions.Value;
     
@@ -96,10 +94,10 @@ public class OtpCodeService(
         // Koden eksisterer, men er ikke korrekt
         if (!codeMatches)
         {
-            // Oppdaterer koden med feilet forsøk
+            // Oppdaterer koden med feilet forsøk - Dette lagres uansett, så vi lagrer det her og ikke i en transaksjon
             otpCode.FailedAttempts++;
             otpCode.LastAttemptAt = DateTime.UtcNow;
-            await unitOfWork.SaveChangesAsync(ct);
+            await otpCodeRepository.SaveChangesAsync(ct);
             
             // Lik feilmelding som ikke-eksisterende bruker
             return Result<OtpCode>.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, 

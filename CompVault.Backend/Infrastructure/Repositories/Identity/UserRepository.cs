@@ -1,6 +1,5 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
-using CompVault.Backend.Infrastructure.Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Infrastructure.Repositories.Identity;

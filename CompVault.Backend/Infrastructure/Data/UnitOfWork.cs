@@ -3,15 +3,14 @@ using CompVault.Shared.Result;
 namespace CompVault.Backend.Infrastructure.Data;
 
 /// <summary>
-/// Tynn wrapper rundt <see cref="AppDbContext"/> som eksponerer <c>SaveChangesAsync</c>
-/// via <see cref="IUnitOfWork"/>. Registreres som scoped i DI-containeren.
+/// Håndterer databasetransaksjoner for å sikre atomiske operasjoner.
+/// Brukes når flere repository-operasjoner må lykkes eller feile samlet
+/// for å unngå inkonsistent databasetilstand.
+/// Registreres som scoped i DI-containeren.
 /// </summary>
 public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logger) : IUnitOfWork
 {
-    /// <inheritdoc />
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        => dbContext.SaveChangesAsync(cancellationToken);
-    
+   
     
     /// <inheritdoc />
     public async Task<Result> ExecuteInTransactionAsync(Func<Task<Result>> operation,
@@ -38,7 +37,7 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
         {
             logger.LogError(ex, "Transaction failed unexpectedly. Rolling back.");
             return Result.Failure(
-                AppError.Create(ErrorCode.InternalError, "An unexpected error occured. Try again."));
+                AppError.Create(ErrorCode.InternalError, "An unexpected error occurred. Try again."));
         }
     } 
     
@@ -67,7 +66,10 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
         {
             logger.LogError(ex, "Transaction failed unexpectedly. Rolling back.");
             return Result<T>.Failure(
-                AppError.Create(ErrorCode.InternalError, "An unexpected error occured. Try again."));
+                AppError.Create(ErrorCode.InternalError, "An unexpected error occurred. Try again."));
         }
     }   
+    
+    private Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        => dbContext.SaveChangesAsync(cancellationToken);
 }

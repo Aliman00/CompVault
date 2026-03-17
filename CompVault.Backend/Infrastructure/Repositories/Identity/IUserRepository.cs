@@ -1,5 +1,4 @@
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Infrastructure.Data.Repositories;
 
 namespace CompVault.Backend.Infrastructure.Repositories.Identity;
 
