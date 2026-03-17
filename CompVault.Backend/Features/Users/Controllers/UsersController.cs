@@ -1,10 +1,11 @@
-using CompVault.Backend.Features.Users;
+using CompVault.Backend.Controllers;
+using CompVault.Backend.Features.Users.Services;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CompVault.Backend.Controllers;
+namespace CompVault.Backend.Features.Users.Controllers;
 
 /// <summary>
 /// Brukeradministrasjon — hent, opprett, oppdater og slett brukere.

@@ -1,11 +1,11 @@
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Shared.DTOs.Users;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Identity;
 
-namespace CompVault.Backend.Features.Users;
+namespace CompVault.Backend.Features.Users.Services;
 
 /// <summary>
 /// Implementerer brukeradministrasjon ved hjelp av repository, Identity og Unit of Work.

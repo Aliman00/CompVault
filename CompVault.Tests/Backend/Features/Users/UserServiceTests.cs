@@ -6,6 +6,7 @@ using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Identity;
 using System.Linq.Expressions;
+using CompVault.Backend.Features.Users.Services;
 using Moq;
 
 namespace CompVault.Tests.Backend.Features.Users;
