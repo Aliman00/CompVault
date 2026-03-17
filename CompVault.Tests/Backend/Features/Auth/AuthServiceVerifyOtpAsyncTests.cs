@@ -122,8 +122,8 @@ public class AuthServiceVerifyOtpAsyncTests
      
             // Assert - Sjekker at Result er Success og at LoginResponse inneholder korrekte verdier
             result.IsSuccess.Should().BeTrue();
-            result.Value!.AccessToken.Should().Be(accessToken);
             result.Value!.RefreshToken.Should().Be(refreshToken);
+            result.Value!.AccessToken.Should().Be(accessToken);
             otpCode.IsUsed.Should().BeTrue(); // Sjekker at Otp-koden er satt til brukt
             
             // Verfiserer at alle servicene ble kalt engang
