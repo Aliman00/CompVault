@@ -28,7 +28,7 @@ public class Department
     /// <summary>Når avdelingen ble opprettet (UTC).</summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>Brukren som opprettet brukeren</summary>
+    /// <summary>Brukeren som opprettet avdelingen.</summary>
     public Guid? CreatedById { get; set; }
 
 
