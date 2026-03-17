@@ -1,6 +1,66 @@
-﻿@page "/EmailInput"
-<h3>EmailInput</h3>
+﻿@page "/login"
+@page "/"
+@inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+
+<div style="min-height: 100vh; background: linear-gradient(135deg, #0a192f 0%, #1e3a5f 100%); display: flex; align-items: center; justify-content: center; padding: 2rem;">
+    <div style="width: 100%; max-width: 400px; background: rgba(17, 34, 64, 0.95); padding: 2.5rem; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+        
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem;">🔒</div>
+            <h2 style="color: #10b981; margin: 0 0 0.5rem 0; font-size: 1.8rem;">Logg inn</h2>
+            <p style="color: #94a3b8; margin: 0;">Skriv inn e-post for å motta engangskode</p>
+        </div>
+
+        <EditForm Model="model" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; color: #e2e8f0; font-weight: 500; margin-bottom: 0.5rem;">E-post</label>
+                <div style="position: relative;">
+                    <InputText @bind-Value="model.Email" 
+                               style="width: 100%; padding: 1rem 1.2rem 1rem 3rem; border: 2px solid #334155; border-radius: 10px; background: #1e293b; color: white; font-size: 1rem;"
+                               placeholder="deg@example.com" />
+                    <span style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #64748b;">📧</span>
+                </div>
+                <ValidationMessage For="@(() => model.Email)" style="color: #f87171; font-size: 0.85rem; margin-top: 0.25rem;" />
+            </div>
+
+            <button type="submit" disabled="@isSubmitting"
+                    style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.2s; @((isSubmitting ? "opacity: 0.7; cursor: not-allowed;" : ""))">
+                @if (isSubmitting)
+                {
+                    <span>⏳ Sender kode...</span>
+                }
+                else
+                {
+                    <span>Send engangskode</span>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
 
 @code {
-    
+    private EmailModel model = new();
+    private bool isSubmitting;
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        StateHasChanged();
+        
+        // Simuler API delay
+        await Task.Delay(1500);
+        
+        // Gå til OTP-siden med e-post i query string
+        Navigation.NavigateTo($"/otp?email={Uri.EscapeDataString(model.Email)}");
+    }
+
+    public class EmailModel
+    {
+        [Required(ErrorMessage = "E-post er påkrevd")]
+        [EmailAddress(ErrorMessage = "Ugyldig e-postadresse")]
+        public string Email { get; set; } = "";
+    }
 }

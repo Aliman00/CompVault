@@ -1,6 +1,95 @@
-﻿@page "/OtpInput"
-<h3>OtpInput</h3>
+﻿@page "/otp"
+@inject NavigationManager Navigation
+
+<div style="min-height: 100vh; background: linear-gradient(135deg, #0a192f 0%, #1e3a5f 100%); display: flex; align-items: center; justify-content: center; padding: 2rem;">
+    <div style="width: 100%; max-width: 420px; background: rgba(17, 34, 64, 0.95); padding: 2.5rem; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+        
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem;">📱</div>
+            <h2 style="color: #10b981; margin: 0 0 0.5rem 0; font-size: 1.8rem;">Skriv inn kode</h2>
+            <p style="color: #94a3b8; margin: 0;">
+                Vi sendte en kode til <strong>@GetEmail()</strong>
+            </p>
+        </div>
+
+        <!-- FJERN EditForm - bruk vanlig form -->
+        <form @onsubmit="HandleSubmit" @onsubmit:preventDefault="true">
+            <div style="margin-bottom: 1.5rem; text-align: center;">
+                <label style="display: block; color: #e2e8f0; font-weight: 500; margin-bottom: 1.5rem;">6-sifret engangskode</label>
+                
+                <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                    <input @bind="otp1" maxlength="1" style="width: 50px; height: 50px; text-align: center; border: 2px solid #334155; border-radius: 8px; background: #1e293b; color: white; font-size: 1.3rem; font-weight: bold;" />
+                    <input @bind="otp2" maxlength="1" style="width: 50px; height: 50px; text-align: center; border: 2px solid #334155; border-radius: 8px; background: #1e293b; color: white; font-size: 1.3rem; font-weight: bold;" />
+                    <input @bind="otp3" maxlength="1" style="width: 50px; height: 50px; text-align: center; border: 2px solid #334155; border-radius: 8px; background: #1e293b; color: white; font-size: 1.3rem; font-weight: bold;" />
+                    <input @bind="otp4" maxlength="1" style="width: 50px; height: 50px; text-align: center; border: 2px solid #334155; border-radius: 8px; background: #1e293b; color: white; font-size: 1.3rem; font-weight: bold;" />
+                    <input @bind="otp5" maxlength="1" style="width: 50px; height: 50px; text-align: center; border: 2px solid #334155; border-radius: 8px; background: #1e293b; color: white; font-size: 1.3rem; font-weight: bold;" />
+                    <input @bind="otp6" maxlength="1" style="width: 50px; height: 50px; text-align: center; border: 2px solid #334155; border-radius: 8px; background: #1e293b; color: white; font-size: 1.3rem; font-weight: bold;" />
+                </div>
+                
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div style="color: #f87171; font-size: 0.85rem; margin-top: 1rem;">@errorMessage</div>
+                }
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" @onclick="GoBack" style="flex: 1; padding: 1rem; background: #475569; color: white; border: none; border-radius: 10px; font-weight: 600;">Endre e-post</button>
+                <button type="submit" disabled="@isSubmitting"
+                        style="flex: 1; padding: 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 10px; font-weight: 600;">
+                    @if (isSubmitting) { <span>⏳ Sjekker...</span> } else { <span>Bekreft</span> }
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 @code {
-    
+    private string otp1 = "", otp2 = "", otp3 = "", otp4 = "", otp5 = "", otp6 = "";
+    private string? errorMessage;
+    private bool isSubmitting;
+
+    private string GetEmail()
+    {
+        var uri = new Uri(Navigation.Uri);
+        if (uri.Query.Contains("email="))
+        {
+            var start = uri.Query.IndexOf("email=") + 6;
+            var end = uri.Query.IndexOf("&", start);
+            if (end == -1) end = uri.Query.Length;
+            return Uri.UnescapeDataString(uri.Query.Substring(start, end - start));
+        }
+        return "e-posten din";
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/login");
+    }
+
+    private async Task HandleSubmit()
+    {
+        var otp = $"{otp1}{otp2}{otp3}{otp4}{otp5}{otp6}".Trim();
+        
+        if (otp.Length != 6 || !otp.All(char.IsDigit))
+        {
+            errorMessage = "Skriv inn 6 tall";
+            return;
+        }
+
+        isSubmitting = true;
+        StateHasChanged();
+
+        await Task.Delay(1000);
+        
+        if (otp == "123456")
+        {
+            Navigation.NavigateTo("/dashboard");
+        }
+        else
+        {
+            errorMessage = "Feil kode. Prøv igjen.";
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
 }
