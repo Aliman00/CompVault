@@ -3,19 +3,17 @@ using System.Text;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Helpers;
-using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.Result;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace CompVault.Backend.Features.Auth;
+namespace CompVault.Backend.Features.Auth.Services;
 
 public class OtpCodeService(
     ILogger<OtpCodeService> logger, 
     IOptions<OtpOptions> otpOptions,
-    IOtpCodeRepository otpCodeRepository,
-    IUnitOfWork unitOfWork) : IOtpCodeService
+    IOtpCodeRepository otpCodeRepository) : IOtpCodeService
 {
     private readonly OtpOptions _otp = otpOptions.Value;
     
@@ -52,7 +50,6 @@ public class OtpCodeService(
         try
         {
             await otpCodeRepository.AddAsync(otpCode, ct);
-            await unitOfWork.SaveChangesAsync(ct);
         }
         catch (DbUpdateException)
         {
@@ -65,7 +62,7 @@ public class OtpCodeService(
     }
     
     /// <inheritdoc />
-    public async Task<Result> VerifyOtpCodeAsync(Guid userId, string userOtpCode, CancellationToken ct = default)
+    public async Task<Result<OtpCode>> VerifyOtpCodeAsync(Guid userId, string userOtpCode, CancellationToken ct = default)
     {
         // Henter den aktive koden
         OtpCode? otpCode = await otpCodeRepository.GetActiveCodeAsync(userId, ct);
@@ -78,14 +75,15 @@ public class OtpCodeService(
         {
             logger.LogWarning("User {UserId} is attempting to verify Otp without an active code", userId);
             // Lik feilmelding som hvis koden ikke er korrekt
-            return Result.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
+            return Result<OtpCode>.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, 
+                "Invalid or expired code"));
         }
         
         // Sjekker om det er flere forsøk igjen
         if (otpCode.FailedAttempts >= _otp.MaxFailedAttempts)
         {
             logger.LogWarning("User {UserId} has exceeded max OTP attempts", userId);
-            return Result.Failure(AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, 
+            return Result<OtpCode>.Failure(AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, 
                 "Too many failed attempts. Try login again"));
         }
         
@@ -96,19 +94,18 @@ public class OtpCodeService(
         // Koden eksisterer, men er ikke korrekt
         if (!codeMatches)
         {
-            // Oppdaterer koden med feilet forsøk
+            // Oppdaterer koden med feilet forsøk - Dette lagres uansett, så vi lagrer det her og ikke i en transaksjon
             otpCode.FailedAttempts++;
             otpCode.LastAttemptAt = DateTime.UtcNow;
-            await unitOfWork.SaveChangesAsync(ct);
+            await otpCodeRepository.SaveChangesAsync(ct);
             
             // Lik feilmelding som ikke-eksisterende bruker
-            return Result.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code")); 
+            return Result<OtpCode>.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, 
+                "Invalid or expired code")); 
         }
         
-        // Korrekt kode
-        otpCode.IsUsed = true;
-        await unitOfWork.SaveChangesAsync(ct);
-        return Result.Success();
+        // Retunrerer koden for lagring i transaksjonen
+        return Result<OtpCode>.Success(otpCode);
     }
 
     // ======================== Hjelpemetoder ========================

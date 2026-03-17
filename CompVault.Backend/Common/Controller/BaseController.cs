@@ -1,7 +1,7 @@
 ﻿using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CompVault.Backend.Controllers;
+namespace CompVault.Backend.Common.Controller;
 
 /// <summary>
 /// Basekontroller alle kontrollere arver fra for å samle logikk

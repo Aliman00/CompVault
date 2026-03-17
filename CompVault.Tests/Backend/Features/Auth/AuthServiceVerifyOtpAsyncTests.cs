@@ -1,6 +1,7 @@
 ﻿using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
+using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Shared.Result;

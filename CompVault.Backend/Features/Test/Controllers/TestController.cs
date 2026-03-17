@@ -1,4 +1,4 @@
-﻿using CompVault.Backend.Controllers;
+﻿using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Test.Dtos;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Templates;

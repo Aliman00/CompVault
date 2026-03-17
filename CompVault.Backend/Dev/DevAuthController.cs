@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Shared.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +19,8 @@ namespace CompVault.Backend.Dev;
 public sealed class DevAuthController(
     UserManager<ApplicationUser> userManager,
     IJwtService jwtService,
-    IHostEnvironment env) : ControllerBase
+    IHostEnvironment env,
+    IRefreshTokenService refreshTokenService) : ControllerBase
 {
     /// <summary>
     /// Logger inn med e-post og passord. Returnerer JWT identisk med OTP-flyten.
@@ -49,7 +51,7 @@ public sealed class DevAuthController(
 
         IList<string> roles = await userManager.GetRolesAsync(user);
         string accessToken = jwtService.GenerateAccessToken(user, roles);
-        string refreshToken = jwtService.GenerateRefreshToken();
+        string refreshToken = refreshTokenService.GenerateRefreshToken();
 
         return Ok(new LoginResponse
         {

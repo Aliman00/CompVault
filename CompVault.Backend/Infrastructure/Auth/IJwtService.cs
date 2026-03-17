@@ -13,10 +13,6 @@ public interface IJwtService
     /// <returns>En JWT-streng.</returns>
     string GenerateAccessToken(ApplicationUser user, IEnumerable<string> roles);
 
-    /// <summary>Lager et tilfeldig refresh token (base64-kodet).</summary>
-    /// <returns>Refresh token-strengen.</returns>
-    string GenerateRefreshToken();
-
     /// <summary>
     /// Validerer et (evt. utgått) access token og returnerer claims fra det.
     /// Brukes i refresh-flyten for å hente ut bruker-ID fra det gamle tokenet.

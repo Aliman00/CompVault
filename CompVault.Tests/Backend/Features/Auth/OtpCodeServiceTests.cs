@@ -1,6 +1,7 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
+using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Helpers;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;

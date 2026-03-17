@@ -1,4 +1,4 @@
-﻿using CompVault.Backend.Controllers;
+﻿using CompVault.Backend.Common.Controller;
 using CompVault.Shared.Result;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;

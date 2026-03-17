@@ -1,7 +1,7 @@
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
-namespace CompVault.Backend.Features.Auth;
+namespace CompVault.Backend.Features.Auth.Services;
 
 /// <summary>
 /// Alt som har med innlogging og tokens å gjøre havner her.
@@ -26,10 +26,11 @@ public interface IAuthService
     /// <summary>
     /// Utsteder et nytt access token ved hjelp av et gyldig refresh token.
     /// </summary>
-    Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default);
+    Task<Result<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Ugyldiggjør et refresh token — i praksis logger brukeren ut.
     /// </summary>
-    Task<Result<bool>> RevokeRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
+    Task<Result> RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
 }

@@ -3,7 +3,9 @@ using CompVault.Backend.Common.Middleware;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
+using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Users;
+using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
@@ -166,6 +168,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IOtpCodeService, OtpCodeService>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
         return services;
     }

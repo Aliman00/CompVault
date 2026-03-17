@@ -1,6 +1,7 @@
-﻿using CompVault.Shared.Result;
+﻿using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Shared.Result;
 
-namespace CompVault.Backend.Features.Auth;
+namespace CompVault.Backend.Features.Auth.Services;
 
 public interface IOtpCodeService
 {
@@ -20,6 +21,6 @@ public interface IOtpCodeService
     /// <param name="userId">Brukerens ID</param>
     /// <param name="userOtpCode">OTP-koden brukeren har oppgitt</param>
     /// <param name="ct"></param>
-    /// <returns>Result med Success eller Failure</returns>
-    Task<Result> VerifyOtpCodeAsync(Guid userId, string userOtpCode, CancellationToken ct = default);
+    /// <returns>Result med OTP-koden med Success eller Failure med egen feilmelding</returns>
+    Task<Result<OtpCode>> VerifyOtpCodeAsync(Guid userId, string userOtpCode, CancellationToken ct = default);
 }

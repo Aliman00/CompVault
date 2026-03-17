@@ -1,7 +1,7 @@
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
-namespace CompVault.Backend.Features.Users;
+namespace CompVault.Backend.Features.Users.Services;
 
 /// <summary>
 /// Alt av brukeradministrasjon — henting, oppretting, oppdatering og sletting.

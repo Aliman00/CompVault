@@ -1,7 +1,8 @@
 using System.Linq.Expressions;
+using CompVault.Backend.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace CompVault.Backend.Infrastructure.Data.Repositories;
+namespace CompVault.Backend.Infrastructure.Repositories;
 
 /// <summary>
 /// EF Core-implementasjon av <see cref="IRepository{T}"/>.
@@ -56,7 +57,13 @@ public abstract class BaseRepository<T>(AppDbContext dbContext) : IRepository<T>
         Expression<Func<T, bool>> predicate,
         CancellationToken cancellationToken = default) =>
         await DbSet.AnyAsync(predicate, cancellationToken);
+    
+    /// <inheritdoc />
+    public Task SaveChangesAsync(CancellationToken ct = default)
+        => DbContext.SaveChangesAsync(ct);
 
     /// <summary>Gir tilgang til et IQueryable som kan bygges videre på før det kjøres mot DB.</summary>
     protected IQueryable<T> Query() => DbSet.AsQueryable();
+    
+    
 }

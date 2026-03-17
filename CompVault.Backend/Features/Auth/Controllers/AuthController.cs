@@ -1,11 +1,11 @@
-using CompVault.Backend.Features.Auth;
+using CompVault.Backend.Common.Controller;
+using CompVault.Backend.Features.Auth.Services;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
-using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CompVault.Backend.Controllers;
+namespace CompVault.Backend.Features.Auth.Controllers;
 
 /// <summary>
 /// Håndterer passwordless innlogging via engangs-kode (OTP), token-refresh og utlogging.
@@ -70,7 +70,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
         [FromBody] RefreshTokenRequest request,
         CancellationToken cancellationToken)
     {
-        Result<LoginResponse> result = await authService.RefreshTokenAsync(request, cancellationToken);
+        var result = await authService.RefreshTokenAsync(request, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
