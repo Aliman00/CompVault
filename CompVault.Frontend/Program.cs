@@ -28,6 +28,10 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 7001; // Samme som launchSettings
+});
 
 
 
