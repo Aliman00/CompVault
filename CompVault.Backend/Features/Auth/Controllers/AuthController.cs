@@ -47,10 +47,10 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <response code="429">For mange forsøk eller cooldown aktiv</response>
     [HttpPost(ApiRoutes.Auth.VerifyOtp)]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public async Task<ActionResult<LoginResponse>> VerifyOtpAsync(
+    public async Task<ActionResult<RefreshTokenResponse>> VerifyOtpAsync(
         [FromBody] VerifyOtpRequest request,
         CancellationToken ct)
     {
@@ -67,9 +67,9 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <response code="401">Ugyldig eller utgått token.</response>
     [HttpPost(ApiRoutes.Auth.Refresh)]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<LoginResponse>> RefreshTokenAsync(
+    public async Task<ActionResult<RefreshTokenResponse>> RefreshTokenAsync(
         [FromBody] RefreshTokenRequest request,
         CancellationToken cancellationToken)
     {
