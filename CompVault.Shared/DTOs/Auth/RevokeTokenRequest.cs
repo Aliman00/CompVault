@@ -9,11 +9,4 @@ public record RevokeTokenRequest
 {
     [Required(ErrorMessage = "Refresh token is required")]
     public string RefreshToken { get; init; } = string.Empty;
-
-    public RevokeTokenRequest() { }
-
-    public RevokeTokenRequest(string refreshToken)
-    {
-        RefreshToken = refreshToken;
-    }
 }

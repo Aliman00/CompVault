@@ -43,7 +43,6 @@ public class OtpCode
     /// </summary>
     public bool IsValid => !IsUsed && ExpiresAt > DateTime.UtcNow;
 
-
     // ======================== Feil kodeforsøk ========================
 
     /// <summary>
