@@ -17,14 +17,11 @@ public sealed class UserService(
     public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<ApplicationUser> users = await userRepository.GetActiveUsersAsync(cancellationToken);
-        List<UserDto> dtos = new(users.Count);
+        var usersWithRoles = await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
 
-        foreach (ApplicationUser user in users)
-        {
-            IList<string> roles = await userManager.GetRolesAsync(user);
-            dtos.Add(UserMapper.ToDto(user, roles));
-        }
+        var dtos = usersWithRoles
+            .Select(uwr => UserMapper.ToDto(uwr.User, uwr.Roles))
+            .ToList();
 
         return Result<IReadOnlyList<UserDto>>.Success(dtos);
     }
