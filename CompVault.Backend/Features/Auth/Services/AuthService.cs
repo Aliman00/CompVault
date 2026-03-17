@@ -20,9 +20,9 @@ namespace CompVault.Backend.Features.Auth.Services;
 /// Implementerer passwordless autentisering med engangs-kode (OTP) og JWT.
 /// </summary>
 public sealed class AuthService(
-    UserManager<ApplicationUser> userManager, 
+    UserManager<ApplicationUser> userManager,
     ILogger<IAuthService> logger,
-    IJwtService jwtService, 
+    IJwtService jwtService,
     IRefreshTokenService refreshTokenService,
     IOtpCodeService otpCodeService,
     IEmailService emailService,
@@ -50,7 +50,7 @@ public sealed class AuthService(
                     request.Email);
                 return Result.Success(); // returnerer Success for å unngå epostkartlegging
             }
-            
+
             // Generer kode — servicen håndterer om brukeren er null eller ikke. Kun send epost hvis suksess
             return await unitOfWork.ExecuteInTransactionAsync(async () =>
             {
@@ -76,7 +76,7 @@ public sealed class AuthService(
                 }
                 // else
                 //     deliverCodeResult = await smsService.SendAsync();
-                
+
                 return Result.Success();
             }, ct);
         }
@@ -109,12 +109,12 @@ public sealed class AuthService(
             if (user == null || !user.IsActive || user.DeletedAt != null)
                 return Result<LoginResponse>.Failure(
                     AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
-            
+
             // Verifiserer OTP og markerer koden som brukt
             var otpResult = await otpCodeService.VerifyOtpCodeAsync(user.Id, request.OtpCode, ct);
             if (otpResult.IsFailure)
                 return Result<LoginResponse>.Failure(otpResult.Error!);
-            
+
             // Oppretter en transaksjon som rollbacker eller lagrer til slutt
             return await unitOfWork.ExecuteInTransactionAsync(async () =>
             {
@@ -129,18 +129,8 @@ public sealed class AuthService(
                 // Henter roller for å bygge response og tokens
                 var roles = await userManager.GetRolesAsync(user);
 
-                // Generer tokens
-                string accessToken = jwtService.GenerateAccessToken(user, roles);
-                
                 // Bygger LoginResponse med Access token, refresh token og annen nødvendig informasjon frontend trenger
-                return Result<LoginResponse>.Success(new LoginResponse
-                {
-                    AccessToken = accessToken,
-                    RefreshToken = refreshResult.Value!,
-                    UserId = user.Id,
-                    FullName = $"{user.FirstName} {user.LastName}",
-                    Roles = roles.ToList()
-                });
+                return Result<LoginResponse>.Success(BuildLoginResponse(user, roles, refreshResult.Value!));
             }, ct);
         }
         finally
@@ -152,7 +142,7 @@ public sealed class AuthService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request,
+    public async Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request,
         CancellationToken ct = default)
     {
         // Henter og validerer refresh token fra databasen — tidligere ble dette ikke sjekket mot DB
@@ -160,17 +150,17 @@ public sealed class AuthService(
             .GetValidTokenAsync(request.RefreshToken, ct);
 
         if (storedToken is null)
-            return Result<RefreshTokenResponse>.Failure(
+            return Result<LoginResponse>.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
 
         ApplicationUser? user = await userManager.FindByIdAsync(storedToken.UserId.ToString());
 
         if (user is null || !user.IsActive || user.DeletedAt is not null)
-            return Result<RefreshTokenResponse>.Failure(
+            return Result<LoginResponse>.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Bruker ikke funnet eller inaktiv."));
-        
+
         IList<string> roles = await userManager.GetRolesAsync(user);
-        
+
         // Utføerer oppdatering og opprettelse i en transaksjon
         return await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
@@ -182,22 +172,18 @@ public sealed class AuthService(
             // Opprett og lagre refresh token
             var refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
             if (refreshResult.IsFailure)
-                return Result<RefreshTokenResponse>.Failure(refreshResult.Error!);
+                return Result<LoginResponse>.Failure(refreshResult.Error!);
 
-            return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
-            {
-                AccessToken = jwtService.GenerateAccessToken(user, roles),
-                RefreshToken = refreshResult.Value!,
-            });
+            return Result<LoginResponse>.Success(BuildLoginResponse(user, roles, refreshResult.Value!));
         }, ct);
     }
 
     /// <inheritdoc />
-    public async Task<Result> RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
+    public async Task<Result> RevokeRefreshTokenAsync(RevokeTokenRequest request, CancellationToken ct = default)
     {
         // Henter tokenet fra databasen — kun gyldige tokens kan revokers
         RefreshToken? storedToken = await refreshTokenRepository
-            .GetValidTokenAsync(refreshToken, ct);
+            .GetValidTokenAsync(request.RefreshToken, ct);
 
         if (storedToken is null)
             return Result.Failure(
@@ -209,4 +195,16 @@ public sealed class AuthService(
 
         return Result.Success();
     }
+
+    private LoginResponse BuildLoginResponse(
+        ApplicationUser user,
+        IList<string> roles,
+        string rawRefreshToken) => new()
+        {
+            AccessToken = jwtService.GenerateAccessToken(user, roles),
+            RefreshToken = rawRefreshToken,
+            UserId = user.Id,
+            FullName = $"{user.FirstName} {user.LastName}".Trim(),
+            Roles = roles.ToList()
+        };
 }
