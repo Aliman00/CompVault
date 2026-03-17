@@ -46,15 +46,6 @@ public sealed class JwtService(IOptions<JwtSettings> settings) : IJwtService
     }
 
     /// <inheritdoc />
-    public string GenerateRefreshToken()
-    {
-        byte[] randomBytes = new byte[64];
-        using RandomNumberGenerator rng = RandomNumberGenerator.Create();
-        rng.GetBytes(randomBytes);
-        return Convert.ToBase64String(randomBytes);
-    }
-
-    /// <inheritdoc />
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
         TokenValidationParameters parameters = new()
