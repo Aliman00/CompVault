@@ -1,4 +1,5 @@
-﻿@page "/loginpage"
+﻿
+@page "/loginpage"
 @page "/"
 @inject NavigationManager Navigation
 @using System.ComponentModel.DataAnnotations
@@ -12,7 +13,8 @@
             <p style="color: #94a3b8; margin: 0;">Skriv inn e-post for å motta engangskode</p>
         </div>
 
-        <EditForm Model="model" OnValidSubmit="HandleSubmit">
+        <!-- ✅ FIX: FormName lagt til -->
+        <EditForm Model="model" OnValidSubmit="HandleSubmit" FormName="loginForm">
             <DataAnnotationsValidator />
             
             <div style="margin-bottom: 1.5rem;">

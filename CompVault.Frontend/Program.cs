@@ -1,38 +1,29 @@
 using CompVault.Frontend;
 using CompVault.Frontend.Extensions;
+using CompVault.Frontend.Features.Auth.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Forretningslogikk
 builder.Services.AddFrontendServices();
+builder.Services.AddScoped<AuthService>();  // Legg denne INN her!
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
 
+app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseHttpsRedirection();  // ✅ Behold denne
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-builder.Services.AddHttpsRedirection(options =>
-{
-    options.HttpsPort = 7001; // Samme som launchSettings
-});
-
-
-
-app.Run();
+app.Run();  // ✅ Kun ÉN app.Run()
