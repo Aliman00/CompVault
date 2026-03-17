@@ -31,6 +31,7 @@ public class RefreshTokenService(
         return Result<string>.Success(rawRefreshToken);
     }
     
+    
     /// <inheritdoc />
     public string GenerateRefreshToken()
     {

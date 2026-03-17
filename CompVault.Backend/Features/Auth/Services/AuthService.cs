@@ -27,13 +27,10 @@ public sealed class AuthService(
     IOtpCodeService otpCodeService,
     IEmailService emailService,
     IOptions<OtpOptions> otpOptions,
-    IOptions<JwtSettings> jwtSettings,
-    
     IRefreshTokenRepository refreshTokenRepository,
     IUnitOfWork unitOfWork) : IAuthService
 {
     private readonly OtpOptions _otp = otpOptions.Value;
-    private readonly JwtSettings _jwt = jwtSettings.Value;
 
     /// <inheritdoc />
     public async Task<Result> RequestOtpAsync(RequestOtpRequest request, CancellationToken ct = default)
@@ -148,72 +145,62 @@ public sealed class AuthService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<LoginResponse>> RefreshTokenAsync(
-        RefreshTokenRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<Result<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request,
+        CancellationToken ct = default)
     {
         // Henter og validerer refresh token fra databasen — tidligere ble dette ikke sjekket mot DB
         RefreshToken? storedToken = await refreshTokenRepository
-            .GetValidTokenAsync(request.RefreshToken, cancellationToken);
+            .GetValidTokenAsync(request.RefreshToken, ct);
 
         if (storedToken is null)
-            return Result<LoginResponse>.Failure(
+            return Result<RefreshTokenResponse>.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
 
         ApplicationUser? user = await userManager.FindByIdAsync(storedToken.UserId.ToString());
 
         if (user is null || !user.IsActive || user.DeletedAt is not null)
-            return Result<LoginResponse>.Failure(
+            return Result<RefreshTokenResponse>.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Bruker ikke funnet eller inaktiv."));
-
-        // Token rotation — revoker det gamle tokenet og utsteder et nytt.
-        // Dette sikrer at hvert refresh token kun kan brukes én gang, og at
-        // stjålne tokens oppdages ved neste forsøk på bruk.
-        storedToken.IsRevoked = true;
-
-        string newRawRefreshToken = refreshTokenService.GenerateRefreshToken();
-        var newRefreshToken = new RefreshToken
-        {
-            UserId = user.Id,
-            Token = newRawRefreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(_jwt.RefreshTokenDays)
-        };
-        await refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
-
+        
         IList<string> roles = await userManager.GetRolesAsync(user);
-
-        // Lagrer det nye tokenet og revokeringen av det gamle i én transaksjon
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        LoginResponse response = new()
+        
+        // Utføerer oppdatering og opprettelse i en transaksjon
+        return await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            AccessToken = jwtService.GenerateAccessToken(user, roles),
-            RefreshToken = newRawRefreshToken,
-            UserId = user.Id,
-            FullName = $"{user.FirstName} {user.LastName}".Trim(),
-            Roles = roles.ToList()
-        };
+            // Token rotation — revoker det gamle tokenet og utsteder et nytt.
+            // Dette sikrer at hvert refresh token kun kan brukes én gang, og at
+            // stjålne tokens oppdages ved neste forsøk på bruk.
+            storedToken.IsRevoked = true;
 
-        return Result<LoginResponse>.Success(response);
+            // Opprett og lagre refresh token
+            var refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
+            if (refreshResult.IsFailure)
+                return Result<RefreshTokenResponse>.Failure(refreshResult.Error!);
+
+            return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
+            {
+                AccessToken = jwtService.GenerateAccessToken(user, roles),
+                RefreshToken = refreshResult.Value!,
+            });
+        }, ct);
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> RevokeRefreshTokenAsync(
-        string refreshToken,
-        CancellationToken cancellationToken = default)
+    public async Task<Result> RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
         // Henter tokenet fra databasen — kun gyldige tokens kan revokers
         RefreshToken? storedToken = await refreshTokenRepository
-            .GetValidTokenAsync(refreshToken, cancellationToken);
+            .GetValidTokenAsync(refreshToken, ct);
 
         if (storedToken is null)
-            return Result<bool>.Failure(
+            return Result.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
 
         // Markerer tokenet som revokert — dette logger brukeren effektivt ut
-        storedToken.IsRevoked = true;
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return Result<bool>.Success(true);
+        return await unitOfWork.ExecuteInTransactionAsync( () =>
+        {
+            storedToken.IsRevoked = true;
+            return Task.FromResult(Result.Success());
+        }, ct);
     }
 }
