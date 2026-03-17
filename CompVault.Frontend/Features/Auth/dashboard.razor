@@ -1,0 +1,31 @@
+﻿// Features/Auth/AuthState.razor.cs
+namespace CompVault.Frontend.Features.Auth;
+
+public partial class AuthState : ComponentBase
+{
+    [Parameter] public EventCallback OnLoginSuccess { get; set; }
+    
+    protected string? Email { get; private set; }
+    protected bool IsEmailSubmitted { get; private set; }
+    
+    protected async Task SubmitEmail(string email)
+    {
+        Email = email;
+        IsEmailSubmitted = true;
+        StateHasChanged();
+        
+        // Simuler "sending OTP" (3 sek)
+        await Task.Delay(3000);
+    }
+    
+    protected async Task VerifyOtp(string otp)
+    {
+        // Simuler OTP-validering (riktig: "123456")
+        await Task.Delay(1500);
+        
+        if (otp == "123456")
+        {
+            await OnLoginSuccess.InvokeAsync(null!);
+        }
+    }
+}
