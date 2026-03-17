@@ -25,7 +25,10 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
             
             // er dette Result-objektet en Failure, roll tilbake
             if (result.IsFailure)
+            {
+                await transaction.RollbackAsync(ct);
                 return result;
+            }
             
             // Alt er vellykket. Lagre og commit transaksjonen
             await SaveChangesAsync(ct);
@@ -36,6 +39,7 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
         catch (Exception ex) // Rollback i transkasjonen, og generer en default melding
         {
             logger.LogError(ex, "Transaction failed unexpectedly. Rolling back.");
+            await transaction.RollbackAsync(ct);
             return Result.Failure(
                 AppError.Create(ErrorCode.InternalError, "An unexpected error occurred. Try again."));
         }
@@ -54,7 +58,11 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
             
             // er dette Result-objektet en Failure, roll tilbake
             if (result.IsFailure)
+            {
+                await transaction.RollbackAsync(ct);
                 return result;
+            }
+                
             
             // Alt er vellykket. Lagre og commit transaksjonen
             await SaveChangesAsync(ct);
@@ -65,6 +73,7 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
         catch (Exception ex) // Rollback i transkasjonen, og generer en default melding
         {
             logger.LogError(ex, "Transaction failed unexpectedly. Rolling back.");
+            await transaction.RollbackAsync(ct);
             return Result<T>.Failure(
                 AppError.Create(ErrorCode.InternalError, "An unexpected error occurred. Try again."));
         }
