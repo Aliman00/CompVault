@@ -129,11 +129,7 @@ public sealed class AuthService(
                 // Henter roller for å bygge tokens
                 var roles = await userManager.GetRolesAsync(user);
 
-                return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
-                {
-                    AccessToken = jwtService.GenerateAccessToken(user, roles),
-                    RefreshToken = refreshResult.Value!
-                });
+                return Result<RefreshTokenResponse>.Success(BuildRefreshTokenResponse(user, roles, refreshResult.Value!));
             }, ct);
         }
         finally
@@ -177,11 +173,7 @@ public sealed class AuthService(
             if (refreshResult.IsFailure)
                 return Result<RefreshTokenResponse>.Failure(refreshResult.Error!);
 
-            return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
-            {
-                AccessToken = jwtService.GenerateAccessToken(user, roles),
-                RefreshToken = refreshResult.Value!
-            });
+            return Result<RefreshTokenResponse>.Success(BuildRefreshTokenResponse(user, roles, refreshResult.Value!));
         }, ct);
     }
 
