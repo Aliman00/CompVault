@@ -37,28 +37,33 @@ public sealed class AuthService(
     {
         // Starter en stopwatch for å bruke like lang tid uansett
         var sw = Stopwatch.StartNew();
-        
-        // Finn brukeren — returner suksess uansett utfall med unntak av interne feil (f.eks. e-postleveringsfeil)
-        // for å unngå at angripere kan kartlegge hvilke e-poster som er registrert.
-        ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
-        if (user == null)
-            logger.LogWarning("OTP verification attempted for unknown email. Email: {Email}", request.Email);
-        else if (!user.IsActive)
-            logger.LogWarning("OTP verification attempted for deactivated account. Email: {Email}", request.Email);
-        
-        
-        // Generer kode — servicen håndterer om brukeren er null eller ikke. Kun send epost hvis suksess
-        if (user != null && user.IsActive)
+
+        try
         {
-            var codeResult = await otpCodeService.GenerateOtpCodeAsync(user.Id, ct);
-            if (codeResult.IsSuccess)
+            // Finn brukeren — returner suksess uansett utfall med unntak av interne feil (f.eks. e-postleveringsfeil)
+            // for å unngå at angripere kan kartlegge hvilke e-poster som er registrert.
+            var user = await userManager.FindByEmailAsync(request.Email);
+            if (user == null || !user.IsActive)
             {
+                logger.LogWarning("OTP request for {Reason}. Email: {Email}",
+                    user == null ? "unknown account" : "inactive account",
+                    request.Email);
+                return Result.Success(); // returnerer Success for å unngå epostkartlegging
+            }
+            
+            // Generer kode — servicen håndterer om brukeren er null eller ikke. Kun send epost hvis suksess
+            return await unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                var codeResult = await otpCodeService.GenerateOtpCodeAsync(user.Id, ct);
+                if (codeResult.IsFailure)
+                    return Result.Success(); // returnerer Success for å unngå epostkartlegging
+
                 Result deliverCodeResult;
                 if (request.DeliveryMethod == OtpDeliveryMethod.Email)
                 {
                     // Oppretter en EmailBody med ferdig template
                     var emailBody = EmailTemplates.OtpCode(codeResult.Value!);
-                    
+
                     // Sender epost og sjekker at det er ingen feil med epost sending
                     deliverCodeResult = await emailService.SendAsync(request.Email, emailBody, ct);
                     if (deliverCodeResult.IsFailure)
@@ -71,14 +76,16 @@ public sealed class AuthService(
                 }
                 // else
                 //     deliverCodeResult = await smsService.SendAsync();
-            }
+                
+                return Result.Success();
+            }, ct);
         }
-
-        // Avslutter stopwatchen. Vi setter en delay uansett slik at metoden bruker en minimum tid (Dette må testest
-        // grunding for å justere til riktig tid)
-        await TimingGuard.EnforceMinimumTimeAsync(sw, _otp.MinResponseTimeRequestOtpMs, ct);
-
-        return Result.Success();
+        finally
+        {
+            // Avslutter stopwatchen. Vi setter en delay uansett slik at metoden bruker en minimum tid (Dette må
+            // testest grunding for å justere til riktig tid)
+            await TimingGuard.EnforceMinimumTimeAsync(sw, _otp.MinResponseTimeRequestOtpMs, ct);
+        }
     }
 
     /// <inheritdoc />
