@@ -1,7 +1,7 @@
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
-namespace CompVault.Backend.Features.Auth;
+namespace CompVault.Backend.Features.Auth.Services;
 
 /// <summary>
 /// Alt som har med innlogging og tokens å gjøre havner her.

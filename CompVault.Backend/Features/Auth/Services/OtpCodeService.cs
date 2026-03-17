@@ -9,7 +9,7 @@ using CompVault.Shared.Result;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace CompVault.Backend.Features.Auth;
+namespace CompVault.Backend.Features.Auth.Services;
 
 public class OtpCodeService(
     ILogger<OtpCodeService> logger, 

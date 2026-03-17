@@ -1,4 +1,4 @@
-using CompVault.Backend.Controllers;
+using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;

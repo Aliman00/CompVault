@@ -1,6 +1,6 @@
 ﻿using CompVault.Shared.Result;
 
-namespace CompVault.Backend.Features.Auth;
+namespace CompVault.Backend.Features.Auth.Services;
 
 public interface IOtpCodeService
 {

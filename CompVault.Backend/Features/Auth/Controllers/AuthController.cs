@@ -1,4 +1,5 @@
-using CompVault.Backend.Controllers;
+using CompVault.Backend.Common.Controller;
+using CompVault.Backend.Features.Auth.Services;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;

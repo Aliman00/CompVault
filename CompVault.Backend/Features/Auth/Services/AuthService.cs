@@ -14,7 +14,7 @@ using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
-namespace CompVault.Backend.Features.Auth;
+namespace CompVault.Backend.Features.Auth.Services;
 
 /// <summary>
 /// Implementerer passwordless autentisering med engangs-kode (OTP) og JWT.
