@@ -7,7 +7,7 @@ namespace CompVault.Backend.Common.Security;
 /// </summary>
 public static class TimingGuard
 {
-    
+
     /// <summary>
     /// Sikrer at en metode bruker en minimum tid som vi definerer i metoden som kaller denne
     /// </summary>

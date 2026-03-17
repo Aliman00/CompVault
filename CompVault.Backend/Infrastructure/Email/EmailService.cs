@@ -19,7 +19,7 @@ public class EmailService(
     /// Henter avsender epost fra appsettings.json. Eks: "donotreply@compvault.com"
     /// </summary>
     private readonly string _fromEmail = emailSettings.Value.FromAddress;
-    
+
     /// <inheritdoc />
     public async Task<Result> SendAsync(string recipientEmail, EmailBody emailBody, CancellationToken ct = default)
     {
@@ -40,7 +40,7 @@ public class EmailService(
             var response = await resend.EmailSendAsync(message, ct);
             if (!response.Success)
             {
-                logger.LogError("Email sending failed to {Email}. Resend response: {@Response}", 
+                logger.LogError("Email sending failed to {Email}. Resend response: {@Response}",
                     recipientEmail, response);
                 return Result.Failure(AppError.Create(ErrorCode.EmailSendFailed, "Failed to send email"));
             }

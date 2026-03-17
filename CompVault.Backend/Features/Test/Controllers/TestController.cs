@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CompVault.Backend.Features.Test.Controllers;
 
+#if DEBUG
 [ApiController]
 [Route("api/[controller]")]
 public class TestController(IEmailService emailService) : BaseController
@@ -28,3 +29,4 @@ public class TestController(IEmailService emailService) : BaseController
         return Ok();
     }
 }
+#endif

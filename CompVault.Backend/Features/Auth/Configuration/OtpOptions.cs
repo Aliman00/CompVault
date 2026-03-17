@@ -9,12 +9,12 @@ public sealed class OtpOptions
     /// Seksjonennavnet fra appsettings
     /// </summary>
     public const string SectionName = "Otp";
-    
+
     /// <summary>
     /// Antall feilede forsøk pr kode
     /// </summary>
     public int MaxFailedAttempts { get; init; } = 3;
-    
+
     /// <summary>
     /// Hvor lenge en kode er gyldig i minutter
     /// </summary>
@@ -24,7 +24,7 @@ public sealed class OtpOptions
     /// Hvor lenge vi delayer RequestOtp i millisekunder
     /// </summary>
     public int MinResponseTimeRequestOtpMs { get; set; } = 500;
-    
+
     /// <summary>
     /// Hvor lenge vi delayer VerifyOtp i millisekunder
     /// </summary>

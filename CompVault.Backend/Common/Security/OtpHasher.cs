@@ -1,6 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-namespace CompVault.Backend.Features.Helpers;
+
+namespace CompVault.Backend.Common.Security;
 
 /// <summary>
 /// Hjelpeklasse for å hashe en OTP. Brukes både i backend og tester. Kan endre algoritmen, uten å endre

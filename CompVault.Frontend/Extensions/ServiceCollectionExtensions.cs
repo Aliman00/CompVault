@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     {
         var settings = configuration
                            .GetSection(BackendApiSettings.SectionName)
-                           .Get<BackendApiSettings>() 
+                           .Get<BackendApiSettings>()
                        ?? throw new InvalidOperationException("BackendApi does not exist in appsettings");
 
         if (string.IsNullOrWhiteSpace(settings.BaseUrl))
@@ -30,14 +30,14 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    
+
     /// <summary>
     /// Legger til frontend servicer - eksempel er API-Services som AuthService
     /// </summary>
     public static IServiceCollection AddFrontendServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthService, AuthService>();
-        
+
         return services;
     }
 }

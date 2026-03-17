@@ -37,7 +37,7 @@ public class AuthServiceRequestOtpAsyncTests
         Mock<IJwtService> jwtServiceMock = new Mock<IJwtService>();
         _otpCodeServiceMock = new Mock<IOtpCodeService>();
         _emailServiceMock = new Mock<IEmailService>();
-        
+
         // Oppretter configuration OtpOptions - trenger ingen delay i tester
         var otpOptions = Options.Create(new OtpOptions
         {
@@ -53,7 +53,7 @@ public class AuthServiceRequestOtpAsyncTests
             _emailServiceMock.Object,
             otpOptions);
     }
-    
+
     // -------------------------------------------------------------------------
     // Tester - Success
     // -------------------------------------------------------------------------
@@ -68,39 +68,39 @@ public class AuthServiceRequestOtpAsyncTests
         var request = AuthRequestBuilder.CreateRequestOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
-        
+
         // mocker UserManager til å returerne opprettet bruker
         _userManagerMock
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync(user);
-        
+
         // mocker OtpCodeService til å returnere Result med Success
         _otpCodeServiceMock
             .Setup(x => x.GenerateOtpCodeAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<string>.Success(otpCode));
-        
+
         // mocker EmailService til å returere Result med Success
         _emailServiceMock
             .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
-        
+
         // Act
         var result = await _sut.RequestOtpAsync(request);
- 
+
         // Assert - Sjekker at Result er Success, GenerateOtpCodeAsync er kalt med brukerens ID engang,
         // og SendAsync er kalt med brukerens Email en gang
         result.IsSuccess.Should().BeTrue();
-        _otpCodeServiceMock.Verify(x => x.GenerateOtpCodeAsync(user.Id, 
+        _otpCodeServiceMock.Verify(x => x.GenerateOtpCodeAsync(user.Id,
             It.IsAny<CancellationToken>()), Times.Once);
-        _emailServiceMock.Verify(x => x.SendAsync(user.Email!, It.IsAny<EmailBody>(), 
+        _emailServiceMock.Verify(x => x.SendAsync(user.Email!, It.IsAny<EmailBody>(),
                 It.IsAny<CancellationToken>()), Times.Once);
     }
-    
+
     // -------------------------------------------------------------------------
     // Tester - Failure
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester at innsendt epost ikke eksisterer i systemet. Returnerer Success med vilje selvom det er en Failure,
     /// ingen ondsinnete brukere skal vite om eposten er registrert
@@ -110,25 +110,25 @@ public class AuthServiceRequestOtpAsyncTests
     {
         // Arrange
         var request = AuthRequestBuilder.CreateRequestOtpRequest();
-        
+
         // mocker UserManager til å returnere inaktive bruker
         _userManagerMock
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync((ApplicationUser?)null);
-        
-         // Act
-         var result = await _sut.RequestOtpAsync(request);
-         
-         // Assert - Sjekker at Result er Success (selvom det er failure), og at tilhørende service-metoder blir kalt
-         // 0 ganger
-         result.IsSuccess.Should().BeTrue();
-         _otpCodeServiceMock.Verify(x => x.GenerateOtpCodeAsync(It.IsAny<Guid>(), 
-             It.IsAny<CancellationToken>()), Times.Never);
-         _emailServiceMock.Verify(x => x.SendAsync(It.IsAny<string>(), 
-             It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        // Act
+        var result = await _sut.RequestOtpAsync(request);
+
+        // Assert - Sjekker at Result er Success (selvom det er failure), og at tilhørende service-metoder blir kalt
+        // 0 ganger
+        result.IsSuccess.Should().BeTrue();
+        _otpCodeServiceMock.Verify(x => x.GenerateOtpCodeAsync(It.IsAny<Guid>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _emailServiceMock.Verify(x => x.SendAsync(It.IsAny<string>(),
+            It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Never);
     }
-    
-    
+
+
     /// <summary>
     /// Tester at innsendt epost tilhører en bruker som ikke er aktive.
     /// Returnerer Success med vilje selvom det er en Failure, ingen ondsinnete brukere skal vite om eposten er
@@ -141,25 +141,25 @@ public class AuthServiceRequestOtpAsyncTests
         var request = AuthRequestBuilder.CreateRequestOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         user.IsActive = false;
-        
+
         // mocker UserManager til å returnere null
         _userManagerMock
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync(user);
-        
+
         // Act
         var result = await _sut.RequestOtpAsync(request);
-         
+
         // Assert - Sjekker at Result er Success (selvom det er failure), og at tilhørende service-metoder blir kalt
         // 0 ganger
         result.IsSuccess.Should().BeTrue();
-        _otpCodeServiceMock.Verify(x => x.GenerateOtpCodeAsync(It.IsAny<Guid>(), 
+        _otpCodeServiceMock.Verify(x => x.GenerateOtpCodeAsync(It.IsAny<Guid>(),
             It.IsAny<CancellationToken>()), Times.Never);
-        _emailServiceMock.Verify(x => x.SendAsync(It.IsAny<string>(), 
+        _emailServiceMock.Verify(x => x.SendAsync(It.IsAny<string>(),
             It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Never);
     }
-    
-    
+
+
     /// <summary>
     /// Tester at SendAsync fra EmailService failer, og returnerer Failure. Dette skal ikke skje i produksjon,
     /// derfor returnerer vi failure
@@ -172,32 +172,32 @@ public class AuthServiceRequestOtpAsyncTests
         var user = TestDataSeeder.CreateApplicationUser();
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
         var emailError = AppError.Create(ErrorCode.EmailSendFailed, "Email service down");
-        
+
         // mocker UserManager til å returerne opprettet bruker
         _userManagerMock
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync(user);
-        
+
         // mocker OtpCodeService til å returnere Result med Success
         _otpCodeServiceMock
             .Setup(x => x.GenerateOtpCodeAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<string>.Success(otpCode));
-        
+
         // mocker EmailService til å returere Result med Failure
         _emailServiceMock
             .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure(emailError));
-        
+
         // Act
         var result = await _sut.RequestOtpAsync(request);
- 
+
         // Assert - Sjekker at Result er Failure og at ErrorCode er korrekt
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.EmailSendFailed);
     }
-    
-    
+
+
     /// <summary>
     /// Tester at OtpService returnerer Result med Failure.
     /// Returnerer Success med vilje selvom det er en Failure, ingen ondsinnete brukere skal vite om eposten er
@@ -210,23 +210,23 @@ public class AuthServiceRequestOtpAsyncTests
         var request = AuthRequestBuilder.CreateRequestOtpRequest();
         var user = TestDataSeeder.CreateApplicationUser();
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, "Max attempts exceeded");
-        
+
         // mocker UserManager til å returerne opprettet bruker
         _userManagerMock
             .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync(user);
-        
+
         // mocker OtpCodeService til å returnere Result med Failure
         _otpCodeServiceMock
             .Setup(x => x.GenerateOtpCodeAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<string>.Failure(otpCodeError));
-        
+
         // Act
         var result = await _sut.RequestOtpAsync(request);
- 
+
         // Assert - Sjekker at Result er Failure og EmailService aldri blir kalt
         result.IsSuccess.Should().BeTrue();
-        _emailServiceMock.Verify(x => x.SendAsync(It.IsAny<string>(), 
+        _emailServiceMock.Verify(x => x.SendAsync(It.IsAny<string>(),
             It.IsAny<EmailBody>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }

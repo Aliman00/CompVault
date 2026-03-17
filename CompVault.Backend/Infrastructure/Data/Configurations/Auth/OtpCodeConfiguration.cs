@@ -16,11 +16,11 @@ internal sealed class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
         builder.Property(o => o.CreatedAt).IsRequired();
         builder.Property(o => o.IsUsed).IsRequired();
         builder.Property(o => o.FailedAttempts).IsRequired();
-        
+
         // Matcher query filteret på ApplicationUser slik at soft-slettede brukere
         // ikke forårsaker uventede resultater i joins
         builder.HasQueryFilter(o => o.User.DeletedAt == null);
-        
+
         // Relasjon mellom User og OtpCodes - En OtpCode hører til en User, og en User kan ha mange OtpCodes
         builder.HasOne(o => o.User)
             .WithMany(u => u.OtpCodes)

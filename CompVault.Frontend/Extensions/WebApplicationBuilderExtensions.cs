@@ -7,7 +7,7 @@ namespace CompVault.Frontend.Extensions;
 /// </summary>
 public static class WebApplicationBuilderExtensions
 {
-    
+
     /// <summary>
     /// Setter opp Serilog med consolelogging fra appsettings
     /// </summary>
@@ -15,7 +15,7 @@ public static class WebApplicationBuilderExtensions
     {
         // Fjerner Microsoft standard logging
         builder.Logging.ClearProviders();
-        
+
         builder.Host.UseSerilog((context, services, config) =>
             config.ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services)

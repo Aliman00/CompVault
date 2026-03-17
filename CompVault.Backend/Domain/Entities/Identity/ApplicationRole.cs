@@ -14,7 +14,7 @@ public class ApplicationRole : IdentityRole<Guid>
     // - Name (string?)
     // - NormalizedName (string?)
     // - ConcurrencyStamp (string?)
-    
+
     // ======================== Rolle egenskaper ========================
     /// <summary>Kort forklaring av hva rollen innebærer</summary>
     [StringLength(250)]
@@ -22,10 +22,10 @@ public class ApplicationRole : IdentityRole<Guid>
 
     /// <summary>Når rollen ble opprettet (UTC).</summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     /// <summary>Brukeren som opprettet rollen</summary>
     public Guid? CreatedById { get; set; }
-    
+
     // ======================== Navigasjonsegenskaper ========================
     public ApplicationUser? CreatedBy { get; set; }
     public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();

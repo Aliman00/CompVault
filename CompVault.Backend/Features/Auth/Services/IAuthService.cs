@@ -26,11 +26,12 @@ public interface IAuthService
     /// <summary>
     /// Utsteder et nytt access token ved hjelp av et gyldig refresh token.
     /// </summary>
-    Task<Result<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request,
+    Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request,
         CancellationToken ct = default);
 
     /// <summary>
     /// Ugyldiggjør et refresh token — i praksis logger brukeren ut.
+    /// Sjekker at tokenet tilhører den innloggede brukeren.
     /// </summary>
-    Task<Result> RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
+    Task<Result> RevokeRefreshTokenAsync(RevokeTokenRequest request, Guid currentUserId, CancellationToken ct = default);
 }

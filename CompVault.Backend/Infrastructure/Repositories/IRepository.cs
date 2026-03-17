@@ -16,7 +16,7 @@ public interface IRepository<T> where T : class
     Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Henter en filtrert liste basert på et predikat.</summary>
-    Task<IReadOnlyList<T>> FindAsync(Expression<Func<T, bool>> predicate, 
+    Task<IReadOnlyList<T>> FindAsync(Expression<Func<T, bool>> predicate,
         CancellationToken cancellationToken = default);
 
     /// <summary>Legger til en ny entitet i change-trackeren. Kall SaveChangesAsync() for å persistere.</summary>
@@ -30,7 +30,7 @@ public interface IRepository<T> where T : class
 
     /// <summary>Sjekker om det finnes noen entitet som matcher predikatet.</summary>
     Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
-    
+
     /// <summary>Persisterer alle ventende endringer til databasen</summary>
     Task SaveChangesAsync(CancellationToken ct = default);
 }

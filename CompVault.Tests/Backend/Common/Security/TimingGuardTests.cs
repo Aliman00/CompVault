@@ -18,15 +18,15 @@ public class TimingGuardTests
         var minimumMs = 500;
         var operationSw = Stopwatch.StartNew();
         var testingStopwatch = Stopwatch.StartNew();
-        
+
         // Act
         await TimingGuard.EnforceMinimumTimeAsync(operationSw, minimumMs, CancellationToken.None);
         testingStopwatch.Stop();
-        
+
         // Assert - Tiden må være høyere enn minimumMs. Slack på 10 ms
         testingStopwatch.ElapsedMilliseconds.Should().BeGreaterThanOrEqualTo(minimumMs - 10);
     }
-    
+
     /// <summary>
     /// Tester at metoden ikke delayer hvis innsendt StopWatch har brukt mer tid enn minimum tiden
     /// </summary>
@@ -37,19 +37,19 @@ public class TimingGuardTests
         var minimumMs = 500;
         var operationSw = Stopwatch.StartNew();
         await Task.Delay(minimumMs + 100); // Sikrer at vi er over minimums tiden
-        
+
         // Starter StopWatchen som måler selve metoden
         var testingStopwatch = Stopwatch.StartNew();
         var estimatedTestingTimeMs = 200;
-        
+
         // Act
         await TimingGuard.EnforceMinimumTimeAsync(operationSw, minimumMs, CancellationToken.None);
         testingStopwatch.Stop();
-        
+
         // Assert - Tiden selve EnforceMinimumTimeAsync brukte uten å delaye skal være lav
         testingStopwatch.ElapsedMilliseconds.Should().BeLessThan(estimatedTestingTimeMs);
     }
-    
+
     /// <summary>
     /// Tester at metoden stopper StopWatch-objektet
     /// </summary>
@@ -59,14 +59,14 @@ public class TimingGuardTests
         // Arrange - Starter metodens stopwatch
         var minimumMs = 500;
         var operationSw = Stopwatch.StartNew();
-        
+
         // Act
         await TimingGuard.EnforceMinimumTimeAsync(operationSw, minimumMs, CancellationToken.None);
-        
+
         // Assert - Sjekker at den er stoppet
         operationSw.IsRunning.Should().BeFalse();
     }
-    
+
     /// <summary>
     /// Tester at CancellationToken stopper metoden og kaster OperationCanceledException
     /// </summary>
@@ -76,18 +76,18 @@ public class TimingGuardTests
         // Arrange - Starter metodens stopwatch
         var minimumMs = 10000;
         var operationSw = Stopwatch.StartNew();
-        
+
         // Oppretter en CancellationToken som vi avbryter
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
         var token = cts.Token;
-        
+
         // Act
-        var act = async () => 
+        var act = async () =>
             await TimingGuard.EnforceMinimumTimeAsync(operationSw, minimumMs, token);
-        
+
         // Assert - Sjekker at det ble kastet riktig error
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
-    
+
 }
