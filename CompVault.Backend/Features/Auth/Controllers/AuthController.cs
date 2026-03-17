@@ -1,11 +1,11 @@
-using CompVault.Backend.Features.Auth;
+using CompVault.Backend.Controllers;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CompVault.Backend.Controllers;
+namespace CompVault.Backend.Features.Auth.Controllers;
 
 /// <summary>
 /// Håndterer passwordless innlogging via engangs-kode (OTP), token-refresh og utlogging.
