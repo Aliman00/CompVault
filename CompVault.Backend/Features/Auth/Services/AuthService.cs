@@ -23,10 +23,12 @@ public sealed class AuthService(
     UserManager<ApplicationUser> userManager, 
     ILogger<IAuthService> logger,
     IJwtService jwtService, 
+    IRefreshTokenService refreshTokenService,
     IOtpCodeService otpCodeService,
     IEmailService emailService,
     IOptions<OtpOptions> otpOptions,
     IOptions<JwtSettings> jwtSettings,
+    
     IRefreshTokenRepository refreshTokenRepository,
     IUnitOfWork unitOfWork) : IAuthService
 {
@@ -103,39 +105,39 @@ public sealed class AuthService(
             if (user == null || !user.IsActive || user.DeletedAt != null)
                 return Result<LoginResponse>.Failure(
                     AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
-
+            
+            // Verifiserer OTP og markerer koden som brukt
             var otpResult = await otpCodeService.VerifyOtpCodeAsync(user.Id, request.OtpCode, ct);
             if (otpResult.IsFailure)
                 return Result<LoginResponse>.Failure(otpResult.Error!);
-
-            // Henter roller for å bygge response og tokens
-            var roles = await userManager.GetRolesAsync(user);
-
-            // Generer tokens
-            string accessToken = jwtService.GenerateAccessToken(user, roles);
-            string rawRefreshToken = jwtService.GenerateRefreshToken();
-
-            // Lagrer refresh token i databasen slik at vi kan validere og revoker det senere
-            var refreshToken = new RefreshToken
+            
+            // Oppretter en transaksjon som rollbacker eller lagrer til slutt
+            return await unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                UserId = user.Id,
-                Token = rawRefreshToken,
-                ExpiresAt = DateTime.UtcNow.AddDays(_jwt.RefreshTokenDays)
-            };
-            await refreshTokenRepository.AddAsync(refreshToken, ct);
-            await unitOfWork.SaveChangesAsync(ct);
+                // Koden er korrekt - Setter Otp-koden til brukt
+                otpResult.Value!.IsUsed = true;
 
-            // Bygger LoginResponse med Access token, refresh token og annen nødvendig informasjon frontend trenger
-            var response = new LoginResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = rawRefreshToken,
-                UserId = user.Id,
-                FullName = $"{user.FirstName} {user.LastName}",
-                Roles = roles.ToList()
-            };
+                // Opprett og lagre refresh token
+                var refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
+                if (refreshResult.IsFailure)
+                    return Result<LoginResponse>.Failure(refreshResult.Error!);
 
-            return Result<LoginResponse>.Success(response);
+                // Henter roller for å bygge response og tokens
+                var roles = await userManager.GetRolesAsync(user);
+
+                // Generer tokens
+                string accessToken = jwtService.GenerateAccessToken(user, roles);
+                
+                // Bygger LoginResponse med Access token, refresh token og annen nødvendig informasjon frontend trenger
+                return Result<LoginResponse>.Success(new LoginResponse
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshResult.Value!,
+                    UserId = user.Id,
+                    FullName = $"{user.FirstName} {user.LastName}",
+                    Roles = roles.ToList()
+                });
+            }, ct);
         }
         finally
         {
@@ -169,7 +171,7 @@ public sealed class AuthService(
         // stjålne tokens oppdages ved neste forsøk på bruk.
         storedToken.IsRevoked = true;
 
-        string newRawRefreshToken = jwtService.GenerateRefreshToken();
+        string newRawRefreshToken = refreshTokenService.GenerateRefreshToken();
         var newRefreshToken = new RefreshToken
         {
             UserId = user.Id,

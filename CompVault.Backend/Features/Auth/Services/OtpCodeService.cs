@@ -65,7 +65,7 @@ public class OtpCodeService(
     }
     
     /// <inheritdoc />
-    public async Task<Result> VerifyOtpCodeAsync(Guid userId, string userOtpCode, CancellationToken ct = default)
+    public async Task<Result<OtpCode>> VerifyOtpCodeAsync(Guid userId, string userOtpCode, CancellationToken ct = default)
     {
         // Henter den aktive koden
         OtpCode? otpCode = await otpCodeRepository.GetActiveCodeAsync(userId, ct);
@@ -78,14 +78,14 @@ public class OtpCodeService(
         {
             logger.LogWarning("User {UserId} is attempting to verify Otp without an active code", userId);
             // Lik feilmelding som hvis koden ikke er korrekt
-            return Result.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
+            return Result<OtpCode>.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
         }
         
         // Sjekker om det er flere forsøk igjen
         if (otpCode.FailedAttempts >= _otp.MaxFailedAttempts)
         {
             logger.LogWarning("User {UserId} has exceeded max OTP attempts", userId);
-            return Result.Failure(AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, 
+            return Result<OtpCode>.Failure(AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, 
                 "Too many failed attempts. Try login again"));
         }
         
@@ -102,13 +102,11 @@ public class OtpCodeService(
             await unitOfWork.SaveChangesAsync(ct);
             
             // Lik feilmelding som ikke-eksisterende bruker
-            return Result.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code")); 
+            return Result<OtpCode>.Failure(AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code")); 
         }
         
-        // Korrekt kode
-        otpCode.IsUsed = true;
-        await unitOfWork.SaveChangesAsync(ct);
-        return Result.Success();
+        // Retunrerer koden for lagring i transaksjonen
+        return Result<OtpCode>.Success(otpCode);
     }
 
     // ======================== Hjelpemetoder ========================

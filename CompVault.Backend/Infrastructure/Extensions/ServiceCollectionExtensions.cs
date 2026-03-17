@@ -168,7 +168,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IOtpCodeService, OtpCodeService>();
-        services.AddScoped<IRefreshTokenService, RefreshRefreshTokenService>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
         return services;
     }
