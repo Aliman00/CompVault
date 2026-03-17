@@ -21,12 +21,12 @@ public interface IAuthService
     /// Returnerer Failure hvis brukeren ikke eksisterer, feil kode eller ingen aktiv kode
     /// Bruker StopWatch for å sikre at metoden bruker like lang tid om brukeren eksisterer eller ikke
     /// </summary>
-    Task<Result<LoginResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default);
+    Task<Result<RefreshTokenResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Utsteder et nytt access token ved hjelp av et gyldig refresh token.
     /// </summary>
-    Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request,
+    Task<Result<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request,
         CancellationToken ct = default);
 
     /// <summary>

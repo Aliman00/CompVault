@@ -89,7 +89,7 @@ public sealed class AuthService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<LoginResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default)
+    public async Task<Result<RefreshTokenResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default)
     {
         // Starter en stopwatch for å bruke like lang tid uansett
         var sw = Stopwatch.StartNew();
@@ -107,13 +107,13 @@ public sealed class AuthService(
             // Samme feilmelding om brukeren eksisterer eller samme kode
             // Hvis grensen på forsøk er nådd, så får sender vi egen feilmelding til frontend
             if (user == null || !user.IsActive || user.DeletedAt != null)
-                return Result<LoginResponse>.Failure(
+                return Result<RefreshTokenResponse>.Failure(
                     AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
 
             // Verifiserer OTP og markerer koden som brukt
             var otpResult = await otpCodeService.VerifyOtpCodeAsync(user.Id, request.OtpCode, ct);
             if (otpResult.IsFailure)
-                return Result<LoginResponse>.Failure(otpResult.Error!);
+                return Result<RefreshTokenResponse>.Failure(otpResult.Error!);
 
             // Oppretter en transaksjon som rollbacker eller lagrer til slutt
             return await unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -124,13 +124,16 @@ public sealed class AuthService(
                 // Opprett og lagre refresh token
                 var refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
                 if (refreshResult.IsFailure)
-                    return Result<LoginResponse>.Failure(refreshResult.Error!);
+                    return Result<RefreshTokenResponse>.Failure(refreshResult.Error!);
 
-                // Henter roller for å bygge response og tokens
+                // Henter roller for å bygge tokens
                 var roles = await userManager.GetRolesAsync(user);
 
-                // Bygger LoginResponse med Access token, refresh token og annen nødvendig informasjon frontend trenger
-                return Result<LoginResponse>.Success(BuildLoginResponse(user, roles, refreshResult.Value!));
+                return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
+                {
+                    AccessToken = jwtService.GenerateAccessToken(user, roles),
+                    RefreshToken = refreshResult.Value!
+                });
             }, ct);
         }
         finally
@@ -142,7 +145,7 @@ public sealed class AuthService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request,
+    public async Task<Result<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request,
         CancellationToken ct = default)
     {
         // Henter og validerer refresh token fra databasen — tidligere ble dette ikke sjekket mot DB
@@ -150,16 +153,16 @@ public sealed class AuthService(
             .GetValidTokenAsync(request.RefreshToken, ct);
 
         if (storedToken is null)
-            return Result<LoginResponse>.Failure(
+            return Result<RefreshTokenResponse>.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
 
         ApplicationUser? user = await userManager.FindByIdAsync(storedToken.UserId.ToString());
 
         if (user is null || !user.IsActive || user.DeletedAt is not null)
-            return Result<LoginResponse>.Failure(
+            return Result<RefreshTokenResponse>.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Bruker ikke funnet eller inaktiv."));
 
-        IList<string> roles = await userManager.GetRolesAsync(user);
+        var roles = await userManager.GetRolesAsync(user);
 
         // Utføerer oppdatering og opprettelse i en transaksjon
         return await unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -172,9 +175,13 @@ public sealed class AuthService(
             // Opprett og lagre refresh token
             var refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
             if (refreshResult.IsFailure)
-                return Result<LoginResponse>.Failure(refreshResult.Error!);
+                return Result<RefreshTokenResponse>.Failure(refreshResult.Error!);
 
-            return Result<LoginResponse>.Success(BuildLoginResponse(user, roles, refreshResult.Value!));
+            return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
+            {
+                AccessToken = jwtService.GenerateAccessToken(user, roles),
+                RefreshToken = refreshResult.Value!
+            });
         }, ct);
     }
 
@@ -201,15 +208,12 @@ public sealed class AuthService(
         return Result.Success();
     }
 
-    private LoginResponse BuildLoginResponse(
+    private RefreshTokenResponse BuildRefreshTokenResponse(
         ApplicationUser user,
         IList<string> roles,
         string rawRefreshToken) => new()
         {
             AccessToken = jwtService.GenerateAccessToken(user, roles),
-            RefreshToken = rawRefreshToken,
-            UserId = user.Id,
-            FullName = $"{user.FirstName} {user.LastName}".Trim(),
-            Roles = roles.ToList()
+            RefreshToken = rawRefreshToken
         };
 }
