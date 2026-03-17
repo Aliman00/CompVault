@@ -26,7 +26,9 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
                 User = u,
                 Roles = DbContext.UserRoles
                     .Where(ur => ur.UserId == u.Id)
-                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name!)
+                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                    .Where(name => name != null)
+                    .Select(name => name!)
                     .ToList()
             })
             .ToListAsync(cancellationToken);
