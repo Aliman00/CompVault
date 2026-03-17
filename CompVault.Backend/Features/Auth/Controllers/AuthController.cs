@@ -28,10 +28,10 @@ public sealed class AuthController(IAuthService authService) : BaseController
         CancellationToken ct)
     {
         var result = await authService.RequestOtpAsync(request, ct);
-        
+
         if (result.IsFailure)
             return HandleFailure(result);
-        
+
         // Returnerer alltid 200 så fremt ingen interne feil — se IAuthService.RequestOtpAsync
         return Ok();
     }
@@ -86,10 +86,10 @@ public sealed class AuthController(IAuthService authService) : BaseController
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RevokeAsync(
-        [FromBody] string refreshToken,
+        [FromBody] RevokeTokenRequest request,
         CancellationToken cancellationToken)
     {
-        await authService.RevokeRefreshTokenAsync(refreshToken, cancellationToken);
+        await authService.RevokeRefreshTokenAsync(request, cancellationToken);
         return NoContent();
     }
 }

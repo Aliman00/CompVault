@@ -2,6 +2,7 @@
 
 namespace CompVault.Backend.Features.Test.Dtos;
 
+#if DEBUG
 /// <summary>
 /// Test Request for å sende epost og sjekke at Resend fungerer
 /// </summary>
@@ -11,3 +12,4 @@ public class TestEmailRequest
     [EmailAddress(ErrorMessage = "Recipient email must be a valid email address")]
     public string RecipientEmail { get; init; } = string.Empty;
 }
+#endif
