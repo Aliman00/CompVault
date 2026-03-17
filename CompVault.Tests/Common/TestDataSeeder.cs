@@ -1,6 +1,6 @@
-﻿using CompVault.Backend.Domain.Entities.Auth;
+﻿using CompVault.Backend.Common.Security;
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Features.Helpers;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Tests.Common.Constants;
 using Microsoft.AspNetCore.Identity;
