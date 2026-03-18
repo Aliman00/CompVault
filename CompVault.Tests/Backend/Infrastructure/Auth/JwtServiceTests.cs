@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
+using FluentAssertions;
 using Microsoft.Extensions.Options;
 
 namespace CompVault.Tests.Backend.Infrastructure.Auth;
@@ -75,6 +76,25 @@ public class JwtServiceTests
     }
 
    
+
+    /// <summary>
+    /// Tester at GenerateAccessToken setter korrekt utløpstidspunkt basert på AccessTokenMinutes
+    /// </summary>
+    [Fact]
+    public void GenerateAccessToken_HasCorrectExpiration()
+    {
+        // Arrange
+        var before = DateTime.UtcNow;
+
+        // Act
+        var token = _sut.GenerateAccessToken(_testUser, []);
+        var handler = new JwtSecurityTokenHandler();
+        var parsed = handler.ReadJwtToken(token);
+
+        // Assert — ValidTo skal være innenfor ett sekund av forventet utløpstidspunkt
+        var expectedExpiry = before.AddMinutes(JwtSettings.AccessTokenMinutes);
+        parsed.ValidTo.Should().BeCloseTo(expectedExpiry, TimeSpan.FromSeconds(1));
+    }
 
     /// <summary>
     /// Tester at GetPrincipalFromExpiredToken klarer å lese claims korrekt.
