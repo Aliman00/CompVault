@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email.Models;
-using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
