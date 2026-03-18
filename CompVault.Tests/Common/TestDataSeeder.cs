@@ -30,7 +30,7 @@ public static class TestDataSeeder
 
         // Nuker databasen og oppretter en ny database for hver integrasjonstest
         await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
+        await context.Database.EnsureCreatedAsync(); // TODO: Bytt til MigrateAsync når vi har migrasjon
     }
 
     // -------------------------------------------------------------------------
