@@ -2,13 +2,13 @@
 
 public class GlobalExceptionHandlerTests
 {
-    private readonly GlobalExce
+    private readonly GlobalExceptionHandler _sut;
     
     [Theory]
     public async Task GlobalExceptionHandler_DifferentExceptionType_ReturnsCorrectResponse(
         Type exceptionType, int expectedStatus, string expectedCode)
     {
         // Arrange
-        var logger = Substitute.
-    }
+            }
+var logger = Substitute.
 }
