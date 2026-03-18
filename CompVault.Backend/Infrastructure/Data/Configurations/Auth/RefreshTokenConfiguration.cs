@@ -25,6 +25,9 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
             .WithMany(u => u.RefreshTokens)
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        // Matching query filter — filtrer bort tokens tilhørende soft-slettede brukere
+        builder.HasQueryFilter(r => r.User.DeletedAt == null);
 
         // Index på Token for rask oppslag ved refresh
         builder.HasIndex(r => r.Token).IsUnique();

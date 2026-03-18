@@ -1,9 +1,10 @@
-﻿using CompVault.Backend.Domain.Entities.Auth;
+﻿using CompVault.Backend.Common.Security;
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Features.Helpers;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Tests.Common.Constants;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompVault.Tests.Common;
@@ -29,7 +30,7 @@ public static class TestDataSeeder
 
         // Nuker databasen og oppretter en ny database for hver integrasjonstest
         await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
+        await context.Database.EnsureCreatedAsync(); // TODO: Bytt til MigrateAsync når vi har migrasjon
     }
 
     // -------------------------------------------------------------------------
@@ -47,15 +48,32 @@ public static class TestDataSeeder
     /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
     public static ApplicationUser CreateApplicationUser(Guid? id = null,
         string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null) => new()
-        {
-            Id = id ?? Guid.NewGuid(),
-            Email = email,
-            UserName = email,
-            FirstName = "Fredrik",
-            LastName = "Magee",
-            IsActive = deletedAt == null,
-            DeletedAt = deletedAt
-        };
+    {
+        Id = id ?? Guid.NewGuid(),
+        Email = email,
+        UserName = email,
+        FirstName = "Fredrik",
+        LastName = "Magee",
+        IsActive = deletedAt == null,
+        DeletedAt = deletedAt
+    };
+    
+    /// <summary>
+    /// Oppretter en Otp-kode tilhørende en bruker
+    /// </summary>
+    /// <param name="userId">Brukeren som Otp-koden tilhører</param>
+    /// <param name="plainTextCode">Koden i plaintext som blir hashet i metoden</param>
+    /// <param name="expiresAtMin">Antall minutter til den utgår</param>
+    /// <param name="failedAttempts">Antall feilede forsøk</param>
+    /// <returns>En opprettet OtpCode</returns>
+    public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode, 
+        int expiresAtMin = 10, int failedAttempts = 0) => new OtpCode
+    {
+        UserId = userId ?? TestConstants.Users.ActiveUserId,
+        Code = OtpHasher.HashCode(plainTextCode),
+        ExpiresAt = DateTime.UtcNow.AddMinutes(expiresAtMin),
+        FailedAttempts = failedAttempts
+    };
 
 
     /// <summary>
@@ -103,13 +121,8 @@ public static class TestDataSeeder
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        context.Set<OtpCode>().Add(new OtpCode
-        {
-            UserId = TestConstants.Users.ActiveUserId,
-            Code = OtpHasher.HashCode(plainTextCode),
-            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
-            FailedAttempts = failedAttempts
-        });
+        context.Set<OtpCode>().Add(CreateOtpCode(userId: TestConstants.Users.ActiveUserId,
+            plainTextCode: plainTextCode, failedAttempts: failedAttempts));
 
         await context.SaveChangesAsync();
     }

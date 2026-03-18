@@ -22,11 +22,11 @@ namespace CompVault.Backend.Features.Auth.Services;
 public sealed class AuthService(
     UserManager<ApplicationUser> userManager,
     ILogger<IAuthService> logger,
-    IJwtService jwtService,
-    IRefreshTokenService refreshTokenService,
+    IJwtService jwtService, 
     IOtpCodeService otpCodeService,
     IEmailService emailService,
     IOptions<OtpOptions> otpOptions,
+    IRefreshTokenService refreshTokenService,
     IRefreshTokenRepository refreshTokenRepository,
     IUnitOfWork unitOfWork) : IAuthService
 {

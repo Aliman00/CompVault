@@ -1,6 +1,4 @@
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Features.Users;
-using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -16,7 +14,6 @@ public class UserServiceTests
     // Mocker avhengighetene UserService trenger
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
-    private readonly Mock<IUnitOfWork> _unitOfWorkMock;
 
     // Systemet vi tester
     private readonly UserService _sut;
@@ -36,7 +33,6 @@ public class UserServiceTests
     public UserServiceTests()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
-        _unitOfWorkMock = new Mock<IUnitOfWork>();
 
         // UserManager krever en IUserStore-mock for å kunne instansieres
         var storeMock = new Mock<IUserStore<ApplicationUser>>();
@@ -47,8 +43,7 @@ public class UserServiceTests
 
         _sut = new UserService(
             _userRepositoryMock.Object,
-            _userManagerMock.Object,
-            _unitOfWorkMock.Object);
+            _userManagerMock.Object);
     }
 
     /// <summary>
@@ -174,9 +169,9 @@ public class UserServiceTests
             .Setup(r => r.SoftDeleteAsync(_testUser, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock
+        _userRepositoryMock
             .Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _sut.DeleteUserAsync(_testUser.Id);

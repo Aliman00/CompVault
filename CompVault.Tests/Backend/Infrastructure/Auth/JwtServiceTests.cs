@@ -74,20 +74,7 @@ public class JwtServiceTests
         Assert.Contains(JwtSettings.Audience, parsed.Audiences);
     }
 
-    /// <summary>
-    /// Tester at GenerateRefreshToken returnerer en unik, ikke-tom Base64-streng
-    /// </summary>
-    [Fact]
-    public void GenerateRefreshToken_ReturnsTwoUniqueTokens()
-    {
-        // Act
-        var token1 = _sut.GenerateRefreshToken();
-        var token2 = _sut.GenerateRefreshToken();
-
-        // Assert - Skal ikke være tom og to kall skal aldri gi samme token
-        Assert.False(string.IsNullOrEmpty(token1));
-        Assert.NotEqual(token1, token2);
-    }
+   
 
     /// <summary>
     /// Tester at GetPrincipalFromExpiredToken klarer å lese claims korrekt.

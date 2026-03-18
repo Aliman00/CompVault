@@ -30,6 +30,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     // Initialiserer InMemory-databsen og rydder opp databasen før AuthController kjører
     public async Task InitializeAsync()
     {
+        _ = factory.CreateClient(); 
         factory.EmailServiceMock.Reset(); // Resetter mocken for å sikre at EmailService resettes mellom kjøringer
         await TestDataSeeder.CreateDb(factory.Services);
         await TestDataSeeder.SeedUserAsync(factory.Services, // Seeder en aktiv bruker
@@ -133,15 +134,11 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         // Act
         var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
 
-        // Assert - Sjekker at Result er 200 Ok og sjekker alle egenskapene på LoginResponse
+        // Assert - Sjekker at Result er 200 Ok og sjekker alle egenskapene på RefreshTokenResponse
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        var body = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
         body.RefreshToken.Should().NotBeNullOrEmpty();
-        body.UserId.Should().NotBeEmpty();
-        body.FullName.Should().NotBeEmpty();
-        body.Roles.Should().ContainSingle()
-            .Which.Should().Be(TestConstants.Roles.Default);
     }
 
     /// <summary>
@@ -247,9 +244,9 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         var verifyOtpRequest = AuthRequestBuilder.CreateVerifyOtpRequest(otpCode: capturedCode!);
         var response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, verifyOtpRequest);
 
-        // Assert - Sjekker at StatusCode er 200 Ok og at det er opprettet en LoginResponse
+        // Assert - Sjekker at StatusCode er 200 Ok og at det er opprettet en RefreshTokenResponse
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        var body = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
     }
 }
