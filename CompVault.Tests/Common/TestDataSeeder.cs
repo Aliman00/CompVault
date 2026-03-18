@@ -4,6 +4,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Tests.Common.Constants;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompVault.Tests.Common;

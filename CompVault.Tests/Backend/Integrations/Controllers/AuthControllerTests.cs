@@ -30,6 +30,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     // Initialiserer InMemory-databsen og rydder opp databasen før AuthController kjører
     public async Task InitializeAsync()
     {
+        _ = factory.CreateClient(); 
         factory.EmailServiceMock.Reset(); // Resetter mocken for å sikre at EmailService resettes mellom kjøringer
         await TestDataSeeder.CreateDb(factory.Services);
         await TestDataSeeder.SeedUserAsync(factory.Services, // Seeder en aktiv bruker
