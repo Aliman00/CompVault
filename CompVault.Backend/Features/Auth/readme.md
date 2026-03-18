@@ -12,11 +12,15 @@ er nede, så returner da en egen feilmelding for det.
 2. Logger hvis e-posten er ukjent eller kontoen er deaktivert. Vi avslører ikke dette til frontend
 3. Hvis brukeren eksisterer og er aktiv: genereres en 6-sifret kode, hashes med SHA-256 og lagres i databasen med utløpstid
 4. Koden sendes til brukeren via valgt kanal (e-post eller SMS) - Kun Epost er implementert enda
+5. OTP-generering og e-postsending skjer i en transaksjon, slik at hvis epost sending feiler så rulles OTP-koden tilbake
 
 ### Beskyttelse mot misbruk
 
 - **Per-konto cooldown** — ny kode kan ikke forespørres før eksisterende kode er utgått
+- **Race condition-beskyttelse** — filtrert unik indeks i databasen sikrer at en bruker kan kun ha en aktiv kode omgangen
 - **Delay med TimingGuard** - delayer metoden slik at den alltid bruker en minimum tid. Gir ingen ondsinnete brukere sjansje til å gjette om brukeren eksisterer eller ikke
+
+---
 
 # VerifyOtpAsync
 
@@ -31,9 +35,10 @@ håndtere antall forsøk, men backend teller og har en maksgrense den også.
 1. Slår opp brukeren på e-post
 2. Logger hvis e-posten er ukjent eller kontoen er deaktivert. Vi avslører ikke dette til frontend/brukeren
 3. Returnerer generisk feilmelding hvis brukeren ikke eksisterer, er deaktivert eller slettet
-4. Verifiserer OTP-koden mot lagret hash
+4. Verifiserer OTP-koden mot lagret hash. Vi oppdaterer OTP-koden med antall feilede forsøk alltid - dette skal ikke være med i transaksjonen som ruller tilbake ved Failure
 5. Returnerer generisk feilmelding hvis ingen aktiv kode finnes, eller koden ikke stemmer
-6. Ved suksess: markeres koden som brukt, og et JWT access token + refresh token returneres i LoginResponse
+6. Ved suksess: `IsUsed = true` og Refresh Token lagres samtidig i en transaksjon. Lykkes IsUsed = true, og Refresh Token feiler, så er ikke OTP-koden satt som brukt
+7. Returnerer access token og refresh token i `RefreshTokenResponse`
 
 ### Beskyttelse mot misbruk
 
@@ -42,8 +47,41 @@ håndtere antall forsøk, men backend teller og har en maksgrense den også.
 - **Maks antall forsøk** — koden låses etter et konfigurerbart antall feilede forsøk, med egen feilmelding for dette tilfellet
 - **Delay med TimingGuard** — metoden bruker alltid en minimumstid via `finally`-blokk, uavhengig av utfall
 
-TODO:
-- **Refresh token lagring** — refresh token genereres men lagres ikke ennå; må persisteres i databasen for å kunne valideres ved neste bruk
+---
+
+# RefreshTokenAsync
+
+Roterer et eksisterende refresh token og returnerer et nytt Access Token (Jwt-token) og et nytt Refresh Token.
+Refresh Token lagres i databasen.
+
+### Flyt
+
+1. Henter og validerer refresh token fra databasen
+2. Returnerer feilmelding hvis tokenet er ugyldig, utgått eller revokert
+3. Henter brukeren og validerer at den er aktiv
+4. Revoker det gamle tokenet og oppretter et nytt i en transaksjon, med mulighet for rollback
+5. Returnerer nytt access token og refresh token i `RefreshTokenResponse`
+
+### Token rotation
+
+Hvert refresh token kan kun brukes en gang. Ved fornyelse revokers det gamle tokenet
+og et nytt utstedes — alt i en transaksjon. Feiler opprettelsen av nytt token forblir
+det gamle tokenet gyldig og brukeren kan prøve igjen.
+Gamle tokens blir ryddet opp i en bakgrunnjob som kjører hver natt.
+
+---
+
+# RevokeRefreshTokenAsync
+
+Revoker et aktivt refresh token, og logger brukeren effektivt ut.
+
+### Flyt
+
+1. Henter tokenet fra databasen — kun gyldige tokens kan revokers
+2. Returnerer feilmelding hvis tokenet er ugyldig eller allerede revokert
+3. Setter `IsRevoked = true` og lagrer
+
+---
 
 TODO:
 - **IP-basert rate limiting** — maks antall forespørsler per IP per tidsenhet (Implementere senere?)
