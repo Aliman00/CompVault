@@ -5,6 +5,7 @@ using CompVault.Shared.Result;
 using Microsoft.AspNetCore.Identity;
 using System.Linq.Expressions;
 using CompVault.Backend.Features.Users.Services;
+using FluentAssertions;
 using Moq;
 
 namespace CompVault.Tests.Backend.Features.Users;
@@ -198,5 +199,148 @@ public class UserServiceTests
         // Assert
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorCode.NotFound, result.Error!.Code);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetAllUsersAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at GetAllUsersAsync returnerer en liste med mappede UserDto-er for alle aktive brukere
+    /// </summary>
+    [Fact]
+    public async Task GetAllUsersAsync_ReturnsListOfActiveUsers()
+    {
+        // Arrange
+        var user1 = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            Email = "bruker1@example.com",
+            UserName = "bruker1@example.com",
+            FirstName = "Ola",
+            LastName = "Nordmann",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        var user2 = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            Email = "bruker2@example.com",
+            UserName = "bruker2@example.com",
+            FirstName = "Kari",
+            LastName = "Nordmann",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var usersWithRoles = new List<(ApplicationUser User, List<string> Roles)>
+        {
+            (user1, ["Employee"]),
+            (user2, ["Admin"])
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.GetActiveUsersWithRolesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(usersWithRoles);
+
+        // Act
+        var result = await _sut.GetAllUsersAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Should().HaveCount(2);
+        result.Value!.Should().Contain(u => u.Email == user1.Email);
+        result.Value!.Should().Contain(u => u.Email == user2.Email);
+    }
+
+    /// <summary>
+    /// Tester at GetAllUsersAsync returnerer en tom liste når det ikke finnes aktive brukere
+    /// </summary>
+    [Fact]
+    public async Task GetAllUsersAsync_WhenNoUsers_ReturnsEmptyList()
+    {
+        // Arrange
+        _userRepositoryMock
+            .Setup(r => r.GetActiveUsersWithRolesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<(ApplicationUser, List<string>)>());
+
+        // Act
+        var result = await _sut.GetAllUsersAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Should().BeEmpty();
+    }
+
+    // -------------------------------------------------------------------------
+    // UpdateUserAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at UpdateUserAsync oppdaterer felt og returnerer oppdatert UserDto
+    /// </summary>
+    [Fact]
+    public async Task UpdateUserAsync_WhenUserExists_UpdatesFieldsAndReturnsDto()
+    {
+        // Arrange
+        var request = new UpdateUserRequest
+        {
+            FirstName = "Nytt",
+            LastName = "Navn",
+            JobTitle = "Senior Developer"
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(_testUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_testUser);
+
+        _userRepositoryMock
+            .Setup(r => r.UpdateAsync(_testUser, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _userRepositoryMock
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _userManagerMock
+            .Setup(m => m.GetRolesAsync(_testUser))
+            .ReturnsAsync(new List<string> { "Employee" });
+
+        // Act
+        var result = await _sut.UpdateUserAsync(_testUser.Id, request);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.FirstName.Should().Be("Nytt");
+        result.Value!.LastName.Should().Be("Navn");
+        result.Value!.JobTitle.Should().Be("Senior Developer");
+
+        _userRepositoryMock.Verify(r => r.UpdateAsync(_testUser, It.IsAny<CancellationToken>()), Times.Once);
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Tester at UpdateUserAsync returnerer NotFound når brukeren ikke eksisterer
+    /// </summary>
+    [Fact]
+    public async Task UpdateUserAsync_WhenUserDoesNotExist_ReturnsNotFound()
+    {
+        // Arrange
+        var request = new UpdateUserRequest { FirstName = "Nytt" };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        // Act
+        var result = await _sut.UpdateUserAsync(Guid.NewGuid(), request);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+
+        _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }
