@@ -1,5 +1,6 @@
 using CompVault.Frontend;
 using CompVault.Frontend.Extensions;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,9 @@ builder.Services.AddHttpClients(builder.Configuration);
 
 // Forretningslogikk
 builder.Services.AddFrontendServices();
+
+// MudBlazor konfigurasjon
+builder.Services.AddMudServices();
 
 var app = builder.Build();
 

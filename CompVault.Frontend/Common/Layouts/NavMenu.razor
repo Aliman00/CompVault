@@ -1,17 +1,13 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">CompVault</a>
-    </div>
-</div>
+﻿<!-- Navigasjonsmenyen i Draweren til MainLayout -->
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-    </nav>
-</div>
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+        Hjem
+    </MudNavLink>
+    <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login">
+        Logg inn
+    </MudNavLink>
+    <MudNavLink Href="/otp" Icon="@Icons.Material.Filled.Pin">
+        OTP
+    </MudNavLink>
+</MudNavMenu>
