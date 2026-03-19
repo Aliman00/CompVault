@@ -7,10 +7,6 @@ namespace CompVault.Shared.DTOs.Auth;
 /// </summary>
 public sealed class RefreshTokenRequest
 {
-    /// <summary>Det (evt. utgåtte) access token som skal byttes ut.</summary>
-    [Required]
-    public string AccessToken { get; set; } = string.Empty;
-
     /// <summary>Refresh token brukt til å verifisere at klienten fortsatt er gyldig.</summary>
     [Required]
     public string RefreshToken { get; set; } = string.Empty;
