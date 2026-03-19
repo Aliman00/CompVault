@@ -66,7 +66,7 @@ public abstract class InMemoryRepositoryBase : IDisposable
     /// <param name="isRevoked">Bool på om koden er gyldig eller revoked</param>
     /// <returns>RefreshToken, som er lagt til i databasen</returns>
     protected async Task<RefreshToken> SeedRefreshTokenAsync(Guid? userId = null, 
-        string token = TestConstants.RefreshToken.Token, DateTime? createdAt = null, DateTime? expiresAt = null, 
+        string token = TestConstants.RefreshTokens.Token, DateTime? createdAt = null, DateTime? expiresAt = null, 
         bool isRevoked = false)
     {
         var refreshToken = TestDataFactory.CreateRefreshToken(userId, token, createdAt, expiresAt, isRevoked);

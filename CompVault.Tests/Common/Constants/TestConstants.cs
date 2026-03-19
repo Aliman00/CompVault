@@ -21,7 +21,7 @@ public static class TestConstants
         public const string PlainTextOtpCode = "476859";
     }
 
-    public static class RefreshToken
+    public static class RefreshTokens
     {
         public const string Token = "test-token";
     }

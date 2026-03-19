@@ -34,12 +34,12 @@ public static class TestDataFactory
     /// <summary>
     /// Oppretter en Otp-kode tilhørende en bruker
     /// </summary>
-    /// <param name="userId">Brukeren som Otp-koden tilhører</param>
-    /// <param name="plainTextCode">Koden i plaintext som blir hashet i metoden</param>
-    /// <param name="createdAt">Når OTP-koden er opprettet</param>
-    /// <param name="expiresAt">DateTime-objekt som spesifiserer når den går ut</param>
-    /// <param name="failedAttempts">Antall feilede forsøk</param>
-    /// <param name="isUsed">Setter om OTP-koden er brukt eller ikke</param>
+    /// <param name="userId">Brukeren som Otp-koden tilhører. Default til ActiveUserId</param>
+    /// <param name="plainTextCode">Koden i plaintext som blir hashet i metoden. Default konstant</param>
+    /// <param name="createdAt">Når OTP-koden er opprettet. Defauklt UtcNop</param>
+    /// <param name="expiresAt">DateTime-objekt som spesifiserer når den går ut. Default om 10 min</param>
+    /// <param name="failedAttempts">Antall feilede forsøk. Default = 0</param>
+    /// <param name="isUsed">Setter om OTP-koden er brukt eller ikke. Default = false</param>
     /// <returns>En opprettet OtpCode</returns>
     public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode,
         DateTime? createdAt = null, DateTime? expiresAt = null, int failedAttempts = 0, bool isUsed = false) => new()
@@ -61,11 +61,11 @@ public static class TestDataFactory
     /// <param name="expiresAt">Når den utgår. Default om 15 min fra opprettelse</param>
     /// <param name="isRevoked">Bool på om koden er gyldig eller revoked</param>
     /// <returns>En opprettet RefreshToken</returns>
-    public static RefreshToken CreateRefreshToken(Guid? userId = null, string token = TestConstants.RefreshToken.Token,
+    public static RefreshToken CreateRefreshToken(Guid? userId = null, string? token = null,
         DateTime? createdAt = null, DateTime? expiresAt = null, bool isRevoked = false) => new()
     {
         UserId = userId ?? TestConstants.Users.ActiveUserId,
-        Token = token,
+        Token = token ?? Guid.NewGuid().ToString(),
         CreatedAt = createdAt ?? DateTime.UtcNow,
         ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(15),
         IsRevoked = isRevoked
