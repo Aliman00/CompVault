@@ -28,4 +28,8 @@
     <ProjectReference Include="..\CompVault.Shared\CompVault.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Backend\Infrastructure\Jobs\" />
+  </ItemGroup>
+
 </Project>
