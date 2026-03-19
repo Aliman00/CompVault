@@ -11,6 +11,7 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.Jobs;
+using CompVault.Backend.Infrastructure.Maintenance;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -105,10 +106,14 @@ public static class ServiceCollectionExtensions
         // ============ ERROR HANDLING ============
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
-
+        
+        // ============ MAINTENANCE ============
+        services.AddScoped<ITokenCleanupService, TokenCleanupService>();
+        
         // ============ BAKGRUNNSJOBBER ============
         // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
         services.AddHostedService<TokenCleanupJob>();
+        
 
         return services;
     }
