@@ -3,6 +3,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Tests.Common;
+using CompVault.Tests.Common.Constants;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,15 +42,8 @@ public class OtpCodeRepositoryTests : IDisposable
     private async Task<OtpCode> SeedOtpCodeAsync(Guid userId, bool isUsed = false,
         DateTime? expiresAt = null, DateTime? createdAt = null)
     {
-        var otpCod = TestDataSeeder.CreateOtpCode()
-        var otpCode = new OtpCode
-        {
-            UserId = userId,
-            Code = "hashedcode",
-            IsUsed = isUsed,
-            ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(10),
-            CreatedAt = createdAt ?? DateTime.UtcNow
-        };
+        var otpCode = TestDataSeeder.CreateOtpCode(userId: userId, isUsed: isUsed,
+            expiresAt: expiresAt, createdAt: createdAt);
 
         _context.Set<OtpCode>().Add(otpCode);
         await _context.SaveChangesAsync();
@@ -61,7 +55,7 @@ public class OtpCodeRepositoryTests : IDisposable
     /// </summary>
     /// <param name="email">Default epost, eller en annen epost hvis det er en annen bruker</param>
     /// <returns>Den opprettede brukeren hvis egenskaper (som ID) er nødvendig for testing</returns>
-    private async Task<ApplicationUser> SeedUserAsync(string email = "test@example.com")
+    private async Task<ApplicationUser> SeedUserAsync(string email = TestConstants.Users.DefaultEmailForActiveUser)
     {
         var user = TestDataSeeder.CreateApplicationUser(email: email);
         _context.Users.Add(user);

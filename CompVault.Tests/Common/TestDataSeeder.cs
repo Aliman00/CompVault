@@ -62,18 +62,20 @@ public static class TestDataSeeder
     /// </summary>
     /// <param name="userId">Brukeren som Otp-koden tilhører</param>
     /// <param name="plainTextCode">Koden i plaintext som blir hashet i metoden</param>
-    /// <param name="expiresAtMin">Antall minutter til den utgår</param>
+    /// <param name="createdAt">Når OTP-koden er opprettet</param>
+    /// <param name="expiresAt">DateTime-objekt som spesifiserer når den går ut</param>
     /// <param name="failedAttempts">Antall feilede forsøk</param>
     /// <param name="isUsed">Setter om OTP-koden er brukt eller ikke</param>
     /// <returns>En opprettet OtpCode</returns>
-    public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode, 
-        int expiresAtMin = 10, int failedAttempts = 0, bool isUsed = false) => new OtpCode
+    public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode,
+        DateTime? createdAt = null, DateTime? expiresAt = null, int failedAttempts = 0, bool isUsed = false) => new()
     {
         UserId = userId ?? TestConstants.Users.ActiveUserId,
         Code = OtpHasher.HashCode(plainTextCode),
-        ExpiresAt = DateTime.UtcNow.AddMinutes(expiresAtMin),
+        CreatedAt = createdAt ?? DateTime.UtcNow,
+        ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(10),
         FailedAttempts = failedAttempts,
-        IsUsed = isUsed
+        IsUsed = isUsed,
     };
 
 
