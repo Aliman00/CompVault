@@ -1,8 +1,10 @@
-﻿using CompVault.Backend.Infrastructure.Data;
+﻿using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Tests.Common;
 using CompVault.Tests.Common.Constants;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompVault.Tests.Backend.Integrations.Repositories;
@@ -137,4 +139,64 @@ public class OtpCodeRepositoryIntegrationsTests(
         // Assert
         existingOtpCode.Should().BeNull();
     }
+    
+    // -------------------------------------------------------------------------
+    // DeleteExpiredCodesAsync
+    // -------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Tester at vi sletter alle utgåtte OTP-koder
+    /// </summary>
+    [Fact]
+    public async Task DeleteExpiredCodesAsync_ExpiredCode_DeletesCode()
+    {
+        // Arrange - oppretter utgått token
+        var expiredCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
+            expiresAt: DateTime.UtcNow.AddMinutes(-30));
+        
+        // Act
+        await _sut.DeleteExpiredCodesAsync();
+        
+        // Assert
+        var codeExists = await _context.Set<OtpCode>()
+            .AnyAsync(r => r.Id == expiredCode.Id);
+        codeExists.Should().BeFalse();
+    }
+    
+    /// <summary>
+    /// Tester at vi sletter alle brukte OTP-koder
+    /// </summary>
+    [Fact]
+    public async Task DeleteExpiredCodesAsync_UsedCode_DeletesCode()
+    {
+        // Arrange
+        var usedCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services, isUsed: true);
+        
+        // Act
+        await _sut.DeleteExpiredCodesAsync();
+        
+        // Assert
+        var codeExists = await _context.Set<OtpCode>()
+            .AnyAsync(r => r.Id == usedCode.Id);
+        codeExists.Should().BeFalse();
+    }
+    
+    /// <summary>
+    /// Tester at vi ikke sletter aktive OTP-koder
+    /// </summary>
+    [Fact]
+    public async Task DeleteExpiredCodesAsync_ActiveCode_DoesNotDeleteCode()
+    {
+        // Arrange
+        var activeCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services);
+        
+        // Act
+        await _sut.DeleteExpiredCodesAsync();
+        
+        // Assert
+        var codeExists = await _context.Set<OtpCode>()
+            .AnyAsync(r => r.Id == activeCode.Id);
+        codeExists.Should().BeTrue();
+    }
+    
 }
