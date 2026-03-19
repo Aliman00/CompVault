@@ -4,7 +4,6 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Tests.Common.Constants;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompVault.Tests.Common;
@@ -57,7 +56,7 @@ public static class TestDataSeeder
         IsActive = deletedAt == null,
         DeletedAt = deletedAt
     };
-    
+
     /// <summary>
     /// Oppretter en Otp-kode tilhørende en bruker
     /// </summary>
@@ -65,14 +64,16 @@ public static class TestDataSeeder
     /// <param name="plainTextCode">Koden i plaintext som blir hashet i metoden</param>
     /// <param name="expiresAtMin">Antall minutter til den utgår</param>
     /// <param name="failedAttempts">Antall feilede forsøk</param>
+    /// <param name="isUsed">Setter om OTP-koden er brukt eller ikke</param>
     /// <returns>En opprettet OtpCode</returns>
     public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode, 
-        int expiresAtMin = 10, int failedAttempts = 0) => new OtpCode
+        int expiresAtMin = 10, int failedAttempts = 0, bool isUsed = false) => new OtpCode
     {
         UserId = userId ?? TestConstants.Users.ActiveUserId,
         Code = OtpHasher.HashCode(plainTextCode),
         ExpiresAt = DateTime.UtcNow.AddMinutes(expiresAtMin),
-        FailedAttempts = failedAttempts
+        FailedAttempts = failedAttempts,
+        IsUsed = isUsed
     };
 
 

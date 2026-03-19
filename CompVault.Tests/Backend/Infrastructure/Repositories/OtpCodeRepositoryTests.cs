@@ -41,6 +41,7 @@ public class OtpCodeRepositoryTests : IDisposable
     private async Task<OtpCode> SeedOtpCodeAsync(Guid userId, bool isUsed = false,
         DateTime? expiresAt = null, DateTime? createdAt = null)
     {
+        var otpCod = TestDataSeeder.CreateOtpCode()
         var otpCode = new OtpCode
         {
             UserId = userId,
