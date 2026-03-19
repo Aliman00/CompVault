@@ -55,12 +55,26 @@ public abstract class InMemoryRepositoryBase : IDisposable
         await Context.SaveChangesAsync();
         return otpCode;
     }
+    
+    /// <summary>
+    /// Hjelpemetode for å seede en RefreshToken inn i databasen. Default verdier, men kan endres hvis trengs
+    /// </summary>
+    /// <param name="userId">Brukeren som Token tilhører</param>
+    /// <param name="token">Selve token, kun en enkel string i testene</param>
+    /// <param name="createdAt">Når den er opprettet. Default UtcNow</param>
+    /// <param name="expiresAt">Når den utgår. Default om 15 min fra opprettelse</param>
+    /// <param name="isRevoked">Bool på om koden er gyldig eller revoked</param>
+    /// <returns>RefreshToken, som er lagt til i databasen</returns>
+    protected async Task<RefreshToken> SeedRefreshTokenAsync(Guid? userId = null, 
+        string token = TestConstants.RefreshToken.Token, DateTime? createdAt = null, DateTime? expiresAt = null, 
+        bool isRevoked = false)
+    {
+        var refreshToken = TestDataFactory.CreateRefreshToken(userId, token, createdAt, expiresAt, isRevoked);
 
-    // protected async Task<RefreshToken> SeedRefreshTokenAsync(Guid userId, )
-    // {
-    //     var refreshToken = TestDataFactory.CreateRefreshToken(userId: userId, );
-    //
-    // }
+        Context.Set<RefreshToken>().Add(refreshToken);
+        await Context.SaveChangesAsync();
+        return refreshToken;
+    }
     
     public void Dispose() => Context.Dispose();
 }
