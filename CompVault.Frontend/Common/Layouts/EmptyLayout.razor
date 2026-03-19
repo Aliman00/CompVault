@@ -1,0 +1,65 @@
+@using CompVault.Frontend.Common.Themes
+@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
+
+<!-- Tema for login-siden -->
+<MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<!-- Login layout uten sidebar/navbar -->
+<MudLayout>
+    <MudAppBar Elevation="0" Color="Color.Transparent">
+        <MudSpacer />
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit"
+                       OnClick="ToggleDarkMode" />
+    </MudAppBar>
+
+    <MudMainContent Style="overflow: hidden; position: relative;">
+        <!-- Dekorative bakgrunns-elementer -->
+        <div style="position: absolute; top: -10%; left: -10%; width: 50%; height: 50%; background: radial-gradient(circle, rgba(var(--mud-palette-primary-rgb), 0.08) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
+        <div style="position: absolute; bottom: -20%; right: -10%; width: 60%; height: 60%; background: radial-gradient(circle, rgba(var(--mud-palette-primary-rgb), 0.05) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
+        <div style="position: absolute; top: 40%; left: 60%; width: 30%; height: 30%; background: radial-gradient(circle, rgba(var(--mud-palette-secondary-rgb), 0.06) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
+
+        <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="height: 100vh; overflow: hidden; transform: translateY(-15%); position: relative; z-index: 1;">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _isDarkMode;
+    private MudThemeProvider _mudThemeProvider = null!;
+    private readonly MudTheme _theme = CompVaultMainTheme.Theme;
+
+    private const string DarkModeKey = "compvault-darkmode";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Prøv å lese fra localStorage først
+            var savedMode = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", DarkModeKey);
+
+            if (savedMode != null && bool.TryParse(savedMode, out var savedDarkMode))
+            {
+                _isDarkMode = savedDarkMode;
+            }
+            else
+            {
+                // Fallback til system-innstilling
+                _isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        _isDarkMode = !_isDarkMode;
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", DarkModeKey, _isDarkMode.ToString());
+    }
+}

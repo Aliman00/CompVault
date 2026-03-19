@@ -1,0 +1,69 @@
+@page "/dashboard"
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>CompVault - Dashboard</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Dashboard</MudText>
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" Size="Size.Large" />
+                <MudText Typo="Typo.h6" Class="mt-2">Ansatte</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Administrer ansatte</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.School" Color="Color.Primary" Size="Size.Large" />
+                <MudText Typo="Typo.h6" Class="mt-2">Kompetanse</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Kompetanseoversikt</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.HealthAndSafety" Color="Color.Primary" Size="Size.Large" />
+                <MudText Typo="Typo.h6" Class="mt-2">HMS</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">HMS-modul</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2">
+            <MudCardContent>
+                <MudIcon Icon="@Icons.Material.Filled.Assessment" Color="Color.Primary" Size="Size.Large" />
+                <MudText Typo="Typo.h6" Class="mt-2">Rapporter</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Generer rapporter</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+<MudPaper Elevation="1" Class="pa-4 mt-6">
+    <MudText Typo="Typo.h6" Class="mb-4">Velkommen til CompVault</MudText>
+    <MudText Typo="Typo.body1">
+        Dette er din sentrale portal for kompetanse- og HMS-styring. 
+        Bruk menyen til venstre for å navigere mellom ulike moduler.
+    </MudText>
+</MudPaper>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Enkel autentiseringssjekk - i produksjon ville dette vært mer robust
+        if (!AuthService.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+}

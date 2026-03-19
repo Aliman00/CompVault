@@ -1,7 +1,403 @@
-﻿@page "/LoginPage"
-<h3>LoginPage</h3>
-<p>Hello</p>
+@page "/"
+@layout EmptyLayout
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<PageTitle>CompVault - Logg inn</PageTitle>
+
+<style>
+    .login-container {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .logo-pulse {
+        animation: pulse 3s ease-in-out infinite;
+    }
+
+    .step-transition {
+        animation: slideIn 0.4s ease-out;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .otp-input input {
+        letter-spacing: 12px !important;
+        font-size: 1.75rem !important;
+        font-weight: 600 !important;
+        text-align: center !important;
+    }
+
+    .glass-card {
+        background: rgba(var(--mud-palette-surface-rgb), 0.9);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 2px solid rgba(var(--mud-palette-primary-rgb), 0.2);
+        box-shadow: 
+            0 25px 50px -12px rgba(0, 0, 0, 0.25),
+            0 0 0 1px rgba(var(--mud-palette-primary-rgb), 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .mud-theme-dark .glass-card {
+        background: rgba(var(--mud-palette-surface-rgb), 0.85);
+        border: 2px solid rgba(var(--mud-palette-primary-rgb), 0.3);
+        box-shadow: 
+            0 25px 50px -12px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .primary-button {
+        transition: all 0.3s ease !important;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .primary-button:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(var(--mud-palette-primary-rgb), 0.4) !important;
+    }
+
+    .primary-button:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    .input-field {
+        transition: all 0.3s ease;
+    }
+
+    .input-field:focus-within {
+        transform: translateY(-1px);
+    }
+
+    .back-button {
+        transition: all 0.2s ease !important;
+    }
+
+    .back-button:hover {
+        background-color: rgba(var(--mud-palette-primary-rgb), 0.05) !important;
+    }
+</style>
+
+<MudPaper Elevation="0" Class="pa-10 rounded-2xl glass-card login-container" Style="width: 100%; max-width: 440px;">
+    <!-- Logo/Tittel -->
+    <div class="d-flex flex-column align-center mb-8">
+        <div class="logo-pulse mb-4">
+            <img src="CompVault.png" alt="CompVault Logo" style="width: 100px; height: auto; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));" />
+        </div>
+        <MudText Typo="Typo.h3" Class="mb-1" Style="font-weight: 700; letter-spacing: -0.5px;">CompVault</MudText>
+        <MudText Typo="Typo.body1" Style="opacity: 0.7; font-weight: 400;">
+            Kompetanse- og HMS-portal
+        </MudText>
+    </div>
+
+    @if (!_otpSent)
+    {
+        <!-- Steg 1: E-post input -->
+        <div class="step-transition">
+            <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight: 600;">Velkommen tilbake</MudText>
+            <MudText Typo="Typo.body2" Class="mb-5" Style="opacity: 0.6;">Skriv inn e-postadressen din for å fortsette</MudText>
+
+            <MudTextField @bind-Value="_email"
+                          @ref="_emailField"
+                          Label="E-postadresse"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          InputType="InputType.Email"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Email"
+                          AdornmentColor="Color.Primary"
+                          Immediate="true"
+                          Class="mb-5 input-field"
+                          OnKeyDown="@((e) => { if(e.Key == "Enter") _ = SubmitEmailAsync(); })"
+                          Style="border-radius: 12px;" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Size="Size.Large"
+                       OnClick="SubmitEmailAsync"
+                       Disabled="_isLoading || string.IsNullOrWhiteSpace(_email)"
+                       Class="primary-button py-3"
+                       Style="border-radius: 12px; font-weight: 600; text-transform: none; font-size: 1rem;">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Style="margin-right: 12px;" />
+                    <span>Sender kode...</span>
+                }
+                else
+                {
+                    <span>Fortsett</span>
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Class="ml-2" />
+                }
+            </MudButton>
+        </div>
+
+        <!-- Demo info -->
+        <MudAlert Severity="Severity.Info" 
+                  Class="mt-8" 
+                  Dense="true" 
+                  Variant="Variant.Outlined"
+                  Style="border-radius: 10px; font-size: 0.85rem; opacity: 0.9;">
+            <MudText Typo="Typo.caption">
+                <strong>Demo:</strong> Bruk <code style="background: rgba(var(--mud-palette-primary-rgb), 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 600;">test@compvault.no</code>
+            </MudText>
+        </MudAlert>
+    }
+    else
+    {
+        <!-- Steg 2: OTP input -->
+        <div class="step-transition">
+            <MudButton Variant="Variant.Text"
+                       Size="Size.Small"
+                       OnClick="GoBackToEmail"
+                       Disabled="_isLoading"
+                       Class="mb-4 back-button px-2"
+                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                       Style="text-transform: none; margin-left: -8px;">
+                Tilbake
+            </MudButton>
+
+            <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight: 600;">Verifiser koden</MudText>
+            <MudText Typo="Typo.body2" Class="mb-5" Style="opacity: 0.6;">
+                Vi sendte en 6-sifret kode til <span style="font-weight: 600; color: var(--mud-palette-primary);">@_email</span>
+            </MudText>
+
+            <MudTextField @bind-Value="_otpCode"
+                          @ref="_otpField"
+                          Label="Engangskode"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          InputType="InputType.Number"
+                          MaxLength="6"
+                          Immediate="true"
+                          Class="mb-5 otp-input"
+                          OnKeyDown="@((e) => { if(e.Key == "Enter") _ = SubmitOtpAsync(); })"
+                          Style="border-radius: 12px;" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Size="Size.Large"
+                       OnClick="SubmitOtpAsync"
+                       Disabled="_isLoading || string.IsNullOrWhiteSpace(_otpCode)"
+                       Class="primary-button py-3"
+                       Style="border-radius: 12px; font-weight: 600; text-transform: none; font-size: 1rem;">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Style="margin-right: 12px;" />
+                    <span>Logger inn...</span>
+                }
+                else
+                {
+                    <span>Logg inn</span>
+                    <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" Class="ml-2" />
+                }
+            </MudButton>
+
+            <div class="d-flex justify-center mt-4">
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           OnClick="ResendCode"
+                           Disabled="_isLoading || _resendTimer > 0"
+                           Style="text-transform: none;">
+                    @if (_resendTimer > 0)
+                    {
+                        <span>Send på nytt om @_resendTimer s</span>
+                    }
+                    else
+                    {
+                        <span>Ikke mottatt koden?</span>
+                    }
+                </MudButton>
+            </div>
+        </div>
+
+        <!-- Demo info -->
+        <MudAlert Severity="Severity.Info" 
+                  Class="mt-6" 
+                  Dense="true" 
+                  Variant="Variant.Outlined"
+                  Style="border-radius: 10px; font-size: 0.85rem; opacity: 0.9;">
+            <MudText Typo="Typo.caption">
+                <strong>Demo:</strong> Koden er <code style="background: rgba(var(--mud-palette-primary-rgb), 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 600;">123456</code>
+            </MudText>
+        </MudAlert>
+    }
+</MudPaper>
 
 @code {
-    
+    private string _email = string.Empty;
+    private string _otpCode = string.Empty;
+    private bool _otpSent;
+    private bool _isLoading;
+    private int _resendTimer;
+
+    private MudTextField<string> _emailField = null!;
+    private MudTextField<string> _otpField = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _emailField.FocusAsync();
+        }
+    }
+
+    private string? ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "E-post er påkrevd";
+        if (!email.Contains("@") || !email.Contains("."))
+            return "Ugyldig e-postadresse";
+        return null;
+    }
+
+    private string? ValidateOtp(string otp)
+    {
+        if (string.IsNullOrWhiteSpace(otp))
+            return "Engangskode er påkrevd";
+        if (otp.Length != 6)
+            return "Koden må være 6 siffer";
+        if (!System.Text.RegularExpressions.Regex.IsMatch(otp, "^[0-9]{6}$"))
+            return "Koden må kun inneholde tall";
+        return null;
+    }
+
+    private async Task SubmitEmailAsync()
+    {
+        var validation = ValidateEmail(_email);
+        if (validation != null)
+        {
+            Snackbar.Add(validation, Severity.Warning);
+            return;
+        }
+
+        _isLoading = true;
+
+        var request = new RequestOtpRequest
+        {
+            Email = _email,
+            DeliveryMethod = OtpDeliveryMethod.Email
+        };
+
+        var result = await AuthService.RequestOtpAsync(request, CancellationToken.None);
+
+        if (result.IsSuccess)
+        {
+            _otpSent = true;
+            Snackbar.Add("Engangskode sendt! (Sjekk demo-info)", Severity.Success);
+            // Fokus på OTP-feltet etter render
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(100);
+                await InvokeAsync(async () => await _otpField.FocusAsync());
+            });
+        }
+        else
+        {
+            Snackbar.Add(result.Error?.Message ?? "Kunne ikke sende kode", Severity.Error);
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task SubmitOtpAsync()
+    {
+        var validation = ValidateOtp(_otpCode);
+        if (validation != null)
+        {
+            Snackbar.Add(validation, Severity.Warning);
+            return;
+        }
+
+        _isLoading = true;
+
+        var request = new VerifyOtpRequest
+        {
+            Email = _email,
+            OtpCode = _otpCode
+        };
+
+        var result = await AuthService.VerifyOtpAsync(request, CancellationToken.None);
+
+        if (result.IsSuccess)
+        {
+            Snackbar.Add("Velkommen tilbake!", Severity.Success);
+            NavigationManager.NavigateTo("/dashboard");
+        }
+        else
+        {
+            Snackbar.Add(result.Error?.Message ?? "Ugyldig kode", Severity.Error);
+        }
+
+        _isLoading = false;
+    }
+
+    private void GoBackToEmail()
+    {
+        _otpSent = false;
+        _otpCode = string.Empty;
+        _resendTimer = 0;
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(100);
+            await InvokeAsync(async () => await _emailField.FocusAsync());
+        });
+    }
+
+    private async Task ResendCode()
+    {
+        if (_resendTimer > 0) return;
+
+        _resendTimer = 30;
+        _ = Task.Run(async () =>
+        {
+            while (_resendTimer > 0)
+            {
+                await Task.Delay(1000);
+                _resendTimer--;
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+
+        // Send koden på nytt
+        var request = new RequestOtpRequest
+        {
+            Email = _email,
+            DeliveryMethod = OtpDeliveryMethod.Email
+        };
+
+        var result = await AuthService.RequestOtpAsync(request, CancellationToken.None);
+
+        if (result.IsSuccess)
+        {
+            Snackbar.Add("Ny kode sendt!", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Kunne ikke sende kode", Severity.Error);
+        }
+    }
 }

@@ -1,23 +1,41 @@
-﻿using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Configuration;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Features.Auth.Services;
 
-public class AuthService(ILogger<AuthService> logger, IHttpClientFactory httpClientFactory) : IAuthService
+public class AuthService : IAuthService
 {
-    /// <summary>
-    /// HttpClient mot backend
-    /// </summary>
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.ClientName);
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<AuthService> _logger;
+
+    // Midlertidig hardkodet for testing
+    private const string DemoEmail = "test@compvault.no";
+    private const string DemoOtp = "123456";
+
+    private bool _isAuthenticated;
+
+    public bool IsAuthenticated => _isAuthenticated;
+
+    public AuthService(ILogger<AuthService> logger, IHttpClientFactory httpClientFactory)
+    {
+        _logger = logger;
+        _httpClient = httpClientFactory.CreateClient(BackendApiSettings.ClientName);
+    }
 
     /// <inheritdoc />
     public async Task<Result> RequestOtpAsync(RequestOtpRequest request, CancellationToken ct)
     {
         try
         {
-            logger.LogInformation("Request OTP: {@Payload}", request);
+            _logger.LogInformation("Request OTP: {@Payload}", request);
+
+            // For testing: Aksepter kun demo-email
+            if (!request.Email.Equals(DemoEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                return Result.Failure(AppError.Create(ErrorCode.NotFound, "Email not found"));
+            }
 
             // Sender Http-forespørselen med requesten
             var response = await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request, ct);
@@ -31,7 +49,7 @@ public class AuthService(ILogger<AuthService> logger, IHttpClientFactory httpCli
                     return Result.Failure(AppError.Create(ErrorCode.Unknown, "Unknown error from server"));
 
                 if (!Enum.TryParse<ErrorCode>(problemDetail.Code, out var errorCode))
-                    errorCode = ErrorCode.Unknown; // Fallback til Unknown hvis ingen kode med
+                    errorCode = ErrorCode.Unknown;
 
                 return Result.Failure(AppError.Create(errorCode, problemDetail.Message));
             }
@@ -40,16 +58,51 @@ public class AuthService(ILogger<AuthService> logger, IHttpClientFactory httpCli
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Network error during login attempt");
+            _logger.LogError(ex, "Network error during login attempt");
+            // For testing: Fortsett selv om backend ikke er tilgjengelig
+            if (request.Email.Equals(DemoEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                return Result.Success();
+            }
             return Result.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Connection failed. Please check your internet."));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unexpected error occured");
+            _logger.LogError(ex, "Unexpected error occurred");
+            // For testing: Fortsett selv om backend ikke er tilgjengelig
+            if (request.Email.Equals(DemoEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                return Result.Success();
+            }
             return Result.Failure(AppError.Create(ErrorCode.Unknown,
-                "Unexpected error occured. Try again later."));
+                "Unexpected error occurred. Try again later."));
         }
     }
 
+    /// <inheritdoc />
+    public Task<Result> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct)
+    {
+        _logger.LogInformation("Verify OTP for: {Email}", request.Email);
+
+        // Midlertidig hardkodet verifisering for testing
+        if (!request.Email.Equals(DemoEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(Result.Failure(AppError.Create(ErrorCode.NotFound, "Email not found")));
+        }
+
+        if (request.OtpCode != DemoOtp)
+        {
+            return Task.FromResult(Result.Failure(AppError.Create(ErrorCode.InvalidCredentials, "Invalid OTP code")));
+        }
+
+        _isAuthenticated = true;
+        return Task.FromResult(Result.Success());
+    }
+
+    /// <inheritdoc />
+    public void Logout()
+    {
+        _isAuthenticated = false;
+    }
 }
