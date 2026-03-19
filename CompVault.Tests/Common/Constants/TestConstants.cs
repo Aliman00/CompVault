@@ -21,6 +21,11 @@ public static class TestConstants
         public const string PlainTextOtpCode = "476859";
     }
 
+    public static class RefreshToken
+    {
+        public const string Token = "test-token";
+    }
+
     public static class Roles
     {
         public const string Default = "Employee";

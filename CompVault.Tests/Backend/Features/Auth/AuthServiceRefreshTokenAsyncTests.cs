@@ -80,7 +80,7 @@ public class AuthServiceRefreshTokenAsyncTests
     public async Task RefreshTokenAsync_ValidToken_ReturnsNewTokenPair()
     {
         // Arrange
-        var user = TestDataSeeder.CreateApplicationUser();
+        var user = TestDataFactory.CreateApplicationUser();
         var roles = new List<string> { "Employee" };
         var storedToken = new RefreshToken
         {
@@ -225,7 +225,7 @@ public class AuthServiceRefreshTokenAsyncTests
     public async Task RefreshTokenAsync_InactiveUser_ReturnsInvalidToken()
     {
         // Arrange
-        var inactiveUser = TestDataSeeder.CreateApplicationUser(deletedAt: DateTime.UtcNow.AddDays(-1));
+        var inactiveUser = TestDataFactory.CreateApplicationUser(deletedAt: DateTime.UtcNow.AddDays(-1));
         var storedToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
@@ -269,7 +269,7 @@ public class AuthServiceRefreshTokenAsyncTests
     public async Task RefreshTokenAsync_CreateRefreshTokenFails_ReturnsFailure()
     {
         // Arrange
-        var user = TestDataSeeder.CreateApplicationUser();
+        var user = TestDataFactory.CreateApplicationUser();
         var roles = new List<string>();
         var storedToken = new RefreshToken
         {

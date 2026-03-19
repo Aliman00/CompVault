@@ -1,5 +1,4 @@
-﻿using CompVault.Backend.Common.Security;
-using CompVault.Backend.Domain.Entities.Auth;
+﻿using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Tests.Common.Constants;
@@ -35,50 +34,7 @@ public static class TestDataSeeder
     // -------------------------------------------------------------------------
     // Users
     // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Oppretter en ApplicationUser for testing. Brukes i de fleste testene.
-    /// Hvis deletedAt har en verdi, så er brukeren inaktive/slettet
-    /// Guid er optional. Bruker ActiveUserId som default hvis ingen annen informasjon er oppgitt
-    /// </summary>
-    /// <param name="id">ID til en bruker hvis man trenger å slå opp ID for testing</param>
-    /// <param name="email">Optional string med Epost for å opprette forskjellige brukere</param>
-    /// <param name="deletedAt">DateTime som bestemmer om brukeren er aktive/slettet</param>
-    /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
-    public static ApplicationUser CreateApplicationUser(Guid? id = null,
-        string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null) => new()
-    {
-        Id = id ?? Guid.NewGuid(),
-        Email = email,
-        UserName = email,
-        FirstName = "Fredrik",
-        LastName = "Magee",
-        IsActive = deletedAt == null,
-        DeletedAt = deletedAt
-    };
-
-    /// <summary>
-    /// Oppretter en Otp-kode tilhørende en bruker
-    /// </summary>
-    /// <param name="userId">Brukeren som Otp-koden tilhører</param>
-    /// <param name="plainTextCode">Koden i plaintext som blir hashet i metoden</param>
-    /// <param name="createdAt">Når OTP-koden er opprettet</param>
-    /// <param name="expiresAt">DateTime-objekt som spesifiserer når den går ut</param>
-    /// <param name="failedAttempts">Antall feilede forsøk</param>
-    /// <param name="isUsed">Setter om OTP-koden er brukt eller ikke</param>
-    /// <returns>En opprettet OtpCode</returns>
-    public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode,
-        DateTime? createdAt = null, DateTime? expiresAt = null, int failedAttempts = 0, bool isUsed = false) => new()
-    {
-        UserId = userId ?? TestConstants.Users.ActiveUserId,
-        Code = OtpHasher.HashCode(plainTextCode),
-        CreatedAt = createdAt ?? DateTime.UtcNow,
-        ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(10),
-        FailedAttempts = failedAttempts,
-        IsUsed = isUsed,
-    };
-
-
+    
     /// <summary>
     /// Oppretter og seeder en bruker i databas med en rolle
     /// Kaller CreateApplicationUser som en wrapper som lagrer med context
@@ -101,7 +57,7 @@ public static class TestDataSeeder
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
 
-        var user = CreateApplicationUser(id, email, deletedAt);
+        var user = TestDataFactory.CreateApplicationUser(id, email, deletedAt);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
         return user;
@@ -124,7 +80,7 @@ public static class TestDataSeeder
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        context.Set<OtpCode>().Add(CreateOtpCode(userId: TestConstants.Users.ActiveUserId,
+        context.Set<OtpCode>().Add(TestDataFactory.CreateOtpCode(userId: TestConstants.Users.ActiveUserId,
             plainTextCode: plainTextCode, failedAttempts: failedAttempts));
 
         await context.SaveChangesAsync();

@@ -30,7 +30,7 @@ public abstract class InMemoryRepositoryBase : IDisposable
     /// <returns>Den opprettede brukeren hvis egenskaper (som ID) er nødvendig for testing</returns>
     protected async Task<ApplicationUser> SeedUserAsync(string email = TestConstants.Users.DefaultEmailForActiveUser)
     {
-        var user = TestDataSeeder.CreateApplicationUser(email: email);
+        var user = TestDataFactory.CreateApplicationUser(email: email);
         Context.Users.Add(user);
         await Context.SaveChangesAsync();
         return user;
@@ -48,13 +48,19 @@ public abstract class InMemoryRepositoryBase : IDisposable
     protected async Task<OtpCode> SeedOtpCodeAsync(Guid userId, bool isUsed = false,
         DateTime? expiresAt = null, DateTime? createdAt = null)
     {
-        var otpCode = TestDataSeeder.CreateOtpCode(userId: userId, isUsed: isUsed,
+        var otpCode = TestDataFactory.CreateOtpCode(userId: userId, isUsed: isUsed,
             expiresAt: expiresAt, createdAt: createdAt);
 
         Context.Set<OtpCode>().Add(otpCode);
         await Context.SaveChangesAsync();
         return otpCode;
     }
+
+    // protected async Task<RefreshToken> SeedRefreshTokenAsync(Guid userId, )
+    // {
+    //     var refreshToken = TestDataFactory.CreateRefreshToken(userId: userId, );
+    //
+    // }
     
     public void Dispose() => Context.Dispose();
 }
