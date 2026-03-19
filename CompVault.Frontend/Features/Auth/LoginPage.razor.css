@@ -43,7 +43,7 @@
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 2px solid rgba(var(--mud-palette-primary-rgb), 0.2);
-    box-shadow: 
+    box-shadow:
         0 25px 50px -12px rgba(0, 0, 0, 0.25),
         0 0 0 1px rgba(var(--mud-palette-primary-rgb), 0.05),
         inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
@@ -52,13 +52,50 @@
 .mud-theme-dark .glass-card {
     background: rgba(var(--mud-palette-surface-rgb), 0.85);
     border: 2px solid rgba(var(--mud-palette-primary-rgb), 0.3);
-    box-shadow: 
+    box-shadow:
         0 25px 50px -12px rgba(0, 0, 0, 0.5),
         0 0 0 1px rgba(255, 255, 255, 0.05),
         inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
+.login-paper {
+    width: 100%;
+    max-width: 440px;
+}
+
+.logo-img {
+    width: 100px;
+    height: auto;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+}
+
+.title-text {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.subtitle-text {
+    opacity: 0.7;
+    font-weight: 400;
+}
+
+.step-title {
+    font-weight: 600;
+}
+
+.step-subtitle {
+    opacity: 0.6;
+}
+
+.text-field-rounded {
+    border-radius: 12px;
+}
+
 .primary-button {
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: none;
+    font-size: 1rem;
     transition: all 0.3s ease !important;
     position: relative;
     overflow: hidden;
@@ -73,6 +110,33 @@
     transform: translateY(0);
 }
 
+.loading-spinner {
+    margin-right: 12px;
+}
+
+.demo-alert {
+    border-radius: 10px;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.demo-code {
+    background: rgba(var(--mud-palette-primary-rgb), 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.back-button {
+    text-transform: none;
+    margin-left: -8px;
+    transition: all 0.2s ease !important;
+}
+
+.back-button:hover {
+    background-color: rgba(var(--mud-palette-primary-rgb), 0.05) !important;
+}
+
 .input-field {
     transition: all 0.3s ease;
 }
@@ -81,10 +145,11 @@
     transform: translateY(-1px);
 }
 
-.back-button {
-    transition: all 0.2s ease !important;
+.email-highlight {
+    font-weight: 600;
+    color: var(--mud-palette-primary);
 }
 
-.back-button:hover {
-    background-color: rgba(var(--mud-palette-primary-rgb), 0.05) !important;
+.resend-button {
+    text-transform: none;
 }
