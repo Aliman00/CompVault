@@ -16,7 +16,7 @@ public class RolePermission
     /// <summary>Når tillatelsen ble gitt (UTC).</summary>
     public DateTime GrantedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>Brukeren som ga brukeren tillattelsen</summary>
+    /// <summary>Brukeren som tildelte tillatelsen</summary>
     public Guid? GrantedById { get; set; }
 
     // ======================== Navigasjonsegenskaper ========================

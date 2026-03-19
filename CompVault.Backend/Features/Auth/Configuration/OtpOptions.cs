@@ -23,10 +23,10 @@ public sealed class OtpOptions
     /// <summary>
     /// Hvor lenge vi delayer RequestOtp i millisekunder
     /// </summary>
-    public int MinResponseTimeRequestOtpMs { get; set; } = 500;
+    public int MinResponseTimeRequestOtpMs { get; init; } = 500;
 
     /// <summary>
     /// Hvor lenge vi delayer VerifyOtp i millisekunder
     /// </summary>
-    public int MinResponseTimeVerifyOtpMs { get; set; } = 500;
+    public int MinResponseTimeVerifyOtpMs { get; init; } = 500;
 }
