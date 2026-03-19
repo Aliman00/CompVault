@@ -80,7 +80,7 @@ public class AuthServiceRequestOtpAsyncTests
     {
         // Arrange
         var request = AuthRequestBuilder.CreateRequestOtpRequest();
-        var user = TestDataSeeder.CreateApplicationUser();
+        var user = TestDataFactory.CreateApplicationUser();
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
 
         // mocker UserManager til å returerne opprettet bruker
@@ -153,7 +153,7 @@ public class AuthServiceRequestOtpAsyncTests
     {
         // Arrange
         var request = AuthRequestBuilder.CreateRequestOtpRequest();
-        var user = TestDataSeeder.CreateApplicationUser();
+        var user = TestDataFactory.CreateApplicationUser();
         user.IsActive = false;
 
         // mocker UserManager til å returnere null
@@ -183,7 +183,7 @@ public class AuthServiceRequestOtpAsyncTests
     {
         // Arrange
         var request = AuthRequestBuilder.CreateRequestOtpRequest();
-        var user = TestDataSeeder.CreateApplicationUser();
+        var user = TestDataFactory.CreateApplicationUser();
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
         var emailError = AppError.Create(ErrorCode.EmailSendFailed, "Email service down");
 
@@ -222,7 +222,7 @@ public class AuthServiceRequestOtpAsyncTests
     {
         // Arrange
         var request = AuthRequestBuilder.CreateRequestOtpRequest();
-        var user = TestDataSeeder.CreateApplicationUser();
+        var user = TestDataFactory.CreateApplicationUser();
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, "Max attempts exceeded");
 
         // mocker UserManager til å returerne opprettet bruker
