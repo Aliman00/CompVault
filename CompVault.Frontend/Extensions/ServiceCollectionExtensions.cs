@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddHttpClients(this IServiceCollection services, IConfiguration configuration)
     {
-        var settings = configuration
+        BackendApiSettings settings = configuration
                            .GetSection(BackendApiSettings.SectionName)
                            .Get<BackendApiSettings>()
                        ?? throw new InvalidOperationException("BackendApi does not exist in appsettings");
