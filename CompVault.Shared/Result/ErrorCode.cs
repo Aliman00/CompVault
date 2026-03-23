@@ -12,7 +12,7 @@ public enum ErrorCode
     Conflict = 1002,
     Forbidden = 1003,
     Unauthorized = 1004,
-    InternalError = 1005, // Unventede tekniske feil (exceptions, transactions, etc.)
+    InternalError = 1005, // Uventede tekniske feil (exceptions, transactions, etc.)
 
     // Autentisering
     InvalidCredentials = 2000,

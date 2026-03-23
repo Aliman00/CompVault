@@ -41,7 +41,7 @@ public sealed class Result<T>
 /// Representerer resultatet av en operasjon uten returverdi. Brukes der en metode
 /// enten lykkes eller feiler, istedenfor å kaste en exception. Ved feil inneholder objektet
 /// en <see cref="AppError"/> som beskriver hva som gikk galt.
-/// /// </summary>
+/// </summary>
 public sealed class Result
 {
     /// <summary>True hvis alt gikk bra.</summary>

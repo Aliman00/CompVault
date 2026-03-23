@@ -95,7 +95,6 @@ public class AuthServiceRefreshTokenAsyncTests
 
         var request = new RefreshTokenRequest
         {
-            AccessToken = "any-access-token",
             RefreshToken = storedToken.Token
         };
 
@@ -151,7 +150,6 @@ public class AuthServiceRefreshTokenAsyncTests
         // Arrange
         var request = new RefreshTokenRequest
         {
-            AccessToken = "any-access-token",
             RefreshToken = "ukjent-token"
         };
 
@@ -193,7 +191,6 @@ public class AuthServiceRefreshTokenAsyncTests
 
         var request = new RefreshTokenRequest
         {
-            AccessToken = "any-access-token",
             RefreshToken = storedToken.Token
         };
 
@@ -237,7 +234,6 @@ public class AuthServiceRefreshTokenAsyncTests
 
         var request = new RefreshTokenRequest
         {
-            AccessToken = "any-access-token",
             RefreshToken = storedToken.Token
         };
 
@@ -283,7 +279,6 @@ public class AuthServiceRefreshTokenAsyncTests
 
         var request = new RefreshTokenRequest
         {
-            AccessToken = "any-access-token",
             RefreshToken = storedToken.Token
         };
 

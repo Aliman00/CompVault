@@ -51,7 +51,7 @@ public class OtpCode
     public int FailedAttempts { get; set; }
 
     /// <summary>
-    /// Antall forsøk på å skrive korrekt kode
+    /// DateTime når siste forsøk ble gjort
     /// </summary>
     public DateTime? LastAttemptAt { get; set; }
 
