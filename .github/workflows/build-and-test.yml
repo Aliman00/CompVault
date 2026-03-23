@@ -60,7 +60,9 @@ jobs:
     # Steg 6: Kjør alle enhetstester og lagre resultatet i en .trx-fil
     # --no-build hopper over bygging siden vi allerede kompilerte i forrige steg
     - name: Run tests
-      run: dotnet test CompVault.Tests/CompVault.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx;MethodOutcome=true;ResultsDirectory=${{ github.workspace }}/TestResults"
+      run: |
+        mkdir -p TestResults
+        dotnet test CompVault.Tests/CompVault.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx;MethodOutcome=true;ResultsDirectory=./TestResults"
     
     # Steg 7: Publiser testresultatene som en lesbar rapport i GitHub Actions
     # "if: always()" sørger for at rapporten vises selv om testene feiler
