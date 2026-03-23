@@ -1,0 +1,101 @@
+﻿@using CompVault.Frontend.Common.Themes
+@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
+
+<!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
+<MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
+<!-- Popup: Håndterer alle popover-elementer. Eks: Dropdowns, Tooltips, Menyer -->
+<MudPopoverProvider />
+<!-- Dialog/Modal: Håndterer alle DialogerModaler. Sikrer at vi kan bruke MudBlazor sine egne komponenter -->
+<MudDialogProvider />
+<!-- Toasts: Gir oss mulighet til å implementere toasts med Mudblazor -->
+<MudSnackbarProvider />
+
+<!-- MainLayout med Mudblazor -->
+<MudLayout>
+    <MudAppBar Elevation="1">  <!-- Gir headeren en skygge -->
+        <!-- Hamburgermeny knappen med egen metode for å lukke og åpne sidemenyen (Drawer) -->
+        <!-- Edge bestemmer høyre eller venstre -->
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" 
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer" />
+
+        <!-- Header title -->
+        <MudText Typo="Typo.h6" Class="ml-3">CompVault</MudText>
+
+        <!-- Fyller ledig plass i AppBar, skyver alle andre elementer til høyre -->
+        <MudSpacer />
+
+        <!-- Knapp for å bytte mellom mørk og lys-modus. Skal flyttes senere -->
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit"
+                       OnClick="ToggleDarkMode" />
+    </MudAppBar>
+
+    <!-- Sidebaren - Elevation gir skygge, ClipMode bestemmer hvor den åpnes, feks under AppBaren -->
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always">
+        <!-- Headeren til sidebaren -->
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Meny</MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
+    
+    <!-- Hovedcontent med Body - tilpasser seg MudDrawer automatisk -->
+    <MudMainContent>
+        <!-- Hovedcontent med Body - MaxWidth senterer inneholdet på store skjermer. pa-4 mt-4 er padding/margin -->
+        <MudContainer MaxWidth="MaxWidth.Large" Class="pa-4 mt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    
+    // ======================== Private felt ========================
+    // Variabel for sidebar og mørkemodus
+    private bool _drawerOpen = true;
+    private bool _isDarkMode;
+    
+    // Referansen til ThemeProvider komponenten for å endre tema
+    private MudThemeProvider _mudThemeProvider = null!;
+    
+    // Aktivt tema - Default på MainTheme
+    private readonly MudTheme _theme = CompVaultMainTheme.Theme;
+
+    private const string DarkModeKey = "compvault-darkmode";
+    
+    // ======================== Lifecycle ========================
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Prøv å lese fra localStorage først
+            var savedMode = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", DarkModeKey);
+
+            if (savedMode != null && bool.TryParse(savedMode, out var savedDarkMode))
+            {
+                _isDarkMode = savedDarkMode;
+            }
+            else
+            {
+                // Fallback til system-innstilling
+                _isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
+            }
+
+            StateHasChanged();
+        }
+    }
+    
+    // ======================== Private metoder ========================
+    
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private async Task ToggleDarkMode()
+    {
+        _isDarkMode = !_isDarkMode;
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", DarkModeKey, _isDarkMode.ToString());
+    }
+}

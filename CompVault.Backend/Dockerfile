@@ -47,7 +47,6 @@ USER appuser
 
 # Eksponér porter
 EXPOSE 8080
-EXPOSE 8081
 
 # Helsesjekk
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \

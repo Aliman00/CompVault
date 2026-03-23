@@ -1,47 +1,64 @@
-var builder = WebApplication.CreateBuilder(args);
+using CompVault.Backend.Dev;
+using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Extensions;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+using Microsoft.AspNetCore.Identity;
 
-// Legg til health checks for Docker health monitoring
-builder.Services.AddHealthChecks();
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+// Sjekk at JWT Secret er konfigurert før vi starter opp applikasjonen. 
+// Dette er kritisk for sikkerheten, og det er bedre å feile tidlig enn å kjøre med en svak eller hardkodet secret.
+// TODO: Fjern denne sjekken når du har konfigurert JWT Secret i appsettings.json eller environment variables.
+// string? jwtSecret = builder.Configuration["JwtSettings:Secret"];
+// if (string.IsNullOrEmpty(jwtSecret) || jwtSecret.Contains("CHANGE_ME"))
+// {
+//     throw new InvalidOperationException(
+//         "JWT Secret er ikke konfigurert! Sett JwtSettings:Secret via environment variable eller secrets.");
+// }
 
-// Configure the HTTP request pipeline.
+builder.ConfigureSwagger();
+builder.ConfigureLogging();
+
+builder.Services.AddControllers();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("db");
+builder.Services.AddInfrastructure();
+builder.Services.AddDatabase(builder.Configuration, builder.Environment);
+builder.Services.AddAuth(builder.Configuration);
+builder.Services.AddEmail(builder.Configuration, builder.Environment);
+builder.Services.AddRepositories();
+builder.Services.AddApplicationServices();
+
+WebApplication app = builder.Build();
+
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 
-// Map health endpoint for Docker healthcheck
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 app.MapHealthChecks("/health");
 
-var summaries = new[]
+// Seed testdata kun i Development-miljøet
+if (app.Environment.IsDevelopment())
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    using IServiceScope scope = app.Services.CreateScope();
+    UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    RoleManager<ApplicationRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+    ILogger logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await DatabaseSeeder.SeedAsync(userManager, roleManager, logger);
+}
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+// Eksponerer Program for integrasjonstester
+public partial class Program;
