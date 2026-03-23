@@ -12,12 +12,6 @@ builder.Services.AddRazorComponents()
 // Legger til Serilog
 builder.AddSerilogLogging();
 
-// HttpClienter
-builder.Services.AddHttpClients(builder.Configuration);
-
-// Forretningslogikk
-builder.Services.AddFrontendServices();
-
 // MudBlazor konfigurasjon
 builder.Services.AddMudServices();
 
