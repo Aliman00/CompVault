@@ -24,8 +24,8 @@ public static class TestDataSeeder
     /// </summary>
     public static async Task CreateDb(IServiceProvider serviceProvider)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // Nuker databasen og oppretter en ny database for hver integrasjonstest
         await context.Database.EnsureDeletedAsync();
@@ -50,15 +50,15 @@ public static class TestDataSeeder
         string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null,
         string role = TestConstants.Roles.Default)
     {
-        using var scope = serviceProvider.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        RoleManager<ApplicationRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
         // Opprett rollen hvis den ikke eksisterer
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
 
-        var user = TestDataFactory.CreateApplicationUser(id, email, deletedAt);
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(id, email, deletedAt);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
         return user;
@@ -84,10 +84,10 @@ public static class TestDataSeeder
         string plainTextCode = TestConstants.Otp.PlainTextOtpCode, DateTime? createdAt = null,
         DateTime? expiresAt = null, int failedAttempts = 0, bool isUsed = false)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var otpCode = TestDataFactory.CreateOtpCode(userId: userId,
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(userId: userId,
             plainTextCode: plainTextCode, createdAt: createdAt, expiresAt: expiresAt, failedAttempts: failedAttempts,
             isUsed: isUsed);
 
@@ -111,10 +111,10 @@ public static class TestDataSeeder
         Guid? userId = null, string? token = null,
         DateTime? createdAt = null, DateTime? expiresAt = null, bool isRevoked = false)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var refreshToken = TestDataFactory.CreateRefreshToken(
+        RefreshToken refreshToken = TestDataFactory.CreateRefreshToken(
             userId: userId ?? TestConstants.Users.ActiveUserId,
             token: token,
             createdAt: createdAt,

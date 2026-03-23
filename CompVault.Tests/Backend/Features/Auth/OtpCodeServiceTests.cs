@@ -25,11 +25,11 @@ public class OtpCodeServiceTests
     public OtpCodeServiceTests()
     {
         // Mocker DI-avhengighetene
-        Mock<ILogger<OtpCodeService>> loggerMock = new Mock<ILogger<OtpCodeService>>();
+        var loggerMock = new Mock<ILogger<OtpCodeService>>();
         _otpCodeRepositoryMock = new Mock<IOtpCodeRepository>();
 
         // Oppretter configuration OtpOptions - trenger ingen delay i tester
-        var otpOptions = Options.Create(new OtpOptions
+        IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
         {
             MinResponseTimeRequestOtpMs = 0,
             MaxFailedAttempts = _maxFailedAttempts
@@ -62,7 +62,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync((OtpCode?)null);
 
         // Act
-        var result = await _sut.GenerateOtpCodeAsync(userId);
+        Result<string> result = await _sut.GenerateOtpCodeAsync(userId);
 
         // Assert - Sjekker at Result er Success, og at metodene blir kalt en gang
         result.IsSuccess.Should().BeTrue();
@@ -96,7 +96,7 @@ public class OtpCodeServiceTests
             .Callback<OtpCode, CancellationToken>((otp, _) => capturedOtpCode = otp);
 
         // Act
-        var result = await _sut.GenerateOtpCodeAsync(userId);
+        Result<string> result = await _sut.GenerateOtpCodeAsync(userId);
 
         // Assert - Sjekker at objektet ikke er null, at hashen har fungert,og at det har riktig verdier
         capturedOtpCode.Should().NotBeNull();
@@ -120,7 +120,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId og variabelen for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
 
         // mocker at GetActiveCodeAsync returner eksisterende Otp-kode
         _otpCodeRepositoryMock
@@ -128,7 +128,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync(otpCode);
 
         // Act
-        var result = await _sut.GenerateOtpCodeAsync(userId);
+        Result<string> result = await _sut.GenerateOtpCodeAsync(userId);
 
         // Assert - Sjekker at objektet ikke er null, at hashen har fungert,og at det har riktig verdier.
         result.IsFailure.Should().BeTrue();
@@ -159,7 +159,7 @@ public class OtpCodeServiceTests
             .ThrowsAsync(new DbUpdateException());
 
         // Act
-        var result = await _sut.GenerateOtpCodeAsync(userId);
+        Result<string> result = await _sut.GenerateOtpCodeAsync(userId);
 
         // Assert - Sjekker at Result er Failure og at vi får OtpCooldown som Error
         result.IsFailure.Should().BeTrue();
@@ -180,7 +180,7 @@ public class OtpCodeServiceTests
         var userId = Guid.NewGuid();
         // Til Otp-koden må vi ha koden i klartekst for metode-kallet, og CreateOtpCode hasher koden så det blir
         // korrekt
-        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
 
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -188,7 +188,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync(otpCode);
 
         // Act
-        var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
+        Result<OtpCode> result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
 
         // Assert - Sjekker at Result er Success og at Otp-koden blr returnert riktig med UserId satt korrekt
         result.IsSuccess.Should().BeTrue();
@@ -217,7 +217,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync((OtpCode?)null);
 
         // Act
-        var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
+        Result<OtpCode> result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
 
         // Assert - Sjekker at Result er Failure og at ErrorCode er korrekt
         result.IsFailure.Should().BeTrue();
@@ -236,7 +236,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden. Otp-koden har max MaxFailedAttempts
         var userId = Guid.NewGuid();
-        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode, failedAttempts: _maxFailedAttempts);
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode, failedAttempts: _maxFailedAttempts);
 
 
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
@@ -245,7 +245,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync(otpCode);
 
         // Act
-        var result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
+        Result<OtpCode> result = await _sut.VerifyOtpCodeAsync(userId, _plainTextCode);
 
         // Assert - Sjekker at Result er Failure, riktig ErrorCode og at SaveChangesAsync ikke blir kalt
         result.IsFailure.Should().BeTrue();
@@ -265,8 +265,8 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        var wrongCode = "111111";
-        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
+        string wrongCode = "111111";
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
 
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -274,7 +274,7 @@ public class OtpCodeServiceTests
             .ReturnsAsync(otpCode);
 
         // Act
-        var result = await _sut.VerifyOtpCodeAsync(userId, wrongCode);
+        Result<OtpCode> result = await _sut.VerifyOtpCodeAsync(userId, wrongCode);
 
         // Assert - Sjekker at Result er Failure og at det er riktig ErrorCode. Verifiserer at det blir lagret
         result.IsFailure.Should().BeTrue();
@@ -293,8 +293,8 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        var wrongCode = "111111";
-        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
+        string wrongCode = "111111";
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
 
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock

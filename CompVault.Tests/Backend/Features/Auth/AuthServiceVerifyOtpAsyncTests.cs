@@ -39,12 +39,12 @@ public class AuthServiceVerifyOtpAsyncTests
             storeMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
         // Mocker de andre DI-avhengighetene
-        Mock<ILogger<IAuthService>> loggerMock = new Mock<ILogger<IAuthService>>();
+        var loggerMock = new Mock<ILogger<IAuthService>>();
         _otpCodeServiceMock = new Mock<IOtpCodeService>();
-        Mock<IEmailService> emailServiceMock = new Mock<IEmailService>();
+        var emailServiceMock = new Mock<IEmailService>();
         _jwtServiceMock = new Mock<IJwtService>();
         _refreshTokenService = new Mock<IRefreshTokenService>();
-        Mock<IRefreshTokenRepository> refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
+        var refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
 
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
@@ -56,7 +56,7 @@ public class AuthServiceVerifyOtpAsyncTests
                 CancellationToken>((operation, _) => operation());
 
         // Oppretter configuration OtpOptions - trenger ingen delay i tester
-        var otpOptions = Options.Create(new OtpOptions
+        IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
         {
             MinResponseTimeRequestOtpMs = 0,
             MinResponseTimeVerifyOtpMs = 0,
@@ -87,10 +87,10 @@ public class AuthServiceVerifyOtpAsyncTests
     public async Task VerifyOtpAsync_ExistingUserAndCorrectCode_ReturnsLoginResponse()
     {
         // Arrange
-        var request = AuthRequestBuilder.CreateVerifyOtpRequest();
-        var user = TestDataFactory.CreateApplicationUser();
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest();
+        ApplicationUser user = TestDataFactory.CreateApplicationUser();
         var roles = new List<string>();
-        var otpCode = TestDataFactory.CreateOtpCode(user.Id); // Oppretter en Otp-kode på brukeren
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(user.Id); // Oppretter en Otp-kode på brukeren
         const string accessToken = "access-token";
         const string refreshToken = "refresh-token";
 
@@ -121,7 +121,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync(Result<string>.Success(refreshToken));
 
         // Act
-        var result = await _sut.VerifyOtpAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.VerifyOtpAsync(request);
 
         // Assert - Sjekker at Result er Success og at LoginResponse inneholder korrekte verdier
         result.IsSuccess.Should().BeTrue();
@@ -152,7 +152,7 @@ public class AuthServiceVerifyOtpAsyncTests
     public async Task VerifyOtpAsync_UnknownEmail_ReturnsFailure()
     {
         // Arrange
-        var request = AuthRequestBuilder.CreateVerifyOtpRequest();
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest();
 
         // mocker UserManager til å returerne null
         _userManagerMock
@@ -160,7 +160,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        var result = await _sut.VerifyOtpAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.VerifyOtpAsync(request);
 
         // Assert - Sjekker at Result er Failure og at error-koden er OtpInvalidOrExpired
         result.IsFailure.Should().BeTrue();
@@ -183,8 +183,8 @@ public class AuthServiceVerifyOtpAsyncTests
     public async Task VerifyOtpAsync_OtpCodeServiceFails_ReturnsFailure()
     {
         // Arrange
-        var request = AuthRequestBuilder.CreateVerifyOtpRequest();
-        var user = TestDataFactory.CreateApplicationUser();
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest();
+        ApplicationUser user = TestDataFactory.CreateApplicationUser();
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded,
             "Too many failed attempts");
 
@@ -200,7 +200,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync(Result<OtpCode>.Failure(otpCodeError));
 
         // Act
-        var result = await _sut.VerifyOtpAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.VerifyOtpAsync(request);
 
         // Assert - Sjekker at Result er Failure og at error-koden er OtpMaxAttemptsExceeded
         result.IsFailure.Should().BeTrue();
@@ -224,9 +224,9 @@ public class AuthServiceVerifyOtpAsyncTests
     public async Task VerifyOtpAsync_CreateRefreshTokenFails_ReturnsFailure()
     {
         // Arrange
-        var request = AuthRequestBuilder.CreateVerifyOtpRequest();
-        var user = TestDataFactory.CreateApplicationUser();
-        var otpCode = TestDataFactory.CreateOtpCode(user.Id);
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest();
+        ApplicationUser user = TestDataFactory.CreateApplicationUser();
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(user.Id);
         var refreshTokenError = AppError.Create(ErrorCode.InternalError,
             "Failed to create refresh token");
 
@@ -247,7 +247,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync(Result<string>.Failure(refreshTokenError));
 
         // Act
-        var result = await _sut.VerifyOtpAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.VerifyOtpAsync(request);
 
         // Assert - Sjekker at Result er Failure og error-koden er InternalError
         result.IsFailure.Should().BeTrue();
