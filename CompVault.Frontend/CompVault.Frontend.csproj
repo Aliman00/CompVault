@@ -5,7 +5,23 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MudBlazor" Version="9.1.0" />
+    <PackageReference Include="MudBlazor" Version="9.2.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Expressions" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Common\Services\" />
+    <Folder Include="Features\Auth\Components\" />
+    <Folder Include="Features\Users\Components\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Layout\Errors\Error.razor" />
+    <_ContentIncludedByDefault Remove="Layout\Errors\NotFound.razor" />
+    <_ContentIncludedByDefault Remove="Layout\MainLayout.razor" />
+    <_ContentIncludedByDefault Remove="Layout\NavMenu.razor" />
+    <_ContentIncludedByDefault Remove="Layout\ReconnectModal.razor" />
   </ItemGroup>
 
   <PropertyGroup>

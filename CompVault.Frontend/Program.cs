@@ -1,12 +1,21 @@
-using CompVault.Frontend.Components;
+using CompVault.Frontend;
+using CompVault.Frontend.Extensions;
 
-var builder = WebApplication.CreateBuilder(args);
+using MudBlazor.Services;
+
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-var app = builder.Build();
+// Legger til Serilog
+builder.AddSerilogLogging();
+
+// MudBlazor konfigurasjon
+builder.Services.AddMudServices();
+
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -23,5 +32,8 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+
+
 
 app.Run();
