@@ -2,6 +2,7 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Tests.Common.Constants;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,8 +24,8 @@ public static class TestDataSeeder
     /// </summary>
     public static async Task CreateDb(IServiceProvider serviceProvider)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // Nuker databasen og oppretter en ny database for hver integrasjonstest
         await context.Database.EnsureDeletedAsync();
@@ -34,7 +35,7 @@ public static class TestDataSeeder
     // -------------------------------------------------------------------------
     // Users
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Oppretter og seeder en bruker i databas med en rolle
     /// Kaller CreateApplicationUser som en wrapper som lagrer med context
@@ -49,15 +50,15 @@ public static class TestDataSeeder
         string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null,
         string role = TestConstants.Roles.Default)
     {
-        using var scope = serviceProvider.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        RoleManager<ApplicationRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
         // Opprett rollen hvis den ikke eksisterer
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
 
-        var user = TestDataFactory.CreateApplicationUser(id, email, deletedAt);
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(id, email, deletedAt);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
         return user;
@@ -80,22 +81,22 @@ public static class TestDataSeeder
     /// <param name="isUsed">Setter om OTP-koden er brukt eller ikke. Default = false</param>
     /// <returns>Opprettet OtpCode</returns>
     public static async Task<OtpCode> SeedOtpCodeAsync(IServiceProvider serviceProvider, Guid? userId = null,
-        string plainTextCode = TestConstants.Otp.PlainTextOtpCode, DateTime? createdAt = null, 
+        string plainTextCode = TestConstants.Otp.PlainTextOtpCode, DateTime? createdAt = null,
         DateTime? expiresAt = null, int failedAttempts = 0, bool isUsed = false)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var otpCode = TestDataFactory.CreateOtpCode(userId: userId,
-            plainTextCode: plainTextCode, createdAt: createdAt, expiresAt: expiresAt, failedAttempts: failedAttempts, 
+        OtpCode otpCode = TestDataFactory.CreateOtpCode(userId: userId,
+            plainTextCode: plainTextCode, createdAt: createdAt, expiresAt: expiresAt, failedAttempts: failedAttempts,
             isUsed: isUsed);
 
         context.Set<OtpCode>().Add(otpCode);
         await context.SaveChangesAsync();
-        
+
         return otpCode;
     }
-    
+
     /// <summary>
     /// Oppretter og seeder en RefreshToken inne i databasen
     /// </summary>
@@ -110,16 +111,16 @@ public static class TestDataSeeder
         Guid? userId = null, string? token = null,
         DateTime? createdAt = null, DateTime? expiresAt = null, bool isRevoked = false)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var refreshToken = TestDataFactory.CreateRefreshToken(
+        RefreshToken refreshToken = TestDataFactory.CreateRefreshToken(
             userId: userId ?? TestConstants.Users.ActiveUserId,
             token: token,
             createdAt: createdAt,
             expiresAt: expiresAt,
             isRevoked: isRevoked);
-        
+
         context.Set<RefreshToken>().Add(refreshToken);
         await context.SaveChangesAsync();
         return refreshToken;

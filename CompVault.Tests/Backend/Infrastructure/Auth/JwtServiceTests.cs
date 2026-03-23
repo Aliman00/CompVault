@@ -1,8 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Options;
 
 namespace CompVault.Tests.Backend.Infrastructure.Auth;
@@ -44,12 +47,12 @@ public class JwtServiceTests
     public void GenerateAccessToken_WithValidUser_ContainsCorrectClaims()
     {
         // Arrange
-        var roles = new[] { "Admin" };
+        string[] roles = new[] { "Admin" };
 
         // Act
-        var token = _sut.GenerateAccessToken(_testUser, roles);
+        string token = _sut.GenerateAccessToken(_testUser, roles);
         var handler = new JwtSecurityTokenHandler();
-        var parsed = handler.ReadJwtToken(token);
+        JwtSecurityToken parsed = handler.ReadJwtToken(token);
 
         // Assert
         Assert.Equal(_testUser.Id.ToString(), parsed.Subject);
@@ -66,16 +69,16 @@ public class JwtServiceTests
     public void GenerateAccessToken_WithValidUser_HasCorrectIssuerAndAudience()
     {
         // Act
-        var token = _sut.GenerateAccessToken(_testUser, []);
+        string token = _sut.GenerateAccessToken(_testUser, []);
         var handler = new JwtSecurityTokenHandler();
-        var parsed = handler.ReadJwtToken(token);
+        JwtSecurityToken parsed = handler.ReadJwtToken(token);
 
         // Assert
         Assert.Equal(JwtSettings.Issuer, parsed.Issuer);
         Assert.Contains(JwtSettings.Audience, parsed.Audiences);
     }
 
-   
+
 
     /// <summary>
     /// Tester at GenerateAccessToken setter korrekt utløpstidspunkt basert på AccessTokenMinutes
@@ -84,15 +87,15 @@ public class JwtServiceTests
     public void GenerateAccessToken_HasCorrectExpiration()
     {
         // Arrange
-        var before = DateTime.UtcNow;
+        DateTime before = DateTime.UtcNow;
 
         // Act
-        var token = _sut.GenerateAccessToken(_testUser, []);
+        string token = _sut.GenerateAccessToken(_testUser, []);
         var handler = new JwtSecurityTokenHandler();
-        var parsed = handler.ReadJwtToken(token);
+        JwtSecurityToken parsed = handler.ReadJwtToken(token);
 
         // Assert — ValidTo skal være innenfor ett sekund av forventet utløpstidspunkt
-        var expectedExpiry = before.AddMinutes(JwtSettings.AccessTokenMinutes);
+        DateTime expectedExpiry = before.AddMinutes(JwtSettings.AccessTokenMinutes);
         parsed.ValidTo.Should().BeCloseTo(expectedExpiry, TimeSpan.FromSeconds(1));
     }
 
@@ -106,10 +109,10 @@ public class JwtServiceTests
     {
         // Arrange - Generer et normalt token — GetPrincipalFromExpiredToken
         // validerer uansett med ValidateLifetime = false, så det holder
-        var token = _sut.GenerateAccessToken(_testUser, []);
+        string token = _sut.GenerateAccessToken(_testUser, []);
 
         // Act
-        var principal = _sut.GetPrincipalFromExpiredToken(token);
+        ClaimsPrincipal? principal = _sut.GetPrincipalFromExpiredToken(token);
 
         // Assert - Skal kunne lese claims uavhengig av levetid
         Assert.NotNull(principal);
@@ -124,11 +127,11 @@ public class JwtServiceTests
     public void GetPrincipalFromExpiredToken_WithTamperedToken_ReturnsNull()
     {
         // Arrange
-        var validToken = _sut.GenerateAccessToken(_testUser, []);
-        var tamperedToken = validToken[..^5] + "XXXXX"; // Ødelegger signaturen
+        string validToken = _sut.GenerateAccessToken(_testUser, []);
+        string tamperedToken = validToken[..^5] + "XXXXX"; // Ødelegger signaturen
 
         // Act
-        var principal = _sut.GetPrincipalFromExpiredToken(tamperedToken);
+        ClaimsPrincipal? principal = _sut.GetPrincipalFromExpiredToken(tamperedToken);
 
         // Assert
         Assert.Null(principal);

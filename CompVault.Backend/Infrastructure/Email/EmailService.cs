@@ -1,7 +1,9 @@
 ﻿using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Shared.Result;
+
 using Microsoft.Extensions.Options;
+
 using Resend;
 
 namespace CompVault.Backend.Infrastructure.Email;
@@ -37,7 +39,7 @@ public class EmailService(
             };
 
             // Sender epost med EmailSendAsync. Returnerer et response objekt
-            var response = await resend.EmailSendAsync(message, ct);
+            ResendResponse<Guid> response = await resend.EmailSendAsync(message, ct);
             if (!response.Success)
             {
                 logger.LogError("Email sending failed to {Email}. Resend response: {@Response}",

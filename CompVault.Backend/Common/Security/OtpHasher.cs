@@ -16,7 +16,7 @@ public static class OtpHasher
     /// <returns>En hashet string med 64-tegn</returns>
     public static string HashCode(string code)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
+        byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(code));
         return Convert.ToHexString(bytes);
     }
 }

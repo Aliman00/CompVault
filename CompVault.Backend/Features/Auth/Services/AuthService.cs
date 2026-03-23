@@ -1,4 +1,5 @@
 using System.Diagnostics;
+
 using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
@@ -6,11 +7,13 @@ using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
+using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Backend.Infrastructure.Email.Templates;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
@@ -22,7 +25,7 @@ namespace CompVault.Backend.Features.Auth.Services;
 public sealed class AuthService(
     UserManager<ApplicationUser> userManager,
     ILogger<IAuthService> logger,
-    IJwtService jwtService, 
+    IJwtService jwtService,
     IOtpCodeService otpCodeService,
     IEmailService emailService,
     IOptions<OtpOptions> otpOptions,
@@ -42,7 +45,7 @@ public sealed class AuthService(
         {
             // Finn brukeren — returner suksess uansett utfall med unntak av interne feil (f.eks. e-postleveringsfeil)
             // for å unngå at angripere kan kartlegge hvilke e-poster som er registrert.
-            var user = await userManager.FindByEmailAsync(request.Email);
+            ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
             if (user == null || !user.IsActive)
             {
                 logger.LogWarning("OTP request for {Reason}. Email: {Email}",
@@ -54,7 +57,7 @@ public sealed class AuthService(
             // Generer kode — servicen håndterer om brukeren er null eller ikke. Kun send epost hvis suksess
             return await unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                var codeResult = await otpCodeService.GenerateOtpCodeAsync(user.Id, ct);
+                Result<string> codeResult = await otpCodeService.GenerateOtpCodeAsync(user.Id, ct);
                 if (codeResult.IsFailure)
                     return Result.Success(); // returnerer Success for å unngå epostkartlegging
 
@@ -62,7 +65,7 @@ public sealed class AuthService(
                 if (request.DeliveryMethod == OtpDeliveryMethod.Email)
                 {
                     // Oppretter en EmailBody med ferdig template
-                    var emailBody = EmailTemplates.OtpCode(codeResult.Value!);
+                    EmailBody emailBody = EmailTemplates.OtpCode(codeResult.Value!);
 
                     // Sender epost og sjekker at det er ingen feil med epost sending
                     deliverCodeResult = await emailService.SendAsync(request.Email, emailBody, ct);
@@ -97,7 +100,7 @@ public sealed class AuthService(
         try
         {
             // Henter brukeren for å sjekke om e-posten er korrekt. Returner ingen feilmeldinger, kun logger
-            var user = await userManager.FindByEmailAsync(request.Email);
+            ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
             if (user == null)
                 logger.LogWarning("OTP-verification attempted for unknown email. Email: {Email}", request.Email);
             else if (!user.IsActive)
@@ -111,7 +114,7 @@ public sealed class AuthService(
                     AppError.Create(ErrorCode.OtpInvalidOrExpired, "Invalid or expired code"));
 
             // Verifiserer OTP og markerer koden som brukt
-            var otpResult = await otpCodeService.VerifyOtpCodeAsync(user.Id, request.OtpCode, ct);
+            Result<OtpCode> otpResult = await otpCodeService.VerifyOtpCodeAsync(user.Id, request.OtpCode, ct);
             if (otpResult.IsFailure)
                 return Result<RefreshTokenResponse>.Failure(otpResult.Error!);
 
@@ -122,12 +125,12 @@ public sealed class AuthService(
                 otpResult.Value!.IsUsed = true;
 
                 // Opprett og lagre refresh token
-                var refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
+                Result<string> refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
                 if (refreshResult.IsFailure)
                     return Result<RefreshTokenResponse>.Failure(refreshResult.Error!);
 
                 // Henter roller for å bygge tokens
-                var roles = await userManager.GetRolesAsync(user);
+                IList<string> roles = await userManager.GetRolesAsync(user);
 
                 return Result<RefreshTokenResponse>.Success(BuildRefreshTokenResponse(user, roles, refreshResult.Value!));
             }, ct);
@@ -158,7 +161,7 @@ public sealed class AuthService(
             return Result<RefreshTokenResponse>.Failure(
                 AppError.Create(ErrorCode.InvalidToken, "Bruker ikke funnet eller inaktiv."));
 
-        var roles = await userManager.GetRolesAsync(user);
+        IList<string> roles = await userManager.GetRolesAsync(user);
 
         // Utføerer oppdatering og opprettelse i en transaksjon
         return await unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -169,7 +172,7 @@ public sealed class AuthService(
             storedToken.IsRevoked = true;
 
             // Opprett og lagre refresh token
-            var refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
+            Result<string> refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, ct);
             if (refreshResult.IsFailure)
                 return Result<RefreshTokenResponse>.Failure(refreshResult.Error!);
 

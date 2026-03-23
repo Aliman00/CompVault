@@ -1,7 +1,10 @@
 ﻿using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Test.Dtos;
 using CompVault.Backend.Infrastructure.Email;
+using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Backend.Infrastructure.Email.Templates;
+using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompVault.Backend.Features.Test.Controllers;
@@ -21,8 +24,8 @@ public class TestController(IEmailService emailService) : BaseController
     public async Task<ActionResult> TestEmailService([FromBody] TestEmailRequest request,
         CancellationToken ct = default)
     {
-        var template = EmailTemplates.OtpCode("testkode");
-        var result = await emailService.SendAsync(request.RecipientEmail, template, ct);
+        EmailBody template = EmailTemplates.OtpCode("testkode");
+        Result result = await emailService.SendAsync(request.RecipientEmail, template, ct);
         if (result.IsFailure)
             return HandleFailure(result);
 

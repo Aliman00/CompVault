@@ -1,4 +1,5 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -30,4 +31,3 @@ internal sealed class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
         builder.HasIndex(o => o.UserId);
     }
 }
-

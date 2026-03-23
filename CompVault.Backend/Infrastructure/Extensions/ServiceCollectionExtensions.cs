@@ -1,10 +1,9 @@
 using System.Text;
+
 using CompVault.Backend.Common.Middleware;
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Features.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
-using CompVault.Backend.Features.Users;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
@@ -13,9 +12,11 @@ using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.Jobs;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+
 using Resend;
 
 namespace CompVault.Backend.Infrastructure.Extensions;

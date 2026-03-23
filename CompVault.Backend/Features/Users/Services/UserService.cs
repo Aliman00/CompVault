@@ -2,6 +2,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Identity;
 
 namespace CompVault.Backend.Features.Users.Services;
@@ -17,7 +18,7 @@ public sealed class UserService(
     public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        var usersWithRoles = await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
+        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles = await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
 
         var dtos = usersWithRoles
             .Select(uwr => UserMapper.ToDto(uwr.User, uwr.Roles))

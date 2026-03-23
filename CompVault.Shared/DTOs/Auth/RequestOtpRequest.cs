@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Enums;
 
 namespace CompVault.Shared.DTOs.Auth;

@@ -38,8 +38,8 @@ public class TokenCleanupJob(
         // BackgroundService er singleton — vi må lage et nytt scope for å få tak i scoped tjenester
         await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
 
-        var refreshTokenRepository = scope.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
-        var otpCodeRepository = scope.ServiceProvider.GetRequiredService<IOtpCodeRepository>();
+        IRefreshTokenRepository refreshTokenRepository = scope.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
+        IOtpCodeRepository otpCodeRepository = scope.ServiceProvider.GetRequiredService<IOtpCodeRepository>();
 
         try
         {

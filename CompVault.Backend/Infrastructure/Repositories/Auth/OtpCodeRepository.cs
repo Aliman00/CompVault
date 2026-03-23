@@ -1,5 +1,6 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Infrastructure.Repositories.Auth;

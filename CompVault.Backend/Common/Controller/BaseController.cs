@@ -1,4 +1,5 @@
 ﻿using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompVault.Backend.Common.Controller;
@@ -46,7 +47,7 @@ public abstract class BaseController : ControllerBase
     /// <returns>En <see cref="ActionResult"/> med tilhørende <see cref="ProblemDetail"/>-respons.</returns>
     private ActionResult BuildErrorResponse(AppError error)
     {
-        var statusCode = error.Code switch
+        int statusCode = error.Code switch
         {
             ErrorCode.NotFound => 404,
             ErrorCode.UserNotFound => 404,

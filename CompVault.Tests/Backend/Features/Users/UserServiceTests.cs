@@ -1,11 +1,15 @@
+using System.Linq.Expressions;
+
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
-using Microsoft.AspNetCore.Identity;
-using System.Linq.Expressions;
-using CompVault.Backend.Features.Users.Services;
+
 using FluentAssertions;
+
+using Microsoft.AspNetCore.Identity;
+
 using Moq;
 
 namespace CompVault.Tests.Backend.Features.Users;
@@ -63,7 +67,7 @@ public class UserServiceTests
             .ReturnsAsync(new List<string> { "Employee" });
 
         // Act
-        var result = await _sut.GetUserByIdAsync(_testUser.Id);
+        Result<UserDto> result = await _sut.GetUserByIdAsync(_testUser.Id);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -82,7 +86,7 @@ public class UserServiceTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        var result = await _sut.GetUserByIdAsync(Guid.NewGuid());
+        Result<UserDto> result = await _sut.GetUserByIdAsync(Guid.NewGuid());
 
         // Assert
         Assert.True(result.IsFailure);
@@ -118,7 +122,7 @@ public class UserServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result = await _sut.CreateUserAsync(request);
+        Result<UserDto> result = await _sut.CreateUserAsync(request);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -148,7 +152,7 @@ public class UserServiceTests
             .ReturnsAsync(true);
 
         // Act
-        var result = await _sut.CreateUserAsync(request);
+        Result<UserDto> result = await _sut.CreateUserAsync(request);
 
         // Assert
         Assert.True(result.IsFailure);
@@ -175,7 +179,7 @@ public class UserServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _sut.DeleteUserAsync(_testUser.Id);
+        Result<bool> result = await _sut.DeleteUserAsync(_testUser.Id);
 
         // Assert - Sjekker at SoftDelete faktisk ble kalt og at resultatet er success
         Assert.True(result.IsSuccess);
@@ -194,7 +198,7 @@ public class UserServiceTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        var result = await _sut.DeleteUserAsync(Guid.NewGuid());
+        Result<bool> result = await _sut.DeleteUserAsync(Guid.NewGuid());
 
         // Assert
         Assert.True(result.IsFailure);
@@ -244,7 +248,7 @@ public class UserServiceTests
             .ReturnsAsync(usersWithRoles);
 
         // Act
-        var result = await _sut.GetAllUsersAsync();
+        Result<IReadOnlyList<UserDto>> result = await _sut.GetAllUsersAsync();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -265,7 +269,7 @@ public class UserServiceTests
             .ReturnsAsync(new List<(ApplicationUser, List<string>)>());
 
         // Act
-        var result = await _sut.GetAllUsersAsync();
+        Result<IReadOnlyList<UserDto>> result = await _sut.GetAllUsersAsync();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -307,7 +311,7 @@ public class UserServiceTests
             .ReturnsAsync(new List<string> { "Employee" });
 
         // Act
-        var result = await _sut.UpdateUserAsync(_testUser.Id, request);
+        Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -333,7 +337,7 @@ public class UserServiceTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        var result = await _sut.UpdateUserAsync(Guid.NewGuid(), request);
+        Result<UserDto> result = await _sut.UpdateUserAsync(Guid.NewGuid(), request);
 
         // Assert
         result.IsFailure.Should().BeTrue();

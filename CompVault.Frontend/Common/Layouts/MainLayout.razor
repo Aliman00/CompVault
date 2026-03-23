@@ -1,5 +1,6 @@
 ﻿@using CompVault.Frontend.Common.Themes
 @inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
 
 <!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
 <MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
@@ -62,6 +63,8 @@
     
     // Aktivt tema - Default på MainTheme
     private readonly MudTheme _theme = CompVaultMainTheme.Theme;
+
+    private const string DarkModeKey = "compvault-darkmode";
     
     // ======================== Lifecycle ========================
     
@@ -69,8 +72,19 @@
     {
         if (firstRender)
         {
-            // Følger systemets lys/mørk-innstilling ved oppstart
-            _isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
+            // Prøv å lese fra localStorage først
+            var savedMode = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", DarkModeKey);
+
+            if (savedMode != null && bool.TryParse(savedMode, out var savedDarkMode))
+            {
+                _isDarkMode = savedDarkMode;
+            }
+            else
+            {
+                // Fallback til system-innstilling
+                _isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
+            }
+
             StateHasChanged();
         }
     }
@@ -78,5 +92,10 @@
     // ======================== Private metoder ========================
     
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
-    private void ToggleDarkMode() => _isDarkMode = !_isDarkMode;
+
+    private async Task ToggleDarkMode()
+    {
+        _isDarkMode = !_isDarkMode;
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", DarkModeKey, _isDarkMode.ToString());
+    }
 }

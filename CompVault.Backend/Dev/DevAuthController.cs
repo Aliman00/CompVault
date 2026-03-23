@@ -2,6 +2,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Shared.DTOs.Auth;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -32,8 +33,7 @@ public sealed class DevAuthController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<RefreshTokenResponse>> DevLoginAsync(
-        [FromBody] DevLoginRequest request,
-        CancellationToken ct)
+        [FromBody] DevLoginRequest request)
     {
         if (!env.IsDevelopment())
             return NotFound();

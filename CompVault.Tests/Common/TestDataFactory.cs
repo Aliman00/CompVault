@@ -21,15 +21,15 @@ public static class TestDataFactory
     /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
     public static ApplicationUser CreateApplicationUser(Guid? id = null,
         string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null) => new()
-    {
-        Id = id ?? Guid.NewGuid(),
-        Email = email,
-        UserName = email,
-        FirstName = "Fredrik",
-        LastName = "Magee",
-        IsActive = deletedAt == null,
-        DeletedAt = deletedAt
-    };
+        {
+            Id = id ?? Guid.NewGuid(),
+            Email = email,
+            UserName = email,
+            FirstName = "Fredrik",
+            LastName = "Magee",
+            IsActive = deletedAt == null,
+            DeletedAt = deletedAt
+        };
 
     /// <summary>
     /// Oppretter en Otp-kode tilhørende en bruker
@@ -43,15 +43,15 @@ public static class TestDataFactory
     /// <returns>En opprettet OtpCode</returns>
     public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode,
         DateTime? createdAt = null, DateTime? expiresAt = null, int failedAttempts = 0, bool isUsed = false) => new()
-    {
-        UserId = userId ?? TestConstants.Users.ActiveUserId,
-        Code = OtpHasher.HashCode(plainTextCode),
-        CreatedAt = createdAt ?? DateTime.UtcNow,
-        ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(10),
-        FailedAttempts = failedAttempts,
-        IsUsed = isUsed,
-    };
-    
+        {
+            UserId = userId ?? TestConstants.Users.ActiveUserId,
+            Code = OtpHasher.HashCode(plainTextCode),
+            CreatedAt = createdAt ?? DateTime.UtcNow,
+            ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(10),
+            FailedAttempts = failedAttempts,
+            IsUsed = isUsed,
+        };
+
     /// <summary>
     /// Oppretter en RefreshToken tilhørende en bruker
     /// </summary>
@@ -63,11 +63,11 @@ public static class TestDataFactory
     /// <returns>En opprettet RefreshToken</returns>
     public static RefreshToken CreateRefreshToken(Guid? userId = null, string? token = null,
         DateTime? createdAt = null, DateTime? expiresAt = null, bool isRevoked = false) => new()
-    {
-        UserId = userId ?? TestConstants.Users.ActiveUserId,
-        Token = token ?? Guid.NewGuid().ToString(),
-        CreatedAt = createdAt ?? DateTime.UtcNow,
-        ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(15),
-        IsRevoked = isRevoked
-    };
+        {
+            UserId = userId ?? TestConstants.Users.ActiveUserId,
+            Token = token ?? Guid.NewGuid().ToString(),
+            CreatedAt = createdAt ?? DateTime.UtcNow,
+            ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(15),
+            IsRevoked = isRevoked
+        };
 }

@@ -9,10 +9,13 @@ using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Common;
+
 using FluentAssertions;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Moq;
 
 namespace CompVault.Tests.Backend.Features.Auth;
@@ -38,7 +41,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
         _refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         Mock<IUnitOfWork> unitOfWorkMock = new();
 
-        var otpOptions = Options.Create(new OtpOptions
+        IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
         {
             MinResponseTimeRequestOtpMs = 0,
             MinResponseTimeVerifyOtpMs = 0,
@@ -68,7 +71,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
     public async Task RevokeRefreshTokenAsync_ValidToken_SetsIsRevokedAndReturnsSuccess()
     {
         // Arrange
-        var user = TestDataFactory.CreateApplicationUser();
+        ApplicationUser user = TestDataFactory.CreateApplicationUser();
         var storedToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
@@ -88,7 +91,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _sut.RevokeRefreshTokenAsync(request, user.Id);
+        Result result = await _sut.RevokeRefreshTokenAsync(request, user.Id);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -116,7 +119,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
             .ReturnsAsync((RefreshToken?)null);
 
         // Act
-        var result = await _sut.RevokeRefreshTokenAsync(request, Guid.NewGuid());
+        Result result = await _sut.RevokeRefreshTokenAsync(request, Guid.NewGuid());
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -134,7 +137,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
     public async Task RevokeRefreshTokenAsync_TokenBelongsToOtherUser_ReturnsForbidden()
     {
         // Arrange
-        var tokenOwner = TestDataFactory.CreateApplicationUser();
+        ApplicationUser tokenOwner = TestDataFactory.CreateApplicationUser();
         var currentUserId = Guid.NewGuid(); // en annen bruker
 
         var storedToken = new RefreshToken
@@ -152,7 +155,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
             .ReturnsAsync(storedToken);
 
         // Act
-        var result = await _sut.RevokeRefreshTokenAsync(request, currentUserId);
+        Result result = await _sut.RevokeRefreshTokenAsync(request, currentUserId);
 
         // Assert
         result.IsFailure.Should().BeTrue();

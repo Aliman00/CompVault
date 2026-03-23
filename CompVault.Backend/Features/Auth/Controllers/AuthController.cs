@@ -1,10 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,7 +32,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
         [FromBody] RequestOtpRequest request,
         CancellationToken ct)
     {
-        var result = await authService.RequestOtpAsync(request, ct);
+        Result result = await authService.RequestOtpAsync(request, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -54,7 +56,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
         [FromBody] VerifyOtpRequest request,
         CancellationToken ct)
     {
-        var result = await authService.VerifyOtpAsync(request, ct);
+        Result<RefreshTokenResponse> result = await authService.VerifyOtpAsync(request, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -73,7 +75,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
         [FromBody] RefreshTokenRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await authService.RefreshTokenAsync(request, cancellationToken);
+        Result<RefreshTokenResponse> result = await authService.RefreshTokenAsync(request, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -93,11 +95,11 @@ public sealed class AuthController(IAuthService authService) : BaseController
         [FromBody] RevokeTokenRequest request,
         CancellationToken cancellationToken)
     {
-        var userIdStr = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        if (!Guid.TryParse(userIdStr, out var currentUserId))
+        string? userIdStr = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (!Guid.TryParse(userIdStr, out Guid currentUserId))
             return Unauthorized();
 
-        var result = await authService.RevokeRefreshTokenAsync(request, currentUserId, cancellationToken);
+        Result result = await authService.RevokeRefreshTokenAsync(request, currentUserId, cancellationToken);
         if (result.IsFailure)
             return HandleFailure(result);
 

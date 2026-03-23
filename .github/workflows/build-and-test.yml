@@ -50,7 +50,7 @@ jobs:
     # Steg 4: Sjekk at koden følger standard C#-formatering
     # Feiler hvis noen har committed kode med feil innrykk eller spacing
     - name: Check code formatting
-      run: dotnet format CompVault.slnx --verify-no-changes --verbosity diagnostic
+      run: dotnet format CompVault.slnx --verify-no-changes --exclude "**/Migrations/**" --verbosity diagnostic
     
     # Steg 5: Kompiler hele løsningen i Release-modus
     # --no-restore hopper over restore siden vi allerede gjorde det i forrige steg

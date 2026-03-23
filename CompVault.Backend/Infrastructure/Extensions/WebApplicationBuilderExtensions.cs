@@ -1,6 +1,8 @@
 ﻿using System.Reflection;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi;
+
 using Serilog;
 
 namespace CompVault.Backend.Infrastructure.Extensions;
@@ -51,8 +53,8 @@ public static class WebApplicationBuilderExtensions
             };
 
             // Inkluderer summary-tagger
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            string xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             options.IncludeXmlComments(xmlPath);
 
             // Vi registerer oppsettet med Bearer og OpenApiSecurityScheme objektet vårt

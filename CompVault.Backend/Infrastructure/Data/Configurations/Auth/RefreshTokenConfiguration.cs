@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Auth;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -25,7 +26,7 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
             .WithMany(u => u.RefreshTokens)
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         // Matching query filter — filtrer bort tokens tilhørende soft-slettede brukere
         builder.HasQueryFilter(r => r.User.DeletedAt == null);
 

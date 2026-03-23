@@ -1,6 +1,7 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Tests.Backend.Infrastructure.Repositories;
@@ -38,7 +39,7 @@ public class UserRepositoryTests : IDisposable
     public UserRepositoryTests()
     {
         // Hver test får sin egen isolerte in-memory database
-        var options = new DbContextOptionsBuilder<AppDbContext>()
+        DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
@@ -61,7 +62,7 @@ public class UserRepositoryTests : IDisposable
     public async Task GetByIdAsync_WhenUserExists_ReturnsUser()
     {
         // Act
-        var result = await _sut.GetByIdAsync(_activeUser.Id);
+        ApplicationUser? result = await _sut.GetByIdAsync(_activeUser.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -75,7 +76,7 @@ public class UserRepositoryTests : IDisposable
     public async Task GetByIdAsync_WhenUserDoesNotExist_ReturnsNull()
     {
         // Act
-        var result = await _sut.GetByIdAsync(Guid.NewGuid());
+        ApplicationUser? result = await _sut.GetByIdAsync(Guid.NewGuid());
 
         // Assert
         Assert.Null(result);
@@ -88,7 +89,7 @@ public class UserRepositoryTests : IDisposable
     public async Task GetActiveUsersAsync_ReturnsOnlyActiveUsers()
     {
         // Act
-        var result = await _sut.GetActiveUsersAsync();
+        IReadOnlyList<ApplicationUser> result = await _sut.GetActiveUsersAsync();
 
         // Assert - Skal kun inneholde aktiv bruker, ikke den slettede
         Assert.Single(result);
@@ -102,7 +103,7 @@ public class UserRepositoryTests : IDisposable
     public async Task GetByEmailAsync_WhenEmailExists_ReturnsUser()
     {
         // Act
-        var result = await _sut.GetByEmailAsync(_activeUser.Email!);
+        ApplicationUser? result = await _sut.GetByEmailAsync(_activeUser.Email!);
 
         // Assert
         Assert.NotNull(result);
@@ -116,7 +117,7 @@ public class UserRepositoryTests : IDisposable
     public async Task GetByEmailAsync_WhenEmailDoesNotExist_ReturnsNull()
     {
         // Act
-        var result = await _sut.GetByEmailAsync("ikkeeksisterende@example.com");
+        ApplicationUser? result = await _sut.GetByEmailAsync("ikkeeksisterende@example.com");
 
         // Assert
         Assert.Null(result);
@@ -129,14 +130,14 @@ public class UserRepositoryTests : IDisposable
     public async Task SoftDeleteAsync_SetsDeletedAtAndDeactivatesUser()
     {
         // Arrange
-        var userToDelete = await _sut.GetByIdAsync(_activeUser.Id);
+        ApplicationUser? userToDelete = await _sut.GetByIdAsync(_activeUser.Id);
 
         // Act
         await _sut.SoftDeleteAsync(userToDelete!);
         await _dbContext.SaveChangesAsync(); // Speiler virkeligheten — endringer må persisteres
 
         // Assert
-        var userInDb = await _dbContext.Users.FindAsync(_activeUser.Id);
+        ApplicationUser? userInDb = await _dbContext.Users.FindAsync(_activeUser.Id);
         Assert.NotNull(userInDb);
         Assert.False(userInDb.IsActive);
         Assert.NotNull(userInDb.DeletedAt);
@@ -165,7 +166,7 @@ public class UserRepositoryTests : IDisposable
         await _dbContext.SaveChangesAsync();
 
         // Assert
-        var userInDb = await _dbContext.Users.FindAsync(newUser.Id);
+        ApplicationUser? userInDb = await _dbContext.Users.FindAsync(newUser.Id);
         Assert.NotNull(userInDb);
         Assert.Equal("ny@example.com", userInDb.Email);
     }
