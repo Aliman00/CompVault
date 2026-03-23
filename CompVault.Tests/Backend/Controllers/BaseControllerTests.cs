@@ -1,6 +1,8 @@
 ﻿using CompVault.Backend.Common.Controller;
 using CompVault.Shared.Result;
+
 using FluentAssertions;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompVault.Tests.Backend.Controllers;
@@ -22,7 +24,7 @@ public class BaseControllerTests
     public void HandleFailureT_WhenResultIsSuccess_ThrowsInvalidOperationException()
     {
         // Arrange
-        Result<string> result = Result<string>.Success("test");
+        var result = Result<string>.Success("test");
 
         // Act - Bruker Action for å kalle eventen InvokeHandleFailure med Result-objektet
         Action act = () => _sut.InvokeHandleFailure(result);
@@ -40,7 +42,7 @@ public class BaseControllerTests
     public void HandleFailureT_WhenResultIsFailed_ReturnsObjectResult()
     {
         // Arrange - tar en ekte AppError fra AuthService
-        Result<string> result = Result<string>.Failure(
+        var result = Result<string>.Failure(
             AppError.Create(ErrorCode.InvalidToken, "Ugyldig access token."));
 
         // Act - Vi får et ActionResult objekt fra InvokeHandleFailure
@@ -63,7 +65,7 @@ public class BaseControllerTests
     public void HandleFailure_WhenResultIsSuccess_ThrowsInvalidOperationException()
     {
         // Arrange
-        Result result = Result.Success();
+        var result = Result.Success();
 
         // Act - Bruker Action for å kalle eventen InvokeHandleFailure med Result-objektet
         Action act = () => _sut.InvokeHandleFailure(result);
@@ -81,7 +83,7 @@ public class BaseControllerTests
     public void HandleFailure_WhenResultIsFailed_ReturnsObjectResult()
     {
         // Arrange - tar en ekte AppError fra AuthService
-        Result result = Result.Failure(
+        var result = Result.Failure(
             AppError.Create(ErrorCode.InvalidToken, "Ugyldig access token."));
 
         // Act - Vi får et ActionResult objekt fra InvokeHandleFailure
@@ -122,13 +124,13 @@ public class BaseControllerTests
     public void HandleFailure_ReturnsCorrectStatusCode(ErrorCode code, int expectedStatusCode)
     {
         // Arrange
-        Result result = Result.Failure(AppError.Create(code, "test"));
+        var result = Result.Failure(AppError.Create(code, "test"));
 
         // Act
         ActionResult actionResult = _sut.InvokeHandleFailure(result);
 
         // Assert - Sjekker at objektet er korrekt og at StatusCode er forventet
-        var objectResult = actionResult.Should().BeOfType<ObjectResult>().Subject;
+        ObjectResult objectResult = actionResult.Should().BeOfType<ObjectResult>().Subject;
         objectResult.StatusCode.Should().Be(expectedStatusCode);
     }
 
@@ -139,13 +141,13 @@ public class BaseControllerTests
     public void HandleFailure_UnknownErrorCode_Returns400()
     {
         // Arrange - bruker en error som ikke eksisterer
-        Result result = Result.Failure(AppError.Create((ErrorCode)9999, "unknown error"));
+        var result = Result.Failure(AppError.Create((ErrorCode)9999, "unknown error"));
 
         // Act
         ActionResult actionResult = _sut.InvokeHandleFailure(result);
 
         // Assert
-        var objectResult = actionResult.Should().BeOfType<ObjectResult>().Subject;
+        ObjectResult objectResult = actionResult.Should().BeOfType<ObjectResult>().Subject;
         objectResult.StatusCode.Should().Be(400);
     }
 
@@ -162,14 +164,14 @@ public class BaseControllerTests
         // Arrange
         const ErrorCode code = ErrorCode.NotFound;
         const string message = "Resource not found";
-        Result result = Result.Failure(AppError.Create(code, message));
+        var result = Result.Failure(AppError.Create(code, message));
 
         // Act
         ActionResult actionResult = _sut.InvokeHandleFailure(result);
 
         // Assert
-        var objectResult = actionResult.Should().BeOfType<ObjectResult>().Subject;
-        var problem = objectResult.Value.Should().BeOfType<ProblemDetail>().Subject;
+        ObjectResult objectResult = actionResult.Should().BeOfType<ObjectResult>().Subject;
+        ProblemDetail problem = objectResult.Value.Should().BeOfType<ProblemDetail>().Subject;
 
         problem.Status.Should().Be(404);
         problem.Status.Should().Be(objectResult.StatusCode);

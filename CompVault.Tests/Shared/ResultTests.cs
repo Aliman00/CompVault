@@ -12,7 +12,7 @@ public class ResultTests
     public void ResultT_Success_ShouldBeSuccess()
     {
         // Arrange
-        var message = "hello";
+        string message = "hello";
 
         // Act
         var result = Result<string>.Success(message);

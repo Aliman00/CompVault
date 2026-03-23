@@ -1,10 +1,12 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+
+using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Features.Auth.Configuration;
-using CompVault.Backend.Common.Security;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.Result;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -21,7 +23,7 @@ public class OtpCodeService(
     public async Task<Result<string>> GenerateOtpCodeAsync(Guid userId, CancellationToken ct = default)
     {
         // Henter eksisterende Otp hvis den eksisterer
-        var existingOtp = await otpCodeRepository.GetActiveCodeAsync(userId, ct);
+        OtpCode? existingOtp = await otpCodeRepository.GetActiveCodeAsync(userId, ct);
 
         // Hvis den er fortsatt gyldig så logger vi antall minutter igjen
         if (existingOtp != null)
@@ -35,7 +37,7 @@ public class OtpCodeService(
         }
 
         // Oppretter koden
-        var code = GenerateSecureCode();
+        string code = GenerateSecureCode();
 
         // Oppretter OtpCode-entiteten og lagrer i databasen
         var otpCode = new OtpCode

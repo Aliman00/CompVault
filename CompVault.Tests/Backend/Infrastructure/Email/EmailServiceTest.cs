@@ -1,11 +1,16 @@
 ﻿using System.Net;
+
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
+using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Backend.Infrastructure.Email.Templates;
 using CompVault.Shared.Result;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Moq;
+
 using Resend;
 
 namespace CompVault.Tests.Backend.Infrastructure.Email;
@@ -47,7 +52,7 @@ public class EmailServiceTest
     public async Task SendAsync_WhenResendSucceeds_ReturnsSuccess()
     {
         // Arrange
-        var emailBody = EmailTemplates.OtpCode("TestCode");
+        EmailBody emailBody = EmailTemplates.OtpCode("TestCode");
 
         // Mocker en success melding fra ResendResponse-objektet
         _resendMock
@@ -56,7 +61,7 @@ public class EmailServiceTest
             .ReturnsAsync(new ResendResponse<Guid>(Guid.NewGuid(), null));
 
         // Act
-        var result = await _sut.SendAsync(RecipientEmail, emailBody);
+        Result result = await _sut.SendAsync(RecipientEmail, emailBody);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -70,7 +75,7 @@ public class EmailServiceTest
     public async Task SendAsync_WhenResendFails_ReturnsFailure()
     {
         // Arrange
-        var emailBody = EmailTemplates.OtpCode("TestCode");
+        EmailBody emailBody = EmailTemplates.OtpCode("TestCode");
 
         // Mocker en failure melding fra ResendResponse-objektet
         _resendMock
@@ -80,7 +85,7 @@ public class EmailServiceTest
                         ErrorType.ApplicationError, "Application Error"), null));
 
         // Act
-        var result = await _sut.SendAsync(RecipientEmail, emailBody);
+        Result result = await _sut.SendAsync(RecipientEmail, emailBody);
 
         // Assert - Sjekker at IsFailure er true og at ErrorCode er EmailSendFailed
         Assert.True(result.IsFailure);
@@ -94,7 +99,7 @@ public class EmailServiceTest
     public async Task SendAsync_WhenResendThrowsException_ReturnsFailure()
     {
         // Arrange
-        var emailBody = EmailTemplates.OtpCode("TestCode");
+        EmailBody emailBody = EmailTemplates.OtpCode("TestCode");
         var exception = new Exception("Resend is down for maintenance");
 
         // Mocker en failure melding fra ResendResponse-objektet
@@ -104,7 +109,7 @@ public class EmailServiceTest
             .ThrowsAsync(exception);
 
         // Act
-        var result = await _sut.SendAsync(RecipientEmail, emailBody);
+        Result result = await _sut.SendAsync(RecipientEmail, emailBody);
 
         // Assert - Sjekker at IsFailure er true og at ErrorCode er EmailSendFailed
         Assert.True(result.IsFailure);
@@ -119,7 +124,7 @@ public class EmailServiceTest
     public async Task SendAsync_WhenResendThrowsException_LogsError()
     {
         // Arrange
-        var emailBody = EmailTemplates.OtpCode("TestCode");
+        EmailBody emailBody = EmailTemplates.OtpCode("TestCode");
         var exception = new Exception("Resend is down for maintenance");
 
         // Mocker en failure melding fra ResendResponse-objektet
@@ -150,8 +155,8 @@ public class EmailServiceTest
     public async Task SendAsync_SendsCorrectEmailMessage()
     {
         // Arrange
-        var code = "244309";
-        var emailBody = EmailTemplates.OtpCode(code);
+        string code = "244309";
+        EmailBody emailBody = EmailTemplates.OtpCode(code);
 
         EmailMessage? capturedMessage = null;
 

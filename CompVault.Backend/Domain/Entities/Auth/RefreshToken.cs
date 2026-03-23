@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+
 using CompVault.Backend.Domain.Entities.Identity;
 
 namespace CompVault.Backend.Domain.Entities.Auth;

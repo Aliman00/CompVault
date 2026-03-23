@@ -3,8 +3,8 @@ using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Tests.Common.Constants;
+
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompVault.Tests.Common;
@@ -25,8 +25,8 @@ public static class TestDataSeeder
     /// </summary>
     public static async Task CreateDb(IServiceProvider serviceProvider)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // Nuker databasen og oppretter en ny database for hver integrasjonstest
         await context.Database.EnsureDeletedAsync();
@@ -48,16 +48,16 @@ public static class TestDataSeeder
     /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
     public static ApplicationUser CreateApplicationUser(Guid? id = null,
         string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null) => new()
-    {
-        Id = id ?? Guid.NewGuid(),
-        Email = email,
-        UserName = email,
-        FirstName = "Fredrik",
-        LastName = "Magee",
-        IsActive = deletedAt == null,
-        DeletedAt = deletedAt
-    };
-    
+        {
+            Id = id ?? Guid.NewGuid(),
+            Email = email,
+            UserName = email,
+            FirstName = "Fredrik",
+            LastName = "Magee",
+            IsActive = deletedAt == null,
+            DeletedAt = deletedAt
+        };
+
     /// <summary>
     /// Oppretter en Otp-kode tilhørende en bruker
     /// </summary>
@@ -66,14 +66,14 @@ public static class TestDataSeeder
     /// <param name="expiresAtMin">Antall minutter til den utgår</param>
     /// <param name="failedAttempts">Antall feilede forsøk</param>
     /// <returns>En opprettet OtpCode</returns>
-    public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode, 
+    public static OtpCode CreateOtpCode(Guid? userId = null, string plainTextCode = TestConstants.Otp.PlainTextOtpCode,
         int expiresAtMin = 10, int failedAttempts = 0) => new OtpCode
-    {
-        UserId = userId ?? TestConstants.Users.ActiveUserId,
-        Code = OtpHasher.HashCode(plainTextCode),
-        ExpiresAt = DateTime.UtcNow.AddMinutes(expiresAtMin),
-        FailedAttempts = failedAttempts
-    };
+        {
+            UserId = userId ?? TestConstants.Users.ActiveUserId,
+            Code = OtpHasher.HashCode(plainTextCode),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(expiresAtMin),
+            FailedAttempts = failedAttempts
+        };
 
 
     /// <summary>
@@ -90,15 +90,15 @@ public static class TestDataSeeder
         string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null,
         string role = TestConstants.Roles.Default)
     {
-        using var scope = serviceProvider.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        RoleManager<ApplicationRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
         // Opprett rollen hvis den ikke eksisterer
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
 
-        var user = CreateApplicationUser(id, email, deletedAt);
+        ApplicationUser user = CreateApplicationUser(id, email, deletedAt);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
         return user;
@@ -118,8 +118,8 @@ public static class TestDataSeeder
     public static async Task SeedOtpCodeAsync(IServiceProvider serviceProvider,
         string plainTextCode = TestConstants.Otp.PlainTextOtpCode, int failedAttempts = 0)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         context.Set<OtpCode>().Add(CreateOtpCode(userId: TestConstants.Users.ActiveUserId,
             plainTextCode: plainTextCode, failedAttempts: failedAttempts));

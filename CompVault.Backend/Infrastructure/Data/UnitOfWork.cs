@@ -1,5 +1,7 @@
 using CompVault.Shared.Result;
 
+using Microsoft.EntityFrameworkCore.Storage;
+
 namespace CompVault.Backend.Infrastructure.Data;
 
 /// <summary>
@@ -17,11 +19,11 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
         CancellationToken ct = default)
     {
         // Starter transaksjonen
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
+        await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(ct);
         try
         {
             // Får et result-objekt etter en operasjon
-            var result = await operation();
+            Result result = await operation();
 
             // er dette Result-objektet en Failure, roll tilbake
             if (result.IsFailure)
@@ -50,11 +52,11 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
         CancellationToken ct = default)
     {
         // Starter transaksjonen
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
+        await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(ct);
         try
         {
             // Får et result-objekt etter en operasjon
-            var result = await operation();
+            Result<T> result = await operation();
 
             // er dette Result-objektet en Failure, roll tilbake
             if (result.IsFailure)

@@ -9,10 +9,13 @@ using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Common;
+
 using FluentAssertions;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Moq;
 
 namespace CompVault.Tests.Backend.Features.Auth;
@@ -49,7 +52,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .Returns<Func<Task<Result<RefreshTokenResponse>>>, CancellationToken>(
                 (operation, _) => operation());
 
-        var otpOptions = Options.Create(new OtpOptions
+        IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
         {
             MinResponseTimeRequestOtpMs = 0,
             MinResponseTimeVerifyOtpMs = 0,
@@ -80,7 +83,7 @@ public class AuthServiceRefreshTokenAsyncTests
     public async Task RefreshTokenAsync_ValidToken_ReturnsNewTokenPair()
     {
         // Arrange
-        var user = TestDataSeeder.CreateApplicationUser();
+        ApplicationUser user = TestDataSeeder.CreateApplicationUser();
         var roles = new List<string> { "Employee" };
         var storedToken = new RefreshToken
         {
@@ -120,7 +123,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .Returns(newAccessToken);
 
         // Act
-        var result = await _sut.RefreshTokenAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(request);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -160,7 +163,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync((RefreshToken?)null);
 
         // Act
-        var result = await _sut.RefreshTokenAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(request);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -206,7 +209,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        var result = await _sut.RefreshTokenAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(request);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -225,7 +228,7 @@ public class AuthServiceRefreshTokenAsyncTests
     public async Task RefreshTokenAsync_InactiveUser_ReturnsInvalidToken()
     {
         // Arrange
-        var inactiveUser = TestDataSeeder.CreateApplicationUser(deletedAt: DateTime.UtcNow.AddDays(-1));
+        ApplicationUser inactiveUser = TestDataSeeder.CreateApplicationUser(deletedAt: DateTime.UtcNow.AddDays(-1));
         var storedToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
@@ -250,7 +253,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync(inactiveUser);
 
         // Act
-        var result = await _sut.RefreshTokenAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(request);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -269,7 +272,7 @@ public class AuthServiceRefreshTokenAsyncTests
     public async Task RefreshTokenAsync_CreateRefreshTokenFails_ReturnsFailure()
     {
         // Arrange
-        var user = TestDataSeeder.CreateApplicationUser();
+        ApplicationUser user = TestDataSeeder.CreateApplicationUser();
         var roles = new List<string>();
         var storedToken = new RefreshToken
         {
@@ -304,7 +307,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync(Result<string>.Failure(refreshTokenError));
 
         // Act
-        var result = await _sut.RefreshTokenAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(request);
 
         // Assert
         result.IsFailure.Should().BeTrue();

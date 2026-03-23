@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+
 using CompVault.Backend.Common.Security;
+
 using FluentAssertions;
 
 namespace CompVault.Tests.Backend.Common.Security;
@@ -15,7 +17,7 @@ public class TimingGuardTests
     {
         // Arrange - starter 2 stk StopWatch-objekter. 1 for å ta total tid, og en som simulerer
         // metoden som kaller TimingGuard
-        var minimumMs = 500;
+        int minimumMs = 500;
         var operationSw = Stopwatch.StartNew();
         var testingStopwatch = Stopwatch.StartNew();
 
@@ -34,13 +36,13 @@ public class TimingGuardTests
     public async Task TimingGuard_TimeIsHigherThanMinimum_ShouldNotDelay()
     {
         // Arrange - Starter metodens stopwatch som vi sikrer er høyere enn minimumtiden med en delay
-        var minimumMs = 500;
+        int minimumMs = 500;
         var operationSw = Stopwatch.StartNew();
         await Task.Delay(minimumMs + 100); // Sikrer at vi er over minimums tiden
 
         // Starter StopWatchen som måler selve metoden
         var testingStopwatch = Stopwatch.StartNew();
-        var estimatedTestingTimeMs = 200;
+        int estimatedTestingTimeMs = 200;
 
         // Act
         await TimingGuard.EnforceMinimumTimeAsync(operationSw, minimumMs, CancellationToken.None);
@@ -57,7 +59,7 @@ public class TimingGuardTests
     public async Task TimingGuard_ShouldStopStopWatchObject()
     {
         // Arrange - Starter metodens stopwatch
-        var minimumMs = 500;
+        int minimumMs = 500;
         var operationSw = Stopwatch.StartNew();
 
         // Act
@@ -74,16 +76,16 @@ public class TimingGuardTests
     public async Task TimingGuard_WhenCancelled_ShouldThrowOperationCanceledException()
     {
         // Arrange - Starter metodens stopwatch
-        var minimumMs = 10000;
+        int minimumMs = 10000;
         var operationSw = Stopwatch.StartNew();
 
         // Oppretter en CancellationToken som vi avbryter
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
-        var token = cts.Token;
+        CancellationToken token = cts.Token;
 
         // Act
-        var act = async () =>
+        Func<Task> act = async () =>
             await TimingGuard.EnforceMinimumTimeAsync(operationSw, minimumMs, token);
 
         // Assert - Sjekker at det ble kastet riktig error

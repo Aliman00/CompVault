@@ -1,9 +1,13 @@
 ﻿using System.Text.Json;
+
 using CompVault.Backend.Common.Middleware;
 using CompVault.Shared.Result;
+
 using FluentAssertions;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+
 using Moq;
 
 namespace CompVault.Tests.Backend.Common.Middleware;
@@ -13,18 +17,18 @@ public class GlobalExceptionHandlerTests
     private readonly GlobalExceptionHandler _sut;
 
     public GlobalExceptionHandlerTests()
-    {   
+    {
         // Konstruktøren trenger kun Logger
-        var logger = new Mock<ILogger<GlobalExceptionHandler>>().Object;
+        ILogger<GlobalExceptionHandler> logger = new Mock<ILogger<GlobalExceptionHandler>>().Object;
         _sut = new GlobalExceptionHandler(logger);
     }
-    
+
     /// <summary>
     /// Oppretter en HttpContext - en HttpContext er et objekt som opprettes når det kommer en http-forespørsel
     /// og den inneholder request, response, user og middlertidig data.
     /// </summary>
     /// <returns>En HttpContext med en MemoryStream, slik at vi kan sjekke hva som ble skrevet i forespørselen</returns>
-    private static DefaultHttpContext CreateHttpContext() => 
+    private static DefaultHttpContext CreateHttpContext() =>
         new DefaultHttpContext
         {
             Response =
@@ -32,7 +36,7 @@ public class GlobalExceptionHandlerTests
                 Body = new MemoryStream()
             }
         };
-    
+
     /// <summary>
     /// Hjelempetode for å lese egenskapene fra et ProblemDetail-objekt fra responsne til HttpContexten
     /// </summary>
@@ -46,8 +50,8 @@ public class GlobalExceptionHandlerTests
         return await JsonSerializer.DeserializeAsync<ProblemDetail>(response.Body,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
     }
-    
-    
+
+
     /// <summary>
     /// Tester at GlobalExceptionHandler gir riktig Status og Code på flere forskjellige type Exceptions
     /// </summary>
@@ -66,24 +70,24 @@ public class GlobalExceptionHandlerTests
     {
         // Arrange - Oppretter en HttpContext og vi bruker Activator.CreateInstance til å opprette ønsket Exception-type
         // Dette må gjøres pga vi har en Theory-test, og new Exception() fungerer ikke
-        var context = CreateHttpContext();
+        DefaultHttpContext context = CreateHttpContext();
         var exception = (Exception)Activator.CreateInstance(exceptionType)!;
-        
+
         // Act - kaller metoden med HttpContexten og feilen
-        var result = await _sut.TryHandleAsync(context, exception, CancellationToken.None);
-        
+        bool result = await _sut.TryHandleAsync(context, exception, CancellationToken.None);
+
         // Assert
         result.Should().BeTrue(); // Sjekker at den ble satt som håndtert
         context.Response.StatusCode.Should().Be(expectedStatus); // Sjekker korrekt status
-        
+
         // Leser ProblemDetail-objektet og sjekker egenskapene
-        var problemDetail = await ReadProblemDetail(context.Response);
+        ProblemDetail? problemDetail = await ReadProblemDetail(context.Response);
         problemDetail.Should().NotBeNull();
         problemDetail.Status.Should().Be(expectedStatus);
         problemDetail.Code.Should().Be(expectedCode);
 
     }
-    
+
     /// <summary>
     /// Sjekker at Message-blir satt riktig i ProblemDetail-objektet hvis Exception er ArgumentException
     /// </summary>
@@ -92,17 +96,17 @@ public class GlobalExceptionHandlerTests
     {
         // Arrange
         const string expectedMessage = "Invalid value for field 'FirstName'.";
-        var context = CreateHttpContext();
+        DefaultHttpContext context = CreateHttpContext();
         var exception = new ArgumentException(expectedMessage);
-        
+
         // Act
         await _sut.TryHandleAsync(context, exception, CancellationToken.None);
-        
+
         // Assert
-        var problemDetail = await ReadProblemDetail(context.Response);
+        ProblemDetail? problemDetail = await ReadProblemDetail(context.Response);
         problemDetail!.Message.Should().Be(expectedMessage);
     }
-    
+
     /// <summary>
     /// Sjekker at Message-blir satt riktig i ProblemDetail-objektet hvis Exception er Default, og vi har ikke
     /// spesifisert en egen håndtering av den type exception i Handleren. Bekrefter at vi ikke sender denne meldingen
@@ -112,16 +116,16 @@ public class GlobalExceptionHandlerTests
     public async Task GlobalExceptionHandler_GivenUnknownException_ReturnsFallbackMessage()
     {
         // Arrange
-        var context = CreateHttpContext();
+        DefaultHttpContext context = CreateHttpContext();
         var exception = new Exception("Super secret, server message");
-        
+
         // Act
         await _sut.TryHandleAsync(context, exception, CancellationToken.None);
-        
+
         // Assert
-        var problemDetail = await ReadProblemDetail(context.Response);
+        ProblemDetail? problemDetail = await ReadProblemDetail(context.Response);
         problemDetail!.Message.Should().Be("Noe gikk galt på vår side. Prøv igjen litt senere.");
         problemDetail.Message.Should().NotContain("Super secret");
     }
-    
+
 }

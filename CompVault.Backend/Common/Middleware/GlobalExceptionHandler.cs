@@ -1,4 +1,5 @@
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Diagnostics;
 namespace CompVault.Backend.Common.Middleware;
 
@@ -18,7 +19,7 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
         logger.LogError(exception, "Uhåndtert exception på {Method} {Path}",
             httpContext.Request.Method, httpContext.Request.Path);
 
-        var (status, code, message) = exception switch
+        (int status, ErrorCode code, string? message) = exception switch
         {
             ArgumentException argEx => (400, ErrorCode.Validation, argEx.Message),
             KeyNotFoundException => (404, ErrorCode.NotFound, "Ressursen ble ikke funnet."),

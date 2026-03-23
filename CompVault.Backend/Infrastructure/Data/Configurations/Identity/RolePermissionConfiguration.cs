@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Identity;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

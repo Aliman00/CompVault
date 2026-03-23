@@ -1,5 +1,6 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Shared.Enums;
+
 using Microsoft.AspNetCore.Identity;
 
 namespace CompVault.Backend.Dev;

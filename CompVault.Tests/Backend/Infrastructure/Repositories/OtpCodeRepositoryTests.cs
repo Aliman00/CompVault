@@ -3,7 +3,9 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Tests.Common;
+
 using FluentAssertions;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Tests.Backend.Infrastructure.Repositories;
@@ -17,7 +19,7 @@ public class OtpCodeRepositoryTests : IDisposable
     public OtpCodeRepositoryTests()
     {
         // Setter opp InMemoryDatabase
-        var options = new DbContextOptionsBuilder<AppDbContext>()
+        DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
@@ -62,7 +64,7 @@ public class OtpCodeRepositoryTests : IDisposable
     /// <returns>Den opprettede brukeren hvis egenskaper (som ID) er nødvendig for testing</returns>
     private async Task<ApplicationUser> SeedUserAsync(string email = "test@example.com")
     {
-        var user = TestDataSeeder.CreateApplicationUser(email: email);
+        ApplicationUser user = TestDataSeeder.CreateApplicationUser(email: email);
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
         return user;
@@ -79,11 +81,11 @@ public class OtpCodeRepositoryTests : IDisposable
     public async Task GetActiveCodeAsync_ActiveUnexpiredCode_ReturnsCode()
     {
         // Arrange - seeder en default kode
-        var user = await SeedUserAsync();
-        var otpCode = await SeedOtpCodeAsync(user.Id);
+        ApplicationUser user = await SeedUserAsync();
+        OtpCode otpCode = await SeedOtpCodeAsync(user.Id);
 
         // Act
-        var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
+        OtpCode? existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
         // Assert
         existingOtpCode.Should().NotBeNull();
@@ -98,12 +100,12 @@ public class OtpCodeRepositoryTests : IDisposable
     public async Task GetActiveCodeAsync_MultipleActiveUnexpiredCode_ReturnsNewestCode()
     {
         // Arrange - seeder 2 stk koder med forskjellig tid
-        var user = await SeedUserAsync();
-        var newestCode = await SeedOtpCodeAsync(user.Id, createdAt: DateTime.UtcNow);
+        ApplicationUser user = await SeedUserAsync();
+        OtpCode newestCode = await SeedOtpCodeAsync(user.Id, createdAt: DateTime.UtcNow);
         await SeedOtpCodeAsync(user.Id, createdAt: DateTime.UtcNow.AddMinutes(-5));
 
         // Act
-        var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
+        OtpCode? existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
         // Assert
         existingOtpCode.Should().NotBeNull();
@@ -121,10 +123,10 @@ public class OtpCodeRepositoryTests : IDisposable
     public async Task GetActiveCodeAsync_NoExistingCode_ReturnsNull()
     {
         // Arrange - Seeder en bruker
-        var user = await SeedUserAsync();
+        ApplicationUser user = await SeedUserAsync();
 
         // Act
-        var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
+        OtpCode? existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
         // Assert
         existingOtpCode.Should().BeNull();
@@ -137,11 +139,11 @@ public class OtpCodeRepositoryTests : IDisposable
     public async Task GetActiveCodeAsync_CodeIsExpired_ReturnsNull()
     {
         // Arrange - seeder en Otp-kode som er utgått for 1 minutt siden
-        var user = await SeedUserAsync();
+        ApplicationUser user = await SeedUserAsync();
         await SeedOtpCodeAsync(user.Id, expiresAt: DateTime.UtcNow.AddMinutes(-1));
 
         // Act
-        var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
+        OtpCode? existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
         // Assert
         existingOtpCode.Should().BeNull();
@@ -154,11 +156,11 @@ public class OtpCodeRepositoryTests : IDisposable
     public async Task GetActiveCodeAsync_CodeIsUsed_ReturnsNull()
     {
         // Arrange - seeder en Otp-kode som er utgått for 1 minutt siden
-        var user = await SeedUserAsync();
+        ApplicationUser user = await SeedUserAsync();
         await SeedOtpCodeAsync(user.Id, isUsed: true);
 
         // Act
-        var existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
+        OtpCode? existingOtpCode = await _sut.GetActiveCodeAsync(user.Id);
 
         // Assert
         existingOtpCode.Should().BeNull();
@@ -171,14 +173,14 @@ public class OtpCodeRepositoryTests : IDisposable
     public async Task GetActiveCodeAsync_WrongUserId_ReturnsNull()
     {
         // Arrange - seeder en Otp-kode til bruker A
-        var userWithCode = await SeedUserAsync();
+        ApplicationUser userWithCode = await SeedUserAsync();
         await SeedOtpCodeAsync(userWithCode.Id);
 
         // Oppretter bruker B uten kode
-        var userWithoutCode = await SeedUserAsync("test123@example.com");
+        ApplicationUser userWithoutCode = await SeedUserAsync("test123@example.com");
 
         // Act - Kaller metoden med en annen brukerId
-        var existingOtpCode = await _sut.GetActiveCodeAsync(userWithoutCode.Id);
+        OtpCode? existingOtpCode = await _sut.GetActiveCodeAsync(userWithoutCode.Id);
 
         // Assert
         existingOtpCode.Should().BeNull();
