@@ -117,7 +117,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId og variabelen for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
-        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode);
+        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
         
         // mocker at GetActiveCodeAsync returner eksisterende Otp-kode
         _otpCodeRepositoryMock
@@ -177,7 +177,7 @@ public class OtpCodeServiceTests
         var userId = Guid.NewGuid();
         // Til Otp-koden må vi ha koden i klartekst for metode-kallet, og CreateOtpCode hasher koden så det blir
         // korrekt
-        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode);
+        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -233,7 +233,7 @@ public class OtpCodeServiceTests
     {
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden. Otp-koden har max MaxFailedAttempts
         var userId = Guid.NewGuid();
-        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode, failedAttempts: _maxFailedAttempts);
+        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode, failedAttempts: _maxFailedAttempts);
 
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
@@ -263,7 +263,7 @@ public class OtpCodeServiceTests
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
         var wrongCode = "111111";
-        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode);
+        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock
@@ -291,7 +291,7 @@ public class OtpCodeServiceTests
         // Arrange - Setter opp en brukerId for å hente den lagrede Otp-koden
         var userId = Guid.NewGuid();
         var wrongCode = "111111";
-        var otpCode = TestDataSeeder.CreateOtpCode(userId, _plainTextCode);
+        var otpCode = TestDataFactory.CreateOtpCode(userId, _plainTextCode);
         
         // mocker at GetActiveCodeAsync returner en eksisterende og aktive OtpCode fra databasen
         _otpCodeRepositoryMock

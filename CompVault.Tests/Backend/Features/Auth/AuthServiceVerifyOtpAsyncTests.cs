@@ -85,9 +85,9 @@ public class AuthServiceVerifyOtpAsyncTests
         {
             // Arrange
             var request = AuthRequestBuilder.CreateVerifyOtpRequest();
-            var user = TestDataSeeder.CreateApplicationUser();
+            var user = TestDataFactory.CreateApplicationUser();
             var roles = new List<string>();
-            var otpCode = TestDataSeeder.CreateOtpCode(user.Id); // Oppretter en Otp-kode på brukeren
+            var otpCode = TestDataFactory.CreateOtpCode(user.Id); // Oppretter en Otp-kode på brukeren
             const string accessToken = "access-token";
             const string refreshToken = "refresh-token";
             
@@ -181,7 +181,7 @@ public class AuthServiceVerifyOtpAsyncTests
     {
         // Arrange
         var request = AuthRequestBuilder.CreateVerifyOtpRequest();
-        var user = TestDataSeeder.CreateApplicationUser();
+        var user = TestDataFactory.CreateApplicationUser();
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded,
             "Too many failed attempts");
 
@@ -222,8 +222,8 @@ public class AuthServiceVerifyOtpAsyncTests
     {
         // Arrange
         var request = AuthRequestBuilder.CreateVerifyOtpRequest();
-        var user = TestDataSeeder.CreateApplicationUser();
-        var otpCode = TestDataSeeder.CreateOtpCode(user.Id);
+        var user = TestDataFactory.CreateApplicationUser();
+        var otpCode = TestDataFactory.CreateOtpCode(user.Id);
         var refreshTokenError  = AppError.Create(ErrorCode.InternalError, 
             "Failed to create refresh token");
         

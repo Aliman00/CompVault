@@ -10,7 +10,7 @@ public interface IRefreshTokenRepository : IRepository<RefreshToken>
     Task<RefreshToken?> GetValidTokenAsync(string token, CancellationToken ct = default);
 
     /// <summary>
-    /// Henter alle gyldige refresh tokens for en bruker.
+    /// Henter alle gyldige refresh tokens for en bruker. TODO: Skal den brukes? Har ingen tester
     /// </summary>
     Task<IReadOnlyList<RefreshToken>> GetActiveTokensByUserIdAsync(Guid userId, CancellationToken ct = default);
 
