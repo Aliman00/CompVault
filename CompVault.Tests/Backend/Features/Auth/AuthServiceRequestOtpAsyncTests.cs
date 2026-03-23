@@ -6,7 +6,6 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
-using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Backend.Features.Auth.Builders;
 using CompVault.Tests.Common;
@@ -38,13 +37,13 @@ public class AuthServiceRequestOtpAsyncTests
             storeMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
         // Mocker de andre DI-avhengighetene
-        var loggerMock = new Mock<ILogger<IAuthService>>();
-        var jwtServiceMock = new Mock<IJwtService>();
+        Mock<ILogger<IAuthService>> loggerMock = new Mock<ILogger<IAuthService>>();
+        Mock<IJwtService> jwtServiceMock = new Mock<IJwtService>();
         _otpCodeServiceMock = new Mock<IOtpCodeService>();
         _emailServiceMock = new Mock<IEmailService>();
-        var refreshTokenService = new Mock<IRefreshTokenService>();
-        var refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
-        var unitOfWorkMock = new Mock<IUnitOfWork>();
+        Mock<IRefreshTokenService> refreshTokenService = new Mock<IRefreshTokenService>();
+        Mock<IRefreshTokenRepository> refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
+        Mock<IUnitOfWork> unitOfWorkMock = new Mock<IUnitOfWork>();
 
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
         unitOfWorkMock
@@ -54,7 +53,7 @@ public class AuthServiceRequestOtpAsyncTests
 
 
         // Oppretter configuration OtpOptions - trenger ingen delay i tester
-        IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
+        var otpOptions = Options.Create(new OtpOptions
         {
             MinResponseTimeRequestOtpMs = 0,
             MaxFailedAttempts = 3
@@ -83,8 +82,8 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_ExistingUser_GeneratesOtpAndSendsEmail_ReturnsSuccess()
     {
         // Arrange
-        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
-        ApplicationUser user = TestDataSeeder.CreateApplicationUser();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
+        var user = TestDataFactory.CreateApplicationUser();
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
 
         // mocker UserManager til å returerne opprettet bruker
@@ -104,7 +103,7 @@ public class AuthServiceRequestOtpAsyncTests
             .ReturnsAsync(Result.Success());
 
         // Act
-        Result result = await _sut.RequestOtpAsync(request);
+        var result = await _sut.RequestOtpAsync(request);
 
         // Assert - Sjekker at Result er Success, GenerateOtpCodeAsync er kalt med brukerens ID engang,
         // og SendAsync er kalt med brukerens Email en gang
@@ -127,7 +126,7 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_UnknownEmail_ReturnsSuccess()
     {
         // Arrange
-        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
 
         // mocker UserManager til å returnere inaktive bruker
         _userManagerMock
@@ -135,7 +134,7 @@ public class AuthServiceRequestOtpAsyncTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        Result result = await _sut.RequestOtpAsync(request);
+        var result = await _sut.RequestOtpAsync(request);
 
         // Assert - Sjekker at Result er Success (selvom det er failure), og at tilhørende service-metoder blir kalt
         // 0 ganger
@@ -156,8 +155,8 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_InactiveUser_ReturnsSuccess()
     {
         // Arrange
-        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
-        ApplicationUser user = TestDataSeeder.CreateApplicationUser();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
+        var user = TestDataFactory.CreateApplicationUser();
         user.IsActive = false;
 
         // mocker UserManager til å returnere null
@@ -166,7 +165,7 @@ public class AuthServiceRequestOtpAsyncTests
             .ReturnsAsync(user);
 
         // Act
-        Result result = await _sut.RequestOtpAsync(request);
+        var result = await _sut.RequestOtpAsync(request);
 
         // Assert - Sjekker at Result er Success (selvom det er failure), og at tilhørende service-metoder blir kalt
         // 0 ganger
@@ -186,8 +185,8 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_EmailFailure_ReturnsFailure()
     {
         // Arrange
-        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
-        ApplicationUser user = TestDataSeeder.CreateApplicationUser();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
+        var user = TestDataFactory.CreateApplicationUser();
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
         var emailError = AppError.Create(ErrorCode.EmailSendFailed, "Email service down");
 
@@ -208,7 +207,7 @@ public class AuthServiceRequestOtpAsyncTests
             .ReturnsAsync(Result.Failure(emailError));
 
         // Act
-        Result result = await _sut.RequestOtpAsync(request);
+        var result = await _sut.RequestOtpAsync(request);
 
         // Assert - Sjekker at Result er Failure og at ErrorCode er korrekt
         result.IsFailure.Should().BeTrue();
@@ -225,8 +224,8 @@ public class AuthServiceRequestOtpAsyncTests
     public async Task RequestOtpAsync_GenerateOtpCodeAsyncFails_ReturnsSuccess()
     {
         // Arrange
-        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
-        ApplicationUser user = TestDataSeeder.CreateApplicationUser();
+        var request = AuthRequestBuilder.CreateRequestOtpRequest();
+        var user = TestDataFactory.CreateApplicationUser();
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, "Max attempts exceeded");
 
         // mocker UserManager til å returerne opprettet bruker
@@ -240,7 +239,7 @@ public class AuthServiceRequestOtpAsyncTests
             .ReturnsAsync(Result<string>.Failure(otpCodeError));
 
         // Act
-        Result result = await _sut.RequestOtpAsync(request);
+        var result = await _sut.RequestOtpAsync(request);
 
         // Assert - Sjekker at Result er Failure og EmailService aldri blir kalt
         result.IsSuccess.Should().BeTrue();

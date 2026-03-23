@@ -38,7 +38,7 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
             return result;
 
         }
-        catch (Exception ex) // Rollback i transkasjonen, og generer en default melding
+        catch (Exception ex) // Rollback i transaksjonen, og generer en default melding
         {
             logger.LogError(ex, "Transaction failed unexpectedly. Rolling back.");
             await transaction.RollbackAsync(ct);
@@ -72,7 +72,7 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
             return result;
 
         }
-        catch (Exception ex) // Rollback i transkasjonen, og generer en default melding
+        catch (Exception ex) // Rollback i transaksjonen, og generer en default melding
         {
             logger.LogError(ex, "Transaction failed unexpectedly. Rolling back.");
             await transaction.RollbackAsync(ct);

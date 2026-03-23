@@ -56,7 +56,7 @@ public class ApplicationUser : IdentityUser<Guid>
     /// <summary>Hvilken avdeling brukeren tilhører.</summary>
     public Guid? DepartmentId { get; set; }
 
-    /// <summary>Brukren som opprettet brukeren</summary>
+    /// <summary>Brukeren som opprettet brukeren</summary>
     public Guid? CreatedById { get; set; }
 
 

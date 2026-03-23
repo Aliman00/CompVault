@@ -71,7 +71,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
     public async Task RevokeRefreshTokenAsync_ValidToken_SetsIsRevokedAndReturnsSuccess()
     {
         // Arrange
-        ApplicationUser user = TestDataSeeder.CreateApplicationUser();
+        var user = TestDataFactory.CreateApplicationUser();
         var storedToken = new RefreshToken
         {
             Id = Guid.NewGuid(),
@@ -137,7 +137,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
     public async Task RevokeRefreshTokenAsync_TokenBelongsToOtherUser_ReturnsForbidden()
     {
         // Arrange
-        ApplicationUser tokenOwner = TestDataSeeder.CreateApplicationUser();
+        var tokenOwner = TestDataFactory.CreateApplicationUser();
         var currentUserId = Guid.NewGuid(); // en annen bruker
 
         var storedToken = new RefreshToken

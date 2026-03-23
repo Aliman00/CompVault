@@ -86,7 +86,7 @@ public sealed class AuthService(
         finally
         {
             // Avslutter stopwatchen. Vi setter en delay uansett slik at metoden bruker en minimum tid (Dette må
-            // testest grunding for å justere til riktig tid)
+            // testes grundig for å justere til riktig tid)
             await TimingGuard.EnforceMinimumTimeAsync(sw, _otp.MinResponseTimeRequestOtpMs, ct);
         }
     }
@@ -138,7 +138,7 @@ public sealed class AuthService(
         finally
         {
             // Avslutter stopwatchen. Vi setter en delay uansett slik at metoden bruker en minimum tid (Dette må
-            // testest grunding for å justere til riktig tid)
+            // testes grundig for å justere til riktig tid)
             await TimingGuard.EnforceMinimumTimeAsync(sw, _otp.MinResponseTimeVerifyOtpMs, ct);
         }
     }

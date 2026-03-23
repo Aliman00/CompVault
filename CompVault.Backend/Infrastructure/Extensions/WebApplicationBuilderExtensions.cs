@@ -57,7 +57,7 @@ public static class WebApplicationBuilderExtensions
             string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             options.IncludeXmlComments(xmlPath);
 
-            // Vi registerer oppsettet med Bearer og OpenApiSecurityScheme objeektet vårt
+            // Vi registerer oppsettet med Bearer og OpenApiSecurityScheme objektet vårt
             options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, jwtSecurityScheme);
 
 
