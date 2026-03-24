@@ -1,3 +1,5 @@
+using Npgsql;
+
 namespace CompVault.Backend.Infrastructure.Data;
 
 /// <summary>
@@ -15,7 +17,19 @@ public sealed class DatabaseSettings
 
     /// <summary>
     /// Bygger en Npgsql connection string fra de individuelle feltene.
+    /// Bruker NpgsqlConnectionStringBuilder for å håndtere spesialtegn i passord
+    /// (f.eks. semikolon og likhetstegn) korrekt.
     /// </summary>
-    public string BuildConnectionString() =>
-        $"Host={Host};Port={Port};Database={Name};Username={Username};Password={Password}";
+    public string BuildConnectionString()
+    {
+        var builder = new NpgsqlConnectionStringBuilder
+        {
+            Host = Host,
+            Port = Port,
+            Database = Name,
+            Username = Username,
+            Password = Password
+        };
+        return builder.ToString();
+    }
 }
