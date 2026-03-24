@@ -27,9 +27,10 @@ services:
     container_name: compvault-backend
     ports:
       - "5000:8080"
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=compvault_db;Username=compvault_user;Password=compvault_dev_pass
     depends_on:
       postgres:
         condition: service_healthy
