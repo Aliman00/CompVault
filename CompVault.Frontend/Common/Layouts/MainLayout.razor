@@ -1,5 +1,5 @@
 ﻿@inherits LayoutComponentBase
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRunTime
 
 <!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
 <MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
@@ -33,14 +33,9 @@
                        OnClick="ToggleDarkMode" />
     </MudAppBar>
 
-    <!-- Sidebaren - Elevation gir skygge, ClipMode bestemmer hvor den åpnes, feks under AppBaren -->
-    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always">
-        <!-- Headeren til sidebaren -->
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h6">Meny</MudText>
-        </MudDrawerHeader>
-        <NavMenu />
-    </MudDrawer>
+    <AppDrawer @bind-IsOpen="_drawerOpen">
+        <AppNavMenu />
+    </AppDrawer>
     
     <!-- Hovedcontent med Body - tilpasser seg MudDrawer automatisk -->
     <MudMainContent>
@@ -73,7 +68,7 @@
         if (firstRender)
         {
             // Prøv å lese fra localStorage først
-            var savedMode = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", DarkModeKey);
+            var savedMode = await JsRunTime.InvokeAsync<string?>("localStorage.getItem", DarkModeKey);
 
             if (savedMode != null && bool.TryParse(savedMode, out var savedDarkMode))
             {
@@ -96,6 +91,6 @@
     private async Task ToggleDarkMode()
     {
         _isDarkMode = !_isDarkMode;
-        await JSRuntime.InvokeVoidAsync("localStorage.setItem", DarkModeKey, _isDarkMode.ToString());
+        await JsRunTime.InvokeVoidAsync("localStorage.setItem", DarkModeKey, _isDarkMode.ToString());
     }
 }
