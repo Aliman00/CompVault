@@ -1,4 +1,6 @@
-﻿@inherits LayoutComponentBase
+﻿@* Layout for Admin-panelet *@
+
+@inherits LayoutComponentBase
 
 <!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
 <MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
@@ -13,7 +15,6 @@
 <MudLayout>
     <MudAppBar Elevation="1">  <!-- Gir headeren en skygge -->
         <!-- Hamburgermeny knappen med egen metode for å lukke og åpne sidemenyen (Drawer) -->
-        <!-- Edge bestemmer høyre eller venstre -->
         <MudIconButton Icon="@Icons.Material.Filled.Menu" 
                        Color="Color.Inherit"
                        Edge="Edge.Start"
@@ -33,7 +34,7 @@
     </MudAppBar>
 
     <AppDrawer @bind-IsOpen="_drawerOpen">
-        <AppNavMenu />
+        <AdminNavMenu />
     </AppDrawer>
     
     <!-- Hovedcontent med Body - tilpasser seg MudDrawer automatisk -->
@@ -56,7 +57,7 @@
     private MudThemeProvider _mudThemeProvider = null!;
     
     // Aktivt tema - Default på MainTheme
-    private readonly MudTheme _theme = CompVaultMainTheme.Theme;
+    private readonly MudTheme _theme = CompVaultAdminTheme.Theme;
 
     private const string DarkModeKey = "compvault-darkmode";
     
