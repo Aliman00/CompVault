@@ -5,6 +5,7 @@ using CompVault.Backend.Common.Responses;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
@@ -180,6 +181,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
@@ -193,6 +195,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IOtpCodeService, OtpCodeService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 

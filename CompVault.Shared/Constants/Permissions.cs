@@ -20,6 +20,7 @@ public static class Permissions
     // Departments
     public const string DepartmentsRead = "departments:read";
     public const string DepartmentsWrite = "departments:write";
+    public const string DepartmentsDelete = "departments:delete";
 
     // --- Fase 4+ (legg til etterhvert som fasene implementeres) ---
     // Competencies, Documents, Requirements, Equipment, Onboarding, ...
