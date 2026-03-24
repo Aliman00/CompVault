@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Setter opp databasekoblingen med Npgsql og registrerer ASP.NET Core Identity.
-    /// Ved testing så brukes ikke PostgreSQL med UseNpgsql, men InMemory
+    /// Ved testing så brukes ikke PostgreSQL med UseNpgsql, men InMemory.
     /// </summary>
     public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration,
         IWebHostEnvironment environment)
@@ -37,9 +37,13 @@ public static class ServiceCollectionExtensions
         // Skipper oppsett av PostgreSQL hvis vi er i testing environment
         if (!environment.IsEnvironment("Testing"))
         {
+            DatabaseSettings dbSettings = configuration
+                .GetSection(DatabaseSettings.SectionName)
+                .Get<DatabaseSettings>() ?? throw new InvalidOperationException("Database-konfigurasjon mangler.");
+
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(
-                    configuration.GetConnectionString("Default"),
+                    dbSettings.BuildConnectionString(),
                     npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
         }
 
@@ -68,12 +72,13 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        IConfigurationSection jwtSection = configuration.GetSection(JwtSettings.SectionName);
+
+        services.Configure<JwtSettings>(jwtSection);
         services.Configure<OtpOptions>(configuration.GetSection(OtpOptions.SectionName));
 
-        JwtSettings jwtSettings = configuration
-            .GetSection(JwtSettings.SectionName)
-            .Get<JwtSettings>() ?? new JwtSettings();
+        JwtSettings jwtSettings = jwtSection
+            .Get<JwtSettings>() ?? throw new InvalidOperationException("JWT-konfigurasjon mangler.");
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(opts =>
@@ -88,6 +93,7 @@ public static class ServiceCollectionExtensions
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(jwtSettings.Secret)),
                     ValidateLifetime = true,
+                    // Fjerner standard 5-minutters slingringsmonn slik at tokens utløper nøyaktig når de skal
                     ClockSkew = TimeSpan.Zero
                 };
             });
@@ -103,11 +109,9 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
-        // ============ ERROR HANDLING ============
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
-        // ============ BAKGRUNNSJOBBER ============
         // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
         services.AddHostedService<TokenCleanupJob>();
 
@@ -115,34 +119,28 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Konfigurerer Epost med Resend - Skippes ved testing
+    /// Konfigurerer e-post med Resend. Hoppes over i Testing-miljøet.
     /// </summary>
     public static IServiceCollection AddEmail(this IServiceCollection services, IConfiguration configuration,
         IWebHostEnvironment environment)
     {
-        // Vi mocker EmailService med en falsk nøkkel i testing - må skippes ved Test-miljø
+        // EmailService mockes i integrasjonstester — hopper over oppsett i Testing-miljøet
         if (environment.IsEnvironment("Testing"))
             return services;
 
-        // Henter config fra AppSettings
         EmailSettings emailSettings = configuration
             .GetSection(EmailSettings.SectionName)
-            .Get<EmailSettings>() ?? throw new InvalidOperationException("Email configuration is missing");
+            .Get<EmailSettings>() ?? throw new InvalidOperationException("E-postkonfigurasjon mangler.");
 
         if (string.IsNullOrEmpty(emailSettings.ApiKey))
-            throw new InvalidOperationException("Email:ApiKey is not configured");
+            throw new InvalidOperationException("Email:ApiKey er ikke konfigurert.");
 
         if (string.IsNullOrWhiteSpace(emailSettings.FromAddress))
-            throw new InvalidOperationException("Email:FromAddress is not configured");
+            throw new InvalidOperationException("Email:FromAddress er ikke konfigurert.");
 
-        // Register Resend options
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
-        services.Configure<ResendClientOptions>(o => o.ApiToken = emailSettings.ApiKey);
-
-        // HttpClient for Resend
+        services.Configure<ResendClientOptions>(resendOptions => resendOptions.ApiToken = emailSettings.ApiKey);
         services.AddHttpClient<IResend, ResendClient>();
-
-        // Registerer EmailService som scoped
         services.AddScoped<IEmailService, EmailService>();
 
         return services;
