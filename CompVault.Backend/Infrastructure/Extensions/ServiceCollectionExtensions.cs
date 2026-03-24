@@ -41,6 +41,15 @@ public static class ServiceCollectionExtensions
                 .GetSection(DatabaseSettings.SectionName)
                 .Get<DatabaseSettings>() ?? throw new InvalidOperationException("Database-konfigurasjon mangler.");
 
+            if (string.IsNullOrWhiteSpace(dbSettings.Host))
+                throw new InvalidOperationException("Database:Host er ikke konfigurert.");
+            if (string.IsNullOrWhiteSpace(dbSettings.Name))
+                throw new InvalidOperationException("Database:Name er ikke konfigurert.");
+            if (string.IsNullOrWhiteSpace(dbSettings.Username))
+                throw new InvalidOperationException("Database:Username er ikke konfigurert.");
+            if (string.IsNullOrWhiteSpace(dbSettings.Password))
+                throw new InvalidOperationException("Database:Password er ikke konfigurert.");
+
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(
                     dbSettings.BuildConnectionString(),
