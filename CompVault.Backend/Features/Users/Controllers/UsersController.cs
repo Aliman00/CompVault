@@ -66,7 +66,9 @@ public sealed class UsersController(IUserService userService) : BaseController
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Value!.Id }, result.Value);
+        return CreatedAtAction("GetById", new { id = result.Value!.Id }, result.Value);
+        // Merk: Bruker "GetById" som action-navn, ikke "GetByIdAsync", fordi ASP.NET Core
+        // som default stripper "Async" fra action-navn i route tabellen.
     }
 
     /// <summary>Oppdaterer profilen til en eksisterende bruker.</summary>
