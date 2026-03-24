@@ -22,7 +22,7 @@ namespace CompVault.Backend.Migrations
                 table: "Departments",
                 type: "boolean",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Departments_DeletedAt",

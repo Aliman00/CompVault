@@ -17,7 +17,7 @@ internal sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departm
         builder.Property(d => d.Name).HasMaxLength(200).IsRequired();
         builder.Property(d => d.Description).HasMaxLength(500);
         builder.Property(d => d.CreatedAt).IsRequired();
-        builder.Property(d => d.IsActive).IsRequired();
+        builder.Property(d => d.IsActive).IsRequired().HasDefaultValue(true);
 
         builder.HasIndex(d => d.DeletedAt);
 

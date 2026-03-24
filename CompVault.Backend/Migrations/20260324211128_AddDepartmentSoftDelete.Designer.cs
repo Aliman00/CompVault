@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CompVault.Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260324184719_AddDepartmentSoftDelete")]
+    [Migration("20260324211128_AddDepartmentSoftDelete")]
     partial class AddDepartmentSoftDelete
     {
         /// <inheritdoc />
@@ -266,7 +266,9 @@ namespace CompVault.Backend.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
