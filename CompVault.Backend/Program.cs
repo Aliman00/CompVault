@@ -1,13 +1,18 @@
 using CompVault.Backend.Common.Authorization;
 using CompVault.Backend.Dev;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Extensions;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Testing")
+{
+    ConfigurationLoader.LoadEnvironmentFile();
+    ConfigurationValidator.ValidateAll();
+}
 
 builder.ConfigureSwagger();
 builder.ConfigureLogging();
