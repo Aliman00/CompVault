@@ -23,9 +23,6 @@ public sealed class DepartmentDto
     /// <summary>Antall direkte underavdelinger.</summary>
     public int SubDepartmentCount { get; set; }
 
-    /// <summary>Antall medlemmer i avdelingen.</summary>
-    public int MemberCount { get; set; }
-
     /// <summary>Om avdelingen er aktiv.</summary>
     public bool IsActive { get; set; }
 

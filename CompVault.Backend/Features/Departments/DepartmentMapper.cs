@@ -9,10 +9,9 @@ namespace CompVault.Backend.Features.Departments;
 public static class DepartmentMapper
 {
     /// <summary>
-    /// Konverterer en <see cref="Department"/> til en <see cref="DepartmentDto"/>, inkludert antall underavdelinger og medlemmer.
+    /// Konverterer en <see cref="Department"/> til en <see cref="DepartmentDto"/>.
     /// </summary>
-    /// <returns>En <see cref="DepartmentDto"/> som representerer avdelingen.</returns>
-    public static DepartmentDto ToDto(Department department, int subDepartmentCount, int memberCount) => new()
+    public static DepartmentDto ToDto(Department department, int subDepartmentCount) => new()
     {
         Id = department.Id,
         Name = department.Name,
@@ -20,7 +19,6 @@ public static class DepartmentMapper
         ParentDepartmentId = department.ParentDepartmentId,
         ParentDepartmentName = department.ParentDepartment?.Name,
         SubDepartmentCount = subDepartmentCount,
-        MemberCount = memberCount,
         IsActive = department.IsActive,
         CreatedAt = department.CreatedAt,
         CreatedById = department.CreatedById

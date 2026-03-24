@@ -17,7 +17,7 @@ public sealed class DepartmentService(
         IReadOnlyList<Department> departments = await departmentRepository.GetAllWithHierarchyAsync(cancellationToken);
 
         var dtos = departments
-            .Select(d => DepartmentMapper.ToDto(d, d.SubDepartments.Count, d.Members.Count))
+            .Select(d => DepartmentMapper.ToDto(d, d.SubDepartments.Count))
             .ToList();
 
         return Result<IReadOnlyList<DepartmentDto>>.Success(dtos);
@@ -33,7 +33,7 @@ public sealed class DepartmentService(
                 AppError.NotFound($"Avdeling med ID '{id}' ble ikke funnet."));
 
         return Result<DepartmentDto>.Success(
-            DepartmentMapper.ToDto(department, department.SubDepartments.Count, department.Members.Count));
+            DepartmentMapper.ToDto(department, department.SubDepartments.Count));
     }
 
     /// <inheritdoc />
@@ -61,7 +61,7 @@ public sealed class DepartmentService(
         await departmentRepository.AddAsync(department, cancellationToken);
         await departmentRepository.SaveChangesAsync(cancellationToken);
 
-        return Result<DepartmentDto>.Success(DepartmentMapper.ToDto(department, 0, 0));
+        return Result<DepartmentDto>.Success(DepartmentMapper.ToDto(department, 0));
     }
 
     /// <inheritdoc />
@@ -111,7 +111,7 @@ public sealed class DepartmentService(
         await departmentRepository.SaveChangesAsync(cancellationToken);
 
         return Result<DepartmentDto>.Success(
-            DepartmentMapper.ToDto(department, department.SubDepartments.Count, department.Members.Count));
+            DepartmentMapper.ToDto(department, department.SubDepartments.Count));
     }
 
     /// <inheritdoc />
