@@ -80,6 +80,13 @@ public static class ServiceCollectionExtensions
         JwtSettings jwtSettings = jwtSection
             .Get<JwtSettings>() ?? throw new InvalidOperationException("JWT-konfigurasjon mangler.");
 
+        if (string.IsNullOrWhiteSpace(jwtSettings.Secret))
+            throw new InvalidOperationException("JWT Secret er ikke konfigurert.");
+        if (string.IsNullOrWhiteSpace(jwtSettings.Issuer))
+            throw new InvalidOperationException("JWT Issuer er ikke konfigurert.");
+        if (string.IsNullOrWhiteSpace(jwtSettings.Audience))
+            throw new InvalidOperationException("JWT Audience er ikke konfigurert.");
+
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(opts =>
             {
