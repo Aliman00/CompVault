@@ -50,8 +50,6 @@ services:
     container_name: compvault-frontend
     ports:
       - "5001:8080"
-    env_file:
-      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - BackendUrl=http://backend:8080
