@@ -41,15 +41,6 @@ public static class ServiceCollectionExtensions
                 .GetSection(DatabaseSettings.SectionName)
                 .Get<DatabaseSettings>() ?? throw new InvalidOperationException("Database-konfigurasjon mangler.");
 
-            if (string.IsNullOrWhiteSpace(dbSettings.Host))
-                throw new InvalidOperationException("Database:Host er ikke konfigurert.");
-            if (string.IsNullOrWhiteSpace(dbSettings.Name))
-                throw new InvalidOperationException("Database:Name er ikke konfigurert.");
-            if (string.IsNullOrWhiteSpace(dbSettings.Username))
-                throw new InvalidOperationException("Database:Username er ikke konfigurert.");
-            if (string.IsNullOrWhiteSpace(dbSettings.Password))
-                throw new InvalidOperationException("Database:Password er ikke konfigurert.");
-
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(
                     dbSettings.BuildConnectionString(),
@@ -88,13 +79,6 @@ public static class ServiceCollectionExtensions
 
         JwtSettings jwtSettings = jwtSection
             .Get<JwtSettings>() ?? throw new InvalidOperationException("JWT-konfigurasjon mangler.");
-
-        if (string.IsNullOrWhiteSpace(jwtSettings.Secret))
-            throw new InvalidOperationException("JWT Secret er ikke konfigurert.");
-        if (string.IsNullOrWhiteSpace(jwtSettings.Issuer))
-            throw new InvalidOperationException("JWT Issuer er ikke konfigurert.");
-        if (string.IsNullOrWhiteSpace(jwtSettings.Audience))
-            throw new InvalidOperationException("JWT Audience er ikke konfigurert.");
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(opts =>
@@ -147,12 +131,6 @@ public static class ServiceCollectionExtensions
         EmailSettings emailSettings = configuration
             .GetSection(EmailSettings.SectionName)
             .Get<EmailSettings>() ?? throw new InvalidOperationException("E-postkonfigurasjon mangler.");
-
-        if (string.IsNullOrEmpty(emailSettings.ApiKey))
-            throw new InvalidOperationException("Email:ApiKey er ikke konfigurert.");
-
-        if (string.IsNullOrWhiteSpace(emailSettings.FromAddress))
-            throw new InvalidOperationException("Email:FromAddress er ikke konfigurert.");
 
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
         services.Configure<ResendClientOptions>(resendOptions => resendOptions.ApiToken = emailSettings.ApiKey);

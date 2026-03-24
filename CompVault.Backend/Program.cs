@@ -6,9 +6,11 @@ using CompVault.Backend.Infrastructure.Extensions;
 
 using Microsoft.AspNetCore.Identity;
 
-// Laster inn .env-fil slik at IConfiguration plukker opp verdiene
 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Testing")
+{
     ConfigurationLoader.LoadEnvironmentFile();
+    ConfigurationValidator.ValidateAll();
+}
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
