@@ -1,9 +1,9 @@
-using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Infrastructure.Data;
 
 using Microsoft.EntityFrameworkCore;
 
-namespace CompVault.Backend.Infrastructure.Repositories.Identity;
+namespace CompVault.Backend.Infrastructure.Repositories.Departments;
 
 /// <summary>
 /// EF Core-implementasjon av <see cref="IDepartmentRepository"/>.

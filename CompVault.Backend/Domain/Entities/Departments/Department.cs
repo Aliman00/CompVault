@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.Identity;
+
+namespace CompVault.Backend.Domain.Entities.Departments;
 
 /// <summary>
 /// En avdeling i organisasjonen. Kan ha underavdelinger (hierarkisk struktur).

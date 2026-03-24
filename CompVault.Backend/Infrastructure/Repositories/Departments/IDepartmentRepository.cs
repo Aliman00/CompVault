@@ -1,6 +1,6 @@
-using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.Departments;
 
-namespace CompVault.Backend.Infrastructure.Repositories.Identity;
+namespace CompVault.Backend.Infrastructure.Repositories.Departments;
 
 /// <summary>
 /// Repository for avdelinger med spørringer for hierarkisk struktur.

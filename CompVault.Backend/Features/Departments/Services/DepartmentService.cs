@@ -1,5 +1,5 @@
-using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Domain.Entities.Departments;
+using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Shared.DTOs.Departments;
 using CompVault.Shared.Result;
 

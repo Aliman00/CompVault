@@ -1,9 +1,9 @@
-using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.Departments;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace CompVault.Backend.Infrastructure.Data.Configurations.Identity;
+namespace CompVault.Backend.Infrastructure.Data.Configurations.Departments;
 
 /// <summary>
 /// EF Core-konfigurasjon for avdelingstabellen.

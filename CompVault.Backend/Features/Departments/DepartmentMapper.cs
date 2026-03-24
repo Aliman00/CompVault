@@ -1,4 +1,4 @@
-using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Shared.DTOs.Departments;
 
 namespace CompVault.Backend.Features.Departments;
