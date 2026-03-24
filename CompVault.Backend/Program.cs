@@ -14,6 +14,8 @@ if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Testing")
     ConfigurationValidator.ValidateAll();
 }
 
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
 builder.ConfigureSwagger();
 builder.ConfigureLogging();
 
