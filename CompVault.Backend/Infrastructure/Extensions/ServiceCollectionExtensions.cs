@@ -106,7 +106,7 @@ public static class ServiceCollectionExtensions
                         context.HandleResponse();
 
                         string message = context.AuthenticateFailure?.Message ??
-                            ProblemDetailBuilder.GetDefaultMessage(Shared.Result.ErrorCode.Unauthorized);
+                            ProblemDetailBuilder.GetDefaultMessage(ErrorCode.Unauthorized);
 
                         ProblemDetail problem = ProblemDetailBuilder.Create(401, ErrorCode.Unauthorized.ToString(), message);
 
@@ -121,8 +121,8 @@ public static class ServiceCollectionExtensions
 
                         ProblemDetail problem = ProblemDetailBuilder.Create(
                             401,
-                            "Unauthorized",
-                            context.Exception.Message);
+                            ErrorCode.Unauthorized.ToString(),
+                            "Autentisering feilet. Sjekk at tokenen er gyldig.");
 
                         context.Response.StatusCode = problem.Status;
                         context.Response.ContentType = "application/problem+json";
