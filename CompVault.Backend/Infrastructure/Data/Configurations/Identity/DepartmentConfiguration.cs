@@ -17,6 +17,11 @@ internal sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departm
         builder.Property(d => d.Name).HasMaxLength(200).IsRequired();
         builder.Property(d => d.Description).HasMaxLength(500);
         builder.Property(d => d.CreatedAt).IsRequired();
+        builder.Property(d => d.IsActive).IsRequired();
+
+        builder.HasIndex(d => d.DeletedAt);
+
+        builder.HasQueryFilter(d => d.DeletedAt == null);
 
         // Selvrefererende relasjon for avdelingshierarki
         builder.HasOne(d => d.ParentDepartment)
