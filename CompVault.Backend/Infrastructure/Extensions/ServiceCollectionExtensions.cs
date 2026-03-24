@@ -1,6 +1,7 @@
 using System.Text;
 
 using CompVault.Backend.Common.Middleware;
+using CompVault.Backend.Common.Responses;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
@@ -12,6 +13,7 @@ using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.Jobs;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -89,6 +91,37 @@ public static class ServiceCollectionExtensions
                         Encoding.UTF8.GetBytes(jwtSettings.Secret)),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
+                };
+
+                opts.Events = new JwtBearerEvents
+                {
+                    OnChallenge = context =>
+                    {
+                        context.HandleResponse();
+
+                        string message = context.AuthenticateFailure?.Message ??
+                            ProblemDetailBuilder.GetDefaultMessage(Shared.Result.ErrorCode.Unauthorized);
+
+                        ProblemDetail problem = ProblemDetailBuilder.Create(401, ErrorCode.Unauthorized.ToString(), message);
+
+                        context.Response.StatusCode = problem.Status;
+                        context.Response.ContentType = "application/problem+json";
+                        return context.Response.WriteAsJsonAsync(problem);
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        if (context.Response.HasStarted)
+                            return Task.CompletedTask;
+
+                        ProblemDetail problem = ProblemDetailBuilder.Create(
+                            401,
+                            "Unauthorized",
+                            context.Exception.Message);
+
+                        context.Response.StatusCode = problem.Status;
+                        context.Response.ContentType = "application/problem+json";
+                        return context.Response.WriteAsJsonAsync(problem);
+                    }
                 };
             });
 
