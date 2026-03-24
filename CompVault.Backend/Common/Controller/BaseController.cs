@@ -1,4 +1,5 @@
-﻿using CompVault.Shared.Result;
+﻿using CompVault.Backend.Common.Responses;
+using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -47,34 +48,7 @@ public abstract class BaseController : ControllerBase
     /// <returns>En <see cref="ActionResult"/> med tilhørende <see cref="ProblemDetail"/>-respons.</returns>
     private ActionResult BuildErrorResponse(AppError error)
     {
-        int statusCode = error.Code switch
-        {
-            ErrorCode.NotFound => 404,
-            ErrorCode.UserNotFound => 404,
-            ErrorCode.Conflict => 409,
-            ErrorCode.UserAlreadyExists => 409,
-            ErrorCode.Unauthorized => 401,
-            ErrorCode.InvalidCredentials => 401,
-            ErrorCode.TokenExpired => 401,
-            ErrorCode.InvalidToken => 401,
-            ErrorCode.Forbidden => 403,
-            ErrorCode.AccountLocked => 403,
-            ErrorCode.AccountInactive => 403,
-            ErrorCode.EmailNotConfirmed => 403,
-            ErrorCode.EmailSendFailed => 500,
-            ErrorCode.Validation => 422,
-            ErrorCode.PasswordTooWeak => 422,
-            ErrorCode.OtpMaxAttemptsExceeded => 429,
-            ErrorCode.OtpCooldown => 429,
-            ErrorCode.OtpInvalidOrExpired => 401,
-            _ => 400
-        };
-
-        return StatusCode(statusCode, new ProblemDetail
-        {
-            Status = statusCode,
-            Code = error.Code.ToString(),
-            Message = error.Message
-        });
+        ProblemDetail problem = ProblemDetailBuilder.FromError(error);
+        return StatusCode(problem.Status, problem);
     }
 }

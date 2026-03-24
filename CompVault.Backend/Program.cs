@@ -1,9 +1,11 @@
+using CompVault.Backend.Common.Authorization;
 using CompVault.Backend.Dev;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Extensions;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 
 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Testing")
@@ -21,6 +23,7 @@ builder.Services.AddControllers();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("db");
 builder.Services.AddInfrastructure();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationFailureHandler>();
 builder.Services.AddDatabase(builder.Configuration, builder.Environment);
 builder.Services.AddAuth(builder.Configuration);
 builder.Services.AddEmail(builder.Configuration, builder.Environment);
