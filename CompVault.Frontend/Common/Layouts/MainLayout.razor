@@ -1,5 +1,4 @@
-﻿@using CompVault.Frontend.Common.Themes
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
 @inject IJSRuntime JSRuntime
 
 <!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
@@ -22,6 +21,7 @@
                        OnClick="ToggleDrawer" />
 
         <!-- Header title -->
+        <AppLogo Class="app-header-logo"/>
         <MudText Typo="Typo.h6" Class="ml-3">CompVault</MudText>
 
         <!-- Fyller ledig plass i AppBar, skyver alle andre elementer til høyre -->
