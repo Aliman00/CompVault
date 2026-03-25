@@ -2,18 +2,17 @@
 @* TODO: Bytt ut den hardkodete dataen *@
 
 <MudPaper Class="pa-4 mb-4" Elevation="4">
-    <section class="widget-header">
-        <MudText Typo="Typo.subtitle1">Siste aktivitet</MudText>
-        <WidgetMenu OnHide="OnHide"/>
-    </section>
-        
+    
+    <WidgetHeader Title="Siste aktivitet" OnHide="OnHide"/>
+
     <MudList T="string" Dense="true" Padding="false">
         @foreach (var (entry, index) in _auditEntries.Select((e, i) => (e, i)))
         {
             @if (index > 0)
             {
-                <MudDivider />
+                <MudDivider/>
             }
+
             <MudListItem Dense="true">
                 <div class="audit-entry">
                     <div class="audit-dot" style="background: @entry.Color;"></div>

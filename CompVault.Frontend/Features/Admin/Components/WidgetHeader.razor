@@ -1,0 +1,11 @@
+﻿@* Gjenbrukbar header for som fungerer til alle widgets som ikke har ikoner i tittelen - Statistic, Shortcut, etc *@
+
+<section class="widget-header">
+    <MudText Typo="Typo.subtitle1">@Title</MudText>
+    <WidgetMenu OnHide="OnHide"/>
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = ""; 
+    [Parameter] public EventCallback OnHide { get; set; }
+}

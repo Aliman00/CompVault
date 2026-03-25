@@ -1,0 +1,9 @@
+﻿@* Widget med shortcuts til hurtig handlinger *@
+<MudPaper class="pa-4 mb-4" Elevation="4">
+    <WidgetHeader Title="Snarveier" OnHide="OnHide"/>
+</MudPaper>
+
+
+@code {
+    [Parameter] public EventCallback OnHide { get; set; }
+}
