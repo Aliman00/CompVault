@@ -2,7 +2,6 @@ using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Features.Auth.Services;
-using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
@@ -23,11 +22,9 @@ public class DevService(
     {
         try
         {
-            
-            
             HttpResponseMessage response =
-                await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request, ct);
-
+                await _httpClient.PostAsJsonAsync("api/dev/verifyotp", request, ct);
+            
             Result<RefreshTokenResponse> result =
                 await HttpClientExtensions.ParseResponseAsync<RefreshTokenResponse>(response, ct);
 
@@ -39,14 +36,13 @@ public class DevService(
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Nettverksfeil ved OTP-verifisering for {Email}", request.Email);
-            return Result.Failure(AppError.Create(ErrorCode.NetworkError, 
-                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+            logger.LogError(ex, "Nettverksfeil ved dev-innlogging for {Email}", request.Email);
+            return Result.Failure(AppError.Create(ErrorCode.NetworkError, "Tilkoblingen feilet."));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Uventet feil ved OTP-verifisering for {Email}", request.Email);
-            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Noe gikk galt. Prøv igjen."));
+            logger.LogError(ex, "Uventet feil ved dev-innlogging for {Email}", request.Email);
+            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Noe gikk galt."));
         }
     }
 }

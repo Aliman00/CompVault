@@ -1,5 +1,6 @@
 ﻿using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Services;
+using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
 
 using Microsoft.AspNetCore.Components.Authorization;
@@ -59,9 +60,10 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Legger til frontend servicer - eksempel er API-Services som AuthService
     /// </summary>
-    public static IServiceCollection AddFrontendServices(this IServiceCollection services)
+    public static IServiceCollection AddFrontendServices(this IServiceCollection services, IWebHostEnvironment env)
     {
-        
+        if (env.IsDevelopment())
+            services.AddScoped<IDevService, DevService>();
 
         return services;
     }

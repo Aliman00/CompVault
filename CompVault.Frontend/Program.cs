@@ -14,7 +14,7 @@ builder.Services.AddHttpClients(builder.Configuration);
 builder.Services.AddMudServices();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddAuth();
-builder.Services.AddFrontendServices();
+builder.Services.AddFrontendServices(builder.Environment);
 
 WebApplication app = builder.Build();
 
