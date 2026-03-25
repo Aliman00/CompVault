@@ -10,9 +10,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.AddSerilogLogging();
-
 builder.Services.AddHttpClients(builder.Configuration);
 builder.Services.AddMudServices();
+builder.Services.AddAuthorizationCore();
 builder.Services.AddAuth();
 builder.Services.AddFrontendServices();
 

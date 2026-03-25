@@ -24,12 +24,16 @@ public static class ServiceCollectionExtensions
 
         if (string.IsNullOrWhiteSpace(settings.BaseUrl))
             throw new InvalidOperationException("BackendApi:BaseUrl does not exist in appsettings");
-
+        
+        // Oppretter kun en handler pr HttpClient-kall
+        services.AddTransient<AuthTokenHandler>();
+        
         services.AddHttpClient(BackendApiSettings.ClientName, client =>
         {
             client.BaseAddress = new Uri(settings.BaseUrl);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-        });
+        })
+        .AddHttpMessageHandler<AuthTokenHandler>();
 
         return services;
     }
