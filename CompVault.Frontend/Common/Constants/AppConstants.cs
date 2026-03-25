@@ -1,6 +1,6 @@
 ﻿namespace CompVault.Frontend.Common.Constants;
 
-public class AppConstants
+public static class AppConstants
 {
     public const string DarkModeKey = "compvault-darkmode";
 }
