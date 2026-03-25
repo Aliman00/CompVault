@@ -12,9 +12,8 @@ builder.Services.AddRazorComponents()
 builder.AddSerilogLogging();
 
 builder.Services.AddHttpClients(builder.Configuration);
-
 builder.Services.AddMudServices();
-
+builder.Services.AddAuth();
 builder.Services.AddFrontendServices();
 
 WebApplication app = builder.Build();

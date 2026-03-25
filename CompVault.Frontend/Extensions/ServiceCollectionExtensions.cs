@@ -2,6 +2,8 @@
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Features.Auth.Services;
 
+using Microsoft.AspNetCore.Components.Authorization;
+
 namespace CompVault.Frontend.Extensions;
 
 /// <summary>
@@ -31,15 +33,31 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+    
+    
+    /// <summary>
+    /// Legger til autentisering for Blazor Server
+    /// </summary>
+    public static IServiceCollection AddAuth(this IServiceCollection services)
+    {
+        services.AddScoped<TokenProvider>();
+        services.AddScoped<AuthStateProvider>();
+
+        // Forteller Blazor at vår egen AuthStateProvider brukes
+        services.AddScoped<AuthenticationStateProvider>(
+            sp => sp.GetRequiredService<AuthStateProvider>());
+        
+        services.AddScoped<IAuthService, AuthService>();
+        
+        return services;
+    }
 
     /// <summary>
     /// Legger til frontend servicer - eksempel er API-Services som AuthService
     /// </summary>
     public static IServiceCollection AddFrontendServices(this IServiceCollection services)
     {
-        // ========================= Authentication ========================= 
-        services.AddScoped<TokenProvider>();
-        services.AddScoped<IAuthService, AuthService>();
+        
 
         return services;
     }
