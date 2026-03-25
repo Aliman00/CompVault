@@ -29,12 +29,20 @@ public static class ServiceCollectionExtensions
         // Oppretter kun en handler pr HttpClient-kall
         services.AddTransient<AuthTokenHandler>();
         
-        services.AddHttpClient(BackendApiSettings.ClientName, client =>
+        // Hovedklienten med handler for autentisering — brukes av alle vanlige kall
+        services.AddHttpClient(BackendApiSettings.MainClientName, client =>
+            {
+                client.BaseAddress = new Uri(settings.BaseUrl);
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+            })
+            .AddHttpMessageHandler<AuthTokenHandler>();
+        
+        // Klient som brukes kun av for refresh av token
+        services.AddHttpClient(BackendApiSettings.AuthClientName, client =>
         {
             client.BaseAddress = new Uri(settings.BaseUrl);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-        })
-        .AddHttpMessageHandler<AuthTokenHandler>();
+        });
 
         return services;
     }

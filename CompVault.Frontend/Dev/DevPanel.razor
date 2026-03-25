@@ -5,8 +5,9 @@
 @using CompVault.Shared.Result
 @inject IWebHostEnvironment Env
 @inject IAuthService AuthService
-@inject IDevService DevService
 @inject AuthStateProvider AuthStateProvider
+@inject IServiceProvider ServiceProvider
+
 
 @* Denne siden er kun tilgjengelig i development *@
 
@@ -65,11 +66,21 @@
 </MudContainer>
 
 @code {
+    
+    private IDevService? _devService;
+
+    
     // ===================== LIFECYCLE =====================
     protected override async Task OnInitializedAsync()
     {
+        // Tilgjengelig kun i Development — i produksjon er tjenesten ikke registrert
+        if (Env.IsDevelopment())
+            _devService = ServiceProvider.GetService<IDevService>();
+
         await RefreshClaimsAsync();
     }
+    
+    
     
     // ===================== LOGIN =====================
     
@@ -95,11 +106,14 @@
     // Logger inn med DevService sitt endepunkt
     private async Task LoginAsync(TestUser testUser)
     {
+        if (_devService == null)
+            return;
+        
         _isLoading = true;
         _loginErrorMessage = null;
         
         var request = new VerifyOtpRequest { Email = testUser.Email, OtpCode = "000000" };
-        Result result = await DevService.VerifyOtpAsync(request, CancellationToken.None);
+        Result result = await _devService.VerifyOtpAsync(request, CancellationToken.None);
 
         if (result.IsFailure)
             _loginErrorMessage = result.Error!.Message;

@@ -65,7 +65,22 @@ public class AuthStateProvider(TokenProvider tokenProvider) : AuthenticationStat
         string json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(paddedBase64));
         Dictionary<string, JsonElement>? parsed = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
         
-        // Vi returnerer en liste med Claims, hentet fra nøkkelparet i ordboka
-        return parsed.Select(kv => new Claim(kv.Key, kv.Value.ToString()));
+        // Vi returnerer en liste med Claims, hentet fra nøkkelparet i ordboka. Vi har lagt til at vi håndterer claims
+        // som er arrays (feks Roller)
+        var claims = new List<Claim>();
+        foreach (KeyValuePair<string, JsonElement> kv in parsed)
+        {
+            if (kv.Value.ValueKind == JsonValueKind.Array)
+            {
+                claims.AddRange(kv.Value.EnumerateArray()
+                    .Select(element => new Claim(kv.Key, element.ToString())));
+            }
+            else
+            {
+                claims.Add(new Claim(kv.Key, kv.Value.ToString()));
+            }
+        }
+        
+        return claims;
     }
 }

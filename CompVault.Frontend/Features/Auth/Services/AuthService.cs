@@ -15,7 +15,7 @@ public class AuthService(
     /// <summary>
     /// HttpClient mot backend
     /// </summary>
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.ClientName);
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
 
     /// <inheritdoc />
     public async Task<Result> RequestOtpAsync(RequestOtpRequest request, CancellationToken ct)
@@ -86,7 +86,7 @@ public class AuthService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Uforventet feil ved utlogging");
+            logger.LogError(ex, "Uventet  feil ved utlogging");
         }
         finally
         {

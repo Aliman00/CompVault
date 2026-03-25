@@ -30,7 +30,7 @@ public class AuthTokenHandler(
 
         HttpResponseMessage response = await base.SendAsync(request, ct);
         
-        // Hvis vi har et gydlig refresh token, men får 401 så prøver vi å fornye access token i bakgrunn automatisk
+        // Hvis vi har et gyldig refresh token, men får 401 så prøver vi å fornye access token i bakgrunn automatisk
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
             bool tokensRefreshed = await TryRefreshTokenAsync(authStateProvider, ct);
@@ -60,7 +60,7 @@ public class AuthTokenHandler(
     {
         try
         {   // Bruker en egen HttpClient for å unngå å kalle backend med utgått token
-            HttpClient httpClient = httpClientFactory.CreateClient(BackendApiSettings.ClientName);
+            HttpClient httpClient = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
             
             HttpResponseMessage response =
                 await httpClient.PostAsync(ApiRoutes.Auth.RefreshFull, null, ct);
@@ -76,7 +76,7 @@ public class AuthTokenHandler(
             }
             
             // TODO: Fjern logging etterhvert, har den for testing enn så lenge
-            logger.LogInformation("Token oppdatert vellyket!");
+            logger.LogInformation("Token oppdatert vellykket!");
             authStateProvider.UpdateAccessToken(accessTokenResult.Value!.AccessToken);
             return true;
         }
