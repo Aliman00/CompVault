@@ -74,3 +74,19 @@ h1:focus {
     width: 25px;
     height: 25px;
 }
+
+/* ============================= ADMIN DASHBOARD ============================= */
+
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.widget-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
