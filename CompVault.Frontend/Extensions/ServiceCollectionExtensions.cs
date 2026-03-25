@@ -1,4 +1,5 @@
 ﻿using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Features.Auth.Services;
 
 namespace CompVault.Frontend.Extensions;
@@ -36,6 +37,8 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddFrontendServices(this IServiceCollection services)
     {
+        // ========================= Authentication ========================= 
+        services.AddScoped<TokenProvider>();
         services.AddScoped<IAuthService, AuthService>();
 
         return services;
