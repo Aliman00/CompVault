@@ -31,7 +31,7 @@ public class DevService(
             if (result.IsFailure)
                 return Result.Failure(result.Error!);
             
-            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken, result.Value!.RefreshToken);
+            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken);
             return Result.Success();
         }
         catch (HttpRequestException ex)

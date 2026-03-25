@@ -3,19 +3,27 @@ using System.Net.Http.Headers;
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
-using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Common.Services;
 
+/// <summary>
+/// Håndterer token mellom HttpClient og backend. Oppdaterer tokenparet hvis AccessToken er utgått, men vi har
+/// gyldig RefreshToken
+/// </summary>
 public class AuthTokenHandler(
-    TokenProvider tokenProvider,
-    AuthStateProvider authStateProvider,
+    IServiceScopeFactory scopeFactory,
     IHttpClientFactory httpClientFactory,
     ILogger<AuthTokenHandler> logger) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
+        
+        await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+        TokenProvider tokenProvider = scope.ServiceProvider.GetRequiredService<TokenProvider>();
+        AuthStateProvider authStateProvider = scope.ServiceProvider.GetRequiredService<AuthStateProvider>();
+        
+        
         // Legger alltid til et access token hvis vi har et
         if (tokenProvider.AccessToken != null)
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenProvider.AccessToken);
@@ -23,9 +31,9 @@ public class AuthTokenHandler(
         HttpResponseMessage response = await base.SendAsync(request, ct);
         
         // Hvis vi har et gydlig refresh token, men får 401 så prøver vi å fornye access token i bakgrunn automatisk
-        if (response.StatusCode == HttpStatusCode.Unauthorized && tokenProvider.RefreshToken != null)
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            bool tokensRefreshed = await TryRefreshTokenAsync(ct);
+            bool tokensRefreshed = await TryRefreshTokenAsync(authStateProvider, ct);
 
             if (tokensRefreshed)
             {
@@ -46,30 +54,30 @@ public class AuthTokenHandler(
     }
     
     // Hvis brukeren har gyldig refresh token, så byttes token med et nytt par - kalles bare hvis utgått token
-    private async Task<bool> TryRefreshTokenAsync(CancellationToken ct)
+    private async Task<bool> TryRefreshTokenAsync(
+        AuthStateProvider authStateProvider,
+        CancellationToken ct)
     {
         try
         {   // Bruker en egen HttpClient for å unngå å kalle backend med utgått token
             HttpClient httpClient = httpClientFactory.CreateClient(BackendApiSettings.ClientName);
-
-            var refreshRequest = new RefreshTokenRequest { RefreshToken = tokenProvider.RefreshToken! };
-
+            
             HttpResponseMessage response =
-                await httpClient.PostAsJsonAsync(ApiRoutes.Auth.RefreshFull, refreshRequest, ct);
+                await httpClient.PostAsync(ApiRoutes.Auth.RefreshFull, null, ct);
 
-            Result<RefreshTokenResponse> refreshTokenResult =
-                await HttpClientExtensions.ParseResponseAsync<RefreshTokenResponse>(response, ct);
-            if (refreshTokenResult.IsFailure)
+            Result<AccessTokenResponse> accessTokenResult =
+                await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
+            
+            if (accessTokenResult.IsFailure)
             {
                 logger.LogWarning("Oppdatering av tokens returnerte feil: [{ErrorCode}] {Message}",
-                    refreshTokenResult.Error!.Code, refreshTokenResult.Error.Message);
+                    accessTokenResult.Error!.Code, accessTokenResult.Error.Message);
                 return false;
             }
             
             // TODO: Fjern logging etterhvert, har den for testing enn så lenge
             logger.LogInformation("Token oppdatert vellyket!");
-            authStateProvider.UpdateAccessToken(refreshTokenResult.Value!.AccessToken,
-                refreshTokenResult.Value!.RefreshToken);
+            authStateProvider.UpdateAccessToken(accessTokenResult.Value!.AccessToken);
             return true;
         }
         catch (Exception ex)

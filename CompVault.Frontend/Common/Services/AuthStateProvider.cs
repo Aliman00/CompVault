@@ -15,11 +15,6 @@ public class AuthStateProvider(TokenProvider tokenProvider) : AuthenticationStat
     // Nåværende bruker er satt som ikke-autentisert ved opprettelse
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     
-    /// <summary>
-    /// For å lese refresh token - brukes i AuthService
-    /// </summary>
-    public string? RefreshToken => tokenProvider.RefreshToken;
-    
     /// <inheritdoc />
     public override Task<AuthenticationState> GetAuthenticationStateAsync() =>
         Task.FromResult(new AuthenticationState(_currentUser));
@@ -27,10 +22,9 @@ public class AuthStateProvider(TokenProvider tokenProvider) : AuthenticationStat
     /// <summary>
     /// Lagrer tokens til en bruker i en krets, og oppdaterer AuthenticationState til innlogget
     /// </summary>
-    public void MarkUserAsAuthenticated(string accessToken, string refreshToken)
+    public void MarkUserAsAuthenticated(string accessToken)
     {
         tokenProvider.AccessToken = accessToken;
-        tokenProvider.RefreshToken = refreshToken;
         
         // Henter CLaimene fra AccessToken og lagrer det til innlogget bruker
         IEnumerable<Claim> claims = ParseClaimsFromJwt(accessToken);
@@ -46,7 +40,6 @@ public class AuthStateProvider(TokenProvider tokenProvider) : AuthenticationStat
     public void MarkUserAsLoggedOut()
     {
         tokenProvider.AccessToken = null;
-        tokenProvider.RefreshToken = null;
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
@@ -55,11 +48,8 @@ public class AuthStateProvider(TokenProvider tokenProvider) : AuthenticationStat
     /// <summary>
     /// Oppdaterer accessToken i minnet etter vellykket token-refresh
     /// </summary>
-    public void UpdateAccessToken(string newAccessToken, string newRefreshToken)
-    {
-        tokenProvider.AccessToken = newAccessToken;
-        tokenProvider.RefreshToken = newRefreshToken;
-    }
+    public void UpdateAccessToken(string newAccessToken) => tokenProvider.AccessToken = newAccessToken;
+    
 
     private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
     {

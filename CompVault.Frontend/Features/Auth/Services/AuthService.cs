@@ -51,13 +51,13 @@ public class AuthService(
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request, ct);
 
-            Result<RefreshTokenResponse> result =
-                await HttpClientExtensions.ParseResponseAsync<RefreshTokenResponse>(response, ct);
+            Result<AccessTokenResponse> result =
+                await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
 
             if (result.IsFailure)
                 return Result.Failure(result.Error!);
             
-            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken, result.Value!.RefreshToken);
+            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken);
             return Result.Success();
         }
         catch (HttpRequestException ex)
@@ -78,19 +78,11 @@ public class AuthService(
     {
         try
         {
-            // Hvis vi har gyldig token så revokes den i backend
-            if (authStateProvider.RefreshToken != null)
-            {
-                var request = new RevokeTokenRequest { RefreshToken = authStateProvider.RefreshToken };
-                HttpResponseMessage response =
-                    await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.RevokeFull, request, ct);
-
-                Result revokeResult = await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);
-                if (revokeResult.IsFailure)
-                    logger.LogWarning("Token-revokering feilet: [{ErrorCode}] {Message}",
-                        revokeResult.Error!.Code,
-                        revokeResult.Error.Message);
-            }
+            HttpResponseMessage response = await _httpClient.PostAsync(ApiRoutes.Auth.RevokeFull, null, ct);
+            Result revokeResult = await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);
+            if (revokeResult.IsFailure)
+                logger.LogWarning("Token-revokering feilet: [{ErrorCode}] {Message}",
+                    revokeResult.Error!.Code, revokeResult.Error.Message);
         }
         catch (Exception ex)
         {
