@@ -133,15 +133,9 @@ h1:focus {
     transition: background 0.15s ease;
 }
 
-.shortcut-item:hover {
-    background: var(--mud-palette-action-hover);
-}
-
-.shortcut-icon-container {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
+/* Overstyrer MudBlazor sin flex-direction på MudButton */
+.shortcut-item.mud-button-root .mud-button-label {
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
 }
