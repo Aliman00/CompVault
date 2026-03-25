@@ -4,9 +4,11 @@
 @using CompVault.Frontend.Features.Admin.Components
 @layout AdminLayout
 
-<div class="dashboard-header">
+@* Admin dashboard for å vise statistikk, grafer, historikk og snarveier til administratoren *@
+<section class="dashboard-header">
     <MudText Typo="Typo.h5">Admin-dashboard</MudText>
-    
+
+    @* En dropdown som viser skjulte widgets for å enkelt vise de igjen. Kun synlig hvis noen widgets er skjult *@
     @if (_hiddenWidgets.Any())
     {
         <MudMenu StartIcon="@Icons.Material.Filled.VisibilityOff"
@@ -25,8 +27,9 @@
             }
         </MudMenu>
     }
-</div>
+</section>
 
+@* En grid slik at widgetene er etterhverandre. Skjules en widget så fyller neste widget opp den ledige plassen*@
 <MudGrid Class="mb-4">
     @if (_showTotalUsers)
     {
@@ -65,8 +68,6 @@
         </MudItem>
     }
 </MudGrid>
-
-
 
 
 @code {
