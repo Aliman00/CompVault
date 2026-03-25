@@ -21,7 +21,8 @@ namespace CompVault.Backend.Features.Auth.Controllers;
 [Produces("application/json")]
 public sealed class AuthController(
     IAuthService authService,
-    IOptions<JwtSettings> jwtSettings) : BaseController
+    IOptions<JwtSettings> jwtSettings,
+    IWebHostEnvironment environment) : BaseController
 {
     private readonly JwtSettings _jwt = jwtSettings.Value;
     
@@ -122,7 +123,7 @@ public sealed class AuthController(
     private CookieOptions BuildRefreshTokenCookieOptions() => new()
     {
         HttpOnly = true,
-        Secure = true,
+        Secure = !environment.IsDevelopment(), // HTTP i dev, HTTPS i prod
         SameSite = SameSiteMode.Strict,
         Expires = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays)
     };

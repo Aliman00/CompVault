@@ -8,6 +8,7 @@ using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
+using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
@@ -135,6 +136,31 @@ public static class ServiceCollectionExtensions
 
         services.AddAuthorization();
         services.AddScoped<IJwtService, JwtService>();
+
+        return services;
+    }
+    
+    /// <summary>
+    /// Konfigurerer CORS slik at frontend kan sende cookies og autentiserte forespørsler til backend
+    /// </summary>
+    public static IServiceCollection AddCors(this IServiceCollection services, IConfiguration configuration)
+    {
+        CorsSettings corsSettings = configuration
+                                        .GetSection(CorsSettings.SectionName)
+                                        .Get<CorsSettings>()
+                                    ?? throw new InvalidOperationException("CORS-konfigurasjon mangler.");
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(CorsSettings.PolicyName, policy =>
+            {
+                policy
+                    .WithOrigins(corsSettings.GetOrigins())
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
 
         return services;
     }

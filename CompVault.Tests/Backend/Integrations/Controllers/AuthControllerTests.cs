@@ -174,7 +174,6 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         AccessTokenResponse? body = await response.Content.ReadFromJsonAsync<AccessTokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
-        body.RefreshToken.Should().NotBeNullOrEmpty();
 
         // Verifiserer at OTP-koden er satt til IsUsed og RefreshToken er opprettet med riktige egenskaper
         using IServiceScope scope = factory.Services.CreateScope();
@@ -183,6 +182,8 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
             .FirstOrDefaultAsync(x => x.UserId == TestConstants.Users.ActiveUserId);
         otpCode!.IsUsed.Should().BeTrue();
         otpCode.FailedAttempts.Should().Be(0);
+        
+        
 
         // Sikrer at vi henter siste opprettete token, tilfelle vi har seedet in flere
         RefreshToken? refreshToken = await context.Set<RefreshToken>()
@@ -193,6 +194,12 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         refreshToken.IsRevoked.Should().BeFalse(); // Den skal ikke være revoked
         refreshToken.ExpiresAt.Should().BeAfter(DateTime.UtcNow); // Sikrer at RefreshToken ikke er utgått,
                                                                   // etter opprettelse
+                                                                  
+        // Sikrer at refresh token cookie ble satt i response-headeren
+        response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
+        List<string> cookies = cookieValues?.ToList() ?? [];
+        cookies.Should().NotBeEmpty();
+        cookies.Any(c => c.StartsWith("refreshToken=")).Should().BeTrue();
     }
 
     /// <summary>
