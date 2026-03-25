@@ -128,10 +128,14 @@
         // Ingen lagrede skjulte widgets
         if (string.IsNullOrWhiteSpace(saved))
             return;
-
-        foreach (var widgetName in saved.Split(','))
+        
+        // Iterer igjennom hver widget vi har lagret da de blir lagret i en sammenslått string
+        foreach (var widgetName in saved.Split(',', StringSplitOptions.RemoveEmptyEntries | 
+                                                    StringSplitOptions.TrimEntries))
         {
-            _widgetVisibility[widgetName] = false;
+            // Skipper ukjente nøkler hvis nøkler ikke er korrekt
+            if (_widgetVisibility.ContainsKey(widgetName))
+                _widgetVisibility[widgetName] = false;
         }
     }
 }
