@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Shared.Enums;
 

@@ -1,9 +1,9 @@
-using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.Departments;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace CompVault.Backend.Infrastructure.Data.Configurations.Identity;
+namespace CompVault.Backend.Infrastructure.Data.Configurations.Departments;
 
 /// <summary>
 /// EF Core-konfigurasjon for avdelingstabellen.
@@ -17,6 +17,11 @@ internal sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departm
         builder.Property(d => d.Name).HasMaxLength(200).IsRequired();
         builder.Property(d => d.Description).HasMaxLength(500);
         builder.Property(d => d.CreatedAt).IsRequired();
+        builder.Property(d => d.IsActive).IsRequired().HasDefaultValue(true);
+
+        builder.HasIndex(d => d.DeletedAt);
+
+        builder.HasQueryFilter(d => d.DeletedAt == null);
 
         // Selvrefererende relasjon for avdelingshierarki
         builder.HasOne(d => d.ParentDepartment)

@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.Identity;
+
+namespace CompVault.Backend.Domain.Entities.Departments;
 
 /// <summary>
 /// En avdeling i organisasjonen. Kan ha underavdelinger (hierarkisk struktur).
@@ -17,7 +19,7 @@ public class Department
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Valgfri beskrivelse av hva avdelingen driver med.</summary>
-    [StringLength(250)]
+    [StringLength(500)]
     public string Description { get; set; } = string.Empty;
 
     /// <summary>ID til overordnet avdeling, hvis den har en. Null = toppnivå.</summary>
@@ -31,8 +33,11 @@ public class Department
     /// <summary>Brukeren som opprettet avdelingen.</summary>
     public Guid? CreatedById { get; set; }
 
+    /// <summary>Om avdelingen er aktiv (soft delete via IsActive + DeletedAt).</summary>
+    public bool IsActive { get; set; } = true;
 
-
+    /// <summary>Når avdelingen ble soft-slettet (UTC). Null hvis aktiv.</summary>
+    public DateTime? DeletedAt { get; set; }
 
     // ======================== Navigasjonsegenskaper ========================
     public Department? ParentDepartment { get; set; }
