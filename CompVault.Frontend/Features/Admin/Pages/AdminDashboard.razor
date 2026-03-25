@@ -1,5 +1,6 @@
 ﻿@page "/AdminDashboard"
 @layout AdminLayout
+@inject IJSRuntime JsRuntime
 
 @* Admin dashboard for å vise statistikk, grafer, historikk og snarveier til administratoren *@
 <section class="dashboard-header">
@@ -28,7 +29,7 @@
 
 @* En grid slik at widgetene er etterhverandre. Skjules en widget så fyller neste widget opp den ledige plassen*@
 <MudGrid Class="mb-4">
-    @if (_showTotalUsers)
+    @if (_widgetVisibility[AdminConstants.TotalUsers])
     {
         <MudItem xs="12" sm="4">
             <StatisticWidget Title="@AdminConstants.TotalUsers" 
@@ -36,11 +37,11 @@
                               Icon="@Icons.Material.Filled.People"
                               AccentColor="#2d7a4f"
                               IconBackgroundColor="#e8f5ee"
-                              IsVisible="_showTotalUsers"
+                              IsVisible="_widgetVisibility[AdminConstants.TotalUsers]"
                               OnHide='() => ToggleWidget(AdminConstants.TotalUsers)'/>
         </MudItem>
     }
-    @if (_showTotalRoles)
+    @if (_widgetVisibility[AdminConstants.TotalRoles])
     {
         <MudItem xs="12" sm="4">
             <StatisticWidget Title="@AdminConstants.TotalRoles" 
@@ -48,11 +49,11 @@
                               Icon="@Icons.Material.Filled.Shield"
                               AccentColor="#1e3a5f"
                               IconBackgroundColor="#e4eaf2"
-                              IsVisible="_showTotalRoles"
+                              IsVisible="_widgetVisibility[AdminConstants.TotalRoles]"
                               OnHide='() => ToggleWidget(AdminConstants.TotalRoles)'/>
         </MudItem>
     }
-    @if (_showTotalDepartments)
+    @if (_widgetVisibility[AdminConstants.TotalDepartments])
     {
         <MudItem xs="12" sm="4">
             <StatisticWidget Title="@AdminConstants.TotalDepartments" 
@@ -60,7 +61,7 @@
                               Icon="@Icons.Material.Filled.Business"
                               AccentColor="#c9a84c"
                               IconBackgroundColor="#faf3e0"
-                              IsVisible="_showTotalDepartments"
+                              IsVisible="_widgetVisibility[AdminConstants.TotalDepartments]"
                               OnHide='() => ToggleWidget(AdminConstants.TotalDepartments)'/>
         </MudItem>
     }
@@ -68,15 +69,15 @@
 
 
 @code {
-    // ======================== Injections ========================
-    [Inject] private IJSRuntime JsRuntime { get; set; } = null!;
-    
     // ======================== Private felt ========================
     private readonly List<string> _hiddenWidgets = [];
 
-    private bool _showTotalUsers = true;
-    private bool _showTotalRoles = true;
-    private bool _showTotalDepartments = true;
+    private readonly Dictionary<string, bool> _widgetVisibility = new()
+    {
+        [AdminConstants.TotalUsers] = true,
+        [AdminConstants.TotalRoles] = true,
+        [AdminConstants.TotalDepartments] = true,
+    };
     
     // ======================== Lifecycle ========================
     
@@ -93,15 +94,12 @@
     }
     
     // ======================== Private metoder ========================
-    /// <summary>
-    /// Toggler om en widget er synlig i UI-en eller ikke
-    /// </summary>
+    // Toggler om en widget er synlig i UI-en eller ikke
     private async Task ToggleWidget(string widgetName)
     {
-        bool isCurrentlyVisible = !_hiddenWidgets.Contains(widgetName);
-
-        SetWidgetVisibility(widgetName, !isCurrentlyVisible);
-
+        bool isCurrentlyVisible = _widgetVisibility[widgetName];
+        _widgetVisibility[widgetName] = !isCurrentlyVisible;
+        
         if (isCurrentlyVisible)
             _hiddenWidgets.Add(widgetName);
         else
@@ -110,34 +108,14 @@
         await SavePreferencesAsync();
     }
     
-    /// <summary>
-    /// Setter en widget til synlig
-    /// </summary>
-    private void SetWidgetVisibility(string widgetName, bool visible)
-    {
-        switch (widgetName)
-        {
-            case AdminConstants.TotalUsers: _showTotalUsers = visible;
-                break;
-            case AdminConstants.TotalRoles: _showTotalRoles = visible;
-                break;
-            case AdminConstants.TotalDepartments: _showTotalDepartments = visible;
-                break;
-        }
-    }
-    
-    /// <summary>
-    /// Lagrer skjulte widgets lokalt i localstorage
-    /// </summary>
+    // Lagrer skjulte widgets lokalt i localstorage
     private async Task SavePreferencesAsync()
     {
         var hidden = string.Join(",", _hiddenWidgets);
         await JsRuntime.SetItemAsync(AdminConstants.StorageKey, hidden);
     }
     
-    /// <summary>
-    /// Henter skjulte widgets fra localstorage og legger de til i komponenten sin liste
-    /// </summary>
+    // Henter skjulte widgets fra localstorage og legger de til i komponenten sin liste
     private async Task LoadPreferencesAsync()
     {
         var saved = await JsRuntime.GetItemAsync(AdminConstants.StorageKey);
@@ -147,7 +125,7 @@
 
         foreach (var widgetName in saved.Split(','))
         {
-            SetWidgetVisibility(widgetName, visible: false);
+            _widgetVisibility[widgetName] = false;
             _hiddenWidgets.Add(widgetName);
         }
     }
