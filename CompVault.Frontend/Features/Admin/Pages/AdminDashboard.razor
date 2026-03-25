@@ -62,11 +62,10 @@
                               OnHide='() => ToggleWidget(AdminConstants.TotalDepartments)'/>
         </MudItem>
     }
-    @if (_showRecentActivity)
+    @if (_widgetVisibility[AdminConstants.RecentActivity])
     {
         <MudItem>
-            <RecentActivityWidget IsVisible="_showRecentActivity"
-                                  OnHide="() => ToggleWidget(AdminConstants.RecentActivity)"/>
+            <RecentActivityWidget OnHide="() => ToggleWidget(AdminConstants.RecentActivity)"/>
         </MudItem>
     }
 </MudGrid>
@@ -81,6 +80,7 @@
         [AdminConstants.TotalUsers] = true,
         [AdminConstants.TotalRoles] = true,
         [AdminConstants.TotalDepartments] = true,
+        [AdminConstants.RecentActivity] = true,
     };
     
     // ======================== Lifecycle ========================

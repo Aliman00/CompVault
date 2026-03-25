@@ -6,7 +6,7 @@
             @if (!string.IsNullOrEmpty(Icon))
             {
                 <div class="statistic-icon-container" style="background: @IconBackgroundColor;">
-                    <MudIcon Icon="@Icon" Size="Size.Small" Style="color: @AccentColor;" />
+                    <MudIcon Icon="@Icon" Size="Size.Small" Style="@($"color: {AccentColor};")" />
                 </div>
                 
             }
