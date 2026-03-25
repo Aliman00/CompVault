@@ -66,7 +66,7 @@ public class AuthTokenHandler(
                 return false;
             }
             
-            // TODO: Fjernes etterhvert, har den for testing enn så lenge
+            // TODO: Fjern logging etterhvert, har den for testing enn så lenge
             logger.LogInformation("Token oppdatert vellyket!");
             authStateProvider.UpdateAccessToken(refreshTokenResult.Value!.AccessToken,
                 refreshTokenResult.Value!.RefreshToken);
