@@ -1,0 +1,11 @@
+﻿@* Et lite desktop/app ikon som kan gjenbrukes i appen *@
+
+<div class="statistic-icon-container" style="background: @IconBackgroundColor;">
+    <MudIcon Icon="@Icon" Size="Size.Small" Style="@($"color: {AccentColor};")" />
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public string AccentColor { get; set; } = "";
+    [Parameter] public string IconBackgroundColor { get; set; } = "";
+}

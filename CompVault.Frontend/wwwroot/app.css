@@ -106,5 +106,36 @@ h1:focus {
     width: 40px;
     height: 40px;
     border-radius: 8px;
-    
+}
+
+/* ============================= RECENT ACTIVITY WIDGET ============================= */
+
+.audit-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.audit-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.shortcut-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+}
+
+/* Overstyrer MudBlazor sin flex-direction på MudButton */
+.shortcut-item.mud-button-root .mud-button-label {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
