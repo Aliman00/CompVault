@@ -1,22 +1,44 @@
 ﻿@* En widget som viser de siste handlingene i systemet - implementerer vi en Audit-log så kan det vises her *@
 @* TODO: Bytt ut den hardkodete dataen *@
 
-<MudPaper Class="pa-4 mb-4" Elevation="1">
+<MudPaper Class="pa-4 mb-4" Elevation="4">
     <section class="widget-header">
         <MudText Typo="Typo.subtitle1">Siste aktivitet</MudText>
         <WidgetMenu OnHide="OnHide"/>
     </section>
         
     <MudList T="string" Dense="true" Padding="false">
-        <MudListItem Dense="true">
-            <MudText Typo="Typo.body2">Ny bruker opprettet - Jens Jaktrifle</MudText>
-        </MudListItem>
+        @foreach (var (entry, index) in _auditEntries.Select((e, i) => (e, i)))
+        {
+            @if (index > 0)
+            {
+                <MudDivider />
+            }
+            <MudListItem Dense="true">
+                <div class="audit-entry">
+                    <div class="audit-dot" style="background: @entry.Color;"></div>
+                    <div>
+                        <MudText Typo="Typo.body2">@entry.Message</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@entry.Timestamp</MudText>
+                    </div>
+                </div>
+            </MudListItem>
+        }
     </MudList>
 </MudPaper>
 
 @code {
-   
-
     // Sender tilbake til foreldrekomponenten om OnHide i menyen har blitt trykket på
     [Parameter] public EventCallback OnHide { get; set; }
+    
+    // DEMO: Lager en record som byttes ut med en ekte klasse hvis vi oppretter Audit-logs senere
+    private record AuditEntry(string Message, string Timestamp, string Color);
+
+    private readonly List<AuditEntry> _auditEntries =
+    [
+        new("Ny bruker opprettet - 'Jens Jaktrifle'", "3 timer siden", "#2d7a4f"),
+        new("Terje Olav opprettet rolle 'Salgsjef'", "2 dager siden", "#1e3a5f"),
+        new("Sivert Snipetass deaktivterte bruker 'Jenni Slangefisk'", "3 timer siden", 
+            "#2d7a4f")
+    ];
 }
