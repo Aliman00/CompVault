@@ -1,6 +1,7 @@
-﻿@* Layout for Admin-panelet *@
-
+﻿@inject IJSRuntime JsRunTime
 @inherits LayoutComponentBase
+
+@* Layout for Admin-panelet *@
 
 <!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
 <MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
