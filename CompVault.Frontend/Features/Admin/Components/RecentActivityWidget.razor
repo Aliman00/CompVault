@@ -5,7 +5,7 @@
     
     <WidgetHeader Title="Siste aktivitet" OnHide="OnHide"/>
 
-    <MudList T="string" Dense="true" Padding="false">
+    <MudList T="string" Dense="true" Padding="true">
         @foreach (var (entry, index) in _auditEntries.Select((e, i) => (e, i)))
         {
             @if (index > 0)

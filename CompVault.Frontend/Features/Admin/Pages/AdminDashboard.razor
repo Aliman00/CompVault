@@ -7,17 +7,17 @@
     <MudText Typo="Typo.h5">Admin-dashboard</MudText>
 
     @* En dropdown som viser skjulte widgets for å enkelt vise de igjen. Kun synlig hvis noen widgets er skjult *@
-    @if (_hiddenWidgets.Any())
+    @if (HiddenWidgets.Any())
     {
         <MudMenu StartIcon="@Icons.Material.Filled.VisibilityOff"
                  EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
-                 Label="@($"Skjulte widgets ({_hiddenWidgets.Count})")"
+                 Label="@($"Skjulte widgets ({HiddenWidgets.Count()})")"
                  Variant="Variant.Outlined"
                  Size="Size.Small"
                  AnchorOrigin="Origin.BottomRight"
                  TransformOrigin="Origin.TopRight"
                  Dense="true">
-            @foreach (var widget in _hiddenWidgets)
+            @foreach (var widget in HiddenWidgets)
             {
                 <MudMenuItem OnClick="() => ToggleWidget(widget)">
                     Vis @widget
@@ -79,8 +79,10 @@
 
 @code {
     // ======================== Private felt ========================
-    private readonly List<string> _hiddenWidgets = [];
-
+    // Lar oss telle antall hidden-objecter når den kalles
+    private IEnumerable<string> HiddenWidgets => _widgetVisibility.Where(kv => !kv.Value).Select(kv => kv.Key);
+    
+    // Key = Navnet på Widget, Value = true hvis synlig, false hvis hidden
     private readonly Dictionary<string, bool> _widgetVisibility = new()
     {
         [AdminConstants.TotalUsers] = true,
@@ -105,24 +107,17 @@
     }
     
     // ======================== Private metoder ========================
-    // Toggler om en widget er synlig i UI-en eller ikke
+    // Toggler om en widget er synlig i UI-en eller ikke ved å endre boolen i ordboka
     private async Task ToggleWidget(string widgetName)
     {
-        bool isCurrentlyVisible = _widgetVisibility[widgetName];
-        _widgetVisibility[widgetName] = !isCurrentlyVisible;
-        
-        if (isCurrentlyVisible)
-            _hiddenWidgets.Add(widgetName);
-        else
-            _hiddenWidgets.Remove(widgetName);
-
+        _widgetVisibility[widgetName] = !_widgetVisibility[widgetName];
         await SavePreferencesAsync();
     }
     
     // Lagrer skjulte widgets lokalt i localstorage
     private async Task SavePreferencesAsync()
     {
-        var hidden = string.Join(",", _hiddenWidgets);
+        var hidden = string.Join(",", HiddenWidgets);
         await JsRuntime.SetItemAsync(AdminConstants.StorageKey, hidden);
     }
     
@@ -137,7 +132,6 @@
         foreach (var widgetName in saved.Split(','))
         {
             _widgetVisibility[widgetName] = false;
-            _hiddenWidgets.Add(widgetName);
         }
     }
 }
