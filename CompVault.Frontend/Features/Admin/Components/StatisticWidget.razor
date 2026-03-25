@@ -5,10 +5,9 @@
         <div class="statistic-header-left-section">
             @if (!string.IsNullOrEmpty(Icon))
             {
-                <div class="statistic-icon-container" style="background: @IconBackgroundColor;">
-                    <MudIcon Icon="@Icon" Size="Size.Small" Style="@($"color: {AccentColor};")" />
-                </div>
-                
+                <SmallIcon Icon="@Icon"
+                           AccentColor="@AccentColor"
+                           IconBackgroundColor="@IconBackgroundColor"/>
             }
             <MudText Typo="Typo.caption" Color="Color.Secondary">@Title</MudText>
         </div>

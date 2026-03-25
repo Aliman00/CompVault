@@ -64,8 +64,14 @@
     }
     @if (_widgetVisibility[AdminConstants.RecentActivity])
     {
-        <MudItem>
+        <MudItem xs="12" sm="8">
             <RecentActivityWidget OnHide="() => ToggleWidget(AdminConstants.RecentActivity)"/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[AdminConstants.Shortcuts])
+    {
+        <MudItem xs="12" sm="4">
+            <ShortcutWidget OnHide="() => ToggleWidget(AdminConstants.Shortcuts)"/>
         </MudItem>
     }
 </MudGrid>
@@ -81,6 +87,7 @@
         [AdminConstants.TotalRoles] = true,
         [AdminConstants.TotalDepartments] = true,
         [AdminConstants.RecentActivity] = true,
+        [AdminConstants.Shortcuts] = true
     };
     
     // ======================== Lifecycle ========================
