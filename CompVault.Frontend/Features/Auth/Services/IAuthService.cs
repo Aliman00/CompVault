@@ -15,4 +15,9 @@ public interface IAuthService
     /// Verifiserer at brukerens kode stemmer. Legger til tokens, claims og  setter brukeren som innlogget ved suksess
     /// </summary>
     Task<Result> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct);
+
+    /// <summary>
+    /// Logger brukeren ut av frontend og revoker token i backend. Logger brukeren ut uansett
+    /// </summary>
+    Task LogOutAsync(CancellationToken ct);
 }

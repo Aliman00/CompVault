@@ -15,6 +15,11 @@ public class AuthStateProvider(TokenProvider tokenProvider) : AuthenticationStat
     // Nåværende bruker er satt som ikke-autentisert ved opprettelse
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     
+    /// <summary>
+    /// For å lese refresh token - brukes i AuthService
+    /// </summary>
+    public string? RefreshToken => tokenProvider.RefreshToken;
+    
     /// <inheritdoc />
     public override Task<AuthenticationState> GetAuthenticationStateAsync() =>
         Task.FromResult(new AuthenticationState(_currentUser));
