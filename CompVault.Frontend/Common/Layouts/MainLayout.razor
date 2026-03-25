@@ -1,6 +1,7 @@
-﻿@using CompVault.Frontend.Common.Constants
-@using CompVault.Frontend.Common.Extensions
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JsRunTime
+
+@* Layout for alle sider til CompVault som ikke er admin *@
 
 <!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
 <MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
