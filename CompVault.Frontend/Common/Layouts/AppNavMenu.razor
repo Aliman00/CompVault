@@ -1,4 +1,4 @@
-﻿<!-- Navigasjonsmenyen i Draweren til MainLayout -->
+﻿@* Standard navigasjonsmeny for MainLayout - AdminLayout har egen *@
 
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
@@ -9,5 +9,9 @@
     </MudNavLink>
     <MudNavLink Href="/otp" Icon="@Icons.Material.Filled.Pin">
         OTP
+    </MudNavLink>
+    @* TODO: Admin dashboard skal kun være synlig hvis bruker har riktig tillatelse *@
+    <MudNavLink Href="/admindashboard" Icon="@Icons.Material.Filled._4k">
+        Admin-panel
     </MudNavLink>
 </MudNavMenu>

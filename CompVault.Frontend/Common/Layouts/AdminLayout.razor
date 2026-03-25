@@ -1,7 +1,7 @@
-﻿@inherits LayoutComponentBase
-@inject IJSRuntime JsRunTime
+﻿@inject IJSRuntime JsRunTime
+@inherits LayoutComponentBase
 
-@* Layout for alle sider til CompVault som ikke er admin *@
+@* Layout for Admin-panelet *@
 
 <!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
 <MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
@@ -16,7 +16,6 @@
 <MudLayout>
     <MudAppBar Elevation="1">  <!-- Gir headeren en skygge -->
         <!-- Hamburgermeny knappen med egen metode for å lukke og åpne sidemenyen (Drawer) -->
-        <!-- Edge bestemmer høyre eller venstre -->
         <MudIconButton Icon="@Icons.Material.Filled.Menu" 
                        Color="Color.Inherit"
                        Edge="Edge.Start"
@@ -36,7 +35,7 @@
     </MudAppBar>
 
     <AppDrawer @bind-IsOpen="_drawerOpen">
-        <AppNavMenu />
+        <AdminNavMenu />
     </AppDrawer>
     
     <!-- Hovedcontent med Body - tilpasser seg MudDrawer automatisk -->
@@ -59,13 +58,10 @@
     private MudThemeProvider _mudThemeProvider = null!;
     
     // Aktivt tema - Default på MainTheme
-    private readonly MudTheme _theme = CompVaultMainTheme.Theme;
+    private readonly MudTheme _theme = CompVaultAdminTheme.Theme;
     
     // ======================== Lifecycle ========================
     
-    /// <summary>
-    /// Ved første render så henter vi lokalt lagret tema, eller så bruker vi nettleserens modus
-    /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -79,7 +75,7 @@
             }
             else
             {
-                // Henter innstillingen fra nettleseren
+                // Fallback til system-innstilling
                 _isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
             }
 
@@ -88,11 +84,9 @@
     }
     
     // ======================== Private metoder ========================
-    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
     
-    /// <summary>
-    /// Bytter tema til mørkt og lagrer valget lokalt
-    /// </summary>
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
     private async Task ToggleDarkMode()
     {
         _isDarkMode = !_isDarkMode;

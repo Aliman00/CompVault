@@ -1,8 +1,7 @@
 ﻿using MudBlazor;
 namespace CompVault.Frontend.Common.Themes;
 
-
-public static class CompVaultMainTheme
+public static class CompVaultAdminTheme
 {
     public static MudTheme Theme => new()
     {
@@ -13,11 +12,11 @@ public static class CompVaultMainTheme
             PrimaryLighten = "#4ecf7a",
             Secondary = "#1a2535",
             Tertiary = "#c9a84c",
-            AppbarBackground = "#1e3a5f",
+            AppbarBackground = "#3a3f45",  // Litt mørkere
             AppbarText = "#ffffff",
             Background = "#ffffff",
             BackgroundGray = "#f4f6f8",
-            DrawerBackground = "#1e3a5f",
+            DrawerBackground = "#3a3f45", // Litt mørkere
             DrawerText = "#e0e0e0",
             DrawerIcon = "#4ecf7a",
             Success = "#4ecf7a",
@@ -31,12 +30,12 @@ public static class CompVaultMainTheme
             PrimaryLighten = "#7ee5a0",
             Secondary = "#d4b85a",
             Tertiary = "#6b9fff",
-            AppbarBackground = "#1a2738",
+            AppbarBackground = "#2b2d2f", // Enda mørkere
             AppbarText = "#f0f0f0",
             Background = "#1e2937",
             BackgroundGray = "#2a3a4d",
             Surface = "#263545",
-            DrawerBackground = "#1a2738",
+            DrawerBackground = "#2b2d2f", // Enda mørkere
             DrawerText = "#f0f0f0",
             DrawerIcon = "#5dd887",
             Success = "#5dd887",
