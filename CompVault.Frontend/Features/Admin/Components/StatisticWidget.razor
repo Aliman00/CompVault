@@ -2,13 +2,13 @@
 
 <MudPaper Class="pa-3" Style="@($"border-top: 3px solid {AccentColor};")" Elevation="1">
     <section class="widget-header">
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <div class="statistic-header-left-section">
             @if (!string.IsNullOrEmpty(Icon))
             {
-                <div style="@($"width:36px; height:36px; border-radius:8px; background:{IconBackgroundColor}; " +
-                              $"display:flex; align-items:center; justify-content:center;")">
-                    <MudIcon Icon="@Icon" Size="Size.Small" Style="@($"color:{AccentColor};")" />
+                <div class="statistic-icon-container" style="background: @IconBackgroundColor;">
+                    <MudIcon Icon="@Icon" Size="Size.Small" Style="color: @AccentColor;" />
                 </div>
+                
             }
             <MudText Typo="Typo.caption" Color="Color.Secondary">@Title</MudText>
         </div>
