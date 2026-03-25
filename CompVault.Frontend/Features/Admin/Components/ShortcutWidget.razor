@@ -1,6 +1,4 @@
-﻿@inject NavigationManager Nav
-
-@* Widget med shortcuts til hurtig handlinger *@
+﻿@* Widget med shortcuts til hurtig handlinger *@
 
 <MudPaper Class="pa-4 mb-4" Elevation="4">
     <WidgetHeader Title="Snarveier" OnHide="OnHide"/>
@@ -9,12 +7,15 @@
         @foreach (var shortcut in _shortcuts)
         {
             <MudItem xs="6" sm="4">
-                <MudPaper Class="pa-3 shortcut-item" Elevation="0" @onclick="() => Nav.NavigateTo(shortcut.Url)">
+                <MudButton FullWidth="true"
+                           Href="@shortcut.Url"
+                           Class="shortcut-item"
+                           Variant="Variant.Text">
                     <SmallIcon Icon="@shortcut.Icon"
                                AccentColor="@shortcut.AccentColor"
                                IconBackgroundColor="@shortcut.IconBackgroundColor"/>
                     <MudText Typo="Typo.caption" Align="Align.Center">@shortcut.Label</MudText>
-                </MudPaper>
+                </MudButton>
             </MudItem>
         }
     </MudGrid>
