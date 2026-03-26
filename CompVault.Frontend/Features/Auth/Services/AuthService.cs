@@ -10,7 +10,8 @@ namespace CompVault.Frontend.Features.Auth.Services;
 public class AuthService(
     ILogger<AuthService> logger, 
     IHttpClientFactory httpClientFactory,
-    AuthStateProvider authStateProvider) : IAuthService
+    AuthStateProvider authStateProvider,
+    IHttpContextAccessor httpContextAccessor) : IAuthService
 {
     /// <summary>
     /// HttpClient mot backend
@@ -80,8 +81,18 @@ public class AuthService(
         {
             // Bruker AuthClient for å unngå kall med AuthTokenHandler. Det kan føre til en loop
             HttpClient httpClient = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
-            HttpResponseMessage response = await httpClient.PostAsync(ApiRoutes.Auth.RefreshFull, 
-                null, ct);
+            
+            // Vi henter RefreshToken fra Http-contexten
+            string? refreshTokenCookie = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
+            if (string.IsNullOrEmpty(refreshTokenCookie))
+                return Result.Failure(AppError.Create(ErrorCode.InvalidToken, 
+                    "Ingen refresh token-cookie funnet"));
+            
+            // Bygger en request-melding manuelt for å legge til headeren på forespørselen, og at klienten ikke får
+            // mange cookies i headeren over tid
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Auth.RefreshFull);
+            requestMessage.Headers.Add("Cookie", $"refreshToken={refreshTokenCookie}");
+            HttpResponseMessage response = await httpClient.SendAsync(requestMessage, ct);
 
             Result<AccessTokenResponse> result =
                 await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
