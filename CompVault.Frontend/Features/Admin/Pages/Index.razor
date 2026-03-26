@@ -1,6 +1,30 @@
-﻿@page "/Index"
-<h3>Index</h3>
+﻿@page "/"
+@inject NavigationManager Navigation
 
-@code {
+<PageTitle>CompVault</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-8 d-flex flex-column align-center justify-center" Style="min-height:80vh">
     
-}
+    <!-- DIN LOGO -->
+    <MudImage Src="logo.png" 
+              Alt="CompVault" 
+              Width="280" 
+              Class="mb-8"
+              Elevation="10"/>
+    
+    <MudText Typo="Typo.h3" Class="mb-4 text-center" Color="Color.Primary">
+        Velkommen til CompVault
+    </MudText>
+    <MudText Typo="Typo.h6" Class="mb-12 text-center" Color="Color.Secondary">
+        Sikker OTP-innlogging uten passord
+    </MudText>
+    
+    <!-- FIXED BUTTON -->
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Primary" 
+               Size="Size.Large"
+               StartIcon="Icons.Material.Filled.Login"
+               Href="/login-email">
+        Logg inn
+    </MudButton>
+</MudContainer>
