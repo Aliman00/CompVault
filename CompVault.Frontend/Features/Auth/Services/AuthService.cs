@@ -74,6 +74,37 @@ public class AuthService(
     }
     
     /// <inheritdoc />
+    public async Task<Result> RefreshTokenAsync(CancellationToken ct)
+    {
+        try
+        {
+            // Bruker AuthClient for å unngå kall med AuthTokenHandler. Det kan føre til en loop
+            HttpClient httpClient = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
+            HttpResponseMessage response = await httpClient.PostAsync(ApiRoutes.Auth.RefreshFull, 
+                null, ct);
+
+            Result<AccessTokenResponse> result =
+                await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
+
+            if (result.IsFailure)
+                return Result.Failure(result.Error!);
+            
+            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken);
+            return Result.Success();
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved token-refresh ved oppstart");
+            return Result.Failure(AppError.Create(ErrorCode.NetworkError, "Tilkoblingen feilet."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved token-refresh ved oppstart");
+            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Noe gikk galt."));
+        }
+    }
+    
+    /// <inheritdoc />
     public async Task LogOutAsync(CancellationToken ct)
     {
         try
