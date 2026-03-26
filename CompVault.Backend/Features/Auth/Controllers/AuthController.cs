@@ -125,6 +125,7 @@ public sealed class AuthController(
         HttpOnly = true,
         Secure = !environment.IsDevelopment(), // HTTP i dev, HTTPS i prod
         SameSite = SameSiteMode.Strict,
-        Expires = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays)
+        Expires = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays),
+        IsEssential = true // Denne er nødvendig for at applikasjonen skal fungere
     };
 }

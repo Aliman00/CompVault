@@ -133,7 +133,7 @@ public sealed class AuthService(
                 // Henter roller for å bygge tokens
                 IList<string> roles = await userManager.GetRolesAsync(user);
 
-                return Result<TokenDto>.Success(BuildRefreshTokenResponse(user, roles, refreshResult.Value!));
+                return Result<TokenDto>.Success(BuildTokenDto(user, roles, refreshResult.Value!));
             }, ct);
         }
         finally
@@ -177,7 +177,7 @@ public sealed class AuthService(
             if (refreshResult.IsFailure)
                 return Result<TokenDto>.Failure(refreshResult.Error!);
 
-            return Result<TokenDto>.Success(BuildRefreshTokenResponse(user, roles, refreshResult.Value!));
+            return Result<TokenDto>.Success(BuildTokenDto(user, roles, refreshResult.Value!));
         }, ct);
     }
 
@@ -204,7 +204,7 @@ public sealed class AuthService(
         return Result.Success();
     }
 
-    private TokenDto BuildRefreshTokenResponse(
+    private TokenDto BuildTokenDto(
         ApplicationUser user,
         IList<string> roles,
         string rawRefreshToken) => new()
