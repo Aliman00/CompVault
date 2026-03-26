@@ -1,42 +1,50 @@
 using CompVault.Frontend;
 using CompVault.Frontend.Extensions;
-
 using MudBlazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Razor Components
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Legger til Serilog
+// Serilog
 builder.AddSerilogLogging();
 
-// Http-klient til backend
+// Eksisterende Http-klienter
 builder.Services.AddHttpClients(builder.Configuration);
 
-// MudBlazor konfigurasjon
+// MudBlazor
 builder.Services.AddMudServices();
 
-// Forretningslogikk servicer
+// Forretningslogikk
 builder.Services.AddFrontendServices();
+
+// 🚨 KONTROLLERE + BACKEND API
+builder.Services.AddControllers();
+builder.Services.AddHttpClient("BackendApi", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5010/");
+});
 
 WebApplication app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
-
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Controllers mapping
+app.MapControllers();
 
 app.Run();
