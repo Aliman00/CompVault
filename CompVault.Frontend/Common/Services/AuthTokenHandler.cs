@@ -18,8 +18,13 @@ public class AuthTokenHandler(
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
+        // HttpContext kan være null i race condition ved første oppkobling eller ved reconnect.
+        // Vi kaster en feil, slik at bruker kan prøve igjen
+        HttpContext httpContext = httpContextAccessor.HttpContext
+                                  ?? throw new InvalidOperationException("HttpContext er ikke tilgjengelig.");
+        
         // Henter instansene som er på samme scope til den aktive kretsen
-        IServiceProvider services = httpContextAccessor.HttpContext!.RequestServices;
+        IServiceProvider services = httpContext.RequestServices;
         TokenProvider tokenProvider = services.GetRequiredService<TokenProvider>();
         AuthStateProvider authStateProvider = services.GetRequiredService<AuthStateProvider>();
         
