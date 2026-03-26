@@ -4,32 +4,42 @@ using MudBlazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// Razor Components
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1. BLAZOR + INTERACTIVE RENDERING
+// ═══════════════════════════════════════════════════════════════════════════════
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Serilog
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2. LOGGING (Serilog)
 builder.AddSerilogLogging();
 
-// Eksisterende Http-klienter
-builder.Services.AddHttpClients(builder.Configuration);
-
-// MudBlazor
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3. MUD-BLAZOR UI-KOMPONENTER
 builder.Services.AddMudServices();
 
-// Forretningslogikk
-builder.Services.AddFrontendServices();
-
-// 🚨 KONTROLLERE + BACKEND API
-builder.Services.AddControllers();
+// ═══════════════════════════════════════════════════════════════════════════════
+// 4. HTTP-KLIENTER
+// - AddHttpClients() = dine eksisterende klienter
+// - BackendApi = for OTP-backend
+builder.Services.AddHttpClients(builder.Configuration);
 builder.Services.AddHttpClient("BackendApi", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5010/");
+    client.BaseAddress = new Uri("http://localhost:5010/");  // Backend URL
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5. API CONTROLLERS (for fremtidig bruk)
+builder.Services.AddControllers();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6. FORETNINGSLOGIKK (dine services)
+builder.Services.AddFrontendServices();
 
 WebApplication app = builder.Build();
 
-// Pipeline
+// ═══════════════════════════════════════════════════════════════════════════════
+// 7. HTTP PIPELINE
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
@@ -40,11 +50,8 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 app.UseAntiforgery();
 
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-// Controllers mapping
-app.MapControllers();
+app.MapStaticAssets();  // CSS/JS-filer
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+app.MapControllers();  // API-routes
 
 app.Run();
