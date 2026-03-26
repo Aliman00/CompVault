@@ -1,6 +1,8 @@
+using System.Security.Claims;
+using System.Text.Json;
+
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
-using CompVault.Frontend.Common.Services;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
@@ -9,9 +11,7 @@ namespace CompVault.Frontend.Features.Auth.Services;
 
 public class AuthService(
     ILogger<AuthService> logger, 
-    IHttpClientFactory httpClientFactory,
-    AuthStateProvider authStateProvider,
-    IHttpContextAccessor httpContextAccessor) : IAuthService
+    IHttpClientFactory httpClientFactory) : IAuthService
 {
     /// <summary>
     /// HttpClient mot backend
@@ -45,75 +45,39 @@ public class AuthService(
     }
     
     /// <inheritdoc />
-    public async Task<Result> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct)
+    public async Task<Result<ClaimsPrincipal>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct)
     {
         try
         {
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request, ct);
 
-            Result<AccessTokenResponse> result =
+            Result<AccessTokenResponse> tokenResult =
                 await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
 
-            if (result.IsFailure)
-                return Result.Failure(result.Error!);
+            if (tokenResult.IsFailure)
+                return Result<ClaimsPrincipal>.Failure(tokenResult.Error!);
             
-            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken);
-            return Result.Success();
+            // Oppretter en ClaimsPrincipal med alle claimene som vi bruker til å sette cookie i nettleseren
+            IEnumerable<Claim> claims = ParseClaimsFromJwt(tokenResult.Value!.AccessToken);
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
+            
+            return Result<ClaimsPrincipal>.Success(principal);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved OTP-verifisering for {Email}", request.Email);
-            return Result.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<ClaimsPrincipal>.Failure(AppError.Create(ErrorCode.NetworkError, 
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved OTP-verifisering for {Email}", request.Email);
-            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Noe gikk galt. Prøv igjen."));
+            return Result<ClaimsPrincipal>.Failure(AppError.Create(ErrorCode.Unknown, 
+                "Noe gikk galt. Prøv igjen."));
         }
     }
     
-    /// <inheritdoc />
-    public async Task<Result> RefreshTokenAsync(CancellationToken ct)
-    {
-        try
-        {
-            // Bruker AuthClient for å unngå kall med AuthTokenHandler. Det kan føre til en loop
-            HttpClient httpClient = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
-            
-            // Vi henter RefreshToken fra Http-contexten
-            string? refreshTokenCookie = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
-            if (string.IsNullOrEmpty(refreshTokenCookie))
-                return Result.Failure(AppError.Create(ErrorCode.InvalidToken, 
-                    "Ingen refresh token-cookie funnet"));
-            
-            // Bygger en request-melding manuelt for å legge til headeren på forespørselen, og at klienten ikke får
-            // mange cookies i headeren over tid
-            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Auth.RefreshFull);
-            requestMessage.Headers.Add("Cookie", $"refreshToken={refreshTokenCookie}");
-            HttpResponseMessage response = await httpClient.SendAsync(requestMessage, ct);
-
-            Result<AccessTokenResponse> result =
-                await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
-
-            if (result.IsFailure)
-                return Result.Failure(result.Error!);
-            
-            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken);
-            return Result.Success();
-        }
-        catch (HttpRequestException ex)
-        {
-            logger.LogError(ex, "Nettverksfeil ved token-refresh ved oppstart");
-            return Result.Failure(AppError.Create(ErrorCode.NetworkError, "Tilkoblingen feilet."));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Uventet feil ved token-refresh ved oppstart");
-            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Noe gikk galt."));
-        }
-    }
     
     /// <inheritdoc />
     public async Task LogOutAsync(CancellationToken ct)
@@ -130,9 +94,40 @@ public class AuthService(
         {
             logger.LogError(ex, "Uventet  feil ved utlogging");
         }
-        finally
-        {
-            authStateProvider.MarkUserAsLoggedOut();
-        }
     }
+    
+    private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
+    {
+        // JWT er 3 stk base64url-segmenter som separeres med en punkt - vi skal ha midterste som blir kalt payload
+        string base64UrlPayload = jwt.Split('.')[1];
+    
+        // Konverterer til vanlig base64 og fjerner padding som base64url fjernet
+        // Vi må gjøre dette for at Conver.FromBase64String skal kunne det om til json
+        string standardBase64 = base64UrlPayload.Replace('-', '+').Replace('_', '/');
+        string paddedBase64 = standardBase64.PadRight(standardBase64.Length + 
+                                                      (4 - standardBase64.Length % 4) % 4, '=');
+        // Base64 gjøres om til JSON for å kunne deserialiseres, slik at vi får en ordbok med verdiene fra JWT-en
+        string json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(paddedBase64));
+        Dictionary<string, JsonElement>? parsed = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
+    
+        // Vi returnerer en liste med Claims, hentet fra nøkkelparet i ordboka. Vi har lagt til at vi håndterer claims
+        // som er arrays (feks Roller)
+        var claims = new List<Claim>();
+        foreach (KeyValuePair<string, JsonElement> kv in parsed)
+        {
+            if (kv.Value.ValueKind == JsonValueKind.Array)
+            {
+                claims.AddRange(kv.Value.EnumerateArray()
+                    .Select(element => new Claim(kv.Key, element.ToString())));
+            }
+            else
+            {
+                claims.Add(new Claim(kv.Key, kv.Value.ToString()));
+            }
+        }
+    
+        return claims;
+    }
+
+
 }

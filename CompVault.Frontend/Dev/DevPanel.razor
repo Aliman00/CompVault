@@ -5,7 +5,8 @@
 @inject IAuthService AuthService
 @inject AuthStateProvider AuthStateProvider
 @inject IServiceProvider ServiceProvider
-
+@inject IJSRuntime JsRuntime
+@implements IAsyncDisposable
 
 @* Denne siden er kun tilgjengelig i development *@
 
@@ -16,7 +17,17 @@
 
 <PageTitle>CompVault Dev Panel</PageTitle>
 
+@* En skjult form som gjør at vi kan sette auth-cookie ved å poste til en Razor Page, som lagrer token i nettleseren *@
+<form id="dev-login-form" method="post" action="/login-callback">
+    <AntiforgeryToken/>
+    <input type="hidden" name="Request.Email"/>
+    <input type="hidden" name="Request.OtpCode" value="123456"/>
+</form>
 
+@* Skjult form for å slette auth-cookie fra nettleseren *@
+<form id="dev-logout-form" method="post" action="/logout-callback">
+    <AntiforgeryToken />
+</form>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
     <MudText Typo="Typo.h6" Class="mb-4">Nåværende session - innlogget eller ikke</MudText>
@@ -66,6 +77,7 @@
 @code {
     
     private IDevService? _devService;
+    
 
     
     // ===================== LIFECYCLE =====================
@@ -78,9 +90,23 @@
         await RefreshClaimsAsync();
     }
     
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./Dev/DevPanel.razor.js");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule is not null)
+            await _jsModule.DisposeAsync();
+    }
     
     
     // ===================== LOGIN =====================
+    
+    private IJSObjectReference? _jsModule;
     
     private bool _isLoading;
     private string? _loginErrorMessage;
@@ -122,25 +148,14 @@
             return;
         }
         
-        var request = new VerifyOtpRequest { Email = testUser.Email, OtpCode = "123456" };
-        Result result = await AuthService.VerifyOtpAsync(request, CancellationToken.None);
-
-        if (result.IsFailure)
-            _loginErrorMessage = result.Error!.Message;
-
-        await RefreshClaimsAsync();
-        _isLoading = false;
+        await _jsModule!.InvokeVoidAsync("submitLoginForm", testUser.Email);
     }
     
     private async Task LogOutAsync()
     {
         _isLoading = true;
-        
-        // Logut og fjern claims
         await AuthService.LogOutAsync(CancellationToken.None);
-        await RefreshClaimsAsync();
-        
-        _isLoading = false;
+        await _jsModule!.InvokeVoidAsync("submitLogoutForm");
     }
 
     private async Task RefreshClaimsAsync()
@@ -149,3 +164,5 @@
         _claims = state.User.Claims;
     }
 }
+
+
