@@ -3,6 +3,7 @@ using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
 
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace CompVault.Frontend.Extensions;
@@ -26,19 +27,8 @@ public static class ServiceCollectionExtensions
         if (string.IsNullOrWhiteSpace(settings.BaseUrl))
             throw new InvalidOperationException("BackendApi:BaseUrl does not exist in appsettings");
         
-        // Oppretter kun en handler pr HttpClient-kall
-        services.AddScoped<AuthTokenHandler>();
-        
         // Hovedklienten med handler for autentisering — brukes av alle vanlige kall
         services.AddHttpClient(BackendApiSettings.MainClientName, client =>
-            {
-                client.BaseAddress = new Uri(settings.BaseUrl);
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
-            })
-            .AddHttpMessageHandler<AuthTokenHandler>();
-        
-        // Klient som brukes kun av for refresh av token
-        services.AddHttpClient(BackendApiSettings.AuthClientName, client =>
         {
             client.BaseAddress = new Uri(settings.BaseUrl);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -51,12 +41,31 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Legger til autentisering for Blazor Server
     /// </summary>
-    public static IServiceCollection AddAuth(this IServiceCollection services)
+    public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration, 
+        IWebHostEnvironment env)
     {
+        AuthSettings settings = configuration
+            .GetSection(AuthSettings.SectionName)
+            .Get<AuthSettings>() ?? new AuthSettings();
+        
         // Vi må registrere denne for å hente ut instanser som brukes av den aktive kretsen
         services.AddHttpContextAccessor();
         
-        services.AddScoped<TokenProvider>();
+        
+        services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(options =>
+            {
+                options.LoginPath = "/login";
+                options.LogoutPath = "/logout";
+                options.ExpireTimeSpan = TimeSpan.FromDays(settings.CookieExpireDays);
+                options.SlidingExpiration = true;
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = SameSiteMode.Strict;
+                options.Cookie.SecurePolicy = env.IsDevelopment() 
+                    ? CookieSecurePolicy.SameAsRequest  // Tillater HTTP i dev
+                    : CookieSecurePolicy.Always;        // Krever HTTPS i prod
+            });
+        
         services.AddScoped<AuthStateProvider>();
 
         // Forteller Blazor at vår egen AuthStateProvider brukes
