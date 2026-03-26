@@ -12,22 +12,23 @@ namespace CompVault.Frontend.Common.Services;
 /// gyldig RefreshToken
 /// </summary>
 public class AuthTokenHandler(
-    IServiceScopeFactory scopeFactory,
+    IHttpContextAccessor httpContextAccessor,
     IHttpClientFactory httpClientFactory,
     ILogger<AuthTokenHandler> logger) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
-        
-        await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
-        TokenProvider tokenProvider = scope.ServiceProvider.GetRequiredService<TokenProvider>();
-        AuthStateProvider authStateProvider = scope.ServiceProvider.GetRequiredService<AuthStateProvider>();
-        
+        // Henter instansene som er på samme scope til den aktive kretsen
+        IServiceProvider services = httpContextAccessor.HttpContext!.RequestServices;
+        TokenProvider tokenProvider = services.GetRequiredService<TokenProvider>();
+        AuthStateProvider authStateProvider = services.GetRequiredService<AuthStateProvider>();
         
         // Legger alltid til et access token hvis vi har et
         if (tokenProvider.AccessToken != null)
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenProvider.AccessToken);
 
+        // En HttpRequestMessage er single use, så vi kloner den for å kunne sende igjen hvis vi må fornye token
+        HttpRequestMessage retryRequest = await CloneRequestAsync(request);
         HttpResponseMessage response = await base.SendAsync(request, ct);
         
         // Hvis vi har et gyldig refresh token, men får 401 så prøver vi å fornye access token i bakgrunn automatisk
@@ -37,10 +38,10 @@ public class AuthTokenHandler(
 
             if (tokensRefreshed)
             {
-                // Prøver det originale kallet med nye tokens
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", 
+                // Prøver det originale kallet med oppdatert token
+                retryRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", 
                     tokenProvider.AccessToken);
-                response = await base.SendAsync(request, ct);
+                response = await base.SendAsync(retryRequest, ct);
             }
             else
             {
@@ -51,6 +52,31 @@ public class AuthTokenHandler(
         }
 
         return response;
+    }
+    
+    // Vi kloner en request siden hver request er single-use og blir brukt opp
+    private static async Task<HttpRequestMessage> CloneRequestAsync(HttpRequestMessage original)
+    {
+        var clone = new HttpRequestMessage(original.Method, original.RequestUri);
+
+        foreach (KeyValuePair<string, IEnumerable<string>> header in original.Headers)
+        {
+            clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+        
+        // Hvis requesten har en body, så må vi kopiere den
+        if (original.Content != null)
+        {
+            byte[] body = await original.Content.ReadAsByteArrayAsync();
+            clone.Content = new ByteArrayContent(body);
+            
+            foreach (KeyValuePair<string, IEnumerable<string>> header in original.Content.Headers)
+            {
+                clone.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
+
+        return clone;
     }
     
     // Hvis brukeren har gyldig refresh token, så byttes token med et nytt par - kalles bare hvis utgått token

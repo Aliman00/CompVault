@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
             throw new InvalidOperationException("BackendApi:BaseUrl does not exist in appsettings");
         
         // Oppretter kun en handler pr HttpClient-kall
-        services.AddTransient<AuthTokenHandler>();
+        services.AddScoped<AuthTokenHandler>();
         
         // Hovedklienten med handler for autentisering — brukes av alle vanlige kall
         services.AddHttpClient(BackendApiSettings.MainClientName, client =>
@@ -53,6 +53,9 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddAuth(this IServiceCollection services)
     {
+        // Vi må registrere denne for å hente ut instanser som brukes av den aktive kretsen
+        services.AddHttpContextAccessor();
+        
         services.AddScoped<TokenProvider>();
         services.AddScoped<AuthStateProvider>();
 
