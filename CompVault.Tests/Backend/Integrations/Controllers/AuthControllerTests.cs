@@ -183,8 +183,6 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         otpCode!.IsUsed.Should().BeTrue();
         otpCode.FailedAttempts.Should().Be(0);
         
-        
-
         // Sikrer at vi henter siste opprettete token, tilfelle vi har seedet in flere
         RefreshToken? refreshToken = await context.Set<RefreshToken>()
             .Where(x => x.UserId == TestConstants.Users.ActiveUserId)

@@ -22,11 +22,10 @@ namespace CompVault.Backend.Features.Auth.Controllers;
 public sealed class AuthController(
     IAuthService authService,
     IOptions<JwtSettings> jwtSettings,
-    IWebHostEnvironment environment) : BaseController
+    IWebHostEnvironment environment,
+    ILogger<AuthController> logger) : BaseController
 {
     private readonly JwtSettings _jwt = jwtSettings.Value;
-    
-    
     
     /// <summary>
     /// Steg 1: Sender en engangs-kode til brukeren via valgt kanal (e-post eller SMS).
@@ -84,7 +83,8 @@ public sealed class AuthController(
     {
         string? refreshToken = Request.Cookies["refreshToken"];
         if (string.IsNullOrEmpty(refreshToken))
-            return Unauthorized();
+            return HandleFailure(Result.Failure(AppError.Create(ErrorCode.InvalidToken,
+                "Mangler refresh token-cookie")));
         
         Result<TokenDto> result = await authService.RefreshTokenAsync(refreshToken, cancellationToken);
 
@@ -114,6 +114,8 @@ public sealed class AuthController(
             if (result.IsFailure)
                 return HandleFailure(result);
         }
+        else
+            logger.LogWarning("Utlogging uten refresh token-cookie for UserId: {UserId}", currentUserId);
         
         Response.Cookies.Delete("refreshToken");
         return NoContent();
