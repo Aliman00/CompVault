@@ -11,7 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Common\Services\" />
     <Folder Include="Features\Auth\Components\" />
     <Folder Include="Features\Users\Components\" />
   </ItemGroup>

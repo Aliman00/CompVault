@@ -1,16 +1,21 @@
 using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Extensions;
+using CompVault.Frontend.Common.Services;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Features.Auth.Services;
 
-public class AuthService(ILogger<AuthService> logger, IHttpClientFactory httpClientFactory) : IAuthService
+public class AuthService(
+    ILogger<AuthService> logger, 
+    IHttpClientFactory httpClientFactory,
+    AuthStateProvider authStateProvider) : IAuthService
 {
     /// <summary>
     /// HttpClient mot backend
     /// </summary>
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.ClientName);
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
 
     /// <inheritdoc />
     public async Task<Result> RequestOtpAsync(RequestOtpRequest request, CancellationToken ct)
@@ -20,36 +25,72 @@ public class AuthService(ILogger<AuthService> logger, IHttpClientFactory httpCli
             logger.LogInformation("Request OTP: {@Payload}", request);
 
             // Sender Http-forespørselen med requesten
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request, ct);
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, 
+                request, ct);
 
-            // Hvis det gikk galt, returner feilmeldingen
-            if (!response.IsSuccessStatusCode)
-            {
-                ProblemDetail? problemDetail = await response.Content.ReadFromJsonAsync<ProblemDetail>(ct);
+            return await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved OTP-forespørsel for {Email}", request.Email);
+            return Result.Failure(AppError.Create(ErrorCode.NetworkError, 
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved OTP-forespørsel for {Email}", request.Email);
+            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Noe gikk galt. Prøv igjen."));
+        }
+    }
+    
+    /// <inheritdoc />
+    public async Task<Result> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response =
+                await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request, ct);
 
-                if (problemDetail == null)
-                    return Result.Failure(AppError.Create(ErrorCode.Unknown, "Unknown error from server"));
+            Result<AccessTokenResponse> result =
+                await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
 
-                if (!Enum.TryParse<ErrorCode>(problemDetail.Code, out ErrorCode errorCode))
-                    errorCode = ErrorCode.Unknown; // Fallback til Unknown hvis ingen kode med
-
-                return Result.Failure(AppError.Create(errorCode, problemDetail.Message));
-            }
-
+            if (result.IsFailure)
+                return Result.Failure(result.Error!);
+            
+            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken);
             return Result.Success();
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Network error during login attempt");
-            return Result.Failure(AppError.Create(ErrorCode.NetworkError,
-                "Connection failed. Please check your internet."));
+            logger.LogError(ex, "Nettverksfeil ved OTP-verifisering for {Email}", request.Email);
+            return Result.Failure(AppError.Create(ErrorCode.NetworkError, 
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unexpected error occured");
-            return Result.Failure(AppError.Create(ErrorCode.Unknown,
-                "Unexpected error occured. Try again later."));
+            logger.LogError(ex, "Uventet feil ved OTP-verifisering for {Email}", request.Email);
+            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Noe gikk galt. Prøv igjen."));
         }
     }
-
+    
+    /// <inheritdoc />
+    public async Task LogOutAsync(CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response = await _httpClient.PostAsync(ApiRoutes.Auth.RevokeFull, null, ct);
+            Result revokeResult = await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);
+            if (revokeResult.IsFailure)
+                logger.LogWarning("Token-revokering feilet: [{ErrorCode}] {Message}",
+                    revokeResult.Error!.Code, revokeResult.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet  feil ved utlogging");
+        }
+        finally
+        {
+            authStateProvider.MarkUserAsLoggedOut();
+        }
+    }
 }

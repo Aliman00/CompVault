@@ -1,0 +1,141 @@
+﻿@page "/Dev"
+@using System.Security.Claims
+@using CompVault.Frontend.Common.Services
+@using CompVault.Frontend.Features.Auth.Services
+@using CompVault.Shared.Result
+@inject IWebHostEnvironment Env
+@inject IAuthService AuthService
+@inject AuthStateProvider AuthStateProvider
+@inject IServiceProvider ServiceProvider
+
+
+@* Denne siden er kun tilgjengelig i development *@
+
+@if (!Env.IsDevelopment())
+{
+    return;
+}
+
+<PageTitle>CompVault Dev Panel</PageTitle>
+
+
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudText Typo="Typo.h6" Class="mb-4">Nåværende session - innlogget eller ikke</MudText>
+    <MudPaper Class="pa-6 mb-4">
+        <AuthorizeView>
+            <Authorized>
+                <MudStack>
+                    @foreach (var claim in _claims)
+                    {
+                        <MudText><strong>@claim.Type: </strong>@claim.Value</MudText>
+                    }
+                </MudStack>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           Disabled="_isLoading"
+                           OnClick="LogOutAsync">
+                    Logg ut
+                </MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudText Color="Color.Secondary">Ikke innlogget</MudText>
+            </NotAuthorized>
+        </AuthorizeView>
+
+    </MudPaper>
+    <MudText Typo="Typo.h6" Class="mb-4">Hurtigpålogging - Rød = Admin bruker, grønn = vanlig bruker</MudText>
+
+    <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+        @foreach (var testUser in _testUsers)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="@(testUser.Roles.Contains("Admin") ? Color.Error : Color.Primary)"
+                       Disabled="_isLoading"
+                       OnClick="() => LoginAsync(testUser)">
+                <MudText>Navn: @testUser.FirstName @testUser.LastName, Tittel: @testUser.JobTitle,
+                    Roller: @string.Join(", ", testUser.Roles)</MudText>
+            </MudButton>
+        }
+    </MudStack>
+    @if (_loginErrorMessage != null)
+    {
+        <MudAlert Severity="Severity.Error">@_loginErrorMessage</MudAlert>
+    }
+
+</MudContainer>
+
+@code {
+    
+    private IDevService? _devService;
+
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        // Tilgjengelig kun i Development — i produksjon er tjenesten ikke registrert
+        if (Env.IsDevelopment())
+            _devService = ServiceProvider.GetService<IDevService>();
+
+        await RefreshClaimsAsync();
+    }
+    
+    
+    
+    // ===================== LOGIN =====================
+    
+    private bool _isLoading;
+    private string? _loginErrorMessage;
+    
+    public record TestUser(string FirstName, string LastName, string Email, string JobTitle, string[] Roles);
+
+    private List<TestUser> _testUsers =
+    [
+        new ("Kari", "Nordmann", "kari.nordmann@compvault.no", "System Administrator",["Admin"]),
+        new ("Ola", "Nordmann", "ola.nordmann@compvault.no","IT-leder", ["Admin"]),
+        new ("Lars", "Hansen", "lars.hansen@compvault.no","Systemutvikler", ["Employee"]),
+        new ("Ingrid", "Berg","ingrid.berg@compvault.no","Systemutvikler", ["Employee"]),
+        new ("Tobias", "Lie","tobias.lie@compvault.no", "Rådgiver", ["Employee"]),
+        new ("Sofie", "Dahl","sofie.dahl@compvault.no","HR-konsulent", ["Employee"])
+    ];
+    
+    private IEnumerable<Claim> _claims = [];
+    
+    
+    
+    // Logger inn med DevService sitt endepunkt
+    private async Task LoginAsync(TestUser testUser)
+    {
+        if (_devService == null)
+            return;
+        
+        _isLoading = true;
+        _loginErrorMessage = null;
+        
+        var request = new VerifyOtpRequest { Email = testUser.Email, OtpCode = "000000" };
+        Result result = await _devService.VerifyOtpAsync(request, CancellationToken.None);
+
+        if (result.IsFailure)
+            _loginErrorMessage = result.Error!.Message;
+
+        await RefreshClaimsAsync();
+        _isLoading = false;
+    }
+    
+    private async Task LogOutAsync()
+    {
+        _isLoading = true;
+        
+        // Logut og fjern claims
+        await AuthService.LogOutAsync(CancellationToken.None);
+        await RefreshClaimsAsync();
+        
+        _isLoading = false;
+    }
+
+    private async Task RefreshClaimsAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        _claims = state.User.Claims;
+    }
+}

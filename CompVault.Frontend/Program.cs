@@ -9,17 +9,12 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Legger til Serilog
 builder.AddSerilogLogging();
-
-// Http-klient til backend
 builder.Services.AddHttpClients(builder.Configuration);
-
-// MudBlazor konfigurasjon
 builder.Services.AddMudServices();
-
-// Forretningslogikk servicer
-builder.Services.AddFrontendServices();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddAuth();
+builder.Services.AddFrontendServices(builder.Environment);
 
 WebApplication app = builder.Build();
 
