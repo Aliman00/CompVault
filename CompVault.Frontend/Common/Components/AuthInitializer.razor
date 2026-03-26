@@ -1,0 +1,30 @@
+﻿@using CompVault.Frontend.Features.Auth.Services
+@inject IAuthService AuthService
+@inject AuthStateProvider AuthStateProvider
+
+
+@if (_initialized)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private bool _initialized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TryRestoreSessionAsync();
+        _initialized = true;
+    }
+
+    private async Task TryRestoreSessionAsync()
+    {
+        Result result = await AuthService.RefreshTokenAsync(CancellationToken.None);
+        if (result.IsFailure)
+            AuthStateProvider.MarkUserAsLoggedOut();
+    }
+}
+

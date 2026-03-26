@@ -1,8 +1,6 @@
 ﻿@page "/Dev"
 @using System.Security.Claims
-@using CompVault.Frontend.Common.Services
 @using CompVault.Frontend.Features.Auth.Services
-@using CompVault.Shared.Result
 @inject IWebHostEnvironment Env
 @inject IAuthService AuthService
 @inject AuthStateProvider AuthStateProvider
@@ -103,7 +101,7 @@
     
     
     
-    // Logger inn med DevService sitt endepunkt
+    // Logger inn brukeren ved å opprette en satt OTP-kode og verifisere med VerifyOtp
     private async Task LoginAsync(TestUser testUser)
     {
         if (_devService == null)
@@ -112,8 +110,20 @@
         _isLoading = true;
         _loginErrorMessage = null;
         
-        var request = new VerifyOtpRequest { Email = testUser.Email, OtpCode = "000000" };
-        Result result = await _devService.VerifyOtpAsync(request, CancellationToken.None);
+        var requestOtpRequest = new RequestOtpRequest { Email = testUser.Email, 
+            DeliveryMethod = OtpDeliveryMethod.Email };
+        
+        Result requestOtpResult = await _devService.RequestOtpAsync(requestOtpRequest);
+        
+        if (requestOtpResult.IsFailure)
+        {
+            _loginErrorMessage = requestOtpResult.Error!.Message;
+            _isLoading = false;
+            return;
+        }
+        
+        var request = new VerifyOtpRequest { Email = testUser.Email, OtpCode = "123456" };
+        Result result = await AuthService.VerifyOtpAsync(request, CancellationToken.None);
 
         if (result.IsFailure)
             _loginErrorMessage = result.Error!.Message;

@@ -30,12 +30,12 @@ public class AuthStateProvider(TokenProvider tokenProvider) : AuthenticationStat
         IEnumerable<Claim> claims = ParseClaimsFromJwt(accessToken);
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
         
-        // Oppdaterer alle AuthorizeView-komponenter - da vil vi se i komponenter at brukeren er innlogget
+        // Oppdaterer alle AuthorizeView-komponenter - da vil vi se i komponenter at brukeren er innogget
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
     
     /// <summary>
-    /// Fjerner tokens, setter brukeren som ikke-autentisert og oppdaterer komponentene
+    /// Fjerner tokens, setter brukeren som ikke-autentisert og oppdaterer komponentenel
     /// </summary>
     public void MarkUserAsLoggedOut()
     {
