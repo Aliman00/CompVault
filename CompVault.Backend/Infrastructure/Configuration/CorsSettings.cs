@@ -15,3 +15,4 @@ public class CorsSettings
     public string[] GetOrigins() => AllowedOrigins
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }
+

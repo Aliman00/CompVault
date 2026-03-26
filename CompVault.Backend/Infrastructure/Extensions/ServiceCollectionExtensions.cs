@@ -149,7 +149,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Konfigurerer CORS slik at frontend kan sende cookies og autentiserte forespørsler til backend
     /// </summary>
-    public static IServiceCollection AddCors(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddFrontendCors(this IServiceCollection services, IConfiguration configuration)
     {
         CorsSettings corsSettings = configuration
                                         .GetSection(CorsSettings.SectionName)

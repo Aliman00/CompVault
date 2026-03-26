@@ -22,7 +22,7 @@ builder.ConfigureLogging();
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("db");
-builder.Services.AddCors(builder.Configuration);
+builder.Services.AddFrontendCors(builder.Configuration);
 builder.Services.AddInfrastructure();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationFailureHandler>();
 builder.Services.AddDatabase(builder.Configuration, builder.Environment);
