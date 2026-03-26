@@ -24,8 +24,8 @@ public class DevService(
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync("api/dev/verifyotp", request, ct);
             
-            Result<RefreshTokenResponse> result =
-                await HttpClientExtensions.ParseResponseAsync<RefreshTokenResponse>(response, ct);
+            Result<AccessTokenResponse> result =
+                await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
 
             if (result.IsFailure)
                 return Result.Failure(result.Error!);
