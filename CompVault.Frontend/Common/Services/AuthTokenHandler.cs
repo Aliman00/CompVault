@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Common.Services;

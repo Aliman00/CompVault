@@ -172,9 +172,8 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
 
         // Assert - Sjekker at Result er 200 Ok og sjekker alle egenskapene på RefreshTokenResponse
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        RefreshTokenResponse? body = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>();
+        AccessTokenResponse? body = await response.Content.ReadFromJsonAsync<AccessTokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
-        body.RefreshToken.Should().NotBeNullOrEmpty();
 
         // Verifiserer at OTP-koden er satt til IsUsed og RefreshToken er opprettet med riktige egenskaper
         using IServiceScope scope = factory.Services.CreateScope();
@@ -183,7 +182,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
             .FirstOrDefaultAsync(x => x.UserId == TestConstants.Users.ActiveUserId);
         otpCode!.IsUsed.Should().BeTrue();
         otpCode.FailedAttempts.Should().Be(0);
-
+        
         // Sikrer at vi henter siste opprettete token, tilfelle vi har seedet in flere
         RefreshToken? refreshToken = await context.Set<RefreshToken>()
             .Where(x => x.UserId == TestConstants.Users.ActiveUserId)
@@ -193,6 +192,12 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         refreshToken.IsRevoked.Should().BeFalse(); // Den skal ikke være revoked
         refreshToken.ExpiresAt.Should().BeAfter(DateTime.UtcNow); // Sikrer at RefreshToken ikke er utgått,
                                                                   // etter opprettelse
+                                                                  
+        // Sikrer at refresh token cookie ble satt i response-headeren
+        response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? cookieValues);
+        List<string> cookies = cookieValues?.ToList() ?? [];
+        cookies.Should().NotBeEmpty();
+        cookies.Any(c => c.StartsWith("refreshToken=")).Should().BeTrue();
     }
 
     /// <summary>
@@ -319,7 +324,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
 
         // Assert - Sjekker at StatusCode er 200 Ok og at det er opprettet en RefreshTokenResponse
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        RefreshTokenResponse? body = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>();
+        AccessTokenResponse? body = await response.Content.ReadFromJsonAsync<AccessTokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
     }
 }

@@ -8,6 +8,7 @@ using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
+using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
@@ -19,6 +20,7 @@ using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Resend;
@@ -80,61 +82,91 @@ public static class ServiceCollectionExtensions
 
         services.Configure<JwtSettings>(jwtSection);
         services.Configure<OtpOptions>(configuration.GetSection(OtpOptions.SectionName));
-
-        JwtSettings jwtSettings = jwtSection
-            .Get<JwtSettings>() ?? throw new InvalidOperationException("JWT-konfigurasjon mangler.");
-
+        
+        // registerer først uten konfigurasjon for å kunne fungere med testene
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(opts =>
+            .AddJwtBearer();
+        
+        
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+        .Configure<IOptions<JwtSettings>>((jwtOpts, settings) =>
+        {
+            JwtSettings jwt = settings.Value;
+
+            jwtOpts.TokenValidationParameters = new TokenValidationParameters
             {
-                opts.TokenValidationParameters = new TokenValidationParameters
+                ValidateIssuer = true,
+                ValidIssuer = jwt.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwt.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(jwt.Secret)),
+                ValidateLifetime = true,
+                // Fjerner standard 5-minutters slingringsmonn slik at tokens utløper nøyaktig når de skal
+                ClockSkew = TimeSpan.Zero
+            };
+
+            jwtOpts.Events = new JwtBearerEvents
+            {
+                OnChallenge = context =>
                 {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtSettings.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtSettings.Audience,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-                    ValidateLifetime = true,
-                    // Fjerner standard 5-minutters slingringsmonn slik at tokens utløper nøyaktig når de skal
-                    ClockSkew = TimeSpan.Zero
-                };
+                    context.HandleResponse();
 
-                opts.Events = new JwtBearerEvents
+                    string message = context.AuthenticateFailure?.Message ??
+                        ProblemDetailBuilder.GetDefaultMessage(ErrorCode.Unauthorized);
+
+                    ProblemDetail problem = ProblemDetailBuilder.Create(
+                        401, ErrorCode.Unauthorized.ToString(), message);
+
+                    context.Response.StatusCode = problem.Status;
+                    context.Response.ContentType = "application/problem+json";
+                    return context.Response.WriteAsJsonAsync(problem);
+                },
+                OnAuthenticationFailed = context =>
                 {
-                    OnChallenge = context =>
-                    {
-                        context.HandleResponse();
+                    if (context.Response.HasStarted)
+                        return Task.CompletedTask;
 
-                        string message = context.AuthenticateFailure?.Message ??
-                            ProblemDetailBuilder.GetDefaultMessage(ErrorCode.Unauthorized);
+                    ProblemDetail problem = ProblemDetailBuilder.Create(
+                        401,
+                        ErrorCode.Unauthorized.ToString(),
+                        "Autentisering feilet. Sjekk at tokenen er gyldig.");
 
-                        ProblemDetail problem = ProblemDetailBuilder.Create(401, ErrorCode.Unauthorized.ToString(), message);
-
-                        context.Response.StatusCode = problem.Status;
-                        context.Response.ContentType = "application/problem+json";
-                        return context.Response.WriteAsJsonAsync(problem);
-                    },
-                    OnAuthenticationFailed = context =>
-                    {
-                        if (context.Response.HasStarted)
-                            return Task.CompletedTask;
-
-                        ProblemDetail problem = ProblemDetailBuilder.Create(
-                            401,
-                            ErrorCode.Unauthorized.ToString(),
-                            "Autentisering feilet. Sjekk at tokenen er gyldig.");
-
-                        context.Response.StatusCode = problem.Status;
-                        context.Response.ContentType = "application/problem+json";
-                        return context.Response.WriteAsJsonAsync(problem);
-                    }
-                };
-            });
+                    context.Response.StatusCode = problem.Status;
+                    context.Response.ContentType = "application/problem+json";
+                    return context.Response.WriteAsJsonAsync(problem);
+                }
+            };
+        });
 
         services.AddAuthorization();
         services.AddScoped<IJwtService, JwtService>();
+
+        return services;
+    }
+    
+    /// <summary>
+    /// Konfigurerer CORS slik at frontend kan sende cookies og autentiserte forespørsler til backend
+    /// </summary>
+    public static IServiceCollection AddFrontendCors(this IServiceCollection services, IConfiguration configuration)
+    {
+        CorsSettings corsSettings = configuration
+                                        .GetSection(CorsSettings.SectionName)
+                                        .Get<CorsSettings>()
+                                    ?? throw new InvalidOperationException("CORS-konfigurasjon mangler.");
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(CorsSettings.PolicyName, policy =>
+            {
+                policy
+                    .WithOrigins(corsSettings.GetOrigins())
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
 
         return services;
     }

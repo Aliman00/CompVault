@@ -7,6 +7,7 @@ public static class ConfigurationValidator
         ValidateDatabase();
         ValidateJwt();
         ValidateEmail();
+        ValidateCors();
     }
 
     private static void ValidateDatabase()
@@ -49,5 +50,12 @@ public static class ConfigurationValidator
             throw new InvalidOperationException("Email:ApiKey er ikke konfigurert.");
         if (string.IsNullOrWhiteSpace(fromAddress))
             throw new InvalidOperationException("Email:FromAddress er ikke konfigurert.");
+    }
+    
+    private static void ValidateCors()
+    {
+        string? origins = Environment.GetEnvironmentVariable("Cors__AllowedOrigins");
+        if (string.IsNullOrWhiteSpace(origins))
+            throw new InvalidOperationException("Cors:AllowedOrigins er ikke konfigurert.");
     }
 }

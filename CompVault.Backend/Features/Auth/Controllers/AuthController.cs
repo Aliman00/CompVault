@@ -1,14 +1,15 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-
 using CompVault.Backend.Common.Controller;
+using CompVault.Backend.Features.Auth.DTOs;
 using CompVault.Backend.Features.Auth.Services;
+using CompVault.Backend.Infrastructure.Auth;
+using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace CompVault.Backend.Features.Auth.Controllers;
 
@@ -18,8 +19,14 @@ namespace CompVault.Backend.Features.Auth.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public sealed class AuthController(IAuthService authService) : BaseController
+public sealed class AuthController(
+    IAuthService authService,
+    IOptions<JwtSettings> jwtSettings,
+    IWebHostEnvironment environment,
+    ILogger<AuthController> logger) : BaseController
 {
+    private readonly JwtSettings _jwt = jwtSettings.Value;
+    
     /// <summary>
     /// Steg 1: Sender en engangs-kode til brukeren via valgt kanal (e-post eller SMS).
     /// Returnerer alltid 200 OK uavhengig av om e-posten er registrert — for å unngå e-postkartlegging.
@@ -49,19 +56,20 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <response code="429">For mange forsøk eller cooldown aktiv</response>
     [HttpPost(ApiRoutes.Auth.VerifyOtp)]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AccessTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public async Task<ActionResult<RefreshTokenResponse>> VerifyOtpAsync(
+    public async Task<ActionResult<AccessTokenResponse>> VerifyOtpAsync(
         [FromBody] VerifyOtpRequest request,
         CancellationToken ct)
     {
-        Result<RefreshTokenResponse> result = await authService.VerifyOtpAsync(request, ct);
+        Result<TokenDto> result = await authService.VerifyOtpAsync(request, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return Ok(result.Value);
+        Response.Cookies.Append("refreshToken", result.Value!.RefreshToken, BuildRefreshTokenCookieOptions());
+        return Ok(new AccessTokenResponse { AccessToken = result.Value.AccessToken });
     }
 
     /// <summary>Henter et nytt access token ved hjelp av refresh token.</summary>
@@ -69,18 +77,22 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <response code="401">Ugyldig eller utgått token.</response>
     [HttpPost(ApiRoutes.Auth.Refresh)]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AccessTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<RefreshTokenResponse>> RefreshTokenAsync(
-        [FromBody] RefreshTokenRequest request,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<AccessTokenResponse>> RefreshTokenAsync(CancellationToken cancellationToken)
     {
-        Result<RefreshTokenResponse> result = await authService.RefreshTokenAsync(request, cancellationToken);
+        string? refreshToken = Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(refreshToken))
+            return HandleFailure(Result.Failure(AppError.Create(ErrorCode.InvalidToken,
+                "Mangler refresh token-cookie")));
+        
+        Result<TokenDto> result = await authService.RefreshTokenAsync(refreshToken, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
-
-        return Ok(result.Value);
+        
+        Response.Cookies.Append("refreshToken", result.Value!.RefreshToken, BuildRefreshTokenCookieOptions());
+        return Ok(new AccessTokenResponse { AccessToken = result.Value.AccessToken });
     }
 
     /// <summary>Ugyldiggjør refresh token og logger brukeren ut.</summary>
@@ -91,18 +103,31 @@ public sealed class AuthController(IAuthService authService) : BaseController
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> RevokeAsync(
-        [FromBody] RevokeTokenRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> RevokeAsync(CancellationToken cancellationToken)
     {
-        string? userIdStr = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        if (!Guid.TryParse(userIdStr, out Guid currentUserId))
-            return Unauthorized();
-
-        Result result = await authService.RevokeRefreshTokenAsync(request, currentUserId, cancellationToken);
-        if (result.IsFailure)
-            return HandleFailure(result);
-
+        Guid currentUserId = User.GetUserId();
+    
+        string? refreshToken = Request.Cookies["refreshToken"];
+        if (!string.IsNullOrEmpty(refreshToken))
+        {
+            Result result = await authService.RevokeRefreshTokenAsync(refreshToken, currentUserId, cancellationToken);
+            if (result.IsFailure)
+                return HandleFailure(result);
+        }
+        else
+            logger.LogWarning("Utlogging uten refresh token-cookie for UserId: {UserId}", currentUserId);
+        
+        Response.Cookies.Delete("refreshToken");
         return NoContent();
     }
+    
+    // ====================== Private metoder ======================
+    private CookieOptions BuildRefreshTokenCookieOptions() => new()
+    {
+        HttpOnly = true,
+        Secure = !environment.IsDevelopment(), // HTTP i dev, HTTPS i prod
+        SameSite = SameSiteMode.Strict,
+        Expires = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays),
+        IsEssential = true // Denne er nødvendig for at applikasjonen skal fungere
+    };
 }
