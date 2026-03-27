@@ -55,14 +55,14 @@ public sealed class DevAuthController(
 
         IList<string> roles = await userManager.GetRolesAsync(user);
         string accessToken = jwtService.GenerateAccessToken(user, roles);
-        string refreshToken = refreshTokenService.GenerateRefreshToken();
+        _ = refreshTokenService.GenerateRefreshToken();
 
         return Ok(new AccessTokenResponse
         {
             AccessToken = accessToken,
         });
     }
-    
+
     /// <summary>
     /// Oppretter en Otp-code med 123456 slik at frontend kan kalle på VerifyOtp med kode 123456 og hoppe over
     /// sending av epost. Token og cookie opprettes korrekt
@@ -75,20 +75,20 @@ public sealed class DevAuthController(
     {
         if (!env.IsDevelopment())
             return NotFound();
-        
+
         ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
         if (user is null)
             return Unauthorized(new { message = "Ugyldig e-post eller passord." });
-        
+
         var otpCode = new OtpCode
         {
             UserId = user.Id,
             Code = OtpHasher.HashCode("123456"), // Hasher koden for lagring
             ExpiresAt = DateTime.UtcNow.AddMinutes(15),
         };
-        
+
         await otpCodeRepository.AddAsync(otpCode);
-        await otpCodeRepository.SaveChangesAsync(); 
+        await otpCodeRepository.SaveChangesAsync();
 
         return Ok();
     }

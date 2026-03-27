@@ -26,7 +26,7 @@ public sealed class AuthController(
     ILogger<AuthController> logger) : BaseController
 {
     private readonly JwtSettings _jwt = jwtSettings.Value;
-    
+
     /// <summary>
     /// Steg 1: Sender en engangs-kode til brukeren via valgt kanal (e-post eller SMS).
     /// Returnerer alltid 200 OK uavhengig av om e-posten er registrert — for å unngå e-postkartlegging.
@@ -85,12 +85,12 @@ public sealed class AuthController(
         if (string.IsNullOrEmpty(refreshToken))
             return HandleFailure(Result.Failure(AppError.Create(ErrorCode.InvalidToken,
                 "Mangler refresh token-cookie")));
-        
+
         Result<TokenDto> result = await authService.RefreshTokenAsync(refreshToken, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
-        
+
         Response.Cookies.Append("refreshToken", result.Value!.RefreshToken, BuildRefreshTokenCookieOptions());
         return Ok(new AccessTokenResponse { AccessToken = result.Value.AccessToken });
     }
@@ -106,7 +106,7 @@ public sealed class AuthController(
     public async Task<IActionResult> RevokeAsync(CancellationToken cancellationToken)
     {
         Guid currentUserId = User.GetUserId();
-    
+
         string? refreshToken = Request.Cookies["refreshToken"];
         if (!string.IsNullOrEmpty(refreshToken))
         {
@@ -116,11 +116,11 @@ public sealed class AuthController(
         }
         else
             logger.LogWarning("Utlogging uten refresh token-cookie for UserId: {UserId}", currentUserId);
-        
+
         Response.Cookies.Delete("refreshToken");
         return NoContent();
     }
-    
+
     // ====================== Private metoder ======================
     private CookieOptions BuildRefreshTokenCookieOptions() => new()
     {

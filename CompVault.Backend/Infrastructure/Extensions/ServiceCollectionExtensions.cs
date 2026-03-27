@@ -84,12 +84,12 @@ public static class ServiceCollectionExtensions
 
         services.Configure<JwtSettings>(jwtSection);
         services.Configure<OtpOptions>(configuration.GetSection(OtpOptions.SectionName));
-        
+
         // registerer først uten konfigurasjon for å kunne fungere med testene
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer();
-        
-        
+
+
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
         .Configure<IOptions<JwtSettings>>((jwtOpts, settings) =>
         {
@@ -147,7 +147,7 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    
+
     /// <summary>
     /// Konfigurerer CORS slik at frontend kan sende cookies og autentiserte forespørsler til backend
     /// </summary>

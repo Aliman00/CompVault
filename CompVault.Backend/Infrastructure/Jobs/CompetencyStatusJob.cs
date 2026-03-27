@@ -1,6 +1,5 @@
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Features.Competencies;
-using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Shared.Enums;
 
