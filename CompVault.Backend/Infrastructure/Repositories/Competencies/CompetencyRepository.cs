@@ -51,7 +51,8 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
     {
         IQueryable<Competency> query = DbSet
             .AsNoTracking()
-            .Include(c => c.ApplicationUser)
+            .Include(c => c.ApplicationUser!)
+                .ThenInclude(u => u.Department)
             .Include(c => c.CompetencyType)
             .Where(c => c.Status == CompetencyStatus.ExpiringSoon || c.Status == CompetencyStatus.Expired);
 

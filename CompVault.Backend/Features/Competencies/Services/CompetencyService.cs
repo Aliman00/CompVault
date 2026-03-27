@@ -49,11 +49,23 @@ public sealed class CompetencyService(
             return Result<CompetencyDto>.Failure(
                 AppError.NotFound($"Kompetansetype med ID '{request.CompetencyTypeId}' ble ikke funnet."));
 
+        bool userExists = await competencyRepository.ExistsAsync(c => c.UserId == request.UserId, cancellationToken);
+
+        if (!userExists)
+            return Result<CompetencyDto>.Failure(
+                AppError.NotFound($"Bruker med ID '{request.UserId}' ble ikke funnet."));
+
         // Validering av ExpiryDate basert på typens RequiresExpiration
         if (type.RequiresExpiration && request.ExpiryDate is null)
             return Result<CompetencyDto>.Failure(
                 AppError.Create(ErrorCode.Validation,
                     $"Kompetansetypen '{type.Name}' krever en utløpsdato (RequiresExpiration = true)."));
+
+        // Validering av ExpiryDate >= IssuedDate
+        if (request.ExpiryDate.HasValue && request.ExpiryDate.Value < request.IssuedDate)
+            return Result<CompetencyDto>.Failure(
+                AppError.Create(ErrorCode.Validation,
+                    "Utløpsdato (ExpiryDate) kan ikke være før utstedelsesdato (IssuedDate)."));
 
         var competency = new Competency
         {
@@ -99,10 +111,10 @@ public sealed class CompetencyService(
         }
         else if (request.Status.HasValue && competency.Status == CompetencyStatus.Revoked)
         {
-            // Endres fra Revoked til noe annet — nullstill revocation-felt
+            // Endres fra Revoked til noe annet — nullstill revocation-felt og kalkuler status basert på ExpiryDate
             competency.RevokedAt = null;
             competency.RevokedReason = null;
-            competency.Status = request.Status.Value;
+            competency.Status = CompetencyStatusCalculator.Calculate(competency.ExpiryDate);
         }
 
         if (request.ExpiryDate.HasValue)
@@ -120,6 +132,12 @@ public sealed class CompetencyService(
         // Hvis expiry date ble endret og status ikke er revoked, kalkuler ny status
         if (request.ExpiryDate.HasValue && competency.Status != CompetencyStatus.Revoked)
             competency.Status = CompetencyStatusCalculator.Calculate(competency.ExpiryDate);
+
+        // Validering av ExpiryDate >= IssuedDate ved oppdatering
+        if (competency.ExpiryDate.HasValue && competency.ExpiryDate < competency.IssuedDate)
+            return Result<CompetencyDto>.Failure(
+                AppError.Create(ErrorCode.Validation,
+                    "Utløpsdato (ExpiryDate) kan ikke være før utstedelsesdato (IssuedDate)."));
 
         await competencyRepository.UpdateAsync(competency, cancellationToken);
         await competencyRepository.SaveChangesAsync(cancellationToken);
