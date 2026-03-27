@@ -85,7 +85,12 @@ public sealed class CompetencyService(
 
         // Hent med navigasjon for å returnere fullstendig DTO
         Competency? created = await competencyRepository.GetWithDetailsAsync(competency.Id, cancellationToken);
-        return Result<CompetencyDto>.Success(CompetencyMapper.ToDto(created!));
+
+        if (created is null)
+            return Result<CompetencyDto>.Failure(
+                AppError.NotFound($"Kompetansebevis med ID '{competency.Id}' ble ikke funnet etter opprettelse."));
+
+        return Result<CompetencyDto>.Success(CompetencyMapper.ToDto(created));
     }
 
     /// <inheritdoc />
@@ -144,7 +149,12 @@ public sealed class CompetencyService(
 
         // Hent med navigasjon for å returnere fullstendig DTO
         Competency? updated = await competencyRepository.GetWithDetailsAsync(competency.Id, cancellationToken);
-        return Result<CompetencyDto>.Success(CompetencyMapper.ToDto(updated!));
+
+        if (updated is null)
+            return Result<CompetencyDto>.Failure(
+                AppError.NotFound($"Kompetansebevis med ID '{competency.Id}' ble ikke funnet etter oppdatering."));
+
+        return Result<CompetencyDto>.Success(CompetencyMapper.ToDto(updated));
     }
 
     /// <inheritdoc />

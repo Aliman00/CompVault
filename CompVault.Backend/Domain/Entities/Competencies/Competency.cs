@@ -9,7 +9,7 @@ namespace CompVault.Backend.Domain.Entities.Competencies;
 /// Konkret kobling mellom en ansatt og en kompetansetype.
 /// Representerer ett kompetansebevis med utløpsdato, status og metadata.
 /// </summary>
-public sealed class Competency
+public class Competency
 {
     // ======================== Primary Key ========================
     /// <summary>Unik ID.</summary>

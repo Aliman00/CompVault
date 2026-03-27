@@ -81,17 +81,16 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
         if (updatesList.Count == 0)
             return;
 
+        // Bygg dictionary for O(1) oppslag
+        var updateMap = updatesList.ToDictionary(u => u.Id, u => u.NewStatus);
+
         // Hent ID-ene vi skal oppdatere
-        var ids = updatesList.Select(u => u.Id).ToList();
         List<Competency> competencies = await DbSet
-            .Where(c => ids.Contains(c.Id))
+            .Where(c => updateMap.Keys.Contains(c.Id))
             .ToListAsync(cancellationToken);
 
         foreach (Competency competency in competencies)
-        {
-            (Guid id, CompetencyStatus newStatus) = updatesList.First(u => u.Id == competency.Id);
-            competency.Status = newStatus;
-        }
+            competency.Status = updateMap[competency.Id];
 
         await DbContext.SaveChangesAsync(cancellationToken);
     }

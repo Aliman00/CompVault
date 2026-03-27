@@ -6,7 +6,7 @@ namespace CompVault.Backend.Domain.Entities.Competencies;
 /// Mal for en type kompetanse, f.eks. "Førerkort klasse B" eller "HMS-kurs (årlig)".
 /// Definerer om typen krever utløpsdato og tilhører en kategori.
 /// </summary>
-public sealed class CompetencyType
+public class CompetencyType
 {
     // ======================== Primary Key ========================
     /// <summary>Unik ID.</summary>

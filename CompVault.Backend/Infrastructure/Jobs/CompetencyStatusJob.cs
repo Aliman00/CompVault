@@ -46,6 +46,7 @@ public class CompetencyStatusJob(
                 await competencyRepository.GetAllForStatusUpdateAsync(ct);
 
             var updates = new List<(Guid Id, CompetencyStatus NewStatus)>();
+            int validCount = 0;
             int expiredCount = 0;
             int expiringSoonCount = 0;
 
@@ -61,10 +62,18 @@ public class CompetencyStatusJob(
                 {
                     updates.Add((competency.Id, newStatus));
 
-                    if (newStatus == CompetencyStatus.Expired)
-                        expiredCount++;
-                    else if (newStatus == CompetencyStatus.ExpiringSoon)
-                        expiringSoonCount++;
+                    switch (newStatus)
+                    {
+                        case CompetencyStatus.Valid:
+                            validCount++;
+                            break;
+                        case CompetencyStatus.Expired:
+                            expiredCount++;
+                            break;
+                        case CompetencyStatus.ExpiringSoon:
+                            expiringSoonCount++;
+                            break;
+                    }
                 }
             }
 
@@ -72,8 +81,8 @@ public class CompetencyStatusJob(
                 await competencyRepository.UpdateStatusesAsync(updates, ct);
 
             logger.LogInformation(
-                "CompetencyStatusJob: {Total} sjekket, {Updated} oppdatert ({Expired} expired, {ExpiringSoon} expiring soon)",
-                competencies.Count, updates.Count, expiredCount, expiringSoonCount);
+                "CompetencyStatusJob: {Total} sjekket, {Updated} oppdatert ({Valid} valid, {Expired} expired, {ExpiringSoon} expiring soon)",
+                competencies.Count, updates.Count, validCount, expiredCount, expiringSoonCount);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
