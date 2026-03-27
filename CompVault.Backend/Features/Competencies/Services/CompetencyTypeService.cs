@@ -87,8 +87,16 @@ public sealed class CompetencyTypeService(
         if (request.Category is not null)
             type.Category = request.Category;
 
-        if (request.RequiresExpiration.HasValue)
+        if (request.RequiresExpiration.HasValue && request.RequiresExpiration.Value != type.RequiresExpiration)
+        {
+            bool hasActiveCompetencies = await competencyTypeRepository.HasActiveCompetenciesAsync(id, cancellationToken);
+
+            if (hasActiveCompetencies)
+                return Result<CompetencyTypeDto>.Failure(
+                    AppError.Conflict("Kan ikke endre RequiresExpiration på en kompetansetype som har aktive kompetansebevis."));
+
             type.RequiresExpiration = request.RequiresExpiration.Value;
+        }
 
         if (request.IsActive.HasValue)
             type.IsActive = request.IsActive.Value;

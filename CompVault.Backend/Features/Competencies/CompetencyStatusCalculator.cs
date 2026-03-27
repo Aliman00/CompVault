@@ -25,10 +25,12 @@ public static class CompetencyStatusCalculator
         if (expiryDate is null)
             return CompetencyStatus.Valid;
 
-        if (expiryDate < DateTime.UtcNow)
+        DateTime now = DateTime.UtcNow;
+
+        if (expiryDate < now)
             return CompetencyStatus.Expired;
 
-        if (expiryDate <= DateTime.UtcNow.AddDays(ExpiringSoonThresholdDays))
+        if (expiryDate <= now.AddDays(ExpiringSoonThresholdDays))
             return CompetencyStatus.ExpiringSoon;
 
         return CompetencyStatus.Valid;

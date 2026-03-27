@@ -14,7 +14,7 @@ public sealed class CompetencyTypeRepository(AppDbContext dbContext) : BaseRepos
     public async Task<CompetencyType?> GetByNameAsync(string name, CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()
-            .FirstOrDefaultAsync(ct => ct.Name == name, cancellationToken);
+            .FirstOrDefaultAsync(ct => ct.Name.ToLower() == name.ToLower(), cancellationToken);
 
     /// <inheritdoc />
     public async Task<bool> HasActiveCompetenciesAsync(Guid competencyTypeId, CancellationToken cancellationToken = default) =>

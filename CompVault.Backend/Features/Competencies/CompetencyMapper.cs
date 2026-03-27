@@ -27,47 +27,57 @@ public static class CompetencyMapper
     /// Konverterer en <see cref="Competency"/> til en <see cref="CompetencyDto"/>.
     /// Beregner <see cref="CompetencyDto.DaysUntilExpiry"/> basert på utløpsdato.
     /// </summary>
-    public static CompetencyDto ToDto(Competency competency) => new()
+    public static CompetencyDto ToDto(Competency competency)
     {
-        Id = competency.Id,
-        UserId = competency.UserId,
-        UserName = competency.ApplicationUser?.UserName,
-        UserFirstName = competency.ApplicationUser?.FirstName,
-        UserLastName = competency.ApplicationUser?.LastName,
-        CompetencyTypeId = competency.CompetencyTypeId,
-        CompetencyTypeName = competency.CompetencyType?.Name,
-        CompetencyTypeRequiresExpiration = competency.CompetencyType?.RequiresExpiration ?? true,
-        Status = competency.Status,
-        ExpiryDate = competency.ExpiryDate,
-        IssuedDate = competency.IssuedDate,
-        CertificateNumber = competency.CertificateNumber,
-        Notes = competency.Notes,
-        DaysUntilExpiry = competency.ExpiryDate.HasValue
-            ? (int)(competency.ExpiryDate.Value - DateTime.UtcNow).TotalDays
-            : null,
-        CreatedAt = competency.CreatedAt,
-        RevokedAt = competency.RevokedAt,
-        RevokedReason = competency.RevokedReason
-    };
+        DateTime now = DateTime.UtcNow;
+
+        return new CompetencyDto
+        {
+            Id = competency.Id,
+            UserId = competency.UserId,
+            UserName = competency.ApplicationUser?.UserName,
+            UserFirstName = competency.ApplicationUser?.FirstName,
+            UserLastName = competency.ApplicationUser?.LastName,
+            CompetencyTypeId = competency.CompetencyTypeId,
+            CompetencyTypeName = competency.CompetencyType?.Name,
+            CompetencyTypeRequiresExpiration = competency.CompetencyType?.RequiresExpiration ?? true,
+            Status = competency.Status,
+            ExpiryDate = competency.ExpiryDate,
+            IssuedDate = competency.IssuedDate,
+            CertificateNumber = competency.CertificateNumber,
+            Notes = competency.Notes,
+            DaysUntilExpiry = competency.ExpiryDate.HasValue
+                ? (int)(competency.ExpiryDate.Value - now).TotalDays
+                : null,
+            CreatedAt = competency.CreatedAt,
+            RevokedAt = competency.RevokedAt,
+            RevokedReason = competency.RevokedReason
+        };
+    }
 
     /// <summary>
     /// Konverterer en <see cref="Competency"/> til en <see cref="ExpiringCompetencyDto"/>.
     /// Inkluderer avdelingsinfo og beregnet dager til utløp.
     /// </summary>
-    public static ExpiringCompetencyDto ToExpiringDto(Competency competency) => new()
+    public static ExpiringCompetencyDto ToExpiringDto(Competency competency)
     {
-        Id = competency.Id,
-        CompetencyTypeName = competency.CompetencyType?.Name,
-        Status = competency.Status,
-        UserId = competency.UserId,
-        UserName = competency.ApplicationUser?.UserName,
-        UserFirstName = competency.ApplicationUser?.FirstName,
-        UserLastName = competency.ApplicationUser?.LastName,
-        ExpiryDate = competency.ExpiryDate,
-        DaysUntilExpiry = competency.ExpiryDate.HasValue
-            ? (int)(competency.ExpiryDate.Value - DateTime.UtcNow).TotalDays
-            : null,
-        DepartmentId = competency.ApplicationUser?.DepartmentId,
-        DepartmentName = competency.ApplicationUser?.Department?.Name
-    };
+        DateTime now = DateTime.UtcNow;
+
+        return new ExpiringCompetencyDto
+        {
+            Id = competency.Id,
+            CompetencyTypeName = competency.CompetencyType?.Name,
+            Status = competency.Status,
+            UserId = competency.UserId,
+            UserName = competency.ApplicationUser?.UserName,
+            UserFirstName = competency.ApplicationUser?.FirstName,
+            UserLastName = competency.ApplicationUser?.LastName,
+            ExpiryDate = competency.ExpiryDate,
+            DaysUntilExpiry = competency.ExpiryDate.HasValue
+                ? (int)(competency.ExpiryDate.Value - now).TotalDays
+                : null,
+            DepartmentId = competency.ApplicationUser?.DepartmentId,
+            DepartmentName = competency.ApplicationUser?.Department?.Name
+        };
+    }
 }
