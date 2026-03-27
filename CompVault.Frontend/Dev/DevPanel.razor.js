@@ -1,6 +1,6 @@
 ﻿export function submitLoginForm(email) {
     const form = document.getElementById('dev-login-form');
-    form.querySelector('input[name="Request.Email"]').value = email;
+    form.querySelector('input[name="OtpRequest.Email"]').value = email;
     form.submit();
 }
 

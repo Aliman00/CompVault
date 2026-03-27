@@ -1,4 +1,7 @@
-﻿using CompVault.Frontend.Common.Configuration;
+﻿using System.Security.Claims;
+
+using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 
@@ -10,75 +13,81 @@ namespace CompVault.Frontend.Common.Http;
 /// </summary>
 public class AccessTokenHandler(
     IHttpContextAccessor httpContextAccessor,
-    IHttpClientFactory httpClientFactory) : DelegatingHandler
-{
+    IHttpClientFactory httpClientFactory,
+    IWebHostEnvironment env,
+    AuthSettings authSettings) : DelegatingHandler
+{   
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
+        // Kloner forespørselen før den blir konsumert i sending
+        HttpRequestMessage clonedRequest = await CloneAsync(request);
+        
         SetAuthHeader(request);
         HttpResponseMessage response = await base.SendAsync(request, ct);
-
+        
+        // Får vi Unathorized her, token er utgått
         if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
             return response;
-
-        // Token er utgått — forsøk stille refresh
-        bool refreshed = await TryRefreshAsync(ct);
-        if (!refreshed)
-            return response; // Sender 401 videre
-
-        // Prøv på nytt med nytt token
-        var retry = await CloneAsync(request);
-        SetAuthHeader(retry);
-        return await base.SendAsync(retry, ct);
+        
+        // Bruker refresh fra cookie til å autoriseres på nytt - failer det så sender vi 401 videre til kalleren
+        bool refreshedTokens = await TryRefreshAsync(ct);
+        if (!refreshedTokens)
+            return response; 
+        
+        SetAuthHeader(clonedRequest);
+        return await base.SendAsync(clonedRequest, ct);
     }
-
+    
+    // Setter en Bearer header
     private void SetAuthHeader(HttpRequestMessage request)
     {
-        string? accessToken = httpContextAccessor.HttpContext?.User
-            .FindFirst("access_token")?.Value;
+        string? accessToken = httpContextAccessor.HttpContext?.User.FindFirst("access_token")?.Value;
 
         if (!string.IsNullOrEmpty(accessToken))
             request.Headers.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
     }
-
+    
+    
     private async Task<bool> TryRefreshAsync(CancellationToken ct)
     {
-        var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext is null) return false;
-
-        string? refreshToken = httpContext.Request.Cookies["refreshToken"];
-        if (string.IsNullOrEmpty(refreshToken)) return false;
-
-        var client = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
+        HttpContext? httpContext = httpContextAccessor.HttpContext;
+        if (httpContext == null) 
+            return false;
+        
+        string? refreshToken = httpContext.GetRefreshTokenCookie();
+        if (string.IsNullOrEmpty(refreshToken))
+            return false;
+        
+        // Oppreter en klient som ikke har AccessTokenHandler påkoblet
+        HttpClient client = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
 
         try
         {
+            // En request for å fornye tokens
             var request = new RefreshTokenRequest { RefreshToken = refreshToken };
-            var response = await client.PostAsJsonAsync(ApiRoutes.Auth.RefreshFull, request, ct);
+            HttpResponseMessage response = await client.PostAsJsonAsync(ApiRoutes.Auth.RefreshFull, request, 
+                ct);
 
-            if (!response.IsSuccessStatusCode) return false;
-
-            var tokenResponse = await response.Content
+            if (!response.IsSuccessStatusCode) 
+                return false;
+            
+            RefreshTokenResponse? tokenResponse = await response.Content
                 .ReadFromJsonAsync<RefreshTokenResponse>(ct);
-
-            if (tokenResponse is null) return false;
-
-            // Oppdater claimet i HttpContext.User direkte
-            // slik at neste SetAuthHeader-kall bruker det nye tokenet
-            var identity = (System.Security.Claims.ClaimsIdentity)httpContext.User.Identity!;
-            var gammelt = identity.FindFirst("access_token");
-            if (gammelt is not null) identity.RemoveClaim(gammelt);
-            identity.AddClaim(new System.Security.Claims.Claim("access_token", tokenResponse.AccessToken));
-
-            // Oppdater refreshToken-cookien i responsen
-            httpContext.Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken,
-                new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    IsEssential = true
-                });
+            if (tokenResponse == null) 
+                return false;
+            
+            // Sjekker at ClaimsIdentity ikke er null og at det er riktig tyype
+            if (httpContext.User.Identity is not ClaimsIdentity identity)
+                return false;
+            
+            // Bytter ut gammel claim med ny
+            Claim? oldClaim = identity.FindFirst("access_token");
+            if (oldClaim != null) 
+                identity.RemoveClaim(oldClaim);
+            identity.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
+            
+            httpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
 
             return true;
         }
@@ -87,21 +96,23 @@ public class AccessTokenHandler(
             return false;
         }
     }
-
+    
+    // Kloner foprespørselen siden den er single-use og blir konsumert
     private static async Task<HttpRequestMessage> CloneAsync(HttpRequestMessage original)
     {
         var clone = new HttpRequestMessage(original.Method, original.RequestUri);
-        foreach (var header in original.Headers)
+        foreach (KeyValuePair<string, IEnumerable<string>> header in original.Headers)
         {
             clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
-
+        
+        // Hvis forespørselen har en body med innhold så kloner vi den og
         if (original.Content is null) 
             return clone;
 
         byte[] body = await original.Content.ReadAsByteArrayAsync();
         clone.Content = new ByteArrayContent(body);
-        foreach (var header in original.Content.Headers)
+        foreach (KeyValuePair<string, IEnumerable<string>> header in original.Content.Headers)
         {
             clone.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }

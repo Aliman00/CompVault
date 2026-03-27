@@ -1,80 +1,80 @@
 ﻿using System.Security.Claims;
 using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using Microsoft.AspNetCore.Authentication.Cookies;
 namespace CompVault.Frontend.Common.Http;
 
 /// <summary>
-/// Håndterer token-refresh og brukervalidering via cookie-middleware
+/// Håndterer token-refresh og brukervalidering via cookie-middleware som kjøres på hver forespørsel
 /// </summary>
-public class CookieValidationEvents(AuthSettings settings, IWebHostEnvironment env) 
+public class CookieValidationEvents(AuthSettings authSettings, IWebHostEnvironment env) 
     : CookieAuthenticationEvents
-{
+{   
     public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
     {
+        // Vi gjør en sjekk for å sjekke sist gang vi validerte at brukeren har gydlig refresh token.
+        // En egenskap som vi alltid setter etter vi har refreshet token
         string? lastCheckedRaw = context.Properties.GetParameter<string>("LastValidated");
         if (lastCheckedRaw != null &&
             DateTimeOffset.TryParse(lastCheckedRaw, out DateTimeOffset lastChecked) &&
-            lastChecked > DateTimeOffset.UtcNow.AddMinutes(-settings.ValidationIntervalMinutes))
-        {
+            lastChecked > DateTimeOffset.UtcNow.AddMinutes(-authSettings.ValidationIntervalMinutes))
             return;
-        }
-
-        string? refreshToken = context.HttpContext.Request.Cookies["refreshToken"];
+        
+        string? refreshToken = context.HttpContext.GetRefreshTokenCookie();
         if (string.IsNullOrEmpty(refreshToken))
         {
             context.RejectPrincipal();
             return;
         }
 
-        // Sett LastValidated OPTIMISTISK FØR refresh-kallet
-        // Dette hindrer at parallelle requests alle prøver å refreshe samtidig
+        // Oppdaterer LastValidated optimistisk før selve kallet. Hindrer at flere requester som kjører parallelt
+        // prøver å refreshe samtidig
         context.Properties.SetParameter("LastValidated", DateTimeOffset.UtcNow.ToString("O"));
         context.ShouldRenew = true;
-
+        
+        // Oppretter en klient med AuthClienten uten påkoblet AccessTokenHandler
         HttpClient client = context.HttpContext.RequestServices
             .GetRequiredService<IHttpClientFactory>()
             .CreateClient(BackendApiSettings.AuthClientName);
 
         try
         {
-            var request = new RefreshTokenRequest { RefreshToken = refreshToken };
-            HttpResponseMessage response = await client.PostAsJsonAsync(
-                ApiRoutes.Auth.RefreshFull, request, context.HttpContext.RequestAborted);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                // Kun kast brukeren ut hvis tokenet er faktisk ugyldig — ikke ved race condition
-                // Vi kan ikke skille disse to tilfellene sikkert, så vi bruker fail open
+            var refreshTokenRequest = new RefreshTokenRequest { RefreshToken = refreshToken };
+            HttpResponseMessage refreshTokenResponse = await client.PostAsJsonAsync(
+                ApiRoutes.Auth.RefreshFull, refreshTokenRequest, context.HttpContext.RequestAborted);
+            
+            // Vi feiler åpent hvis tokenet er ugydlig - Hvis to forespørsler sendes akkurat samtidig
+            // (feks ved oppstart) så burde ikke den ene forespørslen som sendt sist og failet, revoke token
+            // som ble satt i den første forespørselen
+            if (!refreshTokenResponse.IsSuccessStatusCode)
                 return;
-            }
-
-            RefreshTokenResponse? tokenResponse = await response.Content
+            
+            RefreshTokenResponse? tokenResponse = await refreshTokenResponse.Content
                 .ReadFromJsonAsync<RefreshTokenResponse>(context.HttpContext.RequestAborted);
 
-            if (tokenResponse is null)
+            if (tokenResponse == null)
                 return;
-
-            var identity = (ClaimsIdentity)context.Principal!.Identity!;
-            var gammeltClaim = identity.FindFirst("access_token");
-            if (gammeltClaim is not null) identity.RemoveClaim(gammeltClaim);
+            
+            // Er Identity null og ikke et ClaimsIdentity-objekt, brukeren er ikke autentisert lenger
+            if (context.Principal?.Identity is not ClaimsIdentity identity)
+            {
+                context.RejectPrincipal();
+                return;
+            }
+            
+            // Bytter ut gammel claim med ny
+            Claim? oldClaim = identity.FindFirst("access_token");
+            if (oldClaim != null) 
+                identity.RemoveClaim(oldClaim);
             identity.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
-
-            context.HttpContext.Response.Cookies.Append("refreshToken",
-                tokenResponse.RefreshToken, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = !env.IsDevelopment(),
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTimeOffset.UtcNow.AddDays(settings.CookieExpireDays),
-                    IsEssential = true
-                });
+            
+            context.HttpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
         }
         catch (Exception)
         {
-            // Fail open — backend er nede
-            return;
+            // Feiler åpent hvis backend er nede
         }
     }
 }

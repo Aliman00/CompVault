@@ -20,8 +20,8 @@
 @* En skjult form som gjør at vi kan sette auth-cookie ved å poste til en Razor Page, som lagrer token i nettleseren *@
 <form id="dev-login-form" method="post" action="/login-callback">
     <AntiforgeryToken/>
-    <input type="hidden" name="Request.Email"/>
-    <input type="hidden" name="Request.OtpCode" value="123456"/>
+    <input type="hidden" name="OtpRequest.Email"/>
+    <input type="hidden" name="OtpRequest.OtpCode" value="123456"/>
 </form>
 
 @* Skjult form for å slette auth-cookie fra nettleseren *@
@@ -73,6 +73,7 @@
     }
 
 </MudContainer>
+
 
 @code {
     

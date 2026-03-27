@@ -1,50 +1,49 @@
 ﻿using System.Security.Claims;
-
 using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Extensions;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
-
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-
 namespace CompVault.Frontend.Pages;
 
-public class LoginCallback(IAuthService authService, AuthSettings authSettings) : PageModel
+/// <summary>
+/// Modellen til en SSR-side som lar oss legge til token i nettlesere - JS-scriptet submitter som gjør at
+/// OnPostAsync blir kjørt
+/// </summary>
+public class LoginCallback(IAuthService authService, AuthSettings authSettings, IWebHostEnvironment env) : PageModel
 {
-    [BindProperty] public VerifyOtpRequest Request { get; set; } = new();
-
+    [BindProperty] 
+    public VerifyOtpRequest OtpRequest { get; set; } = new();
+    
+    /// <summary>
+    /// Sender VerifyOtpRequest til backend og legger til en cookie i nettleseren.
+    /// Redirecter til Login-siden hvis noe failer TODO: Må implementeres i Login-page
+    /// </summary>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)
             return LocalRedirect("/login?error=invalid");
 
-        Result<(ClaimsPrincipal Principal, RefreshTokenResponse Tokens)> result =
-            await authService.VerifyOtpAsync(Request, CancellationToken.None);
+        Result<(ClaimsPrincipal Principal, RefreshTokenResponse Tokens)> verifyOtpResult =
+            await authService.VerifyOtpAsync(OtpRequest, HttpContext.RequestAborted);
 
-        if (result.IsFailure)
+        if (verifyOtpResult.IsFailure)
             return LocalRedirect("/login?error=invalid");
 
-        var (principal, tokens) = result.Value;
-
-        var identity = (ClaimsIdentity)principal.Identity!;
+        var (principal, tokens) = verifyOtpResult.Value;
+        
+        if (principal.Identity is not ClaimsIdentity identity)
+            return LocalRedirect("/login?error=invalid");
+        
+        // Setter opp auth-cookie først, deretter RefreshToken-cookie
         identity.AddClaim(new Claim("access_token", tokens.AccessToken));
-
-        // Sett auth-cookie FØRST
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-
-        // Sett refreshToken-cookie ETTERPÅ
-        HttpContext.Response.Cookies.Append("refreshToken", tokens.RefreshToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = !HttpContext.RequestServices
-                .GetRequiredService<IWebHostEnvironment>().IsDevelopment(),
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddDays(authSettings.CookieExpireDays),
-            IsEssential = true
-        });
+        
+        HttpContext.AppendRefreshTokenCookie(tokens.RefreshToken, authSettings, env);
 
         return LocalRedirect("/");
     }
