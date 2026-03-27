@@ -1,7 +1,6 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Configuration;
-using CompVault.Backend.Features.Auth.DTOs;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
@@ -51,9 +50,9 @@ public class AuthServiceVerifyOtpAsyncTests
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
         _unitOfWorkMock
             .Setup(x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<TokenDto>>>>(),
+                It.IsAny<Func<Task<Result<RefreshTokenResponse>>>>(),
                 It.IsAny<CancellationToken>()))
-            .Returns<Func<Task<Result<TokenDto>>>,
+            .Returns<Func<Task<Result<RefreshTokenResponse>>>,
                 CancellationToken>((operation, _) => operation());
 
         // Oppretter configuration OtpOptions - trenger ingen delay i tester
@@ -122,7 +121,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync(Result<string>.Success(refreshToken));
 
         // Act
-        Result<TokenDto> result = await _sut.VerifyOtpAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.VerifyOtpAsync(request);
 
         // Assert - Sjekker at Result er Success og at LoginResponse inneholder korrekte verdier
         result.IsSuccess.Should().BeTrue();
@@ -161,7 +160,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        Result<TokenDto> result = await _sut.VerifyOtpAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.VerifyOtpAsync(request);
 
         // Assert - Sjekker at Result er Failure og at error-koden er OtpInvalidOrExpired
         result.IsFailure.Should().BeTrue();
@@ -172,7 +171,7 @@ public class AuthServiceVerifyOtpAsyncTests
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(It.IsAny<Guid>(), request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Never);
         _unitOfWorkMock.Verify(x => x.ExecuteInTransactionAsync(
-            It.IsAny<Func<Task<Result<TokenDto>>>>(),
+            It.IsAny<Func<Task<Result<RefreshTokenResponse>>>>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -201,7 +200,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync(Result<OtpCode>.Failure(otpCodeError));
 
         // Act
-        Result<TokenDto> result = await _sut.VerifyOtpAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.VerifyOtpAsync(request);
 
         // Assert - Sjekker at Result er Failure og at error-koden er OtpMaxAttemptsExceeded
         result.IsFailure.Should().BeTrue();
@@ -213,7 +212,7 @@ public class AuthServiceVerifyOtpAsyncTests
             It.IsAny<CancellationToken>()), Times.Once);
         _userManagerMock.Verify(x => x.GetRolesAsync(user), Times.Never);
         _unitOfWorkMock.Verify(x => x.ExecuteInTransactionAsync(
-            It.IsAny<Func<Task<Result<TokenDto>>>>(), It.IsAny<CancellationToken>()),
+            It.IsAny<Func<Task<Result<RefreshTokenResponse>>>>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -248,7 +247,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync(Result<string>.Failure(refreshTokenError));
 
         // Act
-        Result<TokenDto> result = await _sut.VerifyOtpAsync(request);
+        Result<RefreshTokenResponse> result = await _sut.VerifyOtpAsync(request);
 
         // Assert - Sjekker at Result er Failure og error-koden er InternalError
         result.IsFailure.Should().BeTrue();

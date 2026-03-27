@@ -11,7 +11,8 @@ namespace CompVault.Frontend.Features.Auth.Services;
 
 public class AuthService(
     ILogger<AuthService> logger, 
-    IHttpClientFactory httpClientFactory) : IAuthService
+    IHttpClientFactory httpClientFactory,
+    IHttpContextAccessor  httpContextAccessor) : IAuthService
 {
     /// <summary>
     /// HttpClient mot backend
@@ -45,35 +46,36 @@ public class AuthService(
     }
     
     /// <inheritdoc />
-    public async Task<Result<ClaimsPrincipal>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct)
+    public async Task<Result<(ClaimsPrincipal, RefreshTokenResponse)>> VerifyOtpAsync(VerifyOtpRequest request, 
+        CancellationToken ct)
     {
         try
         {
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request, ct);
 
-            Result<AccessTokenResponse> tokenResult =
-                await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
+            Result<RefreshTokenResponse> tokenResult =
+                await HttpClientExtensions.ParseResponseAsync<RefreshTokenResponse>(response, ct);
 
             if (tokenResult.IsFailure)
-                return Result<ClaimsPrincipal>.Failure(tokenResult.Error!);
+                return Result<(ClaimsPrincipal, RefreshTokenResponse)>.Failure(tokenResult.Error!);
             
             // Oppretter en ClaimsPrincipal med alle claimene som vi bruker til å sette cookie i nettleseren
             IEnumerable<Claim> claims = ParseClaimsFromJwt(tokenResult.Value!.AccessToken);
             var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
             
-            return Result<ClaimsPrincipal>.Success(principal);
+            return Result<(ClaimsPrincipal, RefreshTokenResponse)>.Success((principal, tokenResult.Value!));
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved OTP-verifisering for {Email}", request.Email);
-            return Result<ClaimsPrincipal>.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<(ClaimsPrincipal, RefreshTokenResponse)>.Failure(AppError.Create(ErrorCode.NetworkError, 
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved OTP-verifisering for {Email}", request.Email);
-            return Result<ClaimsPrincipal>.Failure(AppError.Create(ErrorCode.Unknown, 
+            return Result<(ClaimsPrincipal, RefreshTokenResponse)>.Failure(AppError.Create(ErrorCode.Unknown, 
                 "Noe gikk galt. Prøv igjen."));
         }
     }
@@ -84,8 +86,17 @@ public class AuthService(
     {
         try
         {
-            HttpResponseMessage response = await _httpClient.PostAsync(ApiRoutes.Auth.RevokeFull, null, ct);
+            var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Auth.RevokeFull);
+            
+            // Forwarder refreshToken-cookien manuelt
+            string? refreshToken = httpContextAccessor.HttpContext?
+                .Request.Cookies["refreshToken"];
+            if (!string.IsNullOrEmpty(refreshToken))
+                request.Headers.Add("Cookie", $"refreshToken={refreshToken}");
+            
+            HttpResponseMessage response = await _httpClient.SendAsync(request, ct);
             Result revokeResult = await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);
+
             if (revokeResult.IsFailure)
                 logger.LogWarning("Token-revokering feilet: [{ErrorCode}] {Message}",
                     revokeResult.Error!.Code, revokeResult.Error.Message);

@@ -13,6 +13,7 @@ public class LogoutCallback : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        HttpContext.Response.Cookies.Delete("refreshToken");
         return LocalRedirect("/login");
     }
 }

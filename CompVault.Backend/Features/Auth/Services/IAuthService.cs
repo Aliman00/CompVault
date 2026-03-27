@@ -1,4 +1,3 @@
-using CompVault.Backend.Features.Auth.DTOs;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
@@ -22,13 +21,12 @@ public interface IAuthService
     /// Returnerer Failure hvis brukeren ikke eksisterer, feil kode eller ingen aktiv kode
     /// Bruker StopWatch for å sikre at metoden bruker like lang tid om brukeren eksisterer eller ikke
     /// </summary>
-    Task<Result<TokenDto>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default);
+    Task<Result<RefreshTokenResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Utsteder et nytt access token ved hjelp av et gyldig refresh token.
     /// </summary>
-    Task<Result<TokenDto>> RefreshTokenAsync(string refreshToken,
-        CancellationToken ct = default);
+    Task<Result<RefreshTokenResponse>> RefreshTokenAsync(string refreshToken, CancellationToken ct = default);
 
     /// <summary>
     /// Ugyldiggjør et refresh token — i praksis logger brukeren ut.
