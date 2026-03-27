@@ -1,3 +1,4 @@
+using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Features.Competencies;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
@@ -13,7 +14,7 @@ public class CompetencyStatusJob(
     IServiceScopeFactory scopeFactory,
     ILogger<CompetencyStatusJob> logger) : BackgroundService
 {
-    /// <summary>Hvor ofte jobben kjører.</summary>
+    // Hvor ofte jobben kjører.
     private static readonly TimeSpan Interval = TimeSpan.FromHours(24);
 
     /// <inheritdoc />
@@ -39,7 +40,7 @@ public class CompetencyStatusJob(
 
         try
         {
-            IReadOnlyList<Domain.Entities.Competencies.Competency> competencies =
+            IReadOnlyList<Competency> competencies =
                 await competencyRepository.GetAllForStatusUpdateAsync(ct);
 
             var updates = new List<(Guid Id, CompetencyStatus NewStatus)>();
@@ -47,7 +48,7 @@ public class CompetencyStatusJob(
             int expiredCount = 0;
             int expiringSoonCount = 0;
 
-            foreach (Domain.Entities.Competencies.Competency competency in competencies)
+            foreach (Competency competency in competencies)
             {
                 // Hent typens RequiresExpiration for å avgjøre om utløpsdato er relevant
                 bool requiresExpiration = competency.CompetencyType?.RequiresExpiration ?? true;

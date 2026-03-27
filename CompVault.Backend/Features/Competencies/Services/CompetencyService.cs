@@ -85,11 +85,8 @@ public sealed class CompetencyService(
         await competencyRepository.SaveChangesAsync(cancellationToken);
 
         // Hent med navigasjon for å returnere fullstendig DTO
-        Competency? created = await competencyRepository.GetWithDetailsAsync(competency.Id, cancellationToken);
-
-        if (created is null)
-            return Result<CompetencyDto>.Failure(
-                AppError.NotFound($"Kompetansebevis med ID '{competency.Id}' ble ikke funnet etter opprettelse."));
+        Competency created = await competencyRepository.GetWithDetailsAsync(competency.Id, cancellationToken)
+            ?? throw new InvalidOperationException($"Kompetansebevis med ID '{competency.Id}' ble ikke funnet etter opprettelse.");
 
         return Result<CompetencyDto>.Success(CompetencyMapper.ToDto(created));
     }
@@ -97,7 +94,7 @@ public sealed class CompetencyService(
     /// <inheritdoc />
     public async Task<Result<CompetencyDto>> UpdateAsync(Guid id, UpdateCompetencyRequest request, CancellationToken cancellationToken = default)
     {
-        Competency? competency = await competencyRepository.GetWithDetailsAsync(id, cancellationToken);
+        Competency? competency = await competencyRepository.GetByIdAsync(id, cancellationToken);
 
         if (competency is null)
             return Result<CompetencyDto>.Failure(
@@ -134,7 +131,9 @@ public sealed class CompetencyService(
             competency.RevokedReason = null;
         }
 
-        if (request.ExpiryDate.HasValue)
+        if (request.ExpiryDate.HasValue && competency.CompetencyType?.RequiresExpiration == false)
+            competency.ExpiryDate = null;
+        else if (request.ExpiryDate.HasValue)
             competency.ExpiryDate = request.ExpiryDate.Value;
 
         if (request.IssuedDate.HasValue)

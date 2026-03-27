@@ -17,7 +17,7 @@ public sealed class CompetencyTypeRepository(AppDbContext dbContext) : BaseRepos
             .FirstOrDefaultAsync(ct => string.Equals(ct.Name, name, StringComparison.OrdinalIgnoreCase), cancellationToken);
 
     /// <inheritdoc />
-    public async Task<bool> HasActiveCompetenciesAsync(Guid competencyTypeId, CancellationToken cancellationToken = default) =>
+    public async Task<bool> HasCompetenciesAsync(Guid competencyTypeId, CancellationToken cancellationToken = default) =>
         await DbContext.Set<Competency>()
             .AnyAsync(c => c.CompetencyTypeId == competencyTypeId, cancellationToken);
 

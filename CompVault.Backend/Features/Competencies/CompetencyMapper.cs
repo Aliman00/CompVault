@@ -29,7 +29,7 @@ public static class CompetencyMapper
     /// </summary>
     public static CompetencyDto ToDto(Competency competency)
     {
-        DateTime now = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
 
         return new CompetencyDto
         {
@@ -59,7 +59,7 @@ public static class CompetencyMapper
     /// </summary>
     public static ExpiringCompetencyDto ToExpiringDto(Competency competency)
     {
-        DateTime now = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
 
         return new ExpiringCompetencyDto
         {

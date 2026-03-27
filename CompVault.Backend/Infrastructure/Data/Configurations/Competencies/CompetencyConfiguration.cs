@@ -21,7 +21,6 @@ internal sealed class CompetencyConfiguration : IEntityTypeConfiguration<Compete
             .HasConversion<string>()
             .HasMaxLength(20);
 
-        builder.Property(c => c.ExpiryDate);
         builder.Property(c => c.IssuedDate).IsRequired();
         builder.Property(c => c.CertificateNumber).HasMaxLength(100);
         builder.Property(c => c.CreatedAt).IsRequired();

@@ -88,7 +88,7 @@ public sealed class CompetencyTypeService(
 
         if (request.RequiresExpiration.HasValue && request.RequiresExpiration.Value != type.RequiresExpiration)
         {
-            bool hasActiveCompetencies = await competencyTypeRepository.HasActiveCompetenciesAsync(id, cancellationToken);
+            bool hasActiveCompetencies = await competencyTypeRepository.HasCompetenciesAsync(id, cancellationToken);
 
             if (hasActiveCompetencies)
                 return Result<CompetencyTypeDto>.Failure(
@@ -115,7 +115,7 @@ public sealed class CompetencyTypeService(
             return Result<bool>.Failure(
                 AppError.NotFound($"Kompetansetype med ID '{id}' ble ikke funnet."));
 
-        bool hasActiveCompetencies = await competencyTypeRepository.HasActiveCompetenciesAsync(id, cancellationToken);
+        bool hasActiveCompetencies = await competencyTypeRepository.HasCompetenciesAsync(id, cancellationToken);
 
         if (hasActiveCompetencies)
             return Result<bool>.Failure(

@@ -27,8 +27,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
-
-
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
