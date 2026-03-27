@@ -5,6 +5,7 @@ using CompVault.Backend.Common.Responses;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
+using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
@@ -14,6 +15,7 @@ using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.Jobs;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.Result;
@@ -182,6 +184,9 @@ public static class ServiceCollectionExtensions
         // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
         services.AddHostedService<TokenCleanupJob>();
 
+        // Beregner status på kompetansebevis én gang i døgnet
+        services.AddHostedService<CompetencyStatusJob>();
+
         return services;
     }
 
@@ -215,6 +220,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+        services.AddScoped<ICompetencyTypeRepository, CompetencyTypeRepository>();
+        services.AddScoped<ICompetencyRepository, CompetencyRepository>();
         services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
@@ -229,6 +236,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
+        services.AddScoped<ICompetencyTypeService, CompetencyTypeService>();
+        services.AddScoped<ICompetencyService, CompetencyService>();
         services.AddScoped<IOtpCodeService, OtpCodeService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 

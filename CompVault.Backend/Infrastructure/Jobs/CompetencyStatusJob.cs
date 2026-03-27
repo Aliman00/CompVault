@@ -1,0 +1,83 @@
+using CompVault.Backend.Features.Competencies;
+using CompVault.Backend.Features.Competencies.Services;
+using CompVault.Backend.Infrastructure.Repositories.Competencies;
+using CompVault.Shared.Enums;
+
+namespace CompVault.Backend.Infrastructure.Jobs;
+
+/// <summary>
+/// Bakgrunnsjobb som oppdaterer status på alle kompetansebevis én gang i døgnet.
+/// Berører aldri bevis med status Revoked — disse oppdateres kun manuelt.
+/// </summary>
+public class CompetencyStatusJob(
+    IServiceScopeFactory scopeFactory,
+    ILogger<CompetencyStatusJob> logger) : BackgroundService
+{
+    /// <summary>Hvor ofte jobben kjører.</summary>
+    private static readonly TimeSpan Interval = TimeSpan.FromHours(24);
+
+    /// <inheritdoc />
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        logger.LogInformation("CompetencyStatusJob startet");
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // Venter til neste kjøring før vi starter — unngår at jobben kjører umiddelbart ved oppstart
+            await Task.Delay(Interval, stoppingToken);
+
+            await RunStatusUpdateAsync(stoppingToken);
+        }
+    }
+
+    /// <summary>
+    /// Utfører statusoppdatering. Bruker et nytt scope siden BackgroundService er singleton
+    /// mens repository er scoped.
+    /// </summary>
+    private async Task RunStatusUpdateAsync(CancellationToken ct)
+    {
+        await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+
+        ICompetencyRepository competencyRepository = scope.ServiceProvider.GetRequiredService<ICompetencyRepository>();
+
+        try
+        {
+            IReadOnlyList<Domain.Entities.Competencies.Competency> competencies =
+                await competencyRepository.GetAllForStatusUpdateAsync(ct);
+
+            var updates = new List<(Guid Id, CompetencyStatus NewStatus)>();
+            int expiredCount = 0;
+            int expiringSoonCount = 0;
+
+            foreach (Domain.Entities.Competencies.Competency competency in competencies)
+            {
+                // Hent typens RequiresExpiration for å avgjøre om utløpsdato er relevant
+                bool requiresExpiration = competency.CompetencyType?.RequiresExpiration ?? true;
+                DateTime? expiryDate = requiresExpiration ? competency.ExpiryDate : null;
+
+                CompetencyStatus newStatus = CompetencyStatusCalculator.Calculate(expiryDate);
+
+                if (competency.Status != newStatus)
+                {
+                    updates.Add((competency.Id, newStatus));
+
+                    if (newStatus == CompetencyStatus.Expired)
+                        expiredCount++;
+                    else if (newStatus == CompetencyStatus.ExpiringSoon)
+                        expiringSoonCount++;
+                }
+            }
+
+            if (updates.Count > 0)
+                await competencyRepository.UpdateStatusesAsync(updates, ct);
+
+            logger.LogInformation(
+                "CompetencyStatusJob: {Total} sjekket, {Updated} oppdatert ({Expired} expired, {ExpiringSoon} expiring soon)",
+                competencies.Count, updates.Count, expiredCount, expiringSoonCount);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "CompetencyStatusJob: feil under statusoppdatering av kompetansebevis");
+        }
+    }
+}
