@@ -51,6 +51,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
     {
         IQueryable<Competency> query = DbSet
             .AsNoTracking()
+            // ! nødvendig — EF Core garanterer at navigasjonsegenskapen er lastet etter Include
             .Include(c => c.ApplicationUser!)
                 .ThenInclude(u => u.Department)
             .Include(c => c.CompetencyType)
@@ -60,6 +61,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
             query = query.Where(c => c.UserId == userId.Value);
 
         if (departmentId.HasValue)
+            // ! nødvendig — Include garanterer at ApplicationUser er lastet
             query = query.Where(c => c.ApplicationUser!.DepartmentId == departmentId.Value);
 
         return await query.ToListAsync(cancellationToken);

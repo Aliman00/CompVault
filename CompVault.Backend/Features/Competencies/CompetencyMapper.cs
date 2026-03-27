@@ -46,9 +46,7 @@ public static class CompetencyMapper
             IssuedDate = competency.IssuedDate,
             CertificateNumber = competency.CertificateNumber,
             Notes = competency.Notes,
-            DaysUntilExpiry = competency.ExpiryDate.HasValue
-                ? (int)(competency.ExpiryDate.Value - now).TotalDays
-                : null,
+            DaysUntilExpiry = CalculateDaysUntilExpiry(competency.ExpiryDate, now),
             CreatedAt = competency.CreatedAt,
             RevokedAt = competency.RevokedAt,
             RevokedReason = competency.RevokedReason
@@ -73,11 +71,12 @@ public static class CompetencyMapper
             UserFirstName = competency.ApplicationUser?.FirstName,
             UserLastName = competency.ApplicationUser?.LastName,
             ExpiryDate = competency.ExpiryDate,
-            DaysUntilExpiry = competency.ExpiryDate.HasValue
-                ? (int)(competency.ExpiryDate.Value - now).TotalDays
-                : null,
+            DaysUntilExpiry = CalculateDaysUntilExpiry(competency.ExpiryDate, now),
             DepartmentId = competency.ApplicationUser?.DepartmentId,
             DepartmentName = competency.ApplicationUser?.Department?.Name
         };
     }
+
+    private static int? CalculateDaysUntilExpiry(DateTime? expiryDate, DateTime now) =>
+        expiryDate.HasValue ? (int)(expiryDate.Value - now).TotalDays : null;
 }

@@ -16,7 +16,7 @@ namespace CompVault.Backend.Features.Competencies.Controllers;
 /// Skrivende operasjoner krever Admin-rolle.
 /// </summary>
 [ApiController]
-[Route("api/competencies")]
+[Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 public sealed class CompetenciesController(ICompetencyService competencyService) : BaseController
@@ -78,7 +78,8 @@ public sealed class CompetenciesController(ICompetencyService competencyService)
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Value!.Id }, result.Value);
+        // IsSuccess garanterer at Value ikke er null per Result<T>-kontrakten
+        return CreatedAtAction("GetById", new { id = result.Value!.Id }, result.Value);
     }
 
     /// <summary>Oppdaterer et eksisterende kompetansebevis (inkl. revoke).</summary>

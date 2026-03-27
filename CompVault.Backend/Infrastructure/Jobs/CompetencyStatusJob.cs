@@ -19,7 +19,7 @@ public class CompetencyStatusJob(
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("CompetencyStatusJob startet");
+        logger.LogInformation("Kompetansestatusjobb startet");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -30,10 +30,7 @@ public class CompetencyStatusJob(
         }
     }
 
-    /// <summary>
-    /// Utfører statusoppdatering. Bruker et nytt scope siden BackgroundService er singleton
-    /// mens repository er scoped.
-    /// </summary>
+    // Bruker et nytt scope siden BackgroundService er singleton mens repository er scoped.
     private async Task RunStatusUpdateAsync(CancellationToken ct)
     {
         await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
@@ -81,12 +78,12 @@ public class CompetencyStatusJob(
                 await competencyRepository.UpdateStatusesAsync(updates, ct);
 
             logger.LogInformation(
-                "CompetencyStatusJob: {Total} sjekket, {Updated} oppdatert ({Valid} valid, {Expired} expired, {ExpiringSoon} expiring soon)",
+                "Kompetansestatusjobb: {Total} sjekket, {Updated} oppdatert ({Valid} gyldige, {Expired} utløpte, {ExpiringSoon} utløper snart)",
                 competencies.Count, updates.Count, validCount, expiredCount, expiringSoonCount);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "CompetencyStatusJob: feil under statusoppdatering av kompetansebevis");
+            logger.LogError(ex, "Kompetansestatusjobb: feil under statusoppdatering av kompetansebevis");
         }
     }
 }

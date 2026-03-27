@@ -14,12 +14,12 @@ public sealed class CompetencyTypeRepository(AppDbContext dbContext) : BaseRepos
     public async Task<CompetencyType?> GetByNameAsync(string name, CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()
-            .FirstOrDefaultAsync(ct => ct.Name.ToLower() == name.ToLower(), cancellationToken);
+            .FirstOrDefaultAsync(ct => string.Equals(ct.Name, name, StringComparison.OrdinalIgnoreCase), cancellationToken);
 
     /// <inheritdoc />
     public async Task<bool> HasActiveCompetenciesAsync(Guid competencyTypeId, CancellationToken cancellationToken = default) =>
         await DbContext.Set<Competency>()
-            .AnyAsync(c => c.CompetencyTypeId == competencyTypeId && c.DeletedAt == null, cancellationToken);
+            .AnyAsync(c => c.CompetencyTypeId == competencyTypeId, cancellationToken);
 
     /// <inheritdoc />
     public Task SoftDeleteAsync(CompetencyType competencyType, CancellationToken cancellationToken = default)

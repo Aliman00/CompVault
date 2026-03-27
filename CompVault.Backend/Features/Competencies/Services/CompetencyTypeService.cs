@@ -48,7 +48,6 @@ public sealed class CompetencyTypeService(
             Description = request.Description ?? string.Empty,
             Category = request.Category,
             RequiresExpiration = request.RequiresExpiration,
-            CreatedAt = DateTime.UtcNow,
             IsActive = true
         };
 
