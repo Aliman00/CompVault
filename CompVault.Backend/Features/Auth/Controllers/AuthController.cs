@@ -15,9 +15,7 @@ namespace CompVault.Backend.Features.Auth.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public sealed class AuthController(
-    IAuthService authService,
-    ILogger<AuthController> logger) : BaseController
+public sealed class AuthController(IAuthService authService) : BaseController
 {
     
     /// <summary>
@@ -71,14 +69,10 @@ public sealed class AuthController(
     [AllowAnonymous]
     [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<RefreshTokenResponse>> RefreshTokenAsync(CancellationToken cancellationToken)
+    public async Task<ActionResult<RefreshTokenResponse>> RefreshTokenAsync(
+        [FromBody] RefreshTokenRequest request, CancellationToken ct)
     {
-        string? refreshToken = Request.Cookies["refreshToken"];
-        if (string.IsNullOrEmpty(refreshToken))
-            return HandleFailure(Result.Failure(AppError.Create(ErrorCode.InvalidToken,
-                "Mangler refresh token-cookie")));
-        
-        Result<RefreshTokenResponse> result = await authService.RefreshTokenAsync(refreshToken, cancellationToken);
+        Result<RefreshTokenResponse> result = await authService.RefreshTokenAsync(request.RefreshToken, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -92,23 +86,20 @@ public sealed class AuthController(
     [HttpPost(ApiRoutes.Auth.Revoke)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> RevokeAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> RevokeAsync(
+        [FromBody]RefreshTokenRequest request, CancellationToken cancellationToken)
     {
         Guid currentUserId = User.GetUserId();
-    
-        string? refreshToken = Request.Cookies["refreshToken"];
-        if (!string.IsNullOrEmpty(refreshToken))
-        {
-            Result result = await authService.RevokeRefreshTokenAsync(refreshToken, currentUserId, cancellationToken);
-            if (result.IsFailure)
-                return HandleFailure(result);
-        }
-        else
-            logger.LogWarning("Utlogging uten refresh token-cookie for UserId: {UserId}", currentUserId);
-        
-        Response.Cookies.Delete("refreshToken");
+
+        Result result = await authService.RevokeRefreshTokenAsync(
+            request.RefreshToken, currentUserId, cancellationToken);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
         return NoContent();
     }
 }

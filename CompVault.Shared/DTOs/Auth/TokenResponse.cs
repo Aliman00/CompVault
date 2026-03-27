@@ -5,9 +5,6 @@ public class RefreshTokenResponse
     /// <summary>Det signerte JWT access token.</summary>
     public string AccessToken { get; set; } = string.Empty;
     
-    /// <summary>
-    /// Refresh token returnert i body kun for at frontend kan sette HttpOnly cookie
-    /// Skal aldri eksponeres mot nettleseren direkte.
-    /// </summary>
+    /// <summary>Token som lagres hos klienten for å holde brukeren innlogget når access går ut</summary>
     public string RefreshToken { get; set; } = string.Empty;
 }

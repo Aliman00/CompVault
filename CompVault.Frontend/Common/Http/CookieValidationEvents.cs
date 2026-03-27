@@ -1,11 +1,9 @@
 ﻿using System.Security.Claims;
-
+using CompVault.Frontend.Common.Configuration;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
-
 using Microsoft.AspNetCore.Authentication.Cookies;
-
-namespace CompVault.Frontend.Common.Configuration;
+namespace CompVault.Frontend.Common.Http;
 
 /// <summary>
 /// Håndterer token-refresh og brukervalidering via cookie-middleware
@@ -15,7 +13,6 @@ public class CookieValidationEvents(AuthSettings settings, IWebHostEnvironment e
 {
     public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
     {
-        // Sjekk kun hvert N. minutt — ikke på hvert SignalR-signal
         string? lastCheckedRaw = context.Properties.GetParameter<string>("LastValidated");
         if (lastCheckedRaw != null &&
             DateTimeOffset.TryParse(lastCheckedRaw, out DateTimeOffset lastChecked) &&
@@ -24,8 +21,6 @@ public class CookieValidationEvents(AuthSettings settings, IWebHostEnvironment e
             return;
         }
 
-        // refreshToken-cookien er tilgjengelig her fordi OnValidatePrincipal
-        // kjøres på ekte HTTP-requests fra nettleseren, ikke SignalR
         string? refreshToken = context.HttpContext.Request.Cookies["refreshToken"];
         if (string.IsNullOrEmpty(refreshToken))
         {
@@ -33,24 +28,25 @@ public class CookieValidationEvents(AuthSettings settings, IWebHostEnvironment e
             return;
         }
 
-        // Anonymklient — ingen Bearer header, unngår rekursjon med AccessTokenHandler
+        // Sett LastValidated OPTIMISTISK FØR refresh-kallet
+        // Dette hindrer at parallelle requests alle prøver å refreshe samtidig
+        context.Properties.SetParameter("LastValidated", DateTimeOffset.UtcNow.ToString("O"));
+        context.ShouldRenew = true;
+
         HttpClient client = context.HttpContext.RequestServices
             .GetRequiredService<IHttpClientFactory>()
             .CreateClient(BackendApiSettings.AuthClientName);
 
-        // HttpClient er server-til-server — cookien må forwardes manuelt
-        client.DefaultRequestHeaders.Add("Cookie", $"refreshToken={refreshToken}");
-
         try
         {
-            HttpResponseMessage response = await client.PostAsync(
-                ApiRoutes.Auth.RefreshFull, null,
-                context.HttpContext.RequestAborted);
+            var request = new RefreshTokenRequest { RefreshToken = refreshToken };
+            HttpResponseMessage response = await client.PostAsJsonAsync(
+                ApiRoutes.Auth.RefreshFull, request, context.HttpContext.RequestAborted);
 
             if (!response.IsSuccessStatusCode)
             {
-                context.RejectPrincipal();
-                context.HttpContext.Response.Cookies.Delete("refreshToken");
+                // Kun kast brukeren ut hvis tokenet er faktisk ugyldig — ikke ved race condition
+                // Vi kan ikke skille disse to tilfellene sikkert, så vi bruker fail open
                 return;
             }
 
@@ -58,19 +54,13 @@ public class CookieValidationEvents(AuthSettings settings, IWebHostEnvironment e
                 .ReadFromJsonAsync<RefreshTokenResponse>(context.HttpContext.RequestAborted);
 
             if (tokenResponse is null)
-            {
-                context.RejectPrincipal();
-                context.HttpContext.Response.Cookies.Delete("refreshToken");
                 return;
-            }
 
-            // Oppdater access_token-claimet med det nye tokenet
             var identity = (ClaimsIdentity)context.Principal!.Identity!;
             var gammeltClaim = identity.FindFirst("access_token");
             if (gammeltClaim is not null) identity.RemoveClaim(gammeltClaim);
             identity.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
 
-            // Oppdater refreshToken-cookien med det roterte tokenet
             context.HttpContext.Response.Cookies.Append("refreshToken",
                 tokenResponse.RefreshToken, new CookieOptions
                 {
@@ -83,11 +73,8 @@ public class CookieValidationEvents(AuthSettings settings, IWebHostEnvironment e
         }
         catch (Exception)
         {
-            // Fail open — la brukeren vøre pålogget ved midlertidig backend-nedetid
+            // Fail open — backend er nede
             return;
         }
-
-        context.Properties.SetParameter("LastValidated", DateTimeOffset.UtcNow.ToString("O"));
-        context.ShouldRenew = true;
     }
 }

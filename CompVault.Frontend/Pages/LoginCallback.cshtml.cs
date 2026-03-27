@@ -29,14 +29,13 @@ public class LoginCallback(IAuthService authService, AuthSettings authSettings) 
 
         var (principal, tokens) = result.Value;
 
-        // Access token lagres som claim i auth-cookien
-        // AccessTokenHandler leser dette claimet og setter Bearer header på API-kall mot backend
         var identity = (ClaimsIdentity)principal.Identity!;
         identity.AddClaim(new Claim("access_token", tokens.AccessToken));
 
-        // RefreshToken settes som HttpOnly cookie i nettleseren.
-        // OnValidatePrincipal leser denne og bruker den til å hente nytt access token slik vi spesifisderer i
-        // AuthSettings
+        // Sett auth-cookie FØRST
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+        // Sett refreshToken-cookie ETTERPÅ
         HttpContext.Response.Cookies.Append("refreshToken", tokens.RefreshToken, new CookieOptions
         {
             HttpOnly = true,
@@ -47,7 +46,6 @@ public class LoginCallback(IAuthService authService, AuthSettings authSettings) 
             IsEssential = true
         });
 
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
         return LocalRedirect("/");
     }
 }

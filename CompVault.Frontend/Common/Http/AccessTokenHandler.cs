@@ -12,8 +12,7 @@ public class AccessTokenHandler(
     IHttpContextAccessor httpContextAccessor,
     IHttpClientFactory httpClientFactory) : DelegatingHandler
 {
-    protected override async Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request, CancellationToken ct)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         SetAuthHeader(request);
         HttpResponseMessage response = await base.SendAsync(request, ct);
@@ -51,12 +50,11 @@ public class AccessTokenHandler(
         if (string.IsNullOrEmpty(refreshToken)) return false;
 
         var client = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
-        client.DefaultRequestHeaders.Add("Cookie", $"refreshToken={refreshToken}");
 
         try
         {
-            var response = await client.PostAsync(
-                ApiRoutes.Auth.RefreshFull, null, ct);
+            var request = new RefreshTokenRequest { RefreshToken = refreshToken };
+            var response = await client.PostAsJsonAsync(ApiRoutes.Auth.RefreshFull, request, ct);
 
             if (!response.IsSuccessStatusCode) return false;
 

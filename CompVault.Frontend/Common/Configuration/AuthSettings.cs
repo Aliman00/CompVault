@@ -14,5 +14,5 @@ public sealed class AuthSettings
     /// Hvor ofte brukeren valideres mot backend
     /// En deaktivert bruker kan være innlogget i opptil dette antallet minutter
     /// </summary>
-    public int ValidationIntervalMinutes { get; init; } = 15;
+    public int ValidationIntervalMinutes { get; init; } = 10;
 }

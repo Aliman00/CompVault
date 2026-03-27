@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
@@ -86,15 +85,15 @@ public class AuthService(
     {
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Auth.RevokeFull);
+            string? refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
+
+            // Sender refresh token i body — ingen manuell Cookie-header
+            var revokeRequest = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Auth.RevokeFull)
+            {
+                Content = JsonContent.Create(new RefreshTokenRequest{ RefreshToken = refreshToken ?? "" })
+            };
             
-            // Forwarder refreshToken-cookien manuelt
-            string? refreshToken = httpContextAccessor.HttpContext?
-                .Request.Cookies["refreshToken"];
-            if (!string.IsNullOrEmpty(refreshToken))
-                request.Headers.Add("Cookie", $"refreshToken={refreshToken}");
-            
-            HttpResponseMessage response = await _httpClient.SendAsync(request, ct);
+            HttpResponseMessage response = await _httpClient.SendAsync(revokeRequest, ct);
             Result revokeResult = await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);
 
             if (revokeResult.IsFailure)
