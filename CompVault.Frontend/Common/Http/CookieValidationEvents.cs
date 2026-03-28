@@ -31,8 +31,10 @@ public class CookieValidationEvents(
         string? refreshToken = context.HttpContext.GetRefreshTokenCookie();
         if (string.IsNullOrEmpty(refreshToken))
         {
+            
             logger.LogWarning("Ingen refresh token funnet - logger brukeren ut");
             context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return;
         }
 
