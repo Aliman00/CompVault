@@ -172,7 +172,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
 
         // Assert - Sjekker at Result er 200 Ok og sjekker alle egenskapene på RefreshTokenResponse
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        RefreshTokenResponse? body = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>();
+        TokenResponse? body = await response.Content.ReadFromJsonAsync<TokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
 
         // Verifiserer at OTP-koden er satt til IsUsed og RefreshToken er opprettet med riktige egenskaper
@@ -318,7 +318,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
 
         // Assert - Sjekker at StatusCode er 200 Ok og at det er opprettet en RefreshTokenResponse
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        RefreshTokenResponse? body = await response.Content.ReadFromJsonAsync<RefreshTokenResponse>();
+        TokenResponse? body = await response.Content.ReadFromJsonAsync<TokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
     }
 }

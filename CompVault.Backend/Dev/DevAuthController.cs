@@ -33,10 +33,10 @@ public sealed class DevAuthController(
     /// </summary>
     [HttpPost("dev-login")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<RefreshTokenResponse>> DevLoginAsync(
+    public async Task<ActionResult<TokenResponse>> DevLoginAsync(
         [FromBody] DevLoginRequest request)
     {
         if (!env.IsDevelopment())
@@ -57,9 +57,10 @@ public sealed class DevAuthController(
         string accessToken = jwtService.GenerateAccessToken(user, roles);
         string refreshToken = refreshTokenService.GenerateRefreshToken();
 
-        return Ok(new RefreshTokenResponse
+        return Ok(new TokenResponse
         {
             AccessToken = accessToken,
+            RefreshToken = refreshToken
         });
     }
     

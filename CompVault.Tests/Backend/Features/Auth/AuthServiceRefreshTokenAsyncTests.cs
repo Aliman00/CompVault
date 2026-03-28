@@ -47,9 +47,9 @@ public class AuthServiceRefreshTokenAsyncTests
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
         _unitOfWorkMock
             .Setup(x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<RefreshTokenResponse>>>>(),
+                It.IsAny<Func<Task<Result<TokenResponse>>>>(),
                 It.IsAny<CancellationToken>()))
-            .Returns<Func<Task<Result<RefreshTokenResponse>>>, CancellationToken>(
+            .Returns<Func<Task<Result<TokenResponse>>>, CancellationToken>(
                 (operation, _) => operation());
 
         IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
@@ -117,7 +117,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .Returns(newAccessToken);
 
         // Act
-        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -154,7 +154,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync((RefreshToken?)null);
 
         // Act
-        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(unknownToken);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(unknownToken);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -165,7 +165,7 @@ public class AuthServiceRefreshTokenAsyncTests
             x => x.FindByIdAsync(It.IsAny<string>()), Times.Never);
         _unitOfWorkMock.Verify(
             x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<RefreshTokenResponse>>>>(),
+                It.IsAny<Func<Task<Result<TokenResponse>>>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -194,7 +194,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -202,7 +202,7 @@ public class AuthServiceRefreshTokenAsyncTests
 
         _unitOfWorkMock.Verify(
             x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<RefreshTokenResponse>>>>(),
+                It.IsAny<Func<Task<Result<TokenResponse>>>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -232,7 +232,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync(inactiveUser);
 
         // Act
-        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -240,7 +240,7 @@ public class AuthServiceRefreshTokenAsyncTests
 
         _unitOfWorkMock.Verify(
             x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<RefreshTokenResponse>>>>(),
+                It.IsAny<Func<Task<Result<TokenResponse>>>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -280,7 +280,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync(Result<string>.Failure(refreshTokenError));
 
         // Act
-        Result<RefreshTokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
 
         // Assert
         result.IsFailure.Should().BeTrue();

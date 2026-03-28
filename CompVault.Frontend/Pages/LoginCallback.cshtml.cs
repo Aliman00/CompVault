@@ -28,7 +28,7 @@ public class LoginCallback(IAuthService authService, AuthSettings authSettings, 
         if (!ModelState.IsValid)
             return LocalRedirect("/login?error=invalid");
 
-        Result<(ClaimsPrincipal Principal, RefreshTokenResponse Tokens)> verifyOtpResult =
+        Result<(ClaimsPrincipal Principal, TokenResponse Tokens)> verifyOtpResult =
             await authService.VerifyOtpAsync(OtpRequest, HttpContext.RequestAborted);
 
         if (verifyOtpResult.IsFailure)

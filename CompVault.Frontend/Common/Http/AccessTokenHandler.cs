@@ -84,8 +84,8 @@ public class AccessTokenHandler(
                 return Result.Failure(AppError.Create(code, problem?.Message ?? string.Empty));
             }
             
-            RefreshTokenResponse? tokenResponse = await response.Content
-                .ReadFromJsonAsync<RefreshTokenResponse>(ct);
+            TokenResponse? tokenResponse = await response.Content
+                .ReadFromJsonAsync<TokenResponse>(ct);
             if (tokenResponse == null) 
                 return Result.Failure(AppError.Create(ErrorCode.Unknown, "Tom respons fra backend."));
             

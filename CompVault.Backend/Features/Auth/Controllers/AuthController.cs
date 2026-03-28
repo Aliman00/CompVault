@@ -47,14 +47,14 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <response code="429">For mange forsøk eller cooldown aktiv</response>
     [HttpPost(ApiRoutes.Auth.VerifyOtp)]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public async Task<ActionResult<RefreshTokenResponse>> VerifyOtpAsync(
+    public async Task<ActionResult<TokenResponse>> VerifyOtpAsync(
         [FromBody] VerifyOtpRequest request,
         CancellationToken ct)
     {
-        Result<RefreshTokenResponse> result = await authService.VerifyOtpAsync(request, ct);
+        Result<TokenResponse> result = await authService.VerifyOtpAsync(request, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -67,12 +67,12 @@ public sealed class AuthController(IAuthService authService) : BaseController
     /// <response code="401">Ugyldig eller utgått token.</response>
     [HttpPost(ApiRoutes.Auth.Refresh)]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<RefreshTokenResponse>> RefreshTokenAsync(
+    public async Task<ActionResult<TokenResponse>> RefreshTokenAsync(
         [FromBody] RefreshTokenRequest request, CancellationToken ct)
     {
-        Result<RefreshTokenResponse> result = await authService.RefreshTokenAsync(request.RefreshToken, ct);
+        Result<TokenResponse> result = await authService.RefreshTokenAsync(request.RefreshToken, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);

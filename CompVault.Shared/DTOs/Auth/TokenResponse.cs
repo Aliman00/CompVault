@@ -1,6 +1,6 @@
 ﻿namespace CompVault.Shared.DTOs.Auth;
 
-public class RefreshTokenResponse
+public class TokenResponse
 {
     /// <summary>Det signerte JWT access token.</summary>
     public string AccessToken { get; set; } = string.Empty;

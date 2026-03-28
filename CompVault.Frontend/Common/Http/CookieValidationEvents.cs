@@ -65,8 +65,8 @@ public class CookieValidationEvents(AuthSettings authSettings, IWebHostEnvironme
                 return;
             }
             
-            RefreshTokenResponse? tokenResponse = await refreshTokenResponse.Content
-                .ReadFromJsonAsync<RefreshTokenResponse>(context.HttpContext.RequestAborted);
+            TokenResponse? tokenResponse = await refreshTokenResponse.Content
+                .ReadFromJsonAsync<TokenResponse>(context.HttpContext.RequestAborted);
 
             if (tokenResponse == null)
                 return;

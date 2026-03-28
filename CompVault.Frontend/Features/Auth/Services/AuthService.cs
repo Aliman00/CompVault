@@ -45,7 +45,7 @@ public class AuthService(
     }
     
     /// <inheritdoc />
-    public async Task<Result<(ClaimsPrincipal, RefreshTokenResponse)>> VerifyOtpAsync(VerifyOtpRequest request, 
+    public async Task<Result<(ClaimsPrincipal, TokenResponse)>> VerifyOtpAsync(VerifyOtpRequest request, 
         CancellationToken ct)
     {
         try
@@ -53,28 +53,28 @@ public class AuthService(
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request, ct);
 
-            Result<RefreshTokenResponse> tokenResult =
-                await HttpClientExtensions.ParseResponseAsync<RefreshTokenResponse>(response, ct);
+            Result<TokenResponse> tokenResult =
+                await HttpClientExtensions.ParseResponseAsync<TokenResponse>(response, ct);
 
             if (tokenResult.IsFailure)
-                return Result<(ClaimsPrincipal, RefreshTokenResponse)>.Failure(tokenResult.Error!);
+                return Result<(ClaimsPrincipal, TokenResponse)>.Failure(tokenResult.Error!);
             
             // Oppretter en ClaimsPrincipal med alle claimene som vi bruker til å sette cookie i nettleseren
             IEnumerable<Claim> claims = ParseClaimsFromJwt(tokenResult.Value!.AccessToken);
             var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt"));
             
-            return Result<(ClaimsPrincipal, RefreshTokenResponse)>.Success((principal, tokenResult.Value!));
+            return Result<(ClaimsPrincipal, TokenResponse)>.Success((principal, tokenResult.Value!));
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved OTP-verifisering for {Email}", request.Email);
-            return Result<(ClaimsPrincipal, RefreshTokenResponse)>.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<(ClaimsPrincipal, TokenResponse)>.Failure(AppError.Create(ErrorCode.NetworkError, 
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved OTP-verifisering for {Email}", request.Email);
-            return Result<(ClaimsPrincipal, RefreshTokenResponse)>.Failure(AppError.Create(ErrorCode.Unknown, 
+            return Result<(ClaimsPrincipal, TokenResponse)>.Failure(AppError.Create(ErrorCode.Unknown, 
                 "Noe gikk galt. Prøv igjen."));
         }
     }
