@@ -1,13 +1,12 @@
 ﻿@page "/Dev"
 @using System.Security.Claims
-@using CompVault.Frontend.Common.Services
 @using CompVault.Frontend.Features.Auth.Services
-@using CompVault.Shared.Result
 @inject IWebHostEnvironment Env
 @inject IAuthService AuthService
 @inject AuthStateProvider AuthStateProvider
 @inject IServiceProvider ServiceProvider
-
+@inject IJSRuntime JsRuntime
+@implements IAsyncDisposable
 
 @* Denne siden er kun tilgjengelig i development *@
 
@@ -18,7 +17,17 @@
 
 <PageTitle>CompVault Dev Panel</PageTitle>
 
+@* En skjult form som gjør at vi kan sette auth-cookie ved å poste til en Razor Page, som lagrer token i nettleseren *@
+<form id="dev-login-form" method="post" action="/login-callback">
+    <AntiforgeryToken/>
+    <input type="hidden" name="OtpRequest.Email"/>
+    <input type="hidden" name="OtpRequest.OtpCode" value="123456"/>
+</form>
 
+@* Skjult form for å slette auth-cookie fra nettleseren *@
+<form id="dev-logout-form" method="post" action="/logout-callback">
+    <AntiforgeryToken />
+</form>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
     <MudText Typo="Typo.h6" Class="mb-4">Nåværende session - innlogget eller ikke</MudText>
@@ -65,9 +74,11 @@
 
 </MudContainer>
 
+
 @code {
     
     private IDevService? _devService;
+    
 
     
     // ===================== LIFECYCLE =====================
@@ -80,9 +91,23 @@
         await RefreshClaimsAsync();
     }
     
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./Dev/DevPanel.razor.js");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule is not null)
+            await _jsModule.DisposeAsync();
+    }
     
     
     // ===================== LOGIN =====================
+    
+    private IJSObjectReference? _jsModule;
     
     private bool _isLoading;
     private string? _loginErrorMessage;
@@ -103,7 +128,7 @@
     
     
     
-    // Logger inn med DevService sitt endepunkt
+    // Logger inn brukeren ved å opprette en satt OTP-kode og verifisere med VerifyOtp
     private async Task LoginAsync(TestUser testUser)
     {
         if (_devService == null)
@@ -112,25 +137,26 @@
         _isLoading = true;
         _loginErrorMessage = null;
         
-        var request = new VerifyOtpRequest { Email = testUser.Email, OtpCode = "000000" };
-        Result result = await _devService.VerifyOtpAsync(request, CancellationToken.None);
-
-        if (result.IsFailure)
-            _loginErrorMessage = result.Error!.Message;
-
-        await RefreshClaimsAsync();
-        _isLoading = false;
+        var requestOtpRequest = new RequestOtpRequest { Email = testUser.Email, 
+            DeliveryMethod = OtpDeliveryMethod.Email };
+        
+        Result requestOtpResult = await _devService.RequestOtpAsync(requestOtpRequest);
+        
+        if (requestOtpResult.IsFailure)
+        {
+            _loginErrorMessage = requestOtpResult.Error!.Message;
+            _isLoading = false;
+            return;
+        }
+        
+        await _jsModule!.InvokeVoidAsync("submitLoginForm", testUser.Email);
     }
     
     private async Task LogOutAsync()
     {
         _isLoading = true;
-        
-        // Logut og fjern claims
         await AuthService.LogOutAsync(CancellationToken.None);
-        await RefreshClaimsAsync();
-        
-        _isLoading = false;
+        await _jsModule!.InvokeVoidAsync("submitLogoutForm");
     }
 
     private async Task RefreshClaimsAsync()
@@ -139,3 +165,5 @@
         _claims = state.User.Claims;
     }
 }
+
+

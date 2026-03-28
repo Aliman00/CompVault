@@ -6,7 +6,7 @@ namespace CompVault.Frontend.Dev;
 public interface IDevService
 {
     /// <summary>
-    /// Verifiserer at brukerens kode stemmer. Legger til tokens, claims og  setter brukeren som innlogget ved suksess
+    /// Oppretter en OTP-kode med verdi 123456 slik at frontend kan kalle VerifyOtp uten at vi sender epost
     /// </summary>
-    Task<Result> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct);
+    Task<Result> RequestOtpAsync(RequestOtpRequest request);
 }

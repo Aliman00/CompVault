@@ -17,21 +17,14 @@ public class DevService(
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
     
     /// <inheritdoc />
-    public async Task<Result> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct)
+    public async Task<Result> RequestOtpAsync(RequestOtpRequest request)
     {
         try
         {
             HttpResponseMessage response =
-                await _httpClient.PostAsJsonAsync("api/dev/verifyotp", request, ct);
+                await _httpClient.PostAsJsonAsync("api/auth/dev-create-otp", request);
             
-            Result<AccessTokenResponse> result =
-                await HttpClientExtensions.ParseResponseAsync<AccessTokenResponse>(response, ct);
-
-            if (result.IsFailure)
-                return Result.Failure(result.Error!);
-            
-            authStateProvider.MarkUserAsAuthenticated(result.Value!.AccessToken);
-            return Result.Success();
+            return await HttpClientExtensions.ParseEmptyResponseAsync(response, CancellationToken.None);
         }
         catch (HttpRequestException ex)
         {

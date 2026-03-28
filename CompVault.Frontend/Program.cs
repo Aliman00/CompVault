@@ -12,9 +12,10 @@ builder.Services.AddRazorComponents()
 builder.AddSerilogLogging();
 builder.Services.AddHttpClients(builder.Configuration);
 builder.Services.AddMudServices();
-builder.Services.AddAuthorizationCore();
-builder.Services.AddAuth();
+builder.Services.AddAuthorization();
+builder.Services.AddAuth(builder.Configuration, builder.Environment);
 builder.Services.AddFrontendServices(builder.Environment);
+builder.Services.AddRazorPages();
 
 WebApplication app = builder.Build();
 
@@ -30,8 +31,14 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+// ============ Autentisering ============
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapRazorPages();
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
 
 app.Run();
