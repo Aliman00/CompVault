@@ -118,7 +118,6 @@ public sealed class CompetencyService(
 
         bool isRevoked = competency.Status == CompetencyStatus.Revoked;
         bool revoking = request.Status == CompetencyStatus.Revoked;
-        bool unrevoking = request.Status.HasValue && !revoking && isRevoked;
         bool expiryChanged = request.ExpiryDate.HasValue;
 
         if (revoking)
@@ -131,11 +130,6 @@ public sealed class CompetencyService(
             competency.Status = CompetencyStatus.Revoked;
             competency.RevokedAt = DateTime.UtcNow;
             competency.RevokedReason = request.RevokedReason;
-        }
-        else if (unrevoking)
-        {
-            competency.RevokedAt = null;
-            competency.RevokedReason = null;
         }
 
         if (request.ExpiryDate.HasValue && competency.CompetencyType?.RequiresExpiration == false)
@@ -152,8 +146,8 @@ public sealed class CompetencyService(
         if (request.Notes is not null)
             competency.Notes = request.Notes;
 
-        // Én statuskalkulasjon: ved un-revoke eller ExpiryDate-endring (ikke ved revoke)
-        if (!revoking && (unrevoking || expiryChanged))
+        // Statuskalkulasjon: ved ExpiryDate-endring, men aldri hvis status er Revoked
+        if (!revoking && expiryChanged && !isRevoked)
             competency.Status = CompetencyStatusCalculator.Calculate(competency.ExpiryDate);
 
         // Entity er allerede tracked via GetForUpdateAsync — ingen UpdateAsync nødvendig

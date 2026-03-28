@@ -4,7 +4,7 @@ namespace CompVault.Shared.DTOs.Competencies;
 
 /// <summary>
 /// Spesialisert DTO for utløpende og utløpte kompetansebevis.
-/// Brukes av /api/competencies/expiring-endpointen.
+/// Brukes av GET /api/competencies/expiring.
 /// Inkluderer avdelingsinfo for gruppering i frontend.
 /// </summary>
 public sealed class ExpiringCompetencyDto

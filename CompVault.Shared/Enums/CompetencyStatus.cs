@@ -1,8 +1,9 @@
 namespace CompVault.Shared.Enums;
 
 /// <summary>
-/// Status for et kompetansebevis. Beregnes automatisk av bakgrunnsjobb
-/// basert på utløpsdato, unntatt Revoked som kun settes manuelt.
+/// Status for et kompetansebevis. Beregnes automatisk basert på utløpsdato
+/// (ved opprettelse, oppdatering og av bakgrunnsjobb),
+/// unntatt Revoked som kun settes manuelt.
 /// </summary>
 public enum CompetencyStatus
 {
