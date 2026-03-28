@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Competencies;
+using CompVault.Backend.Features.Competencies;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Shared.Enums;
 
@@ -77,8 +78,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
     /// <inheritdoc />
     public async Task<(int ExpiredCount, int ExpiringSoonCount)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default)
     {
-        // Må matche CompetencyStatusCalculator.ExpiringSoonThresholdDays (90)
-        const int expiringSoonThresholdDays = 90;
+        int expiringSoonThresholdDays = CompetencyStatusCalculator.ExpiringSoonThresholdDays;
 
         // Sett Expired: bevis med utløpsdato i fortiden og RequiresExpiration == true
         // Berører aldri Revoked (filtrert i WHERE) eller soft-deleted (global query filter)
