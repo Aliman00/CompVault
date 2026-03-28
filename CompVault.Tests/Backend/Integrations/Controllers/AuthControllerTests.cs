@@ -174,6 +174,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         TokenResponse? body = await response.Content.ReadFromJsonAsync<TokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
+        body.RefreshToken.Should().NotBeNullOrEmpty();
 
         // Verifiserer at OTP-koden er satt til IsUsed og RefreshToken er opprettet med riktige egenskaper
         using IServiceScope scope = factory.Services.CreateScope();
@@ -320,5 +321,6 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         TokenResponse? body = await response.Content.ReadFromJsonAsync<TokenResponse>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
+        body.RefreshToken.Should().NotBeNullOrEmpty();
     }
 }

@@ -5,6 +5,7 @@ using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 namespace CompVault.Frontend.Common.Http;
 
@@ -61,9 +62,11 @@ public class CookieValidationEvents(
 
                 if (problem?.Code == nameof(ErrorCode.AccountInactive))
                 {
-                    // Bruker er deaktivert — logget ut
+                    // Bruker er deaktivert — logget ut både fra context og sletter token
                     logger.LogWarning("Bruker er deaktivert — logger brukeren ut");
                     context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    context.HttpContext.Response.Cookies.Delete("refreshToken");
                     return;
                 }
                 
@@ -84,8 +87,11 @@ public class CookieValidationEvents(
             // Er Identity null og ikke et ClaimsIdentity-objekt, brukeren er ikke autentisert lenger
             if (context.Principal?.Identity is not ClaimsIdentity identity)
             {
+                // Bruker er deaktivert — logget ut både fra context og sletter token
                 logger.LogWarning("Principal er ikke et ClaimsIdentity-objekt — logger brukeren ut");
                 context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                context.HttpContext.Response.Cookies.Delete("refreshToken");
                 return;
             }
             
