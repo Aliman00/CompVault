@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CompVault.Backend\CompVault.Backend.csproj" />
+    <ProjectReference Include="..\CompVault.Frontend\CompVault.Frontend.csproj" />
     <ProjectReference Include="..\CompVault.Shared\CompVault.Shared.csproj" />
   </ItemGroup>
 
