@@ -86,11 +86,19 @@ public class AuthService(
         try
         {
             string? refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
+            
+            // Hvis vi ikke har en refresh token-cookie, hopper så skipper vi å revoke. Backend sin DataAnnotations 
+            // fanger opp requester uten refresh token
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                logger.LogInformation("Ingen refreshToken-cookie funnet ved utlogging; hopper over token-revokering.");
+                return;
+            }
 
-            // Sender refresh token i body — ingen manuell Cookie-header
+            // Sender refresh token i body
             var revokeRequest = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Auth.RevokeFull)
             {
-                Content = JsonContent.Create(new RefreshTokenRequest{ RefreshToken = refreshToken ?? "" })
+                Content = JsonContent.Create(new RefreshTokenRequest{ RefreshToken = refreshToken })
             };
             
             HttpResponseMessage response = await _httpClient.SendAsync(revokeRequest, ct);

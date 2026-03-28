@@ -10,7 +10,7 @@ namespace CompVault.Frontend.Common.Http;
 
 /// <summary>
 /// Legger til Bearer header på alle server-til-server kall mot backend.
-/// Leser access token fra auth-cookie claims — oppdateres automatisk av OnValidatePrincipal.
+/// Leser access token fra auth-cookie claims — oppdateres automatisk av OnValidatePrincipal
 /// </summary>
 public class AccessTokenHandler(
     IHttpContextAccessor httpContextAccessor,
@@ -31,10 +31,8 @@ public class AccessTokenHandler(
             return response;
         
         // Bruker refresh fra cookie til å autoriseres på nytt - failer det så sender vi koden videre til kalleren
-        // og hvis errorkoden er AccountInactive, så er brukeren utlogget
-        Result  refreshResult  = await TryRefreshAsync(ct);
-        if (refreshResult.IsFailure && 
-            refreshResult.Error?.Code == ErrorCode.AccountInactive)
+        Result refreshResult = await TryRefreshAsync(ct);
+        if (refreshResult.IsFailure)
             return response;
         
         SetAuthHeader(clonedRequest);
