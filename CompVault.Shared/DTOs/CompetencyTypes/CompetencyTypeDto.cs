@@ -12,7 +12,7 @@ public sealed class CompetencyTypeDto
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Beskrivelse av kompetansetypen.</summary>
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     /// <summary>Kategori for gruppering, f.eks. "HMS", "Sertifikat", "Kurs".</summary>
     public string? Category { get; set; }

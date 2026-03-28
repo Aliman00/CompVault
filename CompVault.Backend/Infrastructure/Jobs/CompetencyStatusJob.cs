@@ -1,7 +1,4 @@
-using CompVault.Backend.Domain.Entities.Competencies;
-using CompVault.Backend.Features.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
-using CompVault.Shared.Enums;
 
 namespace CompVault.Backend.Infrastructure.Jobs;
 
@@ -21,11 +18,11 @@ public class CompetencyStatusJob(
     {
         logger.LogInformation("Kompetansestatusjobb startet");
 
+        // Kjør umiddelbart ved oppstart, deretter periodisk.
+        await RunStatusUpdateAsync(stoppingToken);
         while (!stoppingToken.IsCancellationRequested)
         {
-            // Venter til neste kjøring før vi starter — unngår at jobben kjører umiddelbart ved oppstart
             await Task.Delay(Interval, stoppingToken);
-
             await RunStatusUpdateAsync(stoppingToken);
         }
     }
@@ -39,47 +36,12 @@ public class CompetencyStatusJob(
 
         try
         {
-            IReadOnlyList<Competency> competencies =
-                await competencyRepository.GetAllForStatusUpdateAsync(ct);
-
-            var updates = new List<(Guid Id, CompetencyStatus NewStatus)>();
-            int validCount = 0;
-            int expiredCount = 0;
-            int expiringSoonCount = 0;
-
-            foreach (Competency competency in competencies)
-            {
-                // Hent typens RequiresExpiration for å avgjøre om utløpsdato er relevant
-                bool requiresExpiration = competency.CompetencyType?.RequiresExpiration ?? true;
-                DateTime? expiryDate = requiresExpiration ? competency.ExpiryDate : null;
-
-                CompetencyStatus newStatus = CompetencyStatusCalculator.Calculate(expiryDate);
-
-                if (competency.Status != newStatus)
-                {
-                    updates.Add((competency.Id, newStatus));
-
-                    switch (newStatus)
-                    {
-                        case CompetencyStatus.Valid:
-                            validCount++;
-                            break;
-                        case CompetencyStatus.Expired:
-                            expiredCount++;
-                            break;
-                        case CompetencyStatus.ExpiringSoon:
-                            expiringSoonCount++;
-                            break;
-                    }
-                }
-            }
-
-            if (updates.Count > 0)
-                await competencyRepository.UpdateStatusesAsync(updates, ct);
+            (int expiredCount, int expiringSoonCount) = await competencyRepository.UpdateExpiryStatusesAsync(ct);
+            int totalUpdated = expiredCount + expiringSoonCount;
 
             logger.LogInformation(
-                "Kompetansestatusjobb: {Total} sjekket, {Updated} oppdatert ({Valid} gyldige, {Expired} utløpte, {ExpiringSoon} utløper snart)",
-                competencies.Count, updates.Count, validCount, expiredCount, expiringSoonCount);
+                "Kompetansestatusjobb: {Updated} oppdatert ({Expired} utløpte, {ExpiringSoon} utløper snart)",
+                totalUpdated, expiredCount, expiringSoonCount);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

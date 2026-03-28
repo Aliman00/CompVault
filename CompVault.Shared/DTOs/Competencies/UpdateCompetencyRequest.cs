@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Enums;
 
 namespace CompVault.Shared.DTOs.Competencies;
@@ -15,9 +17,11 @@ public sealed class UpdateCompetencyRequest
     public DateTime? IssuedDate { get; set; }
 
     /// <summary>Nytt sertifikatnummer.</summary>
+    [MaxLength(100)]
     public string? CertificateNumber { get; set; }
 
     /// <summary>Nye notater.</summary>
+    [StringLength(2000)]
     public string? Notes { get; set; }
 
     /// <summary>

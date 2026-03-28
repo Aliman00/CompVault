@@ -94,13 +94,14 @@ public sealed class CompetencyService(
     /// <inheritdoc />
     public async Task<Result<CompetencyDto>> UpdateAsync(Guid id, UpdateCompetencyRequest request, CancellationToken cancellationToken = default)
     {
-        Competency? competency = await competencyRepository.GetByIdAsync(id, cancellationToken);
+        // Tracking query med navigasjon — unngår GetByIdAsync + UpdateAsync + ekstra GetWithDetailsAsync
+        Competency? competency = await competencyRepository.GetForUpdateAsync(id, cancellationToken);
 
         if (competency is null)
             return Result<CompetencyDto>.Failure(
                 AppError.NotFound($"Kompetansebevis med ID '{id}' ble ikke funnet."));
 
-        // Validering før mutasjon — unngår skitten state i ChangeTracker
+        // Validering før mutasjon — CompetencyType er lastet via GetForUpdateAsync
         DateTime? effectiveExpiry = request.ExpiryDate ?? competency.ExpiryDate;
         DateTime effectiveIssued = request.IssuedDate ?? competency.IssuedDate;
 
@@ -149,17 +150,11 @@ public sealed class CompetencyService(
         if (!revoking && (unrevoking || expiryChanged))
             competency.Status = CompetencyStatusCalculator.Calculate(competency.ExpiryDate);
 
-        await competencyRepository.UpdateAsync(competency, cancellationToken);
+        // Entity er allerede tracked via GetForUpdateAsync — ingen UpdateAsync nødvendig
         await competencyRepository.SaveChangesAsync(cancellationToken);
 
-        // Hent med navigasjon for å returnere fullstendig DTO
-        Competency? updated = await competencyRepository.GetWithDetailsAsync(competency.Id, cancellationToken);
-
-        if (updated is null)
-            return Result<CompetencyDto>.Failure(
-                AppError.NotFound($"Kompetansebevis med ID '{competency.Id}' ble ikke funnet etter oppdatering."));
-
-        return Result<CompetencyDto>.Success(CompetencyMapper.ToDto(updated));
+        // Navigasjon er allerede lastet — ingen ekstra query nødvendig
+        return Result<CompetencyDto>.Success(CompetencyMapper.ToDto(competency));
     }
 
     /// <inheritdoc />

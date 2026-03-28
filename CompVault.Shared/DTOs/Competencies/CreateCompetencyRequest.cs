@@ -30,5 +30,6 @@ public sealed class CreateCompetencyRequest
     public string? CertificateNumber { get; set; }
 
     /// <summary>Valgfrie notater.</summary>
+    [StringLength(2000)]
     public string? Notes { get; set; }
 }

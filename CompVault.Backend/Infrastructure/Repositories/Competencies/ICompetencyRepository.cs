@@ -32,14 +32,17 @@ public interface ICompetencyRepository : IRepository<Competency>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Henter alle kompetansebevis hvor Status != Revoked, for bakgrunnsjobben.
+    /// Henter ett kompetansebevis med navigasjon for oppdatering (tracking).
+    /// Brukes av CompetencyService.UpdateAsync for å unngå ekstra queries.
     /// </summary>
-    Task<IReadOnlyList<Competency>> GetAllForStatusUpdateAsync(CancellationToken cancellationToken = default);
+    Task<Competency?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Batch-oppdaterer status på flere kompetansebevis effektivt.
+    /// Oppdaterer status på kompetansebevis basert på utløpsdato via ren SQL.
+    /// Returnerer antall oppdaterte for Expired og ExpiringSoon.
+    /// Berører aldri Revoked-bevis eller soft-deleted rader (global query filter).
     /// </summary>
-    Task UpdateStatusesAsync(IEnumerable<(Guid Id, CompetencyStatus NewStatus)> updates, CancellationToken cancellationToken = default);
+    Task<(int ExpiredCount, int ExpiringSoonCount)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter kompetansebeviset ved å sette DeletedAt og IsActive.</summary>
     Task SoftDeleteAsync(Competency competency, CancellationToken cancellationToken = default);

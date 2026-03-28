@@ -20,7 +20,7 @@ public class CompetencyType
 
     /// <summary>Valgfri beskrivelse av kompetansetypen.</summary>
     [StringLength(500)]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     /// <summary>Kategori for gruppering i frontend, f.eks. "HMS", "Sertifikat", "Kurs".</summary>
     [StringLength(100)]

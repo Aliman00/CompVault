@@ -23,6 +23,7 @@ internal sealed class CompetencyConfiguration : IEntityTypeConfiguration<Compete
 
         builder.Property(c => c.IssuedDate).IsRequired();
         builder.Property(c => c.CertificateNumber).HasMaxLength(100);
+        builder.Property(c => c.Notes).HasMaxLength(2000);
         builder.Property(c => c.CreatedAt).IsRequired();
         builder.Property(c => c.IsActive).IsRequired().HasDefaultValue(true);
 

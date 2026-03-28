@@ -4,8 +4,7 @@ namespace CompVault.Backend.Features.Competencies;
 
 /// <summary>
 /// Statisk hjelpeklasse for beregning av kompetansestatus basert på utløpsdato.
-/// Brukes av både <see cref="Services.CompetencyService"/> og <see cref="Infrastructure.Jobs.CompetencyStatusJob"/>
-/// for å sikre konsistent logikk.
+/// Brukes av <see cref="Services.CompetencyService"/> ved opprettelse og oppdatering.
 /// </summary>
 public static class CompetencyStatusCalculator
 {

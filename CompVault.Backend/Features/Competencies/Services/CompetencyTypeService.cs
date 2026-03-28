@@ -45,7 +45,7 @@ public sealed class CompetencyTypeService(
         var type = new CompetencyType
         {
             Name = request.Name,
-            Description = request.Description ?? string.Empty,
+            Description = request.Description,
             Category = request.Category,
             RequiresExpiration = request.RequiresExpiration,
             IsActive = true

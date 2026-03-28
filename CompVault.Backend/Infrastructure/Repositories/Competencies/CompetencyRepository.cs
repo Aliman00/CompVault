@@ -68,33 +68,39 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Competency>> GetAllForStatusUpdateAsync(CancellationToken cancellationToken = default) =>
+    public async Task<Competency?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
         await DbSet
-            .AsNoTracking()
+            .Include(c => c.ApplicationUser)
             .Include(c => c.CompetencyType)
-            .Where(c => c.Status != CompetencyStatus.Revoked)
-            .ToListAsync(cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public async Task UpdateStatusesAsync(IEnumerable<(Guid Id, CompetencyStatus NewStatus)> updates, CancellationToken cancellationToken = default)
+    public async Task<(int ExpiredCount, int ExpiringSoonCount)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default)
     {
-        var updatesList = updates.ToList();
+        // Må matche CompetencyStatusCalculator.ExpiringSoonThresholdDays (90)
+        const int expiringSoonThresholdDays = 90;
 
-        if (updatesList.Count == 0)
-            return;
+        // Sett Expired: bevis med utløpsdato i fortiden og RequiresExpiration == true
+        // Berører aldri Revoked (filtrert i WHERE) eller soft-deleted (global query filter)
+        int expiredCount = await DbSet
+            .Where(c => c.Status != CompetencyStatus.Revoked
+                && c.CompetencyType!.RequiresExpiration
+                && c.ExpiryDate != null
+                && c.ExpiryDate < DateTime.UtcNow)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, CompetencyStatus.Expired), cancellationToken);
 
-        // Bygg dictionary for O(1) oppslag
-        var updateMap = updatesList.ToDictionary(u => u.Id, u => u.NewStatus);
+        // Sett ExpiringSoon: gyldige bevis med utløpsdato innen 90 dager og RequiresExpiration == true
+        // Begrenser til Status == Valid for å unngå å re-markere Expired-bevis
+        DateTime threshold = DateTime.UtcNow.AddDays(expiringSoonThresholdDays);
+        int expiringSoonCount = await DbSet
+            .Where(c => c.Status == CompetencyStatus.Valid
+                && c.CompetencyType!.RequiresExpiration
+                && c.ExpiryDate != null
+                && c.ExpiryDate >= DateTime.UtcNow
+                && c.ExpiryDate <= threshold)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, CompetencyStatus.ExpiringSoon), cancellationToken);
 
-        // Hent ID-ene vi skal oppdatere
-        List<Competency> competencies = await DbSet
-            .Where(c => updateMap.Keys.Contains(c.Id))
-            .ToListAsync(cancellationToken);
-
-        foreach (Competency competency in competencies)
-            competency.Status = updateMap[competency.Id];
-
-        await DbContext.SaveChangesAsync(cancellationToken);
+        return (expiredCount, expiringSoonCount);
     }
 
     /// <inheritdoc />
