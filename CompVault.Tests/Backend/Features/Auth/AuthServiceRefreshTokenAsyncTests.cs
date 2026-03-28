@@ -1,12 +1,12 @@
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Configuration;
-using CompVault.Backend.Features.Auth.DTOs;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Common;
 
@@ -47,9 +47,9 @@ public class AuthServiceRefreshTokenAsyncTests
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
         _unitOfWorkMock
             .Setup(x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<TokenDto>>>>(),
+                It.IsAny<Func<Task<Result<TokenResponse>>>>(),
                 It.IsAny<CancellationToken>()))
-            .Returns<Func<Task<Result<TokenDto>>>, CancellationToken>(
+            .Returns<Func<Task<Result<TokenResponse>>>, CancellationToken>(
                 (operation, _) => operation());
 
         IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
@@ -117,7 +117,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .Returns(newAccessToken);
 
         // Act
-        Result<TokenDto> result = await _sut.RefreshTokenAsync(storedToken.Token);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -154,7 +154,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync((RefreshToken?)null);
 
         // Act
-        Result<TokenDto> result = await _sut.RefreshTokenAsync(unknownToken);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(unknownToken);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -165,7 +165,7 @@ public class AuthServiceRefreshTokenAsyncTests
             x => x.FindByIdAsync(It.IsAny<string>()), Times.Never);
         _unitOfWorkMock.Verify(
             x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<TokenDto>>>>(),
+                It.IsAny<Func<Task<Result<TokenResponse>>>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -194,15 +194,15 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
-        Result<TokenDto> result = await _sut.RefreshTokenAsync(storedToken.Token);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be(ErrorCode.InvalidToken);
+        result.Error!.Code.Should().Be(ErrorCode.AccountInactive);
 
         _unitOfWorkMock.Verify(
             x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<TokenDto>>>>(),
+                It.IsAny<Func<Task<Result<TokenResponse>>>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -210,7 +210,7 @@ public class AuthServiceRefreshTokenAsyncTests
     /// Tester at et gyldig token der brukeren er inaktiv returnerer InvalidToken
     /// </summary>
     [Fact]
-    public async Task RefreshTokenAsync_InactiveUser_ReturnsInvalidToken()
+    public async Task RefreshTokenAsync_InactiveUser_ReturnsAccountInactive()
     {
         // Arrange
         ApplicationUser inactiveUser = TestDataFactory.CreateApplicationUser(deletedAt: DateTime.UtcNow.AddDays(-1));
@@ -232,15 +232,15 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync(inactiveUser);
 
         // Act
-        Result<TokenDto> result = await _sut.RefreshTokenAsync(storedToken.Token);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be(ErrorCode.InvalidToken);
+        result.Error!.Code.Should().Be(ErrorCode.AccountInactive);
 
         _unitOfWorkMock.Verify(
             x => x.ExecuteInTransactionAsync(
-                It.IsAny<Func<Task<Result<TokenDto>>>>(),
+                It.IsAny<Func<Task<Result<TokenResponse>>>>(),
                 It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -280,7 +280,7 @@ public class AuthServiceRefreshTokenAsyncTests
             .ReturnsAsync(Result<string>.Failure(refreshTokenError));
 
         // Act
-        Result<TokenDto> result = await _sut.RefreshTokenAsync(storedToken.Token);
+        Result<TokenResponse> result = await _sut.RefreshTokenAsync(storedToken.Token);
 
         // Assert
         result.IsFailure.Should().BeTrue();
