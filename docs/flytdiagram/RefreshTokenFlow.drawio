@@ -119,7 +119,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="_8Frjms3wEEJPwytoCMQ" name="AccessTokenHandler">
-    <mxGraphModel dx="1425" dy="1306" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1425" dy="1248" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -171,7 +171,7 @@
           <mxGeometry height="50" width="121" x="353" y="570" as="geometry" />
         </mxCell>
         <mxCell id="aUCQ8jEHUf2heckm5pg0-27" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;Staus kode 401&lt;/div&gt;" vertex="1">
-          <mxGeometry height="30" width="110" x="461" y="440" as="geometry" />
+          <mxGeometry height="30" width="110" x="430" y="515" as="geometry" />
         </mxCell>
         <mxCell id="rIwIYloPuJ7uX8hPOLTf-7" edge="1" parent="1" source="rIwIYloPuJ7uX8hPOLTf-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="rIwIYloPuJ7uX8hPOLTf-6">
           <mxGeometry relative="1" as="geometry" />
