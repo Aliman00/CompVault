@@ -160,7 +160,7 @@ public sealed class AuthService(
 
         if (user is null || !user.IsActive || user.DeletedAt is not null)
             return Result<RefreshTokenResponse>.Failure(
-                AppError.Create(ErrorCode.InvalidToken, "Bruker ikke funnet eller inaktiv."));
+                AppError.Create(ErrorCode.AccountInactive, "Bruker ikke funnet eller inaktiv."));
 
         IList<string> roles = await userManager.GetRolesAsync(user);
 

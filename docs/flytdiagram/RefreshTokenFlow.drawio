@@ -1,0 +1,241 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0" version="29.6.6" pages="2">
+  <diagram id="C5RBs43oDa-KdzZeNtuy" name="CookieValidationEvents">
+    <mxGraphModel dx="1425" dy="1306" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-0" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-1" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Bruker åpner en side på vårt domene eller refresher en side" vertex="1">
+          <mxGeometry height="70" width="120" x="354" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-2" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="414" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-3" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;div&gt;CookieValidationEvent kjører&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="160" x="334" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-20" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-21" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-4" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;div&gt;Sjekker cookiens egenskapen &quot;LastValidated&quot;:&lt;/div&gt;&lt;div&gt;har det gått mer enn 10 min?&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="180" x="324" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-7" parent="WIyWlLk6GJQsqaUBKTNV-1" style="whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div&gt;Mindre enn 10 min: Brukeren har fortsatt gyldige tokens og er autorisert&lt;/div&gt;" vertex="1">
+          <mxGeometry height="95" width="150" x="110" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-25" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-11" parent="WIyWlLk6GJQsqaUBKTNV-1" style="whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="&lt;div&gt;Mer enn 10 min:&lt;/div&gt;&lt;div&gt;Vi må prøve å refreshe token&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="150" x="339" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-26" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-30" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="570" y="585" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-13" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#e1d5e7;strokeColor=#9673a6;" value="POST til RefreshToken i backend" vertex="1">
+          <mxGeometry height="50" width="125" x="351.5" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-19" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-34" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-14" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div&gt;Backend returnerer 401&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="120" x="510" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-36" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-43" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="eNfZHel5HIWmgv-oSqI_-41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-18" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;div&gt;ErrorCode = InvalidToken&lt;/div&gt;&lt;div&gt;Kan være Race Condition som skjer da 2 forespørsler kjører samtidig. Bruker fortsatt autorisert, men kall gir 401&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="140" x="422" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-22" parent="WIyWlLk6GJQsqaUBKTNV-1" style="whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Oppdaterer auth-cookie, refrehs token-cookie og HttpContext med nye tokens - bruker er fortsatt autorisert" vertex="1">
+          <mxGeometry height="80" width="150" x="150" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-33" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div&gt;ErrorCode = AccountInactive&lt;/div&gt;&lt;div&gt;Bruker har blitt deaktivtert eller token revoked. Logges ut i UI-en og cookies slettes&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="120" x="590" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-39" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="eNfZHel5HIWmgv-oSqI_-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eNfZHel5HIWmgv-oSqI_-38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-35" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div&gt;Ingen forespørsler har bekreftet bruker autorisert:&lt;/div&gt;&lt;div&gt;Vis feilmelding i UI-en&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="170" x="407" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-45" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="494" y="1150" />
+              <mxPoint x="762" y="1150" />
+            </Array>
+            <mxPoint x="494" y="1120" as="sourcePoint" />
+            <mxPoint x="480" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-38" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div&gt;Bruker kan kalle backend, men vil kun få 401 i 10 minutter til CookieValidation kjøres igjen.&lt;/div&gt;&lt;div&gt;AccessTokenHandler vil prøve å refreshe tokene på hvert kall, men det vil også feile&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="170" x="407" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-41" parent="WIyWlLk6GJQsqaUBKTNV-1" style="whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Hvis en av forespørselene refreshet tokens - bruker er fortsatt autorisert" vertex="1">
+          <mxGeometry height="80" width="150" x="201.5" y="755" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-47" parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;Etter 10 min så kan CookieValidaitonEvent kjøre på nytt,&lt;/div&gt;&lt;div&gt;ved f.eks oppdatering eller navigering&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="150" x="590" y="1060" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-48" parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;CookieValidationEvents - kjøres når brukeren åpner siden for første gang, bruker oppdaterer siden (F5), bruker navigerer til ny url på vårt domene i adressefeltet eller krets brytes og gjennopprettes.&lt;/div&gt;&lt;div&gt;Den blir kjørt av UseAuthentication()-middlware på hver HTTP-request til server-side. Vi har en setting kalt ValidateIntervalMinutes som sikrer at vi ikke kjører RefreshToken på hver request&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="366" x="231" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="eNfZHel5HIWmgv-oSqI_-49" parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;Merk: 10 minutter er brukt som et eksempel her. AuthSettings sin ValidateIntervalMinutes styrer hvor ofte CookieValidationEvent kjører. Skal være noen minutter mindre enn utløpstiden på en RefreshToken i backend&lt;/div&gt;" vertex="1">
+          <mxGeometry height="150" width="230" x="30" y="120" as="geometry" />
+        </mxCell>
+        <UserObject label="https://jakeydocs.readthedocs.io/en/latest/security/authentication/cookie.html" link="https://jakeydocs.readthedocs.io/en/latest/security/authentication/cookie.html" id="DPc4_qDfrSUQ0kfVxJZv-0">
+          <mxCell parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;whiteSpace=wrap;" vertex="1">
+            <mxGeometry height="40" width="223.5" x="56.5" y="1050" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="DPc4_qDfrSUQ0kfVxJZv-1" parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Dokumentasjon:" vertex="1">
+          <mxGeometry height="30" width="90" x="53.25" y="960" as="geometry" />
+        </mxCell>
+        <UserObject label="https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/security/authentication/cookie.md" link="https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/security/authentication/cookie.md" id="DPc4_qDfrSUQ0kfVxJZv-2">
+          <mxCell parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;whiteSpace=wrap;" vertex="1">
+            <mxGeometry height="30" width="230" x="53.25" y="990" as="geometry" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="_8Frjms3wEEJPwytoCMQ" name="AccessTokenHandler">
+    <mxGraphModel dx="1425" dy="1306" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-1" edge="1" parent="1" source="aUCQ8jEHUf2heckm5pg0-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="414" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Bruker utfører handling som sender API-kall til backend" vertex="1">
+          <mxGeometry height="70" width="120" x="354" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;AccessTokenHandler er en delegating handler så kjøres på utgåeende HTTP-kall fra hoved http-klienten vår.&lt;/div&gt;&lt;div&gt;Den kloner en request (da de er single-use) før den sendes, og sender requesten og ser om den failer. Hvis requesten failer med statuskode 401, så prøver vi å refreshe tokenparet. Hvis tokene blir refreshet, så sender vi den klonete forespørselen på nytt denne gangen med riktig access token.&lt;/div&gt;&lt;div&gt;Failer refreshingen så sendes responsen videre til Blazor-komponenten som kalte den.&lt;/div&gt;&lt;div&gt;Denne brukes i hovedsak hvis en bruker sitter lenge stille på en side, Access token utløper og ingen CookieValidationEvents blir trigget (av navigering/refresh)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="331" x="249" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-18" edge="1" parent="1" source="aUCQ8jEHUf2heckm5pg0-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="aUCQ8jEHUf2heckm5pg0-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="AccessTokenHandler starter (Scoped livstid)" vertex="1">
+          <mxGeometry height="70" width="156" x="336" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-20" edge="1" parent="1" source="aUCQ8jEHUf2heckm5pg0-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="aUCQ8jEHUf2heckm5pg0-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="Kloner requesten" vertex="1">
+          <mxGeometry height="40" width="94" x="367" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-23" edge="1" parent="1" source="aUCQ8jEHUf2heckm5pg0-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="aUCQ8jEHUf2heckm5pg0-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-26" edge="1" parent="1" source="aUCQ8jEHUf2heckm5pg0-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="aUCQ8jEHUf2heckm5pg0-25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-19" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="Sender den originale requesten" vertex="1">
+          <mxGeometry height="40" width="94" x="367" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-22" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="Returner responsen til Blazor-komponenten" vertex="1">
+          <mxGeometry height="90" width="94" x="160" y="425" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-24" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;Status-koder som ikke er 401&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="94" x="270" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-2" edge="1" parent="1" source="aUCQ8jEHUf2heckm5pg0-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="rIwIYloPuJ7uX8hPOLTf-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-13" edge="1" parent="1" source="aUCQ8jEHUf2heckm5pg0-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="rIwIYloPuJ7uX8hPOLTf-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-25" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#e1d5e7;strokeColor=#9673a6;" value="POST RefreshToken i backend" vertex="1">
+          <mxGeometry height="50" width="121" x="353" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="aUCQ8jEHUf2heckm5pg0-27" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;Staus kode 401&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="110" x="461" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-7" edge="1" parent="1" source="rIwIYloPuJ7uX8hPOLTf-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="rIwIYloPuJ7uX8hPOLTf-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="Oppdaterer access_token Claim i minnet og oppdaterer RefreshToken-cookie (er ikke sikkert den oppdaterer RefreshToken siden det er over SignalR, må testes)" vertex="1">
+          <mxGeometry height="130" width="186" x="114" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;OK 200&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="294" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-16" edge="1" parent="1" source="rIwIYloPuJ7uX8hPOLTf-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="601" y="700" />
+              <mxPoint x="540" y="700" />
+            </Array>
+            <mxPoint x="500" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-21" edge="1" parent="1" source="rIwIYloPuJ7uX8hPOLTf-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="rIwIYloPuJ7uX8hPOLTf-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#f8cecc;strokeColor=#b85450;" value="Leser ErrorCode" vertex="1">
+          <mxGeometry height="50" width="121" x="540" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-9" edge="1" parent="1" source="rIwIYloPuJ7uX8hPOLTf-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="rIwIYloPuJ7uX8hPOLTf-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-27" edge="1" parent="1" source="rIwIYloPuJ7uX8hPOLTf-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="80" y="920" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="Sender den klonede forespørselen på nytt med access token i Bearer-header" vertex="1">
+          <mxGeometry height="90" width="121.75" x="146.13" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div&gt; Neste forespørseler etter dette fortsetter å hente access token og sette Bearer-header&lt;/div&gt;&lt;div&gt;(Ingen klonede requester igjen før 401)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="141.75" x="136.13" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-12" parent="1" style="whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;div&gt;Hvis vi får 401 igjen nå, så kan det være av uforventede årsaker:&lt;/div&gt;&lt;div&gt;Race condition, men da vil en av forespørslene satt ny access token.&lt;/div&gt;&lt;div&gt;Nettverk feil&lt;/div&gt;&lt;div&gt;Backend nede&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="150" x="10" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#f8cecc;strokeColor=#b85450;dashed=1;dashPattern=1 2;" value="&lt;div&gt;Token er revoket. Sender feilmelding til Blazor-komponenten.&lt;/div&gt;&lt;div&gt;Bruker blir kastet ut på neste CookieValidationEvent&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="173" x="328" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;AccountInactive&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="520" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#f8cecc;strokeColor=#b85450;" value="Den orignale 401 repsonsen sendes til komponenten. Brukeren er ikke innlogget, men vil fortsatt få 401 på hver forespørsel til backend" vertex="1">
+          <mxGeometry height="70" width="220" x="490.5" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-22" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Andre ErrorCode" vertex="1">
+          <mxGeometry height="50" width="120" x="600" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-23" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Forbedrings potensiale: Cache at brukeren fikk Error på RefreshToken som ikke var AccountInactive. Det kan stoppe bruker fra å sende evige doble kall til backend etter en &quot;broken&quot; session" vertex="1">
+          <mxGeometry height="80" width="360" x="430" y="880" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-24" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;Forbedrings potensiale: Hvis RefreshToken får AccountInactive, så kan vi lage en custom event som trigger en event i Layout eller App som kan kjøre en Javascript for å logge oss ut&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="370" x="229" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="rIwIYloPuJ7uX8hPOLTf-25" edge="1" parent="1" source="rIwIYloPuJ7uX8hPOLTf-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.343;entryY=0.05;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;dashPattern=12 12;" target="rIwIYloPuJ7uX8hPOLTf-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

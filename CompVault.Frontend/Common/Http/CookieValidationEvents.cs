@@ -3,6 +3,8 @@ using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 namespace CompVault.Frontend.Common.Http;
 
@@ -45,11 +47,23 @@ public class CookieValidationEvents(AuthSettings authSettings, IWebHostEnvironme
             HttpResponseMessage refreshTokenResponse = await client.PostAsJsonAsync(
                 ApiRoutes.Auth.RefreshFull, refreshTokenRequest, context.HttpContext.RequestAborted);
             
-            // Vi feiler åpent hvis tokenet er ugydlig - Hvis to forespørsler sendes akkurat samtidig
-            // (feks ved oppstart) så burde ikke den ene forespørslen som sendt sist og failet, revoke token
-            // som ble satt i den første forespørselen
+            // Sjekker om errorkoden er AccountInactive, det setter brukeren som utlogget.
+            // Hvis feks race condition - to requester kjører nesten paralellelt så sender backend InvalidToken.
+            // Vi lar den faile åpent, i og med at en av forespørslene kan ha refreshet token
             if (!refreshTokenResponse.IsSuccessStatusCode)
+            {
+                ProblemDetail? problem = await refreshTokenResponse.Content
+                    .ReadFromJsonAsync<ProblemDetail>(context.HttpContext.RequestAborted);
+
+                if (problem?.Code == nameof(ErrorCode.AccountInactive))
+                {
+                    // Bruker er deaktivert — logget ut
+                    context.RejectPrincipal();
+                    return;
+                }
+                
                 return;
+            }
             
             RefreshTokenResponse? tokenResponse = await refreshTokenResponse.Content
                 .ReadFromJsonAsync<RefreshTokenResponse>(context.HttpContext.RequestAborted);

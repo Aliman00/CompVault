@@ -4,6 +4,7 @@ using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Common.Http;
 
@@ -29,10 +30,12 @@ public class AccessTokenHandler(
         if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
             return response;
         
-        // Bruker refresh fra cookie til å autoriseres på nytt - failer det så sender vi 401 videre til kalleren
-        bool refreshedTokens = await TryRefreshAsync(ct);
-        if (!refreshedTokens)
-            return response; 
+        // Bruker refresh fra cookie til å autoriseres på nytt - failer det så sender vi koden videre til kalleren
+        // og hvis errorkoden er AccountInactive, så er brukeren utlogget
+        Result  refreshResult  = await TryRefreshAsync(ct);
+        if (refreshResult.IsFailure && 
+            refreshResult.Error?.Code == ErrorCode.AccountInactive)
+            return response;
         
         SetAuthHeader(clonedRequest);
         return await base.SendAsync(clonedRequest, ct);
@@ -49,15 +52,15 @@ public class AccessTokenHandler(
     }
     
     
-    private async Task<bool> TryRefreshAsync(CancellationToken ct)
+    private async Task<Result> TryRefreshAsync(CancellationToken ct)
     {
         HttpContext? httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) 
-            return false;
+            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Ingen HttpContext."));
         
         string? refreshToken = httpContext.GetRefreshTokenCookie();
         if (string.IsNullOrEmpty(refreshToken))
-            return false;
+            return Result.Failure(AppError.Create(ErrorCode.InvalidToken, "Ingen refresh token i cookie."));
         
         // Oppreter en klient som ikke har AccessTokenHandler påkoblet
         HttpClient client = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
@@ -69,17 +72,26 @@ public class AccessTokenHandler(
             HttpResponseMessage response = await client.PostAsJsonAsync(ApiRoutes.Auth.RefreshFull, request, 
                 ct);
 
-            if (!response.IsSuccessStatusCode) 
-                return false;
+            if (!response.IsSuccessStatusCode)
+            {
+                ProblemDetail? problem = await response.Content
+                    .ReadFromJsonAsync<ProblemDetail>(ct);
+
+                ErrorCode code = Enum.TryParse(problem?.Code, out ErrorCode parsed)
+                    ? parsed
+                    : ErrorCode.Unknown;
+
+                return Result.Failure(AppError.Create(code, problem?.Message ?? string.Empty));
+            }
             
             RefreshTokenResponse? tokenResponse = await response.Content
                 .ReadFromJsonAsync<RefreshTokenResponse>(ct);
             if (tokenResponse == null) 
-                return false;
+                return Result.Failure(AppError.Create(ErrorCode.Unknown, "Tom respons fra backend."));
             
             // Sjekker at ClaimsIdentity ikke er null og at det er riktig tyype
             if (httpContext.User.Identity is not ClaimsIdentity identity)
-                return false;
+                return Result.Failure(AppError.Create(ErrorCode.Unauthorized, "Ingen ClaimsIdentity."));
             
             // Bytter ut gammel claim med ny
             Claim? oldClaim = identity.FindFirst("access_token");
@@ -89,11 +101,11 @@ public class AccessTokenHandler(
             
             httpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
 
-            return true;
+            return Result.Success();
         }
         catch
         {
-            return false;
+            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Uventet feil ved token-refresh."));
         }
     }
     
