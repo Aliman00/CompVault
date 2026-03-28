@@ -78,5 +78,5 @@ public static class CompetencyMapper
     }
 
     private static int? CalculateDaysUntilExpiry(DateTime? expiryDate, DateTime now) =>
-        expiryDate.HasValue ? (int)(expiryDate.Value - now).TotalDays : null;
+        expiryDate.HasValue ? (int)Math.Floor((expiryDate.Value - now).TotalDays) : null;
 }

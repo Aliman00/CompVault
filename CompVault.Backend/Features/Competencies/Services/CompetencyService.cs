@@ -110,6 +110,12 @@ public sealed class CompetencyService(
                 AppError.Create(ErrorCode.Validation,
                     "Utløpsdato (ExpiryDate) kan ikke være før utstedelsesdato (IssuedDate)."));
 
+        // Kun Revoked kan settes manuelt; andre statuser beregnes automatisk
+        if (request.Status.HasValue && request.Status.Value != CompetencyStatus.Revoked)
+            return Result<CompetencyDto>.Failure(
+                AppError.Create(ErrorCode.Validation,
+                    $"Status kan kun settes til '{CompetencyStatus.Revoked}'. Andre statusverdier beregnes automatisk."));
+
         bool isRevoked = competency.Status == CompetencyStatus.Revoked;
         bool revoking = request.Status == CompetencyStatus.Revoked;
         bool unrevoking = request.Status.HasValue && !revoking && isRevoked;

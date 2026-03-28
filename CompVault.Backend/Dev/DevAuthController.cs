@@ -60,7 +60,7 @@ public sealed class DevAuthController(
         return Ok(new TokenResponse
         {
             AccessToken = accessToken,
-            RefreshToken = refreshToken
+            // RefreshToken = refreshToken
         });
     }
 

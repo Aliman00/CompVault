@@ -1,5 +1,6 @@
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Shared.Enums;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -11,15 +12,26 @@ namespace CompVault.Backend.Infrastructure.Repositories.Competencies;
 public sealed class CompetencyTypeRepository(AppDbContext dbContext) : BaseRepository<CompetencyType>(dbContext), ICompetencyTypeRepository
 {
     /// <inheritdoc />
+    public override async Task<IReadOnlyList<CompetencyType>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await DbSet
+            .AsNoTracking()
+            .Where(ct => ct.IsActive)
+            .ToListAsync(cancellationToken);
+
+    /// <inheritdoc />
     public async Task<CompetencyType?> GetByNameAsync(string name, CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()
-            .FirstOrDefaultAsync(ct => ct.Name.ToLower() == name.ToLowerInvariant(), cancellationToken);
+            .FirstOrDefaultAsync(ct => EF.Functions.ILike(ct.Name, name), cancellationToken);
 
     /// <inheritdoc />
     public async Task<bool> HasCompetenciesAsync(Guid competencyTypeId, CancellationToken cancellationToken = default) =>
         await DbContext.Set<Competency>()
-            .AnyAsync(c => c.CompetencyTypeId == competencyTypeId, cancellationToken);
+            .AnyAsync(c =>
+                c.CompetencyTypeId == competencyTypeId &&
+                c.Status != CompetencyStatus.Revoked &&
+                c.Status != CompetencyStatus.Expired,
+                cancellationToken);
 
     /// <inheritdoc />
     public Task SoftDeleteAsync(CompetencyType competencyType, CancellationToken cancellationToken = default)
