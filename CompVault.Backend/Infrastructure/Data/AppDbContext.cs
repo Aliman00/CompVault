@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
 
@@ -18,11 +19,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
+    // ============= COMPETENCIES ==============
+    public DbSet<CompetencyType> CompetencyTypes => Set<CompetencyType>();
+    public DbSet<Competency> Competencies => Set<Competency>();
+
     // ============= AUTH ==============
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
-
-
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)

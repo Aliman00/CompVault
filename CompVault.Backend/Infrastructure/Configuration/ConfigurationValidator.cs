@@ -51,7 +51,7 @@ public static class ConfigurationValidator
         if (string.IsNullOrWhiteSpace(fromAddress))
             throw new InvalidOperationException("Email:FromAddress er ikke konfigurert.");
     }
-    
+
     private static void ValidateCors()
     {
         string? origins = Environment.GetEnvironmentVariable("Cors__AllowedOrigins");

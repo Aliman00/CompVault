@@ -4,6 +4,7 @@ using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,7 +18,7 @@ namespace CompVault.Backend.Features.Auth.Controllers;
 [Produces("application/json")]
 public sealed class AuthController(IAuthService authService) : BaseController
 {
-    
+
     /// <summary>
     /// Steg 1: Sender en engangs-kode til brukeren via valgt kanal (e-post eller SMS).
     /// Returnerer alltid 200 OK uavhengig av om e-posten er registrert — for å unngå e-postkartlegging.
@@ -58,7 +59,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
 
         if (result.IsFailure)
             return HandleFailure(result);
-        
+
         return Ok(result.Value!);
     }
 
@@ -76,7 +77,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
 
         if (result.IsFailure)
             return HandleFailure(result);
-        
+
         return Ok(result.Value);
     }
 
@@ -90,7 +91,7 @@ public sealed class AuthController(IAuthService authService) : BaseController
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeAsync(
-        [FromBody]RefreshTokenRequest request, CancellationToken cancellationToken)
+        [FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
     {
         Guid currentUserId = User.GetUserId();
 
