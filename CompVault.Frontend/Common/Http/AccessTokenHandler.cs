@@ -16,7 +16,8 @@ public class AccessTokenHandler(
     IHttpContextAccessor httpContextAccessor,
     IHttpClientFactory httpClientFactory,
     IWebHostEnvironment env,
-    AuthSettings authSettings) : DelegatingHandler
+    AuthSettings authSettings,
+    ILogger<AccessTokenHandler> logger) : DelegatingHandler
 {   
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -33,8 +34,12 @@ public class AccessTokenHandler(
         // Bruker refresh fra cookie til å autoriseres på nytt - failer det så sender vi koden videre til kalleren
         Result refreshResult = await TryRefreshAsync(ct);
         if (refreshResult.IsFailure)
+        {
+            logger.LogDebug("Token-refresh feilet med {Code} — sender responsen videre", refreshResult.Error?.Code);
             return response;
+        }
         
+        logger.LogDebug("Token refreshet vellyket - prøver igjen");
         SetAuthHeader(clonedRequest);
         return await base.SendAsync(clonedRequest, ct);
     }
@@ -60,7 +65,7 @@ public class AccessTokenHandler(
         if (string.IsNullOrEmpty(refreshToken))
             return Result.Failure(AppError.Create(ErrorCode.InvalidToken, "Ingen refresh token i cookie."));
         
-        // Oppreter en klient som ikke har AccessTokenHandler påkoblet
+        // Oppretter en klient som ikke har AccessTokenHandler påkoblet
         HttpClient client = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
 
         try
@@ -78,18 +83,25 @@ public class AccessTokenHandler(
                 ErrorCode code = Enum.TryParse(problem?.Code, out ErrorCode parsed)
                     ? parsed
                     : ErrorCode.Unknown;
-
+                
+                logger.LogDebug("Token-refresh feilet med {Code}", code);
                 return Result.Failure(AppError.Create(code, problem?.Message ?? string.Empty));
             }
             
             TokenResponse? tokenResponse = await response.Content
                 .ReadFromJsonAsync<TokenResponse>(ct);
-            if (tokenResponse == null) 
+            if (tokenResponse == null)
+            {
+                logger.LogWarning("Tom respons fra backend ved token-refresh i AccessTokenHandler");
                 return Result.Failure(AppError.Create(ErrorCode.Unknown, "Tom respons fra backend."));
+            }
             
             // Sjekker at ClaimsIdentity ikke er null og at det er riktig tyype
             if (httpContext.User.Identity is not ClaimsIdentity identity)
+            {
+                logger.LogWarning("Principal er ikke et ClaimsIdentity-objekt i AccessTokenHandler");
                 return Result.Failure(AppError.Create(ErrorCode.Unauthorized, "Ingen ClaimsIdentity."));
+            }
             
             // Bytter ut gammel claim med ny
             Claim? oldClaim = identity.FindFirst("access_token");
@@ -98,11 +110,13 @@ public class AccessTokenHandler(
             identity.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
             
             httpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
-
+            
+            logger.LogDebug("Token refreshet og claims oppdatert i AccessTokenHandler");
             return Result.Success();
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Uventet feil ved token-refresh i AccessTokenHandler");
             return Result.Failure(AppError.Create(ErrorCode.Unknown, "Uventet feil ved token-refresh."));
         }
     }

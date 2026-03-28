@@ -11,12 +11,15 @@ namespace CompVault.Frontend.Common.Http;
 /// <summary>
 /// Håndterer token-refresh og brukervalidering via cookie-middleware som kjøres på hver forespørsel
 /// </summary>
-public class CookieValidationEvents(AuthSettings authSettings, IWebHostEnvironment env) 
+public class CookieValidationEvents(
+    AuthSettings authSettings, 
+    IWebHostEnvironment env, 
+    ILogger<CookieValidationEvents> logger) 
     : CookieAuthenticationEvents
 {   
     public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
     {
-        // Vi gjør en sjekk for å sjekke sist gang vi validerte at brukeren har gydlig refresh token.
+        // Vi sjekker sist gang vi validerte at brukeren hadde gydlig refresh token.
         // En egenskap som vi alltid setter etter vi har refreshet token
         string? lastCheckedRaw = context.Properties.GetParameter<string>("LastValidated");
         if (lastCheckedRaw != null &&
@@ -27,6 +30,7 @@ public class CookieValidationEvents(AuthSettings authSettings, IWebHostEnvironme
         string? refreshToken = context.HttpContext.GetRefreshTokenCookie();
         if (string.IsNullOrEmpty(refreshToken))
         {
+            logger.LogWarning("Ingen refresh token funnet - logger brukeren ut");
             context.RejectPrincipal();
             return;
         }
@@ -58,10 +62,12 @@ public class CookieValidationEvents(AuthSettings authSettings, IWebHostEnvironme
                 if (problem?.Code == nameof(ErrorCode.AccountInactive))
                 {
                     // Bruker er deaktivert — logget ut
+                    logger.LogWarning("Bruker er deaktivert — logger brukeren ut");
                     context.RejectPrincipal();
                     return;
                 }
                 
+                logger.LogDebug("Token-refresh feilet med {Code} - kan være race condition", problem?.Code);
                 return;
             }
             
@@ -69,11 +75,16 @@ public class CookieValidationEvents(AuthSettings authSettings, IWebHostEnvironme
                 .ReadFromJsonAsync<TokenResponse>(context.HttpContext.RequestAborted);
 
             if (tokenResponse == null)
+            {
+                logger.LogWarning("Tom respons fra backend ved token-refresh — feiler åpent");
                 return;
+            }
+                
             
             // Er Identity null og ikke et ClaimsIdentity-objekt, brukeren er ikke autentisert lenger
             if (context.Principal?.Identity is not ClaimsIdentity identity)
             {
+                logger.LogWarning("Principal er ikke et ClaimsIdentity-objekt — logger brukeren ut");
                 context.RejectPrincipal();
                 return;
             }
@@ -85,10 +96,12 @@ public class CookieValidationEvents(AuthSettings authSettings, IWebHostEnvironme
             identity.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
             
             context.HttpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
+            logger.LogDebug("Token refreshet og principal oppdatert");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Feiler åpent hvis backend er nede
+            logger.LogError(ex, "Uventet feil ved token-refresh i CookieValidationEvents");
         }
     }
 }

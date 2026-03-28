@@ -87,7 +87,7 @@ public class AuthService(
         {
             string? refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
             
-            // Hvis vi ikke har en refresh token-cookie, hopper så skipper vi å revoke. Backend sin DataAnnotations 
+            // Hvis vi ikke har en refresh token-cookie, så skipper vi å revoke. Backend sin DataAnnotations 
             // fanger opp requester uten refresh token
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
