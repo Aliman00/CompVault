@@ -198,7 +198,7 @@ public class AuthServiceRefreshTokenAsyncTests
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be(ErrorCode.InvalidToken);
+        result.Error!.Code.Should().Be(ErrorCode.AccountInactive);
 
         _unitOfWorkMock.Verify(
             x => x.ExecuteInTransactionAsync(
@@ -210,7 +210,7 @@ public class AuthServiceRefreshTokenAsyncTests
     /// Tester at et gyldig token der brukeren er inaktiv returnerer InvalidToken
     /// </summary>
     [Fact]
-    public async Task RefreshTokenAsync_InactiveUser_ReturnsInvalidToken()
+    public async Task RefreshTokenAsync_InactiveUser_ReturnsAccountInactive()
     {
         // Arrange
         ApplicationUser inactiveUser = TestDataFactory.CreateApplicationUser(deletedAt: DateTime.UtcNow.AddDays(-1));
@@ -236,7 +236,7 @@ public class AuthServiceRefreshTokenAsyncTests
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be(ErrorCode.InvalidToken);
+        result.Error!.Code.Should().Be(ErrorCode.AccountInactive);
 
         _unitOfWorkMock.Verify(
             x => x.ExecuteInTransactionAsync(
