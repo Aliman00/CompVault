@@ -27,6 +27,8 @@ public static class DatabaseSeeder
         ("Tobias", "Lie",      "tobias.lie@compvault.no",    "Rådgiver",             ["Employee"]),
         ("Sofie",  "Dahl",     "sofie.dahl@compvault.no",    "HR-konsulent",         ["Employee"]),
         ("Almin",  "Colakovic","almin.dev@pm.me",            "Systemutvikler",       ["Employee"]),
+        ("Majlinda","Lajci",   "gamingnerd824@gmail.com",    "Systemutvikler",       ["Employee"]),
+        ("Fredrik","Magee",    "fredrik@magee.no",           "Systemutvikler",       ["Employee"]),
     ];
 
     private static readonly (string Name, string Description)[] Roles =
@@ -55,6 +57,8 @@ public static class DatabaseSeeder
         ("ingrid.berg@compvault.no",   "Utvikling"),
         ("tobias.lie@compvault.no",    "Drift"),
         ("sofie.dahl@compvault.no",    "Rekruttering"),
+        ("gamingnerd824@gmail.com",     "Utvikling"),
+        ("fredrik@magee.no",           "Utvikling"),
     ];
 
     // CompetencyTypes: (Name, Description, Category, RequiresExpiration)
