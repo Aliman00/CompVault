@@ -28,6 +28,7 @@ public class AuthServiceVerifyOtpAsyncTests
     private readonly Mock<IJwtService> _jwtServiceMock;
     private readonly Mock<IRefreshTokenService> _refreshTokenService;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IPermissionService> _permissionServiceMock;
     private readonly AuthService _sut;
 
     public AuthServiceVerifyOtpAsyncTests()
@@ -46,6 +47,7 @@ public class AuthServiceVerifyOtpAsyncTests
         _refreshTokenService = new Mock<IRefreshTokenService>();
         var refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _permissionServiceMock = new Mock<IPermissionService>();
 
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
         _unitOfWorkMock
@@ -63,6 +65,10 @@ public class AuthServiceVerifyOtpAsyncTests
             MaxFailedAttempts = 3
         });
 
+        _permissionServiceMock
+            .Setup(x => x.GetPermissionsForRolesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
+
         _sut = new AuthService(
             _userManagerMock.Object,
             loggerMock.Object,
@@ -72,7 +78,8 @@ public class AuthServiceVerifyOtpAsyncTests
             otpOptions,
             _refreshTokenService.Object,
             refreshTokenRepositoryMock.Object,
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            _permissionServiceMock.Object);
     }
 
     // -------------------------------------------------------------------------
@@ -112,7 +119,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync(roles);
 
         // mocker JwtService til å returere AccessToken
-        _jwtServiceMock.Setup(x => x.GenerateAccessToken(user, roles))
+        _jwtServiceMock.Setup(x => x.GenerateAccessToken(user, roles, It.IsAny<IEnumerable<string>>()))
             .Returns(accessToken);
 
         // mocker RefreshTokenService til å returere RefreshToken
@@ -134,7 +141,7 @@ public class AuthServiceVerifyOtpAsyncTests
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(user.Id, request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Once);
         _userManagerMock.Verify(x => x.GetRolesAsync(user), Times.Once);
-        _jwtServiceMock.Verify(x => x.GenerateAccessToken(user, roles), Times.Once());
+        _jwtServiceMock.Verify(x => x.GenerateAccessToken(user, roles, It.IsAny<IList<string>>()), Times.Once());
         _refreshTokenService.Verify(x => x.CreateRefreshTokenAsync(user.Id,
             It.IsAny<CancellationToken>()), Times.Once);
 
@@ -258,6 +265,6 @@ public class AuthServiceVerifyOtpAsyncTests
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(It.IsAny<Guid>(), request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Once);
         _jwtServiceMock.Verify(x => x.GenerateAccessToken(It.IsAny<ApplicationUser>(),
-            It.IsAny<IList<string>>()), Times.Never);
+            It.IsAny<IList<string>>(), It.IsAny<IEnumerable<string>>()), Times.Never);
     }
 }

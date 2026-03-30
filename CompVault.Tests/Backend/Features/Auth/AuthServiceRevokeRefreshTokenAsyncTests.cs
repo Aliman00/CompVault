@@ -23,6 +23,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
 {
     private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepositoryMock;
+    private readonly Mock<IPermissionService> _permissionServiceMock;
     private readonly AuthService _sut;
 
     public AuthServiceRevokeRefreshTokenAsyncTests()
@@ -39,6 +40,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
         Mock<IRefreshTokenService> refreshTokenServiceMock = new();
         _refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         Mock<IUnitOfWork> unitOfWorkMock = new();
+        _permissionServiceMock = new Mock<IPermissionService>();
 
         IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
         {
@@ -46,6 +48,10 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
             MinResponseTimeVerifyOtpMs = 0,
             MaxFailedAttempts = 3
         });
+
+        _permissionServiceMock
+            .Setup(x => x.GetPermissionsForRolesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
 
         _sut = new AuthService(
             _userManagerMock.Object,
@@ -56,7 +62,8 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
             otpOptions,
             refreshTokenServiceMock.Object,
             _refreshTokenRepositoryMock.Object,
-            unitOfWorkMock.Object);
+            unitOfWorkMock.Object,
+            _permissionServiceMock.Object);
     }
 
     // -------------------------------------------------------------------------
