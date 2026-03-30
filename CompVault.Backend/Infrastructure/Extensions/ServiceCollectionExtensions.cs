@@ -7,6 +7,7 @@ using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
+using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Configuration;
@@ -18,6 +19,7 @@ using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -142,7 +144,20 @@ public static class ServiceCollectionExtensions
             };
         });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            // Dynamisk registrering av policies basert på Permissions.cs-konstanter
+            typeof(Permissions)
+                .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly)
+                .Where(f => f.FieldType == typeof(string))
+                .Select(f => (string)f.GetValue(null)!)
+                .ToList()
+                .ForEach(permission =>
+                {
+                    options.AddPolicy(permission, policy =>
+                        policy.RequireClaim(Permissions.ClaimType, permission));
+                });
+        });
         services.AddScoped<IJwtService, JwtService>();
 
         return services;
@@ -180,6 +195,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
 
         // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
         services.AddHostedService<TokenCleanupJob>();
@@ -240,6 +257,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICompetencyService, CompetencyService>();
         services.AddScoped<IOtpCodeService, OtpCodeService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+        services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<IRoleService, RoleService>();
 
         return services;
     }

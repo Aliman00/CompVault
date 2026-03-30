@@ -1,9 +1,11 @@
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Features.Users.Services;
 
@@ -12,7 +14,10 @@ namespace CompVault.Backend.Features.Users.Services;
 /// </summary>
 public sealed class UserService(
     IUserRepository userRepository,
-    UserManager<ApplicationUser> userManager) : IUserService
+    UserManager<ApplicationUser> userManager,
+    RoleManager<ApplicationRole> roleManager,
+    AppDbContext dbContext,
+    ILogger<UserService> logger) : IUserService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
@@ -36,7 +41,7 @@ public sealed class UserService(
 
         if (user is null || user.DeletedAt is not null || !user.IsActive)
             return Result<UserDto>.Failure(
-                AppError.NotFound($"User with ID '{userId}' was not found."));
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
 
         IList<string> roles = await userManager.GetRolesAsync(user);
         return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
@@ -51,8 +56,39 @@ public sealed class UserService(
             u => u.Email == request.Email.ToLowerInvariant(), cancellationToken);
 
         if (emailTaken)
+        {
+            logger.LogWarning("Kunne ikke opprette bruker: e-post {Email} er allerede i bruk", request.Email);
             return Result<UserDto>.Failure(
-                AppError.Conflict($"A user with email '{request.Email}' already exists."));
+                AppError.Conflict($"En bruker med e-post '{request.Email}' eksisterer allerede."));
+        }
+
+        // Valider at avdelingen eksisterer hvis DepartmentId er angitt
+        if (request.DepartmentId.HasValue)
+        {
+            bool departmentExists = await dbContext.Departments
+                .AnyAsync(d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
+
+            if (!departmentExists)
+            {
+                logger.LogWarning("Kunne ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet", request.DepartmentId.Value);
+                return Result<UserDto>.Failure(
+                    AppError.NotFound($"Avdeling med ID '{request.DepartmentId.Value}' ble ikke funnet."));
+            }
+        }
+
+        // Valider at lederen eksisterer og er aktiv hvis ManagerId er angitt
+        if (request.ManagerId.HasValue)
+        {
+            bool managerExists = await dbContext.Users
+                .AnyAsync(u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
+
+            if (!managerExists)
+            {
+                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", request.ManagerId.Value);
+                return Result<UserDto>.Failure(
+                    AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
+            }
+        }
 
         ApplicationUser newUser = new()
         {
@@ -71,15 +107,31 @@ public sealed class UserService(
         if (!createResult.Succeeded)
         {
             string errorMessage = string.Join("; ", createResult.Errors.Select(e => e.Description));
+            logger.LogWarning("Kunne ikke opprette bruker {Email}: {Errors}", request.Email, errorMessage);
             return Result<UserDto>.Failure(
                 AppError.Create(ErrorCode.Validation, errorMessage));
         }
 
         if (request.Roles.Count > 0)
         {
-            await userManager.AddToRolesAsync(newUser, request.Roles);
+            // Validate roles exist
+            List<string> validRoles = new();
+            foreach (string roleName in request.Roles)
+            {
+                bool exists = await roleManager.RoleExistsAsync(roleName);
+                if (!exists)
+                {
+                    logger.LogWarning("Kunne ikke opprette bruker: rolle {Role} eksisterer ikke", roleName);
+                    return Result<UserDto>.Failure(
+                        AppError.Create(ErrorCode.Validation, $"Rollen '{roleName}' eksisterer ikke."));
+                }
+                validRoles.Add(roleName);
+            }
+
+            await userManager.AddToRolesAsync(newUser, validRoles);
         }
 
+        logger.LogInformation("Bruker {Email} opprettet", request.Email);
         IList<string> roles = await userManager.GetRolesAsync(newUser);
         return Result<UserDto>.Success(UserMapper.ToDto(newUser, roles));
     }
@@ -94,7 +146,7 @@ public sealed class UserService(
 
         if (user is null || user.DeletedAt is not null || (!user.IsActive && request.IsActive != true))
             return Result<UserDto>.Failure(
-                AppError.NotFound($"User with ID '{userId}' was not found."));
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
 
         if (request.FirstName is not null) user.FirstName = request.FirstName;
         if (request.LastName is not null) user.LastName = request.LastName;
@@ -107,6 +159,7 @@ public sealed class UserService(
         await userRepository.UpdateAsync(user, cancellationToken);
         await userRepository.SaveChangesAsync(cancellationToken);
 
+        logger.LogInformation("Bruker {UserId} oppdatert", userId);
         IList<string> roles = await userManager.GetRolesAsync(user);
         return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
     }
@@ -120,10 +173,11 @@ public sealed class UserService(
 
         if (user is null || user.DeletedAt is not null || !user.IsActive)
             return Result<bool>.Failure(
-                AppError.NotFound($"User with ID '{userId}' was not found."));
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
 
         await userRepository.SoftDeleteAsync(user, cancellationToken);
         await userRepository.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Bruker {UserId} slettet (soft delete)", userId);
         return Result<bool>.Success(true);
     }
 }
