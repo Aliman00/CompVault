@@ -4,7 +4,6 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Extensions;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 
@@ -61,6 +60,3 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
-
-// Eksponerer Program for integrasjonstester
-public partial class Program;

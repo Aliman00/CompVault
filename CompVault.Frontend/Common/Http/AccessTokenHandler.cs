@@ -27,7 +27,7 @@ public class AccessTokenHandler(
         SetAuthHeader(request);
         HttpResponseMessage response = await base.SendAsync(request, ct);
         
-        // Får vi Unathorized her, token er utgått
+        // Retunrer responsen så fremt ikke vi får Unathorized
         if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
             return response;
         

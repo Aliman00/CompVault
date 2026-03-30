@@ -1,4 +1,5 @@
-﻿using CompVault.Backend.Infrastructure.Data;
+﻿using CompVault.Backend;
+using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Tests.Common;
 
@@ -18,7 +19,7 @@ namespace CompVault.Tests.Backend.Integrations;
 /// <summary>
 /// Vi konfigurerer en WebApplicationFactory som starter hele Backend-applikasjonen vår InMemory
 /// </summary>
-public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class BackendWebApplicationFactory : WebApplicationFactory<BackendMarker>, IAsyncLifetime
 {
     // Starter en PostgreSQL-container for integrasjonstester. Valgt 17-alpine da den er mer testet enn 18
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
