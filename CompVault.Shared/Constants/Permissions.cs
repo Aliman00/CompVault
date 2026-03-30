@@ -7,6 +7,11 @@ namespace CompVault.Shared.Constants;
 /// </summary>
 public static class Permissions
 {
+    /// <summary>
+    /// Claim type used for permission claims in JWT tokens.
+    /// </summary>
+    public const string ClaimType = "permission";
+
     // Users
     public const string UsersRead = "users:read";
     public const string UsersWrite = "users:write";
