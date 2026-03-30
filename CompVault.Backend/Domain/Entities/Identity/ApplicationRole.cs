@@ -21,6 +21,11 @@ public class ApplicationRole : IdentityRole<Guid>
     [StringLength(250)]
     public string Description { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Indikerer om dette er en systemrolle. Systemroller kan ikke slettes eller endre navn.
+    /// </summary>
+    public bool IsSystem { get; set; } = false;
+
     /// <summary>Når rollen ble opprettet (UTC).</summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
