@@ -3,6 +3,6 @@
 namespace CompVault.Backend;
 
 /// <summary>
-/// Gir oss et anker til backend slik at Test-prosjektet kan skille mellom hvem Program.cs som hører til hvert prosejkt
+/// Gir oss et anker til backend slik at Test-prosjektet kan skille mellom Program.cs-filene
 /// </summary>
 public abstract class BackendMarker;

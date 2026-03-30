@@ -46,7 +46,7 @@ public class AccessTokenHandlerTests
         _authClientHandlerMock = new Mock<HttpMessageHandler>();
         var authHttpClient = new HttpClient(_authClientHandlerMock.Object)
         {
-            BaseAddress = new Uri("https//backend")
+            BaseAddress = new Uri(BaseAddress)
         };
         _httpClientFactoryMock
             .Setup(x => x.CreateClient(BackendApiSettings.AuthClientName))
