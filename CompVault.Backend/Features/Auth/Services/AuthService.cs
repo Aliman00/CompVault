@@ -1,4 +1,5 @@
 using System.Diagnostics;
+
 using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
@@ -220,7 +221,7 @@ public sealed class AuthService(
     }
 
     /// <inheritdoc />
-    public async Task<Result> RevokeRefreshTokenAsync(string refreshToken, Guid currentUserId, 
+    public async Task<Result> RevokeRefreshTokenAsync(string refreshToken, Guid currentUserId,
         CancellationToken ct = default)
     {
         // Henter tokenet fra databasen — kun gyldige tokens kan revokers
