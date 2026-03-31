@@ -18,24 +18,23 @@ namespace CompVault.Tests.Frontend.Common.Http;
 public class AccessTokenHandlerTests
 {
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
-    private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
-    private readonly Mock<IWebHostEnvironment> _envMock;
-    private readonly AuthSettings _authSettings;
+
     // Vi mocker selve handleren av HttpClienten - for main og auth
     private readonly Mock<HttpMessageHandler> _mainHandlerMock;
     private readonly Mock<HttpMessageHandler> _authClientHandlerMock;
 
     private readonly AccessTokenHandler _sut;
-
-    private const  string BaseAddress = "https://backend";
-    private const  string TestEndpoint = $"{BaseAddress}/api/test";
+    
+    private const string SendAsync = "SendAsync";
+    private const string BaseAddress = "https://backend";
+    private const string TestEndpoint = $"{BaseAddress}/api/test";
     
     public AccessTokenHandlerTests()
     {
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-        _httpClientFactoryMock = new Mock<IHttpClientFactory>();
-        _envMock = new Mock<IWebHostEnvironment>();
-        _authSettings = new AuthSettings { CookieExpireDays = 7 };
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
+        var envMock = new Mock<IWebHostEnvironment>();
+        var authSettings = new AuthSettings { CookieExpireDays = 7 };
         Mock<ILogger<AccessTokenHandler>> loggerMock = new();
         
         // mocker base.SendAsync - hva backend svarer på vanlige API-kall
@@ -47,24 +46,45 @@ public class AccessTokenHandlerTests
         {
             BaseAddress = new Uri(BaseAddress)
         };
-        _httpClientFactoryMock
+        httpClientFactoryMock
             .Setup(x => x.CreateClient(BackendApiSettings.AuthClientName))
             .Returns(authHttpClient);
         
-        _envMock
+        envMock
             .Setup(x => x.EnvironmentName)
             .Returns(Environments.Development);
 
         _sut = new AccessTokenHandler(
             _httpContextAccessorMock.Object,
-            _httpClientFactoryMock.Object,
-            _envMock.Object,
-            _authSettings,
+            httpClientFactoryMock.Object,
+            envMock.Object,
+            authSettings,
             loggerMock.Object);
 
         _sut.InnerHandler = _mainHandlerMock.Object;
 
     }
+    
+    // -------------------------------------------------------------------------
+    // Hjelpemetoder
+    // -------------------------------------------------------------------------
+    
+    // Oppretter innlogget bruker, ved å bygge en claim med gyldig token, lager en ClaimsIdentity med den
+    // og bruker den til å sette en bruker med gydlig token i HttpContext-en vi returnerer. Med eller uten gyldig
+    // refresh token
+    private DefaultHttpContext BuildHttpContext(bool setRefreshToken = false)
+    {
+        var accessTokenClaim = new Claim("access_token", "valid_access_token");
+        var claimsIdentity = new ClaimsIdentity([accessTokenClaim], "Cookie");
+        var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+        var httpContext = new DefaultHttpContext { User = claimsPrincipal };
+        
+        if (setRefreshToken)
+            httpContext.Request.Headers.Append("Cookie", "refreshToken=valid_access_token");
+
+        return httpContext;
+    }
+    
     
     // -------------------------------------------------------------------------
     // SendAsync Happy Paths
@@ -77,11 +97,7 @@ public class AccessTokenHandlerTests
     public async Task SendAsync_StatusCodeIsNot401_ReturnsResponse()
     {
         // Arrange
-        // Oppretter en claim med gyldig token, lager en ClaimsIdentity med den og bruker den til å sette
-        // en bruker med gydlig token i HttpContext
-        var claim = new Claim("access_token", "valid_access_token");
-        var identity = new ClaimsIdentity([claim], authenticationType: "Cookie");
-        var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
+        DefaultHttpContext httpContext = BuildHttpContext();
         
         // Mocker at HttpContextAccessor returnerer vår HttpContext
         _httpContextAccessorMock
@@ -92,7 +108,7 @@ public class AccessTokenHandlerTests
         // for å sette opp at responsen til Http-forespørselen er 200 OK
         _mainHandlerMock
             .Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
+            .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
         
@@ -106,7 +122,7 @@ public class AccessTokenHandlerTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         _authClientHandlerMock
             .Protected()
-            .Verify("SendAsync", Times.Never(), ItExpr.IsAny<HttpRequestMessage>(),
+            .Verify(SendAsync, Times.Never(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
     }
     
@@ -118,12 +134,7 @@ public class AccessTokenHandlerTests
     public async Task SendAsync_StatusCodeIs401AndValidRefreshToken_RefreshesTokenAndReturnsResponse()
     {
         // Arrange - Oppretter en innlogget bruker
-        var claim = new Claim("access_token", "valid_access_token");
-        var identity = new ClaimsIdentity([claim], authenticationType: "Cookie");
-        var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
-        
-        // Legger til en gyldig Refresh Cookie headeren (som da er hentet fra refresh token-cookien)
-        httpContext.Request.Headers.Append("Cookie", "refreshToken=valid_access_token");
+        DefaultHttpContext httpContext = BuildHttpContext(true);
         
         // Mocker at HttpContextAccessor returnerer vår HttpContext
         _httpContextAccessorMock
@@ -135,7 +146,7 @@ public class AccessTokenHandlerTests
         int callNumber = 0;
         _mainHandlerMock
             .Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
+            .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(() =>
             {
@@ -148,7 +159,7 @@ public class AccessTokenHandlerTests
         // Mocker klienten som brukes i TryRefreshASync til å få 200 Ok med nye tokens
         _authClientHandlerMock
             .Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
+            .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -168,11 +179,11 @@ public class AccessTokenHandlerTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         _mainHandlerMock
             .Protected()
-            .Verify("SendAsync", Times.Exactly(2), ItExpr.IsAny<HttpRequestMessage>(),
+            .Verify(SendAsync, Times.Exactly(2), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
         _authClientHandlerMock
             .Protected()
-            .Verify("SendAsync", Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
+            .Verify(SendAsync, Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
         
     }
@@ -189,12 +200,7 @@ public class AccessTokenHandlerTests
     public async Task SendAsync_StatusCodeIs401AndRefreshesTokenFails_ReturnOriginalResponse()
     {
         // Arrange - Oppretter en innlogget bruker
-        var claim = new Claim("access_token", "valid_access_token");
-        var identity = new ClaimsIdentity([claim], authenticationType: "Cookie");
-        var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
-        
-        // Gyldig Refresh Token
-        httpContext.Request.Headers.Append("Cookie", "refreshToken=valid_access_token");
+        DefaultHttpContext httpContext = BuildHttpContext(true);
         
         // Mocker at HttpContextAccessor returnerer vår HttpContext
         _httpContextAccessorMock
@@ -204,7 +210,7 @@ public class AccessTokenHandlerTests
         // Mocker først at vi får 401 Unathorized
         _mainHandlerMock
             .Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
+            .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Unauthorized));
         
@@ -212,7 +218,7 @@ public class AccessTokenHandlerTests
         // utenom logging
         _authClientHandlerMock
             .Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
+            .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Forbidden));
         
@@ -224,11 +230,11 @@ public class AccessTokenHandlerTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         _mainHandlerMock
             .Protected()
-            .Verify("SendAsync", Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
+            .Verify(SendAsync, Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
         _authClientHandlerMock
             .Protected()
-            .Verify("SendAsync", Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
+            .Verify(SendAsync, Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
         
     }
@@ -240,9 +246,7 @@ public class AccessTokenHandlerTests
     public async Task SendAsync_StatusCodeIs401AndNoRefreshToken_ReturnsOriginalResponse()
     {
         // Arrange - Oppretter en innlogget bruker
-        var claim = new Claim("access_token", "valid_access_token");
-        var identity = new ClaimsIdentity([claim], authenticationType: "Cookie");
-        var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
+        DefaultHttpContext httpContext = BuildHttpContext();
         
         // Mocker at HttpContextAccessor returnerer vår HttpContext
         _httpContextAccessorMock
@@ -252,7 +256,7 @@ public class AccessTokenHandlerTests
         // Mocker først at vi får 401 Unathorized
         _mainHandlerMock
             .Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
+            .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Unauthorized));
         
@@ -264,12 +268,79 @@ public class AccessTokenHandlerTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         _mainHandlerMock
             .Protected()
-            .Verify("SendAsync", Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
+            .Verify(SendAsync, Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
         _authClientHandlerMock
             .Protected()
-            .Verify("SendAsync", Times.Never(), ItExpr.IsAny<HttpRequestMessage>(),
+            .Verify(SendAsync, Times.Never(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
         
+    }
+    
+    /// <summary>
+    /// Tester at CloneAsync kloner den originale responsen korrekt
+    /// </summary>
+    [Fact]
+    public async Task SendAsync_RequestHasBody_RetryRequestHasSameBody()
+    {
+        // Arrange - Oppretter en innlogget bruker
+        DefaultHttpContext httpContext = BuildHttpContext(true);
+        
+        // Mocker at HttpContextAccessor returnerer vår HttpContext
+        _httpContextAccessorMock
+            .Setup(x => x.HttpContext)
+            .Returns(httpContext);
+        
+        // Mocker først at vi får 401 Unathorized og deretter 200 Ok. Bruker en teller for å sikre at vi før 
+        // ønskete responser på kallene våre
+        int callNumber = 0;
+        
+        // Vi lagrer HttpRequestMessage-ene til hvert kall i en liste med hjelp av callback for hver response
+        var capturedRequests = new List<HttpRequestMessage>();
+        
+        _mainHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((httpRequestMessage, _) 
+                => capturedRequests.Add(httpRequestMessage))
+            .ReturnsAsync(() =>
+            {
+                callNumber++;
+                return callNumber == 1 
+                    ? new HttpResponseMessage(HttpStatusCode.Unauthorized) 
+                    : new HttpResponseMessage(HttpStatusCode.OK);
+            });
+        
+        // Mocker klienten som brukes i TryRefreshASync til å få 200 Ok med nye tokens
+        _authClientHandlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new TokenResponse
+                {
+                    AccessToken = "access-token",
+                    RefreshToken = "refresh-token"
+                })
+            });
+        
+        // Oppretter en request body som vi legger til original requesten
+        var requestBody = new { Title = "test", Value = 123 };
+        var content = JsonContent.Create(requestBody);
+        
+        // Act
+        await new HttpMessageInvoker(_sut)
+            .SendAsync(new HttpRequestMessage(HttpMethod.Post, TestEndpoint)
+            {
+                Content = content
+            },
+            CancellationToken.None);
+        
+        // Assert - Sjekker at bodyene er like
+        string originalBody = await capturedRequests[0].Content!.ReadAsStringAsync();
+        string retryBody = await capturedRequests[1].Content!.ReadAsStringAsync();
+        retryBody.Should().Be(originalBody);
     }
 }
