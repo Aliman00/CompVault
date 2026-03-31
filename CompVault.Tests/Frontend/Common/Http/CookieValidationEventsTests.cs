@@ -4,6 +4,7 @@ using System.Security.Claims;
 
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Http;
+using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
 using FluentAssertions;
@@ -163,6 +164,9 @@ public class CookieValidationEventsTests
             .Protected()
             .Verify(SendAsync, Times.Never(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
+        _authServiceMock.Verify(x => x.SignOutAsync(
+            It.IsAny<HttpContext>(), CookieAuthenticationDefaults.AuthenticationScheme,
+            It.IsAny<AuthenticationProperties?>()), Times.Once());
     }
     
     /// <summary>
@@ -236,42 +240,41 @@ public class CookieValidationEventsTests
     }
     
     /// <summary>
-    /// Sjekker at token blir 
+    /// Tester happy path ved at brukeren får nytt token par, claim er oppdatert og nye cookies
     /// </summary>
     [Fact]
-    public async Task ValidatePrincipal_AccountIsDisabled_UserLoggedOut()
+    public async Task ValidatePrincipal_ValidRefreshToken_UpdatesAccessTokenClaimAndRefreshCookie()
     {   
-        // Arrange - Oppretter et Problem Detail med code AccountInactive
+        // Arrange
         CookieValidatePrincipalContext context = CreateValidatePrincipalContext(refreshTokenCookie: "valid_token");
         
-        var problemDetail = new ProblemDetail
-        {
-            Status = 403,
-            Code = nameof(ErrorCode.AccountInactive),
-            Message = "Bruker er deaktivert"
-        };
-        
-        // Mocker at Refresh token returnerer forbidden med problemdetail
+        // Mocker at Refresh token returnerer OK med nye tokens
         _authClientHandlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Forbidden)
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = JsonContent.Create(problemDetail)
+                Content = JsonContent.Create(new TokenResponse
+                {
+                    AccessToken = "new_access_token",
+                    RefreshToken = "new_refresh_token"
+                })
             });
         
         // Act
         await _sut.ValidatePrincipal(context);
         
-        // Assert - Sjekker at brukeren ble utlogget, SignOutAsync ble kalt engang og at cookien er slettet
-        context.Principal.Should().BeNull();
-        context.HttpContext.Response.Headers.SetCookie.Should().ContainMatch("refreshToken=*");
+        // Assert - Sjekker at brukeren er fortsatt innlogget, ny claim og refresh token-cookie er satt
+        context.Principal.Should().NotBeNull();
+
+        string? newClaim = context.Principal?.FindFirst("access_token")?.Value;
+        newClaim.Should().Be("new_access_token");
+        context.HttpContext.Response.Headers.SetCookie
+            .Should().ContainMatch("refreshToken=new_refresh_token*");
+        
         _authClientHandlerMock
             .Protected()
             .Verify(SendAsync, Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
-        _authServiceMock.Verify(x => x.SignOutAsync(
-            It.IsAny<HttpContext>(), CookieAuthenticationDefaults.AuthenticationScheme,
-            It.IsAny<AuthenticationProperties?>()), Times.Once());
     }
 }
