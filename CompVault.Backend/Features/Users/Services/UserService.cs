@@ -1,11 +1,10 @@
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Features.Users.Services;
 
@@ -14,9 +13,9 @@ namespace CompVault.Backend.Features.Users.Services;
 /// </summary>
 public sealed class UserService(
     IUserRepository userRepository,
+    IDepartmentRepository departmentRepository,
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
-    AppDbContext dbContext,
     ILogger<UserService> logger) : IUserService
 {
     /// <inheritdoc />
@@ -65,8 +64,8 @@ public sealed class UserService(
         // Valider at avdelingen eksisterer hvis DepartmentId er angitt
         if (request.DepartmentId.HasValue)
         {
-            bool departmentExists = await dbContext.Departments
-                .AnyAsync(d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
+            bool departmentExists = await departmentRepository.ExistsAsync(
+                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
 
             if (!departmentExists)
             {
@@ -79,8 +78,8 @@ public sealed class UserService(
         // Valider at lederen eksisterer og er aktiv hvis ManagerId er angitt
         if (request.ManagerId.HasValue)
         {
-            bool managerExists = await dbContext.Users
-                .AnyAsync(u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
+            bool managerExists = await userRepository.ExistsAsync(
+                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
 
             if (!managerExists)
             {

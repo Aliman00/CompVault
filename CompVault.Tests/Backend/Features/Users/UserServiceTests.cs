@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Users.Services;
-using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -10,20 +10,19 @@ using CompVault.Shared.Result;
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Moq;
 
 namespace CompVault.Tests.Backend.Features.Users;
 
-public class UserServiceTests : IDisposable
+public class UserServiceTests
 {
     // Mocker avhengighetene UserService trenger
     private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
     private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
     private readonly Mock<RoleManager<ApplicationRole>> _roleManagerMock;
-    private readonly AppDbContext _dbContext;
     private readonly Mock<ILogger<UserService>> _loggerMock;
 
     // Systemet vi tester
@@ -44,6 +43,7 @@ public class UserServiceTests : IDisposable
     public UserServiceTests()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
+        _departmentRepositoryMock = new Mock<IDepartmentRepository>();
 
         // UserManager krever en IUserStore-mock for å kunne instansieres
         var storeMock = new Mock<IUserStore<ApplicationUser>>();
@@ -57,20 +57,14 @@ public class UserServiceTests : IDisposable
         _roleManagerMock = new Mock<RoleManager<ApplicationRole>>(
             roleStoreMock.Object, null!, null!, null!, null!);
 
-        // In-memory database for AppDbContext
-        DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        _dbContext = new AppDbContext(options);
-
         // Logger mock
         _loggerMock = new Mock<ILogger<UserService>>();
 
         _sut = new UserService(
             _userRepositoryMock.Object,
+            _departmentRepositoryMock.Object,
             _userManagerMock.Object,
             _roleManagerMock.Object,
-            _dbContext,
             _loggerMock.Object);
     }
 
@@ -370,7 +364,4 @@ public class UserServiceTests : IDisposable
             It.IsAny<CancellationToken>()), Times.Never);
         _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
-
-    // Rydder opp in-memory databasen etter hver test
-    public void Dispose() => _dbContext.Dispose();
 }

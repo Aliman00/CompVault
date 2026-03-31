@@ -19,6 +19,9 @@ public interface IRoleRepository : IRepository<ApplicationRole>
     /// <summary>Henter alle permission-navn for en gitt rolle.</summary>
     Task<IReadOnlyList<string>> GetPermissionNamesForRoleAsync(Guid roleId, CancellationToken cancellationToken = default);
 
+    /// <summary>Henter alle permission-navn for flere rollenavn.</summary>
+    Task<IReadOnlyList<string>> GetPermissionNamesForRolesAsync(IEnumerable<string> roleNames, CancellationToken cancellationToken = default);
+
     /// <summary>Henter permissions basert på navn.</summary>
     Task<IReadOnlyList<Permission>> GetPermissionsByNamesAsync(HashSet<string> names, CancellationToken cancellationToken = default);
 

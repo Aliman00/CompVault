@@ -40,6 +40,22 @@ public sealed class RoleRepository(AppDbContext dbContext) : BaseRepository<Appl
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> GetPermissionNamesForRolesAsync(IEnumerable<string> roleNames, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(roleNames);
+        var roleNameSet = new HashSet<string>(roleNames.Where(r => !string.IsNullOrEmpty(r)), StringComparer.OrdinalIgnoreCase);
+        if (roleNameSet.Count == 0)
+            return [];
+
+        return await DbContext.RolePermissions
+            .AsNoTracking()
+            .Where(rp => rp.Role.Name != null && roleNameSet.Contains(rp.Role.Name))
+            .Select(rp => rp.Permission.Name)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Permission>> GetPermissionsByNamesAsync(HashSet<string> names, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(names);
