@@ -6,7 +6,6 @@ using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
-using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 using CompVault.Tests.Common;
 
@@ -80,10 +79,9 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             IsRevoked = false
         };
-        var request = new RevokeTokenRequest { RefreshToken = storedToken.Token };
 
         _refreshTokenRepositoryMock
-            .Setup(x => x.GetValidTokenAsync(request.RefreshToken, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetValidTokenAsync(storedToken.Token, It.IsAny<CancellationToken>()))
             .ReturnsAsync(storedToken);
 
         _refreshTokenRepositoryMock
@@ -91,7 +89,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
             .Returns(Task.CompletedTask);
 
         // Act
-        Result result = await _sut.RevokeRefreshTokenAsync(request, user.Id);
+        Result result = await _sut.RevokeRefreshTokenAsync(storedToken.Token, user.Id);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -112,14 +110,14 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
     public async Task RevokeRefreshTokenAsync_TokenNotFound_ReturnsInvalidToken()
     {
         // Arrange
-        var request = new RevokeTokenRequest { RefreshToken = "ukjent-token" };
+        string unknownToken = "ukjent-token";
 
         _refreshTokenRepositoryMock
-            .Setup(x => x.GetValidTokenAsync(request.RefreshToken, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetValidTokenAsync(unknownToken, It.IsAny<CancellationToken>()))
             .ReturnsAsync((RefreshToken?)null);
 
         // Act
-        Result result = await _sut.RevokeRefreshTokenAsync(request, Guid.NewGuid());
+        Result result = await _sut.RevokeRefreshTokenAsync(unknownToken, Guid.NewGuid());
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -148,14 +146,13 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             IsRevoked = false
         };
-        var request = new RevokeTokenRequest { RefreshToken = storedToken.Token };
 
         _refreshTokenRepositoryMock
-            .Setup(x => x.GetValidTokenAsync(request.RefreshToken, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetValidTokenAsync(storedToken.Token, It.IsAny<CancellationToken>()))
             .ReturnsAsync(storedToken);
 
         // Act
-        Result result = await _sut.RevokeRefreshTokenAsync(request, currentUserId);
+        Result result = await _sut.RevokeRefreshTokenAsync(storedToken.Token, currentUserId);
 
         // Assert
         result.IsFailure.Should().BeTrue();

@@ -9,12 +9,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 
 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Testing")
-{
     ConfigurationLoader.LoadEnvironmentFile();
-    ConfigurationValidator.ValidateAll();
-}
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+if (!builder.Environment.IsEnvironment("Testing"))
+    ConfigurationValidator.ValidateAll();
 
 builder.ConfigureSwagger();
 builder.ConfigureLogging();
@@ -22,6 +22,7 @@ builder.ConfigureLogging();
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("db");
+builder.Services.AddFrontendCors(builder.Configuration);
 builder.Services.AddInfrastructure();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationFailureHandler>();
 builder.Services.AddDatabase(builder.Configuration, builder.Environment);
@@ -42,6 +43,7 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
+app.UseCors(CorsSettings.PolicyName);
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -54,8 +56,9 @@ if (app.Environment.IsDevelopment())
     using IServiceScope scope = app.Services.CreateScope();
     UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     RoleManager<ApplicationRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+    AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     ILogger logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await DatabaseSeeder.SeedAsync(userManager, roleManager, logger);
+    await DatabaseSeeder.SeedAsync(userManager, roleManager, dbContext, logger);
 }
 
 app.Run();

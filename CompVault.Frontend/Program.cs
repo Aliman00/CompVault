@@ -4,54 +4,38 @@ using MudBlazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 1. BLAZOR + INTERACTIVE RENDERING
-// ═══════════════════════════════════════════════════════════════════════════════
+// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 2. LOGGING (Serilog)
 builder.AddSerilogLogging();
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 3. MUD-BLAZOR UI-KOMPONENTER
-builder.Services.AddMudServices();
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 4. HTTP-KLIENTER
-// - AddHttpClients() = dine eksisterende klienter
-// - BackendApi = for OTP-backend
 builder.Services.AddHttpClients(builder.Configuration);
-builder.Services.AddHttpClient("BackendApi", client =>
-{
-    client.BaseAddress = new Uri("http://localhost:5010/");  // Backend URL
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 5. API CONTROLLERS (for fremtidig bruk)
-builder.Services.AddControllers();
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 6. FORETNINGSLOGIKK (dine services)
-builder.Services.AddFrontendServices();
+builder.Services.AddMudServices();
+builder.Services.AddAuthorization();
+builder.Services.AddAuth(builder.Configuration, builder.Environment);
+builder.Services.AddFrontendServices(builder.Environment);
+builder.Services.AddRazorPages();
 
 WebApplication app = builder.Build();
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 7. HTTP PIPELINE
+// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseAntiforgery();
 
-app.MapStaticAssets();  // CSS/JS-filer
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
-app.MapControllers();  // API-routes
+// ============ Autentisering ============
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapRazorPages();
+
+app.MapStaticAssets();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();
