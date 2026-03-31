@@ -1,6 +1,6 @@
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Roles;
 using CompVault.Shared.Result;
 
@@ -16,36 +16,32 @@ public sealed class RoleService(
     RoleManager<ApplicationRole> roleManager,
     UserManager<ApplicationUser> userManager,
     AppDbContext dbContext,
-    ICurrentUserProvider currentUserProvider,
+    IRoleRepository roleRepository,
+    IUnitOfWork unitOfWork,
     ILogger<RoleService> logger) : IRoleService
 {
 
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<RoleDto>>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        List<ApplicationRole> roles = await roleManager.Roles.ToListAsync(cancellationToken);
+        IReadOnlyList<ApplicationRole> roles = await roleRepository.GetAllWithPermissionsAsync(cancellationToken);
         if (roles.Count == 0)
             return Result<IReadOnlyList<RoleDto>>.Success([]);
 
         // Last brukerteller i bulk for å unngå N+1
         var roleIds = roles.Select(r => r.Id).ToList();
+
+        // Bruker dbContext direkte for cross-aggregate query (UserRoles er en del av Identity)
         Dictionary<Guid, int> userCounts = await dbContext.UserRoles
             .Where(ur => roleIds.Contains(ur.RoleId))
             .GroupBy(ur => ur.RoleId)
             .ToDictionaryAsync(g => g.Key, g => g.Count(), cancellationToken);
 
-        // Last permissions i bulk for å unngå N+1
-        Dictionary<Guid, List<string>> rolePermissions = await dbContext.RolePermissions
-            .Where(rp => roleIds.Contains(rp.RoleId))
-            .Include(rp => rp.Permission)
-            .GroupBy(rp => rp.RoleId)
-            .ToDictionaryAsync(g => g.Key, g => g.Select(rp => rp.Permission.Name).ToList(), cancellationToken);
-
         var roleDtos = roles
             .Select(role => RoleMapper.ToDto(
                 role,
                 userCounts.GetValueOrDefault(role.Id, 0),
-                rolePermissions.GetValueOrDefault(role.Id, [])))
+                role.RolePermissions.Select(rp => rp.Permission.Name).ToList()))
             .ToList();
 
         return Result<IReadOnlyList<RoleDto>>.Success(roleDtos);
@@ -64,13 +60,13 @@ public sealed class RoleService(
             $"Rolle med ID '{id}' har null som navn. Dette skal ikke være mulig.");
 
         int userCount = (await userManager.GetUsersInRoleAsync(roleName)).Count;
-        List<string> permissions = await GetPermissionNamesForRoleAsync(role.Id, cancellationToken);
+        IReadOnlyList<string> permissions = await roleRepository.GetPermissionNamesForRoleAsync(role.Id, cancellationToken);
 
-        return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissions));
+        return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissions.ToList()));
     }
 
     /// <inheritdoc />
-    public async Task<Result<RoleDto>> CreateAsync(CreateRoleRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<RoleDto>> CreateAsync(CreateRoleRequest request, Guid createdById, CancellationToken cancellationToken = default)
     {
         if (request is null)
             return Result<RoleDto>.Failure(
@@ -86,7 +82,7 @@ public sealed class RoleService(
             Name = request.Name,
             Description = request.Description,
             CreatedAt = DateTime.UtcNow,
-            CreatedById = currentUserProvider.GetCurrentUserId()
+            CreatedById = createdById
         };
 
         IdentityResult result = await roleManager.CreateAsync(role);
@@ -145,9 +141,9 @@ public sealed class RoleService(
             $"Rolle med ID '{id}' har null som navn. Dette skal ikke være mulig.");
 
         int userCount = (await userManager.GetUsersInRoleAsync(roleName)).Count;
-        List<string> permissions = await GetPermissionNamesForRoleAsync(role.Id, cancellationToken);
+        IReadOnlyList<string> permissions = await roleRepository.GetPermissionNamesForRoleAsync(role.Id, cancellationToken);
 
-        return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissions));
+        return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissions.ToList()));
     }
 
     /// <inheritdoc />
@@ -184,7 +180,7 @@ public sealed class RoleService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<RoleDto>> AssignPermissionsAsync(Guid roleId, AssignPermissionsRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<RoleDto>> AssignPermissionsAsync(Guid roleId, AssignPermissionsRequest request, Guid grantedById, CancellationToken cancellationToken = default)
     {
         if (request is null)
             return Result<RoleDto>.Failure(
@@ -195,15 +191,12 @@ public sealed class RoleService(
             return Result<RoleDto>.Failure(
                 AppError.NotFound($"Rolle med ID '{roleId}' ble ikke funnet."));
 
-        // Valider at alle permissions finnes
         if (request.PermissionNames is null)
             return Result<RoleDto>.Failure(
                 AppError.Create(ErrorCode.Validation, "Permission-navn kan ikke være null."));
 
         var requestedNames = request.PermissionNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        List<Permission> validPermissions = await dbContext.Permissions
-            .Where(p => requestedNames.Contains(p.Name))
-            .ToListAsync(cancellationToken);
+        IReadOnlyList<Permission> validPermissions = await roleRepository.GetPermissionsByNamesAsync(requestedNames, cancellationToken);
 
         if (validPermissions.Count != requestedNames.Count)
         {
@@ -213,19 +206,10 @@ public sealed class RoleService(
                 AppError.Create(ErrorCode.Validation, $"Ugyldige permissions: {string.Join(", ", invalidNames)}"));
         }
 
-        // Slett eksisterende role permissions
-        List<RolePermission> existingPermissions = await dbContext.RolePermissions
-            .Where(rp => rp.RoleId == roleId)
-            .ToListAsync(cancellationToken);
-
-        // Bruk transaksjon for å sikre at vi ikke mister permissions hvis add feiler
-        await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-        try
+        return await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            dbContext.RolePermissions.RemoveRange(existingPermissions);
+            await roleRepository.RemoveRolePermissionsAsync(roleId, cancellationToken);
 
-            // Opprett nye role permissions
-            Guid? grantedById = currentUserProvider.GetCurrentUserId();
             var newRolePermissions = validPermissions.Select(p => new RolePermission
             {
                 RoleId = roleId,
@@ -234,49 +218,25 @@ public sealed class RoleService(
                 GrantedById = grantedById
             }).ToList();
 
-            dbContext.RolePermissions.AddRange(newRolePermissions);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Feil ved tildeling av permissions til rolle {RoleId}", roleId);
-            await transaction.RollbackAsync(cancellationToken);
-            return Result<RoleDto>.Failure(
-                AppError.Create(ErrorCode.InternalError, "Kunne ikke tildele permissions."));
-        }
+            await roleRepository.AddRolePermissionsAsync(newRolePermissions, cancellationToken);
 
-        // Rolle skal alltid ha et navn etter opprettelse via RoleManager
-        string roleName = role.Name ?? throw new InvalidOperationException(
-            $"Rolle med ID '{roleId}' har null som navn. Dette skal ikke være mulig.");
+            string roleName = role.Name ?? throw new InvalidOperationException($"Rolle med ID '{roleId}' har null som navn.");
+            int userCount = (await userManager.GetUsersInRoleAsync(roleName)).Count;
+            var permissionNames = validPermissions.Select(p => p.Name).ToList();
 
-        int userCount = (await userManager.GetUsersInRoleAsync(roleName)).Count;
-        var permissionNames = validPermissions.Select(p => p.Name).ToList();
-
-        return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissionNames));
+            return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissionNames));
+        }, cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<PermissionDto>>> GetAllPermissionsAsync(CancellationToken cancellationToken = default)
     {
-        List<Permission> permissions = await dbContext.Permissions
-            .OrderBy(p => p.Category)
-            .ThenBy(p => p.Name)
-            .ToListAsync(cancellationToken);
+        IReadOnlyList<Permission> permissions = await roleRepository.GetAllPermissionsAsync(cancellationToken);
 
         var dtos = permissions
             .Select(RoleMapper.ToPermissionDto)
             .ToList();
 
         return Result<IReadOnlyList<PermissionDto>>.Success(dtos);
-    }
-
-    private async Task<List<string>> GetPermissionNamesForRoleAsync(Guid roleId, CancellationToken cancellationToken)
-    {
-        return await dbContext.RolePermissions
-            .Where(rp => rp.RoleId == roleId)
-            .Include(rp => rp.Permission)
-            .Select(rp => rp.Permission.Name)
-            .ToListAsync(cancellationToken);
     }
 }

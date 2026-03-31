@@ -196,7 +196,6 @@ public static class ServiceCollectionExtensions
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
         services.AddHttpContextAccessor();
-        services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
 
         // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
         services.AddHostedService<TokenCleanupJob>();
@@ -236,6 +235,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<ICompetencyTypeRepository, CompetencyTypeRepository>();
         services.AddScoped<ICompetencyRepository, CompetencyRepository>();

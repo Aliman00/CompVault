@@ -1,5 +1,6 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Roles.Services;
+using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Roles;
 using CompVault.Shared.Result;
@@ -61,7 +62,8 @@ public sealed class RolesController(IRoleService roleService) : BaseController
         [FromBody] CreateRoleRequest request,
         CancellationToken cancellationToken)
     {
-        Result<RoleDto> result = await roleService.CreateAsync(request, cancellationToken);
+        Guid createdById = User.GetUserId();
+        Result<RoleDto> result = await roleService.CreateAsync(request, createdById, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -126,7 +128,8 @@ public sealed class RolesController(IRoleService roleService) : BaseController
         [FromBody] AssignPermissionsRequest request,
         CancellationToken cancellationToken)
     {
-        Result<RoleDto> result = await roleService.AssignPermissionsAsync(id, request, cancellationToken);
+        Guid grantedById = User.GetUserId();
+        Result<RoleDto> result = await roleService.AssignPermissionsAsync(id, request, grantedById, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
