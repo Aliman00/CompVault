@@ -2,6 +2,6 @@
   <Project Path="CompVault.Backend/CompVault.Backend.csproj" />
   <Project Path="CompVault.Frontend/CompVault.Frontend.csproj" />
   <Project Path="CompVault.Shared/CompVault.Shared.csproj" />
-  <Project Path="CompVault.Tests/CompVault.Tests.csproj" />
+  <Project Path="CompVault.Backend.Tests/CompVault.Backend.Tests.csproj" />
   <Project Path="CompVault.Frontend.Tests/CompVault.Frontend.Tests.csproj" />
 </Solution>

@@ -1,0 +1,326 @@
+﻿using System.Net;
+using System.Net.Http.Json;
+
+using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Email.Models;
+using CompVault.Backend.Tests.Backend.Features.Auth.Builders;
+using CompVault.Backend.Tests.Common;
+using CompVault.Backend.Tests.Common.Constants;
+using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.Result;
+
+using FluentAssertions;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+using Moq;
+
+namespace CompVault.Backend.Tests.Backend.Integrations.Controllers;
+
+/// <summary>
+/// IClassFixture sikrer at vi ikke oppretter flere instanser av applikasjonen
+/// Siden xUnit-konstruktøren kan ikke være async så oppretter vi to hooks per test:
+/// En InitializeAsync som kjører for hver test, og en DisposeAsync for å rydde opp
+/// </summary>
+public class AuthControllerTests(BackendWebApplicationFactory factory)
+    : IClassFixture<BackendWebApplicationFactory>, IAsyncLifetime
+{
+    // Oppretter en Httpclient for å sende forespørsler mot endepunktene våre
+    private readonly HttpClient _client = factory.CreateClient();
+
+    // Initialiserer InMemory-databsen og rydder opp databasen før AuthController kjører
+    public async Task InitializeAsync()
+    {
+        _ = factory.CreateClient();
+        factory.EmailServiceMock.Reset(); // Resetter mocken for å sikre at EmailService resettes mellom kjøringer
+        await TestDataSeeder.CreateDb(factory.Services);
+        await TestDataSeeder.SeedUserAsync(factory.Services, // Seeder en aktiv bruker
+            id: TestConstants.Users.ActiveUserId);
+        await TestDataSeeder.SeedUserAsync(factory.Services, // Seeder en inaktiv bruker
+            id: TestConstants.Users.InactiveUserId,
+            email: TestConstants.Users.DefaultEmailForInactiveUser,
+            deletedAt: DateTime.UtcNow);
+    }
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    // -------------------------------------------------------------------------
+    // POST /api/auth/request-otp
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester happypath. Sjekker at endepunktet returnerer Ok og EmailService blir kalt
+    /// </summary>
+    [Fact]
+    public async Task RequestOtp_ExistingEmailWithNoExistingCode_Returns200()
+    {
+        // Arrange
+        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
+
+        // mocker EmailService til å returnere success
+        factory.EmailServiceMock
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        factory.EmailServiceMock.Verify(x => x.SendAsync(TestConstants.Users.DefaultEmailForActiveUser,
+            It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Once);
+
+    }
+
+    /// <summary>
+    /// Tester at vi får Ok når eposten ikke eksisterer. Bruker får samme resulatet for å ikke avsløre om brukeren
+    /// eksisterer
+    /// </summary>
+    [Fact]
+    public async Task RequestOtp_UnknownEmail_Returns200()
+    {
+        // Arrange
+        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest(email: "eksisterer@ikke.se");
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        factory.EmailServiceMock.Verify(x => x.SendAsync(TestConstants.Users.DefaultEmailForActiveUser,
+            It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Never);
+
+    }
+
+    /// <summary>
+    /// Tester 2 kall etter hverandre for å sikre at det blir opprettet kun en kode, og at vi får 200 Ok når Error
+    /// er OtpCooldown
+    /// </summary>
+    [Fact]
+    public async Task RequestOtp_OtpCooldown_Returns200()
+    {
+        // Arrange
+        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
+
+        // mocker EmailService til å returnere success
+        factory.EmailServiceMock
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        // Act - Utfører to kall til samme endepunkt
+        await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+
+        // Assert - Sjekker at Result er 200 Ok og at vi kaller EmailService kun engang, ikke to
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        factory.EmailServiceMock.Verify(x => x.SendAsync(TestConstants.Users.DefaultEmailForActiveUser,
+            It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Tester at EmailService (Resend) failer, og at vi returnerer 500. Verifiserer at transaksjonen i Unit of Work
+    /// fungerer som planlagt, og sikrer at OTP-koden ikke lagres i databasen
+    /// </summary>
+    [Fact]
+    public async Task RequestOtp_EmailFailure_Returns500()
+    {
+        // Arrange
+        RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
+        var emailError = AppError.Create(ErrorCode.EmailSendFailed, "Resend is down for maintenance");
+
+        // mocker EmailService til å returnere Failure
+        factory.EmailServiceMock
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(emailError));
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, request);
+
+        // Assert - Sjekker at feilkoden er korrekt, og at OTP-koden ikke ble opprettet
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+
+        using IServiceScope scope = factory.Services.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        OtpCode? otpCode = await context.Set<OtpCode>()
+            .FirstOrDefaultAsync(x => x.UserId == TestConstants.Users.ActiveUserId);
+
+        otpCode.Should().BeNull();
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/auth/verify-otp
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifiserer at innsendt Otp er korrekt og at vi 200 OK med LoginResponse. Sjekker at OTP-koden og
+    /// RefreshToken er korrekt opprettet
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtp_OtpIsCorrect_Returns200()
+    {
+        // Arrange - seeder en Otp-kode i databasen til Default bruker
+        await TestDataSeeder.SeedOtpCodeAsync(factory.Services);
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest();
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
+
+        // Assert - Sjekker at Result er 200 Ok og sjekker alle egenskapene på RefreshTokenResponse
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        TokenResponse? body = await response.Content.ReadFromJsonAsync<TokenResponse>();
+        body!.AccessToken.Should().NotBeNullOrEmpty();
+        body.RefreshToken.Should().NotBeNullOrEmpty();
+
+        // Verifiserer at OTP-koden er satt til IsUsed og RefreshToken er opprettet med riktige egenskaper
+        using IServiceScope scope = factory.Services.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        OtpCode? otpCode = await context.Set<OtpCode>()
+            .FirstOrDefaultAsync(x => x.UserId == TestConstants.Users.ActiveUserId);
+        otpCode!.IsUsed.Should().BeTrue();
+        otpCode.FailedAttempts.Should().Be(0);
+
+        // Sikrer at vi henter siste opprettete token, tilfelle vi har seedet in flere
+        RefreshToken? refreshToken = await context.Set<RefreshToken>()
+            .Where(x => x.UserId == TestConstants.Users.ActiveUserId)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync();
+        refreshToken.Should().NotBeNull();
+        refreshToken.IsRevoked.Should().BeFalse(); // Den skal ikke være revoked
+        refreshToken.ExpiresAt.Should().BeAfter(DateTime.UtcNow); // Sikrer at RefreshToken ikke er utgått,
+                                                                  // etter opprettelse
+    }
+
+    /// <summary>
+    /// Tester at bruker sender inn en kode som ikke er korrekt, og verifiserer at FailedAttempts har økt med 1
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtp_InvalidCode_Returns401()
+    {
+        // Arrange - seeder en Otp-kode i databasen med annen kode enn requestens kode
+        await TestDataSeeder.SeedOtpCodeAsync(factory.Services);
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest(otpCode: "012345");
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
+
+        // Assert - Sjekker at Result er 401 Unauthorized
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        // Henter en Otp-kode for å verifisere at FailedAttempts har blitt økt fra 0 til 1
+        using IServiceScope scope = factory.Services.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        OtpCode? otpCode = await context.Set<OtpCode>()
+            .FirstOrDefaultAsync(x => x.UserId == TestConstants.Users.ActiveUserId);
+
+        otpCode!.FailedAttempts.Should().Be(1);
+    }
+
+    /// <summary>
+    /// Tester at maks forsøk er nådd og vi får en 429 
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtp_MaxAttemptsExceeded_Returns429()
+    {
+        // Arrange - seeder en Otp-kode i databasen med annen kode enn requestens kode
+        await TestDataSeeder.SeedOtpCodeAsync(factory.Services, failedAttempts: 3);
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest(otpCode: "012345");
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
+
+        // Assert - Sjekker at Result er 429 TooManyRequests
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    /// <summary>
+    /// Tester at innsendt epost i request ikke tilhører en bruker i databasen
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtp_InvalidUser_Returns401()
+    {
+        // Arrange - Sender en request med en epost som ikke tilhører en bruker
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest(email: "eksisterer@ikke.se");
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
+
+        // Assert - Sjekker at Result er 401 Unauthorized
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    /// <summary>
+    /// Tester at bruker uten aktiv OTP-kode returnerer 401
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtp_NoActiveOtpCode_Returns401()
+    {
+        // Arrange - Sender en request med en epost som ikke tilhører en bruker
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest();
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
+
+        // Assert - Sjekker at Result er 401 Unauthorized
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    /// <summary>
+    /// Tester responsen hvis OTP-koden er satt som brukt. Vi sender to forespørsler til med samme request.
+    /// Første setter den som brukt, andre retunrerer feilmelding
+    /// </summary>
+    [Fact]
+    public async Task VerifyOtp_OtpAlreadyUsed_Returns401()
+    {
+        // Arrange - seeder en Otp-kode og oppretter en request
+        await TestDataSeeder.SeedOtpCodeAsync(factory.Services);
+        VerifyOtpRequest request = AuthRequestBuilder.CreateVerifyOtpRequest();
+
+        // Act - Sender to requester. Første kall lykkes, andre feiler
+        await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, request);
+
+        // Assert - Sjekker at andre kall returnerer 401
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/auth/request-otp → POST /api/auth/verify-otp (end-to-end)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester ende-til-ende mellom RequestOtp og VerifyOtp. Sikrer at koden blir opprettet korrekt og verifisert
+    /// korrekt.
+    /// </summary>
+    [Fact]
+    public async Task RequestOtp_ThenVerifyOtp_Returns200WithTokens()
+    {
+        // Arrange - Oppretter en OtpRequest
+        RequestOtpRequest requestOtpRequest = AuthRequestBuilder.CreateRequestOtpRequest();
+
+        // mocker EmailService slik at iv kan fange opp koden som ligger i Subject på EmailBody
+        string? capturedCode = null;
+        factory.EmailServiceMock
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<string, EmailBody, CancellationToken>((_, body, _) => // Koden skal alltid ligge etter ":"
+                capturedCode = body.Subject.Split(": ").Last())
+            .ReturnsAsync(Result.Success());
+
+        // Act - Utfører et kall til RequestOtp først, lager en response med koden og kalelr deretter
+        // VerifyOtp
+        await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, requestOtpRequest);
+        VerifyOtpRequest verifyOtpRequest = AuthRequestBuilder.CreateVerifyOtpRequest(otpCode: capturedCode!);
+        HttpResponseMessage response = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, verifyOtpRequest);
+
+        // Assert - Sjekker at StatusCode er 200 Ok og at det er opprettet en RefreshTokenResponse
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        TokenResponse? body = await response.Content.ReadFromJsonAsync<TokenResponse>();
+        body!.AccessToken.Should().NotBeNullOrEmpty();
+        body.RefreshToken.Should().NotBeNullOrEmpty();
+    }
+}
