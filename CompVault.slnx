@@ -3,4 +3,5 @@
   <Project Path="CompVault.Frontend/CompVault.Frontend.csproj" />
   <Project Path="CompVault.Shared/CompVault.Shared.csproj" />
   <Project Path="CompVault.Tests/CompVault.Tests.csproj" />
+  <Project Path="CompVault.Frontend.Tests/CompVault.Frontend.Tests.csproj" />
 </Solution>
