@@ -1,5 +1,6 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Departments.Services;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Departments;
 using CompVault.Shared.Result;
 
@@ -14,7 +15,7 @@ namespace CompVault.Backend.Features.Departments.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = Permissions.DepartmentsRead)]
 [Produces("application/json")]
 public sealed class DepartmentsController(IDepartmentService departmentService) : BaseController
 {
@@ -53,7 +54,7 @@ public sealed class DepartmentsController(IDepartmentService departmentService) 
     /// <response code="400">Validering feilet.</response>
     /// <response code="404">Overordnet avdeling ble ikke funnet.</response>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.DepartmentsWrite)]
     [ProducesResponseType(typeof(DepartmentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -75,7 +76,7 @@ public sealed class DepartmentsController(IDepartmentService departmentService) 
     /// <response code="404">Ingen avdeling med den ID-en.</response>
     /// <response code="409">Sirkulær referanse oppdaget.</response>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.DepartmentsWrite)]
     [ProducesResponseType(typeof(DepartmentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -98,7 +99,7 @@ public sealed class DepartmentsController(IDepartmentService departmentService) 
     /// <response code="404">Ingen avdeling med den ID-en.</response>
     /// <response code="409">Avdelingen har underavdelinger eller medlemmer.</response>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.DepartmentsDelete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

@@ -1,5 +1,6 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Competencies.Services;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.CompetencyTypes;
 using CompVault.Shared.Result;
 
@@ -15,7 +16,7 @@ namespace CompVault.Backend.Features.Competencies.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = Permissions.CompetenciesRead)]
 [Produces("application/json")]
 public sealed class CompetencyTypesController(ICompetencyTypeService competencyTypeService) : BaseController
 {
@@ -53,7 +54,7 @@ public sealed class CompetencyTypesController(ICompetencyTypeService competencyT
     /// <response code="201">Kompetansetype opprettet.</response>
     /// <response code="400">Validering feilet eller navn finnes allerede.</response>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.CompetenciesWrite)]
     [ProducesResponseType(typeof(CompetencyTypeDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<CompetencyTypeDto>> CreateAsync(
@@ -74,7 +75,7 @@ public sealed class CompetencyTypesController(ICompetencyTypeService competencyT
     /// <response code="400">Validering feilet eller navn finnes allerede.</response>
     /// <response code="404">Ingen kompetansetype med den ID-en.</response>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.CompetenciesWrite)]
     [ProducesResponseType(typeof(CompetencyTypeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -96,7 +97,7 @@ public sealed class CompetencyTypesController(ICompetencyTypeService competencyT
     /// <response code="404">Ingen kompetansetype med den ID-en.</response>
     /// <response code="409">Kompetansetypen har aktive kompetansebevis.</response>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.CompetenciesDelete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

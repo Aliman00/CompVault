@@ -6,6 +6,7 @@ using CompVault.Backend.Infrastructure.Auth;
 
 using FluentAssertions;
 
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace CompVault.Tests.Backend.Infrastructure.Auth;
@@ -36,7 +37,7 @@ public class JwtServiceTests
 
     public JwtServiceTests()
     {
-        _sut = new JwtService(Options.Create(JwtSettings));
+        _sut = new JwtService(Options.Create(JwtSettings), NullLogger<JwtService>.Instance);
     }
 
     /// <summary>
@@ -50,7 +51,7 @@ public class JwtServiceTests
         string[] roles = new[] { "Admin" };
 
         // Act
-        string token = _sut.GenerateAccessToken(_testUser, roles);
+        string token = _sut.GenerateAccessToken(_testUser, roles, []);
         var handler = new JwtSecurityTokenHandler();
         JwtSecurityToken parsed = handler.ReadJwtToken(token);
 
@@ -69,7 +70,7 @@ public class JwtServiceTests
     public void GenerateAccessToken_WithValidUser_HasCorrectIssuerAndAudience()
     {
         // Act
-        string token = _sut.GenerateAccessToken(_testUser, []);
+        string token = _sut.GenerateAccessToken(_testUser, [], []);
         var handler = new JwtSecurityTokenHandler();
         JwtSecurityToken parsed = handler.ReadJwtToken(token);
 
@@ -90,7 +91,7 @@ public class JwtServiceTests
         DateTime before = DateTime.UtcNow;
 
         // Act
-        string token = _sut.GenerateAccessToken(_testUser, []);
+        string token = _sut.GenerateAccessToken(_testUser, [], []);
         var handler = new JwtSecurityTokenHandler();
         JwtSecurityToken parsed = handler.ReadJwtToken(token);
 
@@ -109,7 +110,7 @@ public class JwtServiceTests
     {
         // Arrange - Generer et normalt token — GetPrincipalFromExpiredToken
         // validerer uansett med ValidateLifetime = false, så det holder
-        string token = _sut.GenerateAccessToken(_testUser, []);
+        string token = _sut.GenerateAccessToken(_testUser, [], []);
 
         // Act
         ClaimsPrincipal? principal = _sut.GetPrincipalFromExpiredToken(token);
@@ -127,7 +128,7 @@ public class JwtServiceTests
     public void GetPrincipalFromExpiredToken_WithTamperedToken_ReturnsNull()
     {
         // Arrange
-        string validToken = _sut.GenerateAccessToken(_testUser, []);
+        string validToken = _sut.GenerateAccessToken(_testUser, [], []);
         string tamperedToken = validToken[..^5] + "XXXXX"; // Ødelegger signaturen
 
         // Act
@@ -135,5 +136,32 @@ public class JwtServiceTests
 
         // Assert
         Assert.Null(principal);
+    }
+
+    /// <summary>
+    /// Tester at GenerateAccessToken legger til permission-claims korrekt
+    /// </summary>
+    [Fact]
+    public void GenerateAccessToken_WithPermissions_ContainsPermissionClaims()
+    {
+        // Arrange
+        string[] roles = ["Admin"];
+        string[] permissions = ["users:read", "users:write", "departments:read"];
+
+        // Act
+        string token = _sut.GenerateAccessToken(_testUser, roles, permissions);
+        var handler = new JwtSecurityTokenHandler();
+        JwtSecurityToken parsed = handler.ReadJwtToken(token);
+
+        // Assert
+        var permissionClaims = parsed.Claims
+            .Where(c => c.Type == "permission")
+            .Select(c => c.Value)
+            .ToList();
+        
+        permissionClaims.Should().HaveCount(3);
+        permissionClaims.Should().Contain("users:read");
+        permissionClaims.Should().Contain("users:write");
+        permissionClaims.Should().Contain("departments:read");
     }
 }

@@ -42,7 +42,7 @@ public sealed class DepartmentService(
         if (request.ParentDepartmentId.HasValue)
         {
             bool parentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.ParentDepartmentId.Value, cancellationToken);
+                d => d.Id == request.ParentDepartmentId.Value && d.IsActive, cancellationToken);
 
             if (!parentExists)
                 return Result<DepartmentDto>.Failure(
@@ -89,14 +89,14 @@ public sealed class DepartmentService(
                     AppError.Create(ErrorCode.Validation, "En avdeling kan ikke være sin egen forelder."));
 
             bool parentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.ParentDepartmentId.Value, cancellationToken);
+                d => d.Id == request.ParentDepartmentId.Value && d.IsActive, cancellationToken);
 
             if (!parentExists)
                 return Result<DepartmentDto>.Failure(
                     AppError.NotFound($"Overordnet avdeling med ID '{request.ParentDepartmentId}' ble ikke funnet."));
 
-            IReadOnlyList<Guid> ancestorIds = await departmentRepository.GetAncestorIdsAsync(id, cancellationToken);
-            if (ancestorIds.Contains(request.ParentDepartmentId.Value))
+            IReadOnlyList<Guid> ancestorIds = await departmentRepository.GetAncestorIdsAsync(request.ParentDepartmentId.Value, cancellationToken);
+            if (ancestorIds.Contains(id))
                 return Result<DepartmentDto>.Failure(
                     AppError.Create(ErrorCode.Validation, "Kan ikke sette en underavdeling til å være forelder."));
 

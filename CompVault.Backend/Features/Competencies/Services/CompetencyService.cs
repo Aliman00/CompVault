@@ -45,17 +45,22 @@ public sealed class CompetencyService(
     /// <inheritdoc />
     public async Task<Result<CompetencyDto>> CreateAsync(CreateCompetencyRequest request, CancellationToken cancellationToken = default)
     {
-        CompetencyType? type = await competencyTypeRepository.GetByIdAsync(request.CompetencyTypeId, cancellationToken);
+        // [Required] validering i DTO garanterer at disse verdiene er satt
+        Guid userId = request.UserId!.Value;
+        Guid competencyTypeId = request.CompetencyTypeId!.Value;
+        DateTime issuedDate = request.IssuedDate!.Value;
+
+        CompetencyType? type = await competencyTypeRepository.GetByIdAsync(competencyTypeId, cancellationToken);
 
         if (type is null)
             return Result<CompetencyDto>.Failure(
-                AppError.NotFound($"Kompetansetype med ID '{request.CompetencyTypeId}' ble ikke funnet."));
+                AppError.NotFound($"Kompetansetype med ID '{competencyTypeId}' ble ikke funnet."));
 
-        bool userExists = await userRepository.ExistsAsync(u => u.Id == request.UserId, cancellationToken);
+        bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, cancellationToken);
 
         if (!userExists)
             return Result<CompetencyDto>.Failure(
-                AppError.NotFound($"Bruker med ID '{request.UserId}' ble ikke funnet."));
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
 
         // Validering av ExpiryDate basert på typens RequiresExpiration
         if (type.RequiresExpiration && request.ExpiryDate is null)
@@ -64,17 +69,17 @@ public sealed class CompetencyService(
                     $"Kompetansetypen '{type.Name}' krever en utløpsdato (RequiresExpiration = true)."));
 
         // Validering av ExpiryDate >= IssuedDate
-        if (request.ExpiryDate.HasValue && request.ExpiryDate.Value < request.IssuedDate)
+        if (request.ExpiryDate.HasValue && request.ExpiryDate.Value < issuedDate)
             return Result<CompetencyDto>.Failure(
                 AppError.Create(ErrorCode.Validation,
                     "Utløpsdato (ExpiryDate) kan ikke være før utstedelsesdato (IssuedDate)."));
 
         var competency = new Competency
         {
-            UserId = request.UserId,
-            CompetencyTypeId = request.CompetencyTypeId,
+            UserId = userId,
+            CompetencyTypeId = competencyTypeId,
             ExpiryDate = type.RequiresExpiration ? request.ExpiryDate : null,
-            IssuedDate = request.IssuedDate,
+            IssuedDate = issuedDate,
             CertificateNumber = request.CertificateNumber,
             Notes = request.Notes,
             Status = CompetencyStatusCalculator.Calculate(type.RequiresExpiration ? request.ExpiryDate : null),

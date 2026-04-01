@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Users.Services;
+using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -9,6 +10,7 @@ using CompVault.Shared.Result;
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 using Moq;
 
@@ -18,7 +20,10 @@ public class UserServiceTests
 {
     // Mocker avhengighetene UserService trenger
     private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
     private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
+    private readonly Mock<RoleManager<ApplicationRole>> _roleManagerMock;
+    private readonly Mock<ILogger<UserService>> _loggerMock;
 
     // Systemet vi tester
     private readonly UserService _sut;
@@ -38,6 +43,7 @@ public class UserServiceTests
     public UserServiceTests()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
+        _departmentRepositoryMock = new Mock<IDepartmentRepository>();
 
         // UserManager krever en IUserStore-mock for å kunne instansieres
         var storeMock = new Mock<IUserStore<ApplicationUser>>();
@@ -46,9 +52,20 @@ public class UserServiceTests
         _userManagerMock = new Mock<UserManager<ApplicationUser>>(
             storeMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
+        // RoleManager krever en IRoleStore-mock for å kunne instansieres
+        var roleStoreMock = new Mock<IRoleStore<ApplicationRole>>();
+        _roleManagerMock = new Mock<RoleManager<ApplicationRole>>(
+            roleStoreMock.Object, null!, null!, null!, null!);
+
+        // Logger mock
+        _loggerMock = new Mock<ILogger<UserService>>();
+
         _sut = new UserService(
             _userRepositoryMock.Object,
-            _userManagerMock.Object);
+            _departmentRepositoryMock.Object,
+            _userManagerMock.Object,
+            _roleManagerMock.Object,
+            _loggerMock.Object);
     }
 
     /// <summary>

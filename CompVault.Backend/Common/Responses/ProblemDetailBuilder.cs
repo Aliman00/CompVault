@@ -82,6 +82,7 @@ public static class ProblemDetailBuilder
         ErrorCode.OtpMaxAttemptsExceeded => 429,
         ErrorCode.OtpCooldown => 429,
         ErrorCode.OtpInvalidOrExpired => 401,
+        ErrorCode.InternalError => 500,
         _ => 400
     };
 
@@ -108,6 +109,7 @@ public static class ProblemDetailBuilder
         ErrorCode.OtpMaxAttemptsExceeded => "For mange feilede forsøk. Prøv igjen senere.",
         ErrorCode.OtpCooldown => "Vennligst vent før du ber om en ny kode.",
         ErrorCode.OtpInvalidOrExpired => "Koden er ugyldig eller har utløpt.",
+        ErrorCode.InternalError => "Noe gikk galt på vår side. Prøv igjen litt senere.",
         _ => "Noe gikk galt på vår side. Prøv igjen litt senere."
     };
 

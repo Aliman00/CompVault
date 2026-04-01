@@ -27,6 +27,7 @@ public class AuthServiceRequestOtpAsyncTests
     private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
     private readonly Mock<IOtpCodeService> _otpCodeServiceMock;
     private readonly Mock<IEmailService> _emailServiceMock;
+    private readonly Mock<IPermissionService> _permissionServiceMock;
     private readonly AuthService _sut;
 
     public AuthServiceRequestOtpAsyncTests()
@@ -45,6 +46,7 @@ public class AuthServiceRequestOtpAsyncTests
         var refreshTokenService = new Mock<IRefreshTokenService>();
         var refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         var unitOfWorkMock = new Mock<IUnitOfWork>();
+        _permissionServiceMock = new Mock<IPermissionService>();
 
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
         unitOfWorkMock
@@ -60,6 +62,10 @@ public class AuthServiceRequestOtpAsyncTests
             MaxFailedAttempts = 3
         });
 
+        _permissionServiceMock
+            .Setup(x => x.GetPermissionsForRolesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
+
         _sut = new AuthService(
             _userManagerMock.Object,
             loggerMock.Object,
@@ -69,7 +75,8 @@ public class AuthServiceRequestOtpAsyncTests
             otpOptions,
             refreshTokenService.Object,
             refreshTokenRepositoryMock.Object,
-            unitOfWorkMock.Object);
+            unitOfWorkMock.Object,
+            _permissionServiceMock.Object);
     }
 
     // -------------------------------------------------------------------------
