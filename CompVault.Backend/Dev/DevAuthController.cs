@@ -5,6 +5,7 @@ using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -25,7 +26,8 @@ public sealed class DevAuthController(
     IJwtService jwtService,
     IHostEnvironment env,
     IRefreshTokenService refreshTokenService,
-    IOtpCodeRepository otpCodeRepository) : ControllerBase
+    IOtpCodeRepository otpCodeRepository,
+    IPermissionService permissionService) : ControllerBase
 {
     /// <summary>
     /// Logger inn med e-post og passord. Returnerer JWT identisk med OTP-flyten.
@@ -54,13 +56,17 @@ public sealed class DevAuthController(
             return Unauthorized(new { message = "Kontoen er deaktivert." });
 
         IList<string> roles = await userManager.GetRolesAsync(user);
-        string accessToken = jwtService.GenerateAccessToken(user, roles);
-        _ = refreshTokenService.GenerateRefreshToken();
+        IList<string> permissions = await permissionService.GetPermissionsForRolesAsync(roles, CancellationToken.None);
+        string accessToken = jwtService.GenerateAccessToken(user, roles, permissions);
+        Result<string> refreshResult = await refreshTokenService.CreateRefreshTokenAsync(user.Id, CancellationToken.None);
+
+        if (refreshResult.IsFailure)
+            return StatusCode(500, new { message = "Kunne ikke opprette refresh token." });
 
         return Ok(new TokenResponse
         {
             AccessToken = accessToken,
-            // RefreshToken = refreshToken
+            RefreshToken = refreshResult.Value!
         });
     }
 

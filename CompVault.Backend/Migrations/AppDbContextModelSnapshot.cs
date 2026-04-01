@@ -265,6 +265,9 @@ namespace CompVault.Backend.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)");
 
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -378,6 +381,8 @@ namespace CompVault.Backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("DeletedAt");
 
                     b.HasIndex("DepartmentId");
 

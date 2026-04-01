@@ -3,10 +3,12 @@ using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Competencies;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Shared.Constants;
 using CompVault.Shared.Enums;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CompVault.Backend.Dev;
 
@@ -104,14 +106,27 @@ public static class DatabaseSeeder
     {
         logger.LogInformation("[DatabaseSeeder] Starter seeding av testdata...");
 
-        await SeedRolesAsync(roleManager, logger);
-        await SeedUsersAsync(userManager, logger);
-        await SeedDepartmentsAsync(dbContext, logger);
-        await SeedUserDepartmentsAsync(userManager, dbContext, logger);
-        await SeedCompetencyTypesAsync(dbContext, logger);
-        await SeedCompetenciesAsync(dbContext, logger);
+        await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync();
+        try
+        {
+            await SeedRolesAsync(roleManager, logger);
+            await SeedPermissionsAsync(dbContext, logger);
+            await SeedRolePermissionsAsync(roleManager, dbContext, logger);
+            await SeedUsersAsync(userManager, logger);
+            await SeedDepartmentsAsync(dbContext, logger);
+            await SeedUserDepartmentsAsync(userManager, dbContext, logger);
+            await SeedCompetencyTypesAsync(dbContext, logger);
+            await SeedCompetenciesAsync(dbContext, logger);
 
-        logger.LogInformation("[DatabaseSeeder] Seeding fullført.");
+            await transaction.CommitAsync();
+            logger.LogInformation("[DatabaseSeeder] Seeding fullført.");
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            logger.LogError(ex, "[DatabaseSeeder] Feil under seeding - transaksjon rullet tilbake");
+            throw;
+        }
     }
 
     private static async Task SeedRolesAsync(RoleManager<ApplicationRole> roleManager, ILogger logger)
@@ -125,6 +140,7 @@ public static class DatabaseSeeder
             {
                 Name = name,
                 Description = description,
+                IsSystem = true,
                 CreatedAt = DateTime.UtcNow,
             };
 
@@ -345,6 +361,125 @@ public static class DatabaseSeeder
             await dbContext.SaveChangesAsync();
             logger.LogInformation("[DatabaseSeeder] Kompetanse opprettet: {User} - {Type} ({Status})",
                 email, typeName, status);
+        }
+    }
+
+    private static async Task SeedPermissionsAsync(AppDbContext dbContext, ILogger logger)
+    {
+        (string Name, string Description, string Category)[] permissions =
+        [
+            (Permissions.UsersRead, "Se brukere", "Users"),
+            (Permissions.UsersWrite, "Opprett/endre brukere", "Users"),
+            (Permissions.UsersDelete, "Slett brukere", "Users"),
+            (Permissions.RolesRead, "Se roller", "Roles"),
+            (Permissions.RolesWrite, "Opprett/endre roller", "Roles"),
+            (Permissions.RolesDelete, "Slett roller", "Roles"),
+            (Permissions.DepartmentsRead, "Se avdelinger", "Departments"),
+            (Permissions.DepartmentsWrite, "Opprett/endre avdelinger", "Departments"),
+            (Permissions.DepartmentsDelete, "Slett avdelinger", "Departments"),
+            (Permissions.CompetenciesRead, "Se kompetanser", "Competencies"),
+            (Permissions.CompetenciesWrite, "Opprett/endre kompetanser", "Competencies"),
+            (Permissions.CompetenciesDelete, "Slett kompetanser", "Competencies"),
+        ];
+
+        int addedCount = 0;
+        foreach ((string name, string description, string category) in permissions)
+        {
+            bool exists = await dbContext.Permissions.AnyAsync(p => p.Name == name);
+            if (exists)
+                continue;
+
+            Permission permission = new()
+            {
+                Name = name,
+                Description = description,
+                Category = category,
+            };
+
+            dbContext.Permissions.Add(permission);
+            addedCount++;
+        }
+
+        if (addedCount > 0)
+        {
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("[DatabaseSeeder] {Count} permissions opprettet", addedCount);
+        }
+    }
+
+    private static async Task SeedRolePermissionsAsync(
+        RoleManager<ApplicationRole> roleManager,
+        AppDbContext dbContext,
+        ILogger logger)
+    {
+        ApplicationRole? adminRole = await roleManager.FindByNameAsync("Admin");
+        ApplicationRole? employeeRole = await roleManager.FindByNameAsync("Employee");
+
+        if (adminRole is null || employeeRole is null)
+        {
+            logger.LogWarning("[DatabaseSeeder] Kunne ikke finne Admin eller Employee rolle for permission-seeding");
+            return;
+        }
+
+        List<Permission> allPermissions = await dbContext.Permissions.ToListAsync();
+
+        // Admin: Alle permissions - check each individually
+        int adminAddedCount = 0;
+        foreach (Permission permission in allPermissions)
+        {
+            bool exists = await dbContext.RolePermissions.AnyAsync(
+                rp => rp.RoleId == adminRole.Id && rp.PermissionId == permission.Id);
+            if (exists)
+                continue;
+
+            dbContext.RolePermissions.Add(new RolePermission
+            {
+                RoleId = adminRole.Id,
+                PermissionId = permission.Id,
+                GrantedAt = DateTime.UtcNow,
+            });
+            adminAddedCount++;
+        }
+
+        if (adminAddedCount > 0)
+        {
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("[DatabaseSeeder] Admin tildelt {Count} permissions", adminAddedCount);
+        }
+
+        // Employee: Kun read permissions for users, departments, competencies (ikke roles!)
+        string[] employeePermissionNames =
+        [
+            Permissions.UsersRead,
+            Permissions.DepartmentsRead,
+            Permissions.CompetenciesRead,
+        ];
+
+        var employeePermissions = allPermissions
+            .Where(p => employeePermissionNames.Contains(p.Name))
+            .ToList();
+
+        int employeeAddedCount = 0;
+        foreach (Permission permission in employeePermissions)
+        {
+            bool exists = await dbContext.RolePermissions.AnyAsync(
+                rp => rp.RoleId == employeeRole.Id && rp.PermissionId == permission.Id);
+            if (exists)
+                continue;
+
+            dbContext.RolePermissions.Add(new RolePermission
+            {
+                RoleId = employeeRole.Id,
+                PermissionId = permission.Id,
+                GrantedAt = DateTime.UtcNow,
+            });
+            employeeAddedCount++;
+        }
+
+        if (employeeAddedCount > 0)
+        {
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("[DatabaseSeeder] Employee tildelt {Count} read permissions", employeeAddedCount);
         }
     }
 }

@@ -22,6 +22,7 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
         builder.Property(u => u.CreatedAt).IsRequired();
         // Global filter — soft-slettede brukere filtreres bort automatisk overalt.
         builder.HasQueryFilter(u => u.DeletedAt == null);
+        builder.HasIndex(u => u.DeletedAt);
 
         // Selvrefererende relasjon: en bruker kan ha en leder som også er en bruker
         builder.HasOne(u => u.Manager)

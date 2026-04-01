@@ -7,6 +7,7 @@ using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
+using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Configuration;
@@ -18,6 +19,7 @@ using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -115,6 +117,9 @@ public static class ServiceCollectionExtensions
                 {
                     context.HandleResponse();
 
+                    if (context.Response.HasStarted)
+                        return Task.CompletedTask;
+
                     string message = context.AuthenticateFailure?.Message ??
                         ProblemDetailBuilder.GetDefaultMessage(ErrorCode.Unauthorized);
 
@@ -125,24 +130,24 @@ public static class ServiceCollectionExtensions
                     context.Response.ContentType = "application/problem+json";
                     return context.Response.WriteAsJsonAsync(problem);
                 },
-                OnAuthenticationFailed = context =>
-                {
-                    if (context.Response.HasStarted)
-                        return Task.CompletedTask;
-
-                    ProblemDetail problem = ProblemDetailBuilder.Create(
-                        401,
-                        ErrorCode.Unauthorized.ToString(),
-                        "Autentisering feilet. Sjekk at tokenen er gyldig.");
-
-                    context.Response.StatusCode = problem.Status;
-                    context.Response.ContentType = "application/problem+json";
-                    return context.Response.WriteAsJsonAsync(problem);
-                }
+                OnAuthenticationFailed = _ => Task.CompletedTask
             };
         });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            // Dynamisk registrering av policies basert på Permissions.cs-konstanter
+            typeof(Permissions)
+                .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly)
+                .Where(f => f.FieldType == typeof(string))
+                .Select(f => (string)f.GetValue(null)!)
+                .ToList()
+                .ForEach(permission =>
+                {
+                    options.AddPolicy(permission, policy =>
+                        policy.RequireClaim(Permissions.ClaimType, permission));
+                });
+        });
         services.AddScoped<IJwtService, JwtService>();
 
         return services;
@@ -180,6 +185,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+        services.AddHttpContextAccessor();
 
         // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
         services.AddHostedService<TokenCleanupJob>();
@@ -219,6 +225,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<ICompetencyTypeRepository, CompetencyTypeRepository>();
         services.AddScoped<ICompetencyRepository, CompetencyRepository>();
@@ -240,6 +247,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICompetencyService, CompetencyService>();
         services.AddScoped<IOtpCodeService, OtpCodeService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+        services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<IRoleService, RoleService>();
 
         return services;
     }

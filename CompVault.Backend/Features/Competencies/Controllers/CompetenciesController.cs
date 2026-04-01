@@ -1,5 +1,6 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Competencies.Services;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -13,11 +14,11 @@ namespace CompVault.Backend.Features.Competencies.Controllers;
 /// Administrasjon av kompetansebevis — hent, opprett, oppdater, slett
 /// og hent utløpende/utløpte bevis.
 /// Alle lesende operasjoner krever innlogging.
-/// Skrivende operasjoner krever Admin-rolle.
+/// Skrivende operasjoner krever riktig tillatelse.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = Permissions.CompetenciesRead)]
 [Produces("application/json")]
 public sealed class CompetenciesController(ICompetencyService competencyService) : BaseController
 {
@@ -65,7 +66,7 @@ public sealed class CompetenciesController(ICompetencyService competencyService)
     /// <response code="400">Validering feilet.</response>
     /// <response code="404">Bruker eller kompetansetype ble ikke funnet.</response>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.CompetenciesWrite)]
     [ProducesResponseType(typeof(CompetencyDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -87,7 +88,7 @@ public sealed class CompetenciesController(ICompetencyService competencyService)
     /// <response code="400">Validering feilet.</response>
     /// <response code="404">Ingen kompetansebevis med den ID-en.</response>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.CompetenciesWrite)]
     [ProducesResponseType(typeof(CompetencyDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -108,7 +109,7 @@ public sealed class CompetenciesController(ICompetencyService competencyService)
     /// <response code="204">Kompetansebevis slettet.</response>
     /// <response code="404">Ingen kompetansebevis med den ID-en.</response>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.CompetenciesDelete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
