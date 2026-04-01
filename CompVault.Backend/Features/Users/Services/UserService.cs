@@ -89,6 +89,23 @@ public sealed class UserService(
             }
         }
 
+        // Valider roller FØR bruker opprettes for å unngå foreldreløse brukere
+        List<string> validRoles = new();
+        if (request.Roles.Count > 0)
+        {
+            foreach (string roleName in request.Roles)
+            {
+                bool exists = await roleManager.RoleExistsAsync(roleName);
+                if (!exists)
+                {
+                    logger.LogWarning("Kunne ikke opprette bruker: rolle {Role} eksisterer ikke", roleName);
+                    return Result<UserDto>.Failure(
+                        AppError.Create(ErrorCode.Validation, $"Rollen '{roleName}' eksisterer ikke."));
+                }
+                validRoles.Add(roleName);
+            }
+        }
+
         ApplicationUser newUser = new()
         {
             UserName = request.Email.ToLowerInvariant(),
@@ -111,23 +128,16 @@ public sealed class UserService(
                 AppError.Create(ErrorCode.Validation, errorMessage));
         }
 
-        if (request.Roles.Count > 0)
+        if (validRoles.Count > 0)
         {
-            // Validate roles exist
-            List<string> validRoles = new();
-            foreach (string roleName in request.Roles)
+            IdentityResult roleResult = await userManager.AddToRolesAsync(newUser, validRoles);
+            if (!roleResult.Succeeded)
             {
-                bool exists = await roleManager.RoleExistsAsync(roleName);
-                if (!exists)
-                {
-                    logger.LogWarning("Kunne ikke opprette bruker: rolle {Role} eksisterer ikke", roleName);
-                    return Result<UserDto>.Failure(
-                        AppError.Create(ErrorCode.Validation, $"Rollen '{roleName}' eksisterer ikke."));
-                }
-                validRoles.Add(roleName);
+                string roleErrors = string.Join("; ", roleResult.Errors.Select(e => e.Description));
+                logger.LogWarning("Rolletilordning feilet for {Email}: {Errors}", request.Email, roleErrors);
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Validation, roleErrors));
             }
-
-            await userManager.AddToRolesAsync(newUser, validRoles);
         }
 
         logger.LogInformation("Bruker {Email} opprettet", request.Email);
@@ -147,13 +157,43 @@ public sealed class UserService(
             return Result<UserDto>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
 
+        if (request.ManagerId.HasValue && request.ManagerId.Value == userId)
+            return Result<UserDto>.Failure(
+                AppError.Create(ErrorCode.Validation, "En bruker kan ikke være sin egen leder."));
+
+        if (request.DepartmentId.HasValue)
+        {
+            bool departmentExists = await departmentRepository.ExistsAsync(
+                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
+            if (!departmentExists)
+                return Result<UserDto>.Failure(
+                    AppError.NotFound($"Avdeling med ID '{request.DepartmentId.Value}' ble ikke funnet."));
+        }
+
+        if (request.ManagerId.HasValue)
+        {
+            bool managerExists = await userRepository.ExistsAsync(
+                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
+            if (!managerExists)
+                return Result<UserDto>.Failure(
+                    AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
+        }
+
         if (request.FirstName is not null) user.FirstName = request.FirstName;
         if (request.LastName is not null) user.LastName = request.LastName;
         if (request.JobTitle is not null) user.JobTitle = request.JobTitle;
         if (request.EmploymentType.HasValue) user.EmploymentType = request.EmploymentType.Value;
         if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
-        if (request.DepartmentId.HasValue) user.DepartmentId = request.DepartmentId;
-        if (request.ManagerId.HasValue) user.ManagerId = request.ManagerId;
+
+        if (request.DepartmentId.HasValue)
+            user.DepartmentId = request.DepartmentId;
+        else if (request.ClearDepartmentId)
+            user.DepartmentId = null;
+
+        if (request.ManagerId.HasValue)
+            user.ManagerId = request.ManagerId;
+        else if (request.ClearManagerId)
+            user.ManagerId = null;
 
         await userRepository.UpdateAsync(user, cancellationToken);
         await userRepository.SaveChangesAsync(cancellationToken);

@@ -19,6 +19,7 @@ public static class RoleMapper
         UserCount = userCount,
         CreatedAt = role.CreatedAt,
         CreatedById = role.CreatedById,
+        IsSystem = role.IsSystem,
         Permissions = permissionNames
     };
 

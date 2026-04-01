@@ -23,6 +23,9 @@ public sealed class RoleDto
     /// <summary>Brukeren som opprettet rollen.</summary>
     public Guid? CreatedById { get; set; }
 
+    /// <summary>Om dette er en systemrolle som ikke kan endres eller slettes.</summary>
+    public bool IsSystem { get; set; }
+
     /// <summary>Lista over permissions rollen har.</summary>
     public IReadOnlyList<string> Permissions { get; set; } = new List<string>();
 }

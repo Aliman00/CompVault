@@ -141,7 +141,7 @@ public class AuthServiceVerifyOtpAsyncTests
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(user.Id, request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Once);
         _userManagerMock.Verify(x => x.GetRolesAsync(user), Times.Once);
-        _jwtServiceMock.Verify(x => x.GenerateAccessToken(user, roles, It.IsAny<IList<string>>()), Times.Once());
+        _jwtServiceMock.Verify(x => x.GenerateAccessToken(user, roles, It.IsAny<IEnumerable<string>>()), Times.Once());
         _refreshTokenService.Verify(x => x.CreateRefreshTokenAsync(user.Id,
             It.IsAny<CancellationToken>()), Times.Once);
 
@@ -265,6 +265,6 @@ public class AuthServiceVerifyOtpAsyncTests
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(It.IsAny<Guid>(), request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Once);
         _jwtServiceMock.Verify(x => x.GenerateAccessToken(It.IsAny<ApplicationUser>(),
-            It.IsAny<IList<string>>(), It.IsAny<IEnumerable<string>>()), Times.Never);
+            It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()), Times.Never);
     }
 }

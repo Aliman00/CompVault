@@ -11,8 +11,9 @@ public sealed class AssignPermissionsRequest
     /// <summary>
     /// Lista over permission-navn som skal tildeles rollen.
     /// F.eks. ["users:read", "users:write", "departments:read"].
+    /// Maks 50 permissions per forespørsel.
     /// </summary>
     [Required]
     [MaxLength(50)]
-    public IReadOnlyList<string> PermissionNames { get; set; } = new List<string>();
+    public IList<string> PermissionNames { get; set; } = new List<string>();
 }

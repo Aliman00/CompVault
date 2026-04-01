@@ -100,7 +100,6 @@ public sealed class CompetencyTypeService(
         if (request.IsActive.HasValue)
             type.IsActive = request.IsActive.Value;
 
-        await competencyTypeRepository.UpdateAsync(type, cancellationToken);
         await competencyTypeRepository.SaveChangesAsync(cancellationToken);
 
         return Result<CompetencyTypeDto>.Success(CompetencyMapper.ToTypeDto(type));

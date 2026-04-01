@@ -13,7 +13,6 @@ namespace CompVault.Backend.Features.Roles.Services;
 /// </summary>
 public sealed class RoleService(
     RoleManager<ApplicationRole> roleManager,
-    UserManager<ApplicationUser> userManager,
     IRoleRepository roleRepository,
     IUnitOfWork unitOfWork,
     ILogger<RoleService> logger) : IRoleService
@@ -49,11 +48,8 @@ public sealed class RoleService(
             return Result<RoleDto>.Failure(
                 AppError.NotFound($"Rolle med ID '{id}' ble ikke funnet."));
 
-        // Rolle skal alltid ha et navn etter opprettelse via RoleManager
-        string roleName = role.Name ?? throw new InvalidOperationException(
-            $"Rolle med ID '{id}' har null som navn. Dette skal ikke være mulig.");
-
-        int userCount = (await userManager.GetUsersInRoleAsync(roleName)).Count;
+        int userCount = (await roleRepository.GetUserCountsForRolesAsync([role.Id], cancellationToken))
+            .GetValueOrDefault(role.Id, 0);
         IReadOnlyList<string> permissions = await roleRepository.GetPermissionNamesForRoleAsync(role.Id, cancellationToken);
 
         return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissions.ToList()));
@@ -130,11 +126,8 @@ public sealed class RoleService(
                 AppError.Create(ErrorCode.InternalError, "Kunne ikke oppdatere rollen."));
         }
 
-        // Rolle skal alltid ha et navn etter opprettelse via RoleManager
-        string roleName = role.Name ?? throw new InvalidOperationException(
-            $"Rolle med ID '{id}' har null som navn. Dette skal ikke være mulig.");
-
-        int userCount = (await userManager.GetUsersInRoleAsync(roleName)).Count;
+        int userCount = (await roleRepository.GetUserCountsForRolesAsync([role.Id], cancellationToken))
+            .GetValueOrDefault(role.Id, 0);
         IReadOnlyList<string> permissions = await roleRepository.GetPermissionNamesForRoleAsync(role.Id, cancellationToken);
 
         return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissions.ToList()));
@@ -152,11 +145,8 @@ public sealed class RoleService(
             return Result<bool>.Failure(
                 AppError.Conflict("Kan ikke slette systemroller (Admin, Employee)."));
 
-        // Rolle skal alltid ha et navn etter opprettelse via RoleManager
-        string roleName = role.Name ?? throw new InvalidOperationException(
-            $"Rolle med ID '{id}' har null som navn. Dette skal ikke være mulig.");
-
-        int userCount = (await userManager.GetUsersInRoleAsync(roleName)).Count;
+        int userCount = (await roleRepository.GetUserCountsForRolesAsync([role.Id], cancellationToken))
+            .GetValueOrDefault(role.Id, 0);
         if (userCount > 0)
             return Result<bool>.Failure(
                 AppError.Conflict($"Kan ikke slette en rolle som har {userCount} brukere tilknyttet."));
@@ -184,6 +174,10 @@ public sealed class RoleService(
         if (role is null)
             return Result<RoleDto>.Failure(
                 AppError.NotFound($"Rolle med ID '{roleId}' ble ikke funnet."));
+
+        if (role.IsSystem)
+            return Result<RoleDto>.Failure(
+                AppError.Conflict("Kan ikke endre permissions på systemroller."));
 
         if (request.PermissionNames is null)
             return Result<RoleDto>.Failure(
@@ -214,8 +208,8 @@ public sealed class RoleService(
 
             await roleRepository.AddRolePermissionsAsync(newRolePermissions, cancellationToken);
 
-            string roleName = role.Name ?? throw new InvalidOperationException($"Rolle med ID '{roleId}' har null som navn.");
-            int userCount = (await userManager.GetUsersInRoleAsync(roleName)).Count;
+            int userCount = (await roleRepository.GetUserCountsForRolesAsync([roleId], cancellationToken))
+                .GetValueOrDefault(roleId, 0);
             var permissionNames = validPermissions.Select(p => p.Name).ToList();
 
             return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissionNames));

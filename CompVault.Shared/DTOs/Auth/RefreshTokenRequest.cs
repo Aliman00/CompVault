@@ -2,7 +2,7 @@
 namespace CompVault.Shared.DTOs.Auth;
 
 
-public class RefreshTokenRequest
+public sealed class RefreshTokenRequest
 {
     [Required(ErrorMessage = "Refresh token is required")]
     [MinLength(1, ErrorMessage = "RefreshToken cannot be empty")]

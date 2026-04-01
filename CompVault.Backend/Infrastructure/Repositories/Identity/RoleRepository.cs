@@ -28,10 +28,6 @@ public sealed class RoleRepository(AppDbContext dbContext) : BaseRepository<Appl
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
-    public async Task<bool> HasUsersAsync(Guid roleId, CancellationToken cancellationToken = default) =>
-        await DbContext.UserRoles.AnyAsync(ur => ur.RoleId == roleId, cancellationToken);
-
-    /// <inheritdoc />
     public async Task<Dictionary<Guid, int>> GetUserCountsForRolesAsync(IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(roleIds);

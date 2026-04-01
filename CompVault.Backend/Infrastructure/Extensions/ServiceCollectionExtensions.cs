@@ -117,6 +117,9 @@ public static class ServiceCollectionExtensions
                 {
                     context.HandleResponse();
 
+                    if (context.Response.HasStarted)
+                        return Task.CompletedTask;
+
                     string message = context.AuthenticateFailure?.Message ??
                         ProblemDetailBuilder.GetDefaultMessage(ErrorCode.Unauthorized);
 
@@ -127,20 +130,7 @@ public static class ServiceCollectionExtensions
                     context.Response.ContentType = "application/problem+json";
                     return context.Response.WriteAsJsonAsync(problem);
                 },
-                OnAuthenticationFailed = context =>
-                {
-                    if (context.Response.HasStarted)
-                        return Task.CompletedTask;
-
-                    ProblemDetail problem = ProblemDetailBuilder.Create(
-                        401,
-                        ErrorCode.Unauthorized.ToString(),
-                        "Autentisering feilet. Sjekk at tokenen er gyldig.");
-
-                    context.Response.StatusCode = problem.Status;
-                    context.Response.ContentType = "application/problem+json";
-                    return context.Response.WriteAsJsonAsync(problem);
-                }
+                OnAuthenticationFailed = _ => Task.CompletedTask
             };
         });
 

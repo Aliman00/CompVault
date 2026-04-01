@@ -139,7 +139,7 @@ public class AuthServiceRefreshTokenAsyncTests
         _refreshTokenServiceMock.Verify(
             x => x.CreateRefreshTokenAsync(user.Id, It.IsAny<CancellationToken>()), Times.Once);
         _jwtServiceMock.Verify(
-            x => x.GenerateAccessToken(user, roles, It.IsAny<IList<string>>()), Times.Once);
+            x => x.GenerateAccessToken(user, roles, It.IsAny<IEnumerable<string>>()), Times.Once);
     }
 
     // -------------------------------------------------------------------------
@@ -295,7 +295,7 @@ public class AuthServiceRefreshTokenAsyncTests
 
         // JwtService skal aldri kalles når refresh token-opprettelse feiler
         _jwtServiceMock.Verify(
-            x => x.GenerateAccessToken(It.IsAny<ApplicationUser>(), It.IsAny<IList<string>>(), It.IsAny<IList<string>>()),
+            x => x.GenerateAccessToken(It.IsAny<ApplicationUser>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IEnumerable<string>>()),
             Times.Never);
     }
 }

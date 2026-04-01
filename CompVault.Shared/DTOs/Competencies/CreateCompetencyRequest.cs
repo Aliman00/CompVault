@@ -9,11 +9,11 @@ public sealed class CreateCompetencyRequest
 {
     /// <summary>ID til brukeren som skal ha kompetansebeviset.</summary>
     [Required]
-    public Guid UserId { get; set; }
+    public Guid? UserId { get; set; }
 
     /// <summary>ID til kompetansetypen.</summary>
     [Required]
-    public Guid CompetencyTypeId { get; set; }
+    public Guid? CompetencyTypeId { get; set; }
 
     /// <summary>
     /// Utløpsdato. Påkrevd hvis kompetansetypens RequiresExpiration er true.
@@ -23,7 +23,7 @@ public sealed class CreateCompetencyRequest
 
     /// <summary>Når kompetansebeviset ble utstedt. Alltid påkrevd.</summary>
     [Required]
-    public DateTime IssuedDate { get; set; }
+    public DateTime? IssuedDate { get; set; }
 
     /// <summary>Valgfritt sertifikatnummer.</summary>
     [MaxLength(100)]
