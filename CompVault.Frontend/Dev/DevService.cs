@@ -7,15 +7,14 @@ using CompVault.Shared.Result;
 namespace CompVault.Frontend.Dev;
 
 public class DevService(
-    ILogger<DevService> logger, 
-    IHttpClientFactory httpClientFactory,
-    AuthStateProvider authStateProvider) : IDevService
+    ILogger<DevService> logger,
+    IHttpClientFactory httpClientFactory) : IDevService
 {
     /// <summary>
     /// HttpClient mot backend
     /// </summary>
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
-    
+
     /// <inheritdoc />
     public async Task<Result> RequestOtpAsync(RequestOtpRequest request)
     {
@@ -23,7 +22,7 @@ public class DevService(
         {
             HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync("api/auth/dev-create-otp", request);
-            
+
             return await HttpClientExtensions.ParseEmptyResponseAsync(response, CancellationToken.None);
         }
         catch (HttpRequestException ex)
