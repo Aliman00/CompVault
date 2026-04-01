@@ -5,7 +5,6 @@ using CompVault.Shared.DTOs.Roles;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Features.Roles.Services;
 
@@ -15,7 +14,6 @@ namespace CompVault.Backend.Features.Roles.Services;
 public sealed class RoleService(
     RoleManager<ApplicationRole> roleManager,
     UserManager<ApplicationUser> userManager,
-    AppDbContext dbContext,
     IRoleRepository roleRepository,
     IUnitOfWork unitOfWork,
     ILogger<RoleService> logger) : IRoleService
@@ -31,11 +29,7 @@ public sealed class RoleService(
         // Last brukerteller i bulk for å unngå N+1
         var roleIds = roles.Select(r => r.Id).ToList();
 
-        // Bruker dbContext direkte for cross-aggregate query (UserRoles er en del av Identity)
-        Dictionary<Guid, int> userCounts = await dbContext.UserRoles
-            .Where(ur => roleIds.Contains(ur.RoleId))
-            .GroupBy(ur => ur.RoleId)
-            .ToDictionaryAsync(g => g.Key, g => g.Count(), cancellationToken);
+        Dictionary<Guid, int> userCounts = await roleRepository.GetUserCountsForRolesAsync(roleIds, cancellationToken);
 
         var roleDtos = roles
             .Select(role => RoleMapper.ToDto(

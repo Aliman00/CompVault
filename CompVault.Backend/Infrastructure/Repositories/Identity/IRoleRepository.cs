@@ -16,6 +16,9 @@ public interface IRoleRepository : IRepository<ApplicationRole>
     /// <summary>Sjekker om en rolle har brukere tilknyttet.</summary>
     Task<bool> HasUsersAsync(Guid roleId, CancellationToken cancellationToken = default);
 
+    /// <summary>Henter antall brukere for flere roller.</summary>
+    Task<Dictionary<Guid, int>> GetUserCountsForRolesAsync(IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default);
+
     /// <summary>Henter alle permission-navn for en gitt rolle.</summary>
     Task<IReadOnlyList<string>> GetPermissionNamesForRoleAsync(Guid roleId, CancellationToken cancellationToken = default);
 

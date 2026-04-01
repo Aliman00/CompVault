@@ -32,6 +32,21 @@ public sealed class RoleRepository(AppDbContext dbContext) : BaseRepository<Appl
         await DbContext.UserRoles.AnyAsync(ur => ur.RoleId == roleId, cancellationToken);
 
     /// <inheritdoc />
+    public async Task<Dictionary<Guid, int>> GetUserCountsForRolesAsync(IEnumerable<Guid> roleIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(roleIds);
+
+        var roleIdList = roleIds.ToList();
+        if (roleIdList.Count == 0)
+            return [];
+
+        return await DbContext.UserRoles
+            .Where(ur => roleIdList.Contains(ur.RoleId))
+            .GroupBy(ur => ur.RoleId)
+            .ToDictionaryAsync(g => g.Key, g => g.Count(), cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetPermissionNamesForRoleAsync(Guid roleId, CancellationToken cancellationToken = default) =>
         await DbContext.RolePermissions
             .AsNoTracking()
