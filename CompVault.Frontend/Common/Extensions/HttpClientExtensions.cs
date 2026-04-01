@@ -1,4 +1,6 @@
-﻿using CompVault.Shared.Result;
+﻿using System.Text.Json;
+
+using CompVault.Shared.Result;
 namespace CompVault.Frontend.Common.Extensions;
 
 
@@ -28,24 +30,40 @@ public static class HttpClientExtensions
         if (!response.IsSuccessStatusCode)
             return Result<T>.Failure(await ReadProblemDetailAsync(response, ct));
 
-        T? body = await response.Content.ReadFromJsonAsync<T>(ct);
+        try
+        {
+            T? body = await response.Content.ReadFromJsonAsync<T>(ct);
+            
+            // Dette kan kun skje hvis backend sender "null"
+            if (body == null)
+                return Result<T>.Failure(AppError.Create(ErrorCode.Unknown, 
+                    "Server returnerte suksess og null i body"));
 
-        if (body == null)
+            return Result<T>.Success(body);
+        }
+        catch (JsonException)
+        {
             return Result<T>.Failure(AppError.Create(ErrorCode.Unknown, "Tom response fra server"));
-
-        return Result<T>.Success(body);
+        }
     }
     
     // Henter vårt ProblemDetail-objekt fra en error-response fra backend. Noe er galt, så får den Defaulte verdier
     private static async Task<AppError> ReadProblemDetailAsync(HttpResponseMessage response, CancellationToken ct)
     {
-        ProblemDetail? problemDetail = await response.Content.ReadFromJsonAsync<ProblemDetail>(ct);
-        if (problemDetail == null)
+        try
+        {
+            ProblemDetail? problemDetail = await response.Content.ReadFromJsonAsync<ProblemDetail>(ct);
+            if (problemDetail == null)
+                return AppError.Create(ErrorCode.Unknown, "Ukjent feil fra serveren");
+
+            if (!Enum.TryParse(problemDetail.Code, out ErrorCode errorCode))
+                errorCode = ErrorCode.Unknown;
+
+            return AppError.Create(errorCode, problemDetail.Message);
+        }
+        catch (JsonException)
+        {
             return AppError.Create(ErrorCode.Unknown, "Ukjent feil fra serveren");
-
-        if (!Enum.TryParse(problemDetail.Code, out ErrorCode errorCode))
-            errorCode = ErrorCode.Unknown;
-
-        return AppError.Create(errorCode, problemDetail.Message);
+        }
     }
 }
