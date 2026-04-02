@@ -3,15 +3,10 @@ using System.Net.Http.Json;
 
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Infrastructure.Data;
-using CompVault.Backend.Infrastructure.Email.Models;
-using CompVault.Backend.Tests.Backend.Features.Auth.Builders;
 using CompVault.Backend.Tests.Common;
 using CompVault.Backend.Tests.Common.Constants;
-using CompVault.Shared.Constants;
-using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.DTOs.CompetencyTypes;
 using CompVault.Shared.Enums;
-using CompVault.Shared.Result;
 
 using FluentAssertions;
 
@@ -35,41 +30,10 @@ public class CompetencyTypesControllerTests(
         await TestDataSeeder.CreateDb(factory.Services);
         // Use Admin role to have write/delete permissions for all tests
         await TestDataSeeder.SeedUserAsync(factory.Services, id: TestConstants.Users.ActiveUserId, role: TestConstants.Roles.Admin);
-        _authenticatedClient = await GetAuthenticatedClientAsync();
+        _authenticatedClient = await TestDataSeeder.CreateAuthenticatedClientAsync(factory);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
-
-    /// <summary>
-    /// Hjelper metode som autentiserer via OTP-flyt og returnerer en HttpClient med gyldig token.
-    /// </summary>
-    private async Task<HttpClient> GetAuthenticatedClientAsync()
-    {
-        // Sett opp mock for å fange opp OTP-koden fra email
-        string? capturedCode = null;
-        factory.EmailServiceMock
-            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<EmailBody>(), It.IsAny<CancellationToken>()))
-            .Callback<string, EmailBody, CancellationToken>((_, body, _) =>
-                capturedCode = body.Subject.Split(": ").Last())
-            .ReturnsAsync(Result.Success());
-
-        // Kall RequestOtp for å få en kode generert
-        RequestOtpRequest otpRequest = AuthRequestBuilder.CreateRequestOtpRequest();
-        await _client.PostAsJsonAsync(ApiRoutes.Auth.RequestOtpFull, otpRequest);
-
-        // Kall VerifyOtp med den fangede koden for å få tokens
-        VerifyOtpRequest verifyRequest = AuthRequestBuilder.CreateVerifyOtpRequest(otpCode: capturedCode!);
-        HttpResponseMessage verifyResponse = await _client.PostAsJsonAsync(ApiRoutes.Auth.VerifyOtpFull, verifyRequest);
-
-        TokenResponse tokens = (await verifyResponse.Content.ReadFromJsonAsync<TokenResponse>())!;
-
-        // Opprett en ny HttpClient med Authorization header
-        HttpClient authenticatedClient = factory.CreateClient();
-        authenticatedClient.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokens.AccessToken);
-
-        return authenticatedClient;
-    }
 
     // -------------------------------------------------------------------------
     // GET /api/competencytypes Tests

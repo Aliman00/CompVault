@@ -1,9 +1,13 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Tests.Common.Constants;
+using CompVault.Shared.Constants;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompVault.Backend.Tests.Common;
@@ -61,7 +65,109 @@ public static class TestDataSeeder
         ApplicationUser user = TestDataFactory.CreateApplicationUser(id, email, deletedAt);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
+
+        // Seed permissions and role-permissions for the user's role
+        await SeedPermissionsAsync(serviceProvider);
+        await SeedRolePermissionsForRoleAsync(serviceProvider, role);
+
         return user;
+    }
+
+    /// <summary>
+    /// Seeds all permissions into the database. Mirrors DatabaseSeeder.SeedPermissionsAsync.
+    /// </summary>
+    public static async Task SeedPermissionsAsync(IServiceProvider serviceProvider)
+    {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        (string Name, string Description, string Category)[] permissions =
+        [
+            (Permissions.UsersRead, "Se brukere", "Users"),
+            (Permissions.UsersWrite, "Opprett/endre brukere", "Users"),
+            (Permissions.UsersDelete, "Slett brukere", "Users"),
+            (Permissions.RolesRead, "Se roller", "Roles"),
+            (Permissions.RolesWrite, "Opprett/endre roller", "Roles"),
+            (Permissions.RolesDelete, "Slett roller", "Roles"),
+            (Permissions.DepartmentsRead, "Se avdelinger", "Departments"),
+            (Permissions.DepartmentsWrite, "Opprett/endre avdelinger", "Departments"),
+            (Permissions.DepartmentsDelete, "Slett avdelinger", "Departments"),
+            (Permissions.CompetenciesRead, "Se kompetanser", "Competencies"),
+            (Permissions.CompetenciesWrite, "Opprett/endre kompetanser", "Competencies"),
+            (Permissions.CompetenciesDelete, "Slett kompetanser", "Competencies"),
+        ];
+
+        foreach ((string name, string description, string category) in permissions)
+        {
+            bool exists = await context.Permissions.AnyAsync(p => p.Name == name);
+            if (exists)
+                continue;
+
+            Permission permission = new()
+            {
+                Name = name,
+                Description = description,
+                Category = category
+            };
+            context.Permissions.Add(permission);
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds permissions for a specific role. This mirrors what DatabaseSeeder does in production.
+    /// </summary>
+    public static async Task SeedRolePermissionsForRoleAsync(IServiceProvider serviceProvider, string roleName)
+    {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // Get the role
+        ApplicationRole? role = await context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        if (role == null)
+            return;
+
+        // Define permissions based on role
+        string[] permissionNames = roleName switch
+        {
+            TestConstants.Roles.Admin => new[]
+            {
+                Permissions.CompetenciesRead,
+                Permissions.CompetenciesWrite,
+                Permissions.CompetenciesDelete,
+            },
+            TestConstants.Roles.Default => new[]
+            {
+                Permissions.CompetenciesRead,
+            },
+            _ => Array.Empty<string>()
+        };
+
+        // Get all permissions from DB
+        var allPermissions = context.Set<Permission>().ToList();
+
+        foreach (string permName in permissionNames)
+        {
+            Permission? permission = allPermissions.FirstOrDefault(p => p.Name == permName);
+            if (permission == null)
+                continue;
+
+            // Check if already exists
+            bool exists = await context.RolePermissions.AnyAsync(
+                rp => rp.RoleId == role.Id && rp.PermissionId == permission.Id);
+            if (exists)
+                continue;
+
+            context.RolePermissions.Add(new RolePermission
+            {
+                RoleId = role.Id,
+                PermissionId = permission.Id,
+                GrantedAt = DateTime.UtcNow,
+            });
+        }
+
+        await context.SaveChangesAsync();
     }
 
     // -------------------------------------------------------------------------
@@ -124,5 +230,40 @@ public static class TestDataSeeder
         context.Set<RefreshToken>().Add(refreshToken);
         await context.SaveChangesAsync();
         return refreshToken;
+    }
+
+    // -------------------------------------------------------------------------
+    // Http
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Oppretter en HttpClient med et gyldig JWT-token for brukeren med den oppgitte ID-en.
+    /// Genererer tokenet direkte via JwtService — ingen OTP-flyt nødvendig.
+    /// Brukeren må være seedet i databasen før denne metoden kalles.
+    /// </summary>
+    /// <param name="factory">WebApplicationFactory som brukes til å opprette HttpClient og hente tjenester.</param>
+    /// <param name="userId">ID til brukeren tokenet skal tilhøre. Default til ActiveUserId.</param>
+    /// <returns>HttpClient med Authorization-header satt til brukerens token.</returns>
+    public static async Task<HttpClient> CreateAuthenticatedClientAsync(
+        WebApplicationFactory<Program> factory,
+        Guid? userId = null)
+    {
+        using IServiceScope scope = factory.Services.CreateScope();
+        UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        IJwtService jwtService = scope.ServiceProvider.GetRequiredService<IJwtService>();
+        IPermissionService permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
+
+        ApplicationUser user = await userManager.FindByIdAsync((userId ?? TestConstants.Users.ActiveUserId).ToString())
+            ?? throw new InvalidOperationException("Bruker ikke funnet — seed brukeren før du kaller CreateAuthenticatedClientAsync.");
+
+        IList<string> roles = await userManager.GetRolesAsync(user);
+        IList<string> permissions = await permissionService.GetPermissionsForRolesAsync(roles, CancellationToken.None);
+        string token = jwtService.GenerateAccessToken(user, roles, permissions);
+
+        HttpClient client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        return client;
     }
 }
