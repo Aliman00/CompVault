@@ -67,10 +67,8 @@ public class CompetencyTypeServiceTests
             .Setup(x => x.GetByNameAsync(request.Name, It.IsAny<CancellationToken>()))
             .ReturnsAsync((CompetencyType?)null);
 
-        CompetencyType? capturedType = null;
         _competencyTypeRepositoryMock
-            .Setup(x => x.AddAsync(It.IsAny<CompetencyType>(), It.IsAny<CancellationToken>()))
-            .Callback<CompetencyType, CancellationToken>((t, _) => capturedType = t);
+            .Setup(x => x.AddAsync(It.IsAny<CompetencyType>(), It.IsAny<CancellationToken>()));
 
         // Act
         Result<CompetencyTypeDto> result = await _sut.CreateAsync(request);

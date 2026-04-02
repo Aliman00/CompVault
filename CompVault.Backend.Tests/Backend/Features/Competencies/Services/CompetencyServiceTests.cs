@@ -59,7 +59,7 @@ public class CompetencyServiceTests
             .ReturnsAsync(type);
 
         _userRepositoryMock
-            .Setup(x => x.ExistsAsync(u => u.Id == request.UserId.Value, It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         // Act
