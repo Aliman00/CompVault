@@ -79,6 +79,7 @@ public sealed class CompetencyTypesController(ICompetencyTypeService competencyT
     [ProducesResponseType(typeof(CompetencyTypeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CompetencyTypeDto>> UpdateAsync(
         Guid id,
         [FromBody] UpdateCompetencyTypeRequest request,
