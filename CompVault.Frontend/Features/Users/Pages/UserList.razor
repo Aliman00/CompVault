@@ -1,0 +1,81 @@
+﻿@page "/UserList"
+@using CompVault.Shared.DTOs.Users
+
+@* Grid med liste over brukere *@
+<MudDataGrid Items="_users"  Filterable="true" FilterMode="DataGridFilterMode.ColumnFilterRow">
+    <Columns>
+        <PropertyColumn Property="user => user.FullName" Title="Name"/>
+        <PropertyColumn Property="user => user.Email" Title="Email"/>
+        <PropertyColumn Property="user => user.JobTitle" Title="Tittel"/>
+    </Columns>
+</MudDataGrid>
+
+
+@code {
+    private readonly List<UserDto> _users =
+    [
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Email = "lars.hansen@bedrift.no",
+            FirstName = "Lars",
+            LastName = "Hansen",
+            JobTitle = "Lagerarbeider",
+            EmploymentType = EmploymentType.Permanent,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow.AddMonths(-14),
+            Roles = ["Admin"]
+        },
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Email = "kari.nilsen@bedrift.no",
+            FirstName = "Kari",
+            LastName = "Nilsen",
+            JobTitle = "HR-ansvarlig",
+            EmploymentType = EmploymentType.Permanent,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow.AddMonths(-8),
+            Roles = ["HR"]
+        },
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Email = "per.johansen@bedrift.no",
+            FirstName = "Per",
+            LastName = "Johansen",
+            JobTitle = "Avdelingsleder",
+            EmploymentType = EmploymentType.Permanent,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow.AddMonths(-22),
+            Roles = ["Leder"]
+        },
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Email = "sara.berg@bedrift.no",
+            FirstName = "Sara",
+            LastName = "Berg",
+            JobTitle = "Renholder",
+            EmploymentType = EmploymentType.Temporary,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow.AddMonths(-3),
+            Roles = ["Ansatt"]
+        },
+        new()
+        {
+            Id = Guid.NewGuid(),
+            Email = "ole.dahl@bedrift.no",
+            FirstName = "Ole",
+            LastName = "Dahl",
+            JobTitle = "Truckfører",
+            EmploymentType = EmploymentType.Contracted,
+            IsActive = false,
+            CreatedAt = DateTime.UtcNow.AddMonths(-30),
+            Roles = ["Ansatt"]
+        }
+    ];
+
+    private string _searchString = "hei";
+
+}
