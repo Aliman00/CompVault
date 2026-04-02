@@ -271,7 +271,7 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
 
     /// <summary>
     /// Tester responsen hvis OTP-koden er satt som brukt. Vi sender to forespørsler til med samme request.
-    /// Første setter den som brukt, andre retunrerer feilmelding
+    /// Første setter den som brukt, andre returnerer feilmelding
     /// </summary>
     [Fact]
     public async Task VerifyOtp_OtpAlreadyUsed_Returns401()

@@ -83,7 +83,7 @@ public class AccessTokenHandlerTests
         var httpContext = new DefaultHttpContext { User = claimsPrincipal };
         
         if (setRefreshToken)
-            httpContext.Request.Headers.Append("Cookie", "refreshToken=valid_access_token");
+            httpContext.Request.Headers.Append("Cookie", "refreshToken=valid_refresh_token");
 
         return httpContext;
     }
@@ -144,7 +144,7 @@ public class AccessTokenHandlerTests
             .Setup(x => x.HttpContext)
             .Returns(httpContext);
         
-        // Mocker først at vi får 401 Unathorized og deretter 200 Ok. Vi bruker en teller for å kunne sikre
+        // Mocker først at vi får 401 Unauthorized og deretter 200 Ok. Vi bruker en teller for å kunne sikre
         // at vi får forskjellige responser pga samme SendAsync blir kalt to ganger
         int callNumber = 0;
         _mainHandlerMock
@@ -197,7 +197,7 @@ public class AccessTokenHandlerTests
     
     /// <summary>
     /// Tester at kallet for å refreshe token til RefreshToken-endepunktet gir oss en feilmelding.
-    /// Ingen token oppdaterte og retunrere original response
+    /// Ingen token ble oppdatert og returnerer original response
     /// </summary>
     [Fact]
     public async Task SendAsync_StatusCodeIs401AndRefreshesTokenFails_ReturnOriginalResponse()
@@ -210,7 +210,7 @@ public class AccessTokenHandlerTests
             .Setup(x => x.HttpContext)
             .Returns(httpContext);
         
-        // Mocker først at vi får 401 Unathorized
+        // Mocker først at vi får 401 Unauthorized
         _mainHandlerMock
             .Protected()
             .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
@@ -256,7 +256,7 @@ public class AccessTokenHandlerTests
             .Setup(x => x.HttpContext)
             .Returns(httpContext);
         
-        // Mocker først at vi får 401 Unathorized
+        // Mocker først at vi får 401 Unauthorized
         _mainHandlerMock
             .Protected()
             .Setup<Task<HttpResponseMessage>>(SendAsync, ItExpr.IsAny<HttpRequestMessage>(),
@@ -294,7 +294,7 @@ public class AccessTokenHandlerTests
             .Setup(x => x.HttpContext)
             .Returns(httpContext);
         
-        // Mocker først at vi får 401 Unathorized og deretter 200 Ok. Bruker en teller for å sikre at vi før 
+        // Mocker først at vi får 401 Unauthorized og deretter 200 Ok. Bruker en teller for å sikre at vi før 
         // ønskete responser på kallene våre
         int callNumber = 0;
         

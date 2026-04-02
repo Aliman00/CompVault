@@ -106,7 +106,7 @@ public class OtpCodeService(
                 "Invalid or expired code"));
         }
 
-        // Retunrerer koden for lagring i transaksjonen
+        // Returnerer koden for lagring i transaksjonen
         return Result<OtpCode>.Success(otpCode);
     }
 

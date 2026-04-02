@@ -5,7 +5,7 @@ namespace CompVault.Frontend.Tests.Common;
 public static class FrontendTestDataFactory
 {
     /// <summary>
-    /// Bygger en ProbelemDetials-objekt som brukes av flere av 
+    /// Bygger et ProbelemDetails-objekt som brukes av flere av tester
     /// </summary>
     /// <param name="statusCode">HTTP-status koden</param>
     /// <param name="errorCode">AppError-kode som string</param>

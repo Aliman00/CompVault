@@ -33,17 +33,18 @@ public static class HttpClientExtensions
         try
         {
             T? body = await response.Content.ReadFromJsonAsync<T>(ct);
-            
+
             // Dette kan kun skje hvis backend sender "null"
             if (body == null)
-                return Result<T>.Failure(AppError.Create(ErrorCode.Unknown, 
+                return Result<T>.Failure(AppError.Create(ErrorCode.Unknown,
                     "Server returnerte suksess og null i body"));
 
             return Result<T>.Success(body);
         }
         catch (JsonException)
         {
-            return Result<T>.Failure(AppError.Create(ErrorCode.Unknown, "Tom response fra server"));
+            return Result<T>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Kunne ikke lese JSON-respons fra server"));
         }
     }
     
