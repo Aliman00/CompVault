@@ -84,7 +84,6 @@ public class CookieValidationEvents(
                 logger.LogWarning("Tom respons fra backend ved token-refresh — feiler åpent");
                 return;
             }
-                
             
             // Er Identity null og ikke et ClaimsIdentity-objekt, brukeren er ikke autentisert lenger
             if (context.Principal?.Identity is not ClaimsIdentity identity)
