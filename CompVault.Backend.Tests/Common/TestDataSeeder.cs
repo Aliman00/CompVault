@@ -4,6 +4,7 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Tests.Common.Constants;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CompVault.Backend.Tests.Common;
@@ -29,7 +30,7 @@ public static class TestDataSeeder
 
         // Nuker databasen og oppretter en ny database for hver integrasjonstest
         await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync(); // TODO: Bytt til MigrateAsync når vi har migrasjon
+        await context.Database.MigrateAsync();
     }
 
     // -------------------------------------------------------------------------
