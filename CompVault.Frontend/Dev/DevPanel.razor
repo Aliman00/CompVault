@@ -43,16 +43,46 @@
                 {
                     <MudSimpleTable Class="mb-4" Dense="true" Bordered="true" Striped="true">
                         <tbody>
-                        <tr><td><strong>Id</strong></td><td>@_currentUser.Id</td></tr>
-                        <tr><td><strong>Fullt navn</strong></td><td>@_currentUser.FullName</td></tr>
-                        <tr><td><strong>E-post</strong></td><td>@_currentUser.Email</td></tr>
-                        <tr><td><strong>Stillingstittel</strong></td><td>@_currentUser.JobTitle</td></tr>
-                        <tr><td><strong>Ansettelsestype</strong></td><td>@_currentUser.EmploymentType</td></tr>
-                        <tr><td><strong>Aktiv</strong></td><td>@_currentUser.IsActive</td></tr>
-                        <tr><td><strong>Avdeling</strong></td><td>@(_currentUser.DepartmentId?.ToString() ?? "—")</td></tr>
-                        <tr><td><strong>Leder</strong></td><td>@(_currentUser.ManagerId?.ToString() ?? "—")</td></tr>
-                        <tr><td><strong>Roller</strong></td><td>@string.Join(", ", _currentUser.Roles)</td></tr>
-                        <tr><td><strong>Opprettet</strong></td><td>@_currentUser.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td></tr>
+                        <tr>
+                            <td><strong>Id</strong>
+                                </td><td>@_currentUser.Id</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fullt navn</strong>
+                                </td><td>@_currentUser.FullName</td>
+                        </tr>
+                        <tr>
+                            <td><strong>E-post</strong></td>
+                            <td>@_currentUser.Email</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Stillingstittel</strong></td>
+                            <td>@_currentUser.JobTitle</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ansettelsestype</strong>
+                                </td><td>@_currentUser.EmploymentType</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Aktiv</strong></td>
+                            <td>@_currentUser.IsActive</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Avdeling</strong></td>
+                            <td>@(_currentUser.DepartmentId?.ToString() ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Leder</strong></td>
+                            <td>@(_currentUser.ManagerId?.ToString() ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Roller</strong></td>
+                            <td>@string.Join(", ", _currentUser.Roles)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Opprettet</strong></td>
+                            <td>@_currentUser.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
                         </tbody>
                     </MudSimpleTable>
                 }
