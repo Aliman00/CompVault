@@ -56,6 +56,11 @@ public sealed class CompetencyService(
             return Result<CompetencyDto>.Failure(
                 AppError.NotFound($"Kompetansetype med ID '{competencyTypeId}' ble ikke funnet."));
 
+        if (!type.IsActive)
+            return Result<CompetencyDto>.Failure(
+                AppError.Create(ErrorCode.Validation,
+                    $"Kompetansetypen '{type.Name}' er inaktiv og kan ikke brukes."));
+
         bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, cancellationToken);
 
         if (!userExists)
