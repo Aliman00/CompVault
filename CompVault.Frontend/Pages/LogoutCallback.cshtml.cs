@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using CompVault.Frontend.Common.Constants;
+
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -14,6 +16,6 @@ public class LogoutCallback : PageModel
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         HttpContext.Response.Cookies.Delete("refreshToken");
-        return LocalRedirect("/login");
+        return LocalRedirect(PageRoutes.Auth.LoginEmail);
     }
 }

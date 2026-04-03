@@ -1,0 +1,22 @@
+﻿@page "/not-authorized"
+@layout MainLayout
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 d-flex flex-column align-items-center p-2">
+    <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Error" Size="Size.Large" Class="mt-6"/>
+    
+    <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-2 mt-6">
+        Du har ikke tilgang til denne siden.
+    </MudText>
+    
+    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="mt-6">
+        Kontakt administrator hvis du mener dette er en feil.
+    </MudText>
+    
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Home"
+               Class="mt-6"
+               Href="/">
+        Gå til forsiden
+    </MudButton>
+</MudContainer>
