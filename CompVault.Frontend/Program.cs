@@ -11,8 +11,8 @@ builder.Services.AddRazorComponents()
 builder.AddSerilogLogging();
 builder.Services.AddHttpClients(builder.Configuration);
 builder.Services.AddMudServices();
-builder.Services.AddAuthorization();
 builder.Services.AddAuth(builder.Configuration, builder.Environment);
+builder.Services.AddAuthPolicies();
 builder.Services.AddFrontendServices(builder.Environment);
 builder.Services.AddRazorPages();
 

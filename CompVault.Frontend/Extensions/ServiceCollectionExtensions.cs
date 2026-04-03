@@ -1,9 +1,11 @@
 ﻿using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Constants;
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Users.Services;
+using CompVault.Shared.Constants;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -93,6 +95,23 @@ public static class ServiceCollectionExtensions
         
         services.AddScoped<IAuthService, AuthService>();
         
+        return services;
+    }
+    
+    /// <summary>
+    /// Legger til autorisasjon og policies i Blazor
+    /// </summary>
+    public static IServiceCollection AddAuthPolicies(this IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(Policies.AdminAccess, policy =>
+                policy.RequireClaim(Permissions.ClaimType,
+                    Permissions.UsersRead,
+                    Permissions.RolesRead,
+                    Permissions.DepartmentsRead));
+        });
+
         return services;
     }
 
