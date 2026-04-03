@@ -4,14 +4,18 @@
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
         Hjem
     </MudNavLink>
-    <MudNavLink Href="/login" Icon="@Icons.Material.Filled.Login">
+    <MudNavLink Href="@PageRoutes.Auth.LoginEmail" Icon="@Icons.Material.Filled.Login">
         Logg inn
     </MudNavLink>
-    <MudNavLink Href="/otp" Icon="@Icons.Material.Filled.Pin">
+    <MudNavLink Href="@PageRoutes.Auth.LoginOtp" Icon="@Icons.Material.Filled.Pin">
         OTP
     </MudNavLink>
-    @* TODO: Admin dashboard skal kun være synlig hvis bruker har riktig tillatelse *@
-    <MudNavLink Href="/admindashboard" Icon="@Icons.Material.Filled._4k">
-        Admin-panel
-    </MudNavLink>
+
+    <AuthorizeView Policy="@Policies.AdminAccess">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">
+                Admin-panel
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
 </MudNavMenu>

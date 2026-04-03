@@ -1,12 +1,16 @@
 ﻿@page "/Dev"
 @using System.Security.Claims
+@using CompVault.Frontend.Common.Configuration
 @using CompVault.Frontend.Features.Auth.Services
+@using CompVault.Shared.DTOs.Users
 @inject IWebHostEnvironment Env
 @inject IAuthService AuthService
 @inject AuthStateProvider AuthStateProvider
 @inject IServiceProvider ServiceProvider
 @inject IJSRuntime JsRuntime
 @implements IAsyncDisposable
+@layout AuthLayout
+@inject IHttpClientFactory HttpClientFactory
 
 @* Denne siden er kun tilgjengelig i development *@
 
@@ -34,6 +38,26 @@
     <MudPaper Class="pa-6 mb-4">
         <AuthorizeView>
             <Authorized>
+                <MudText Typo="Typo.h6" Class="mb-4">UserDto til innlogget bruker</MudText>
+                @if (_currentUser is not null)
+                {
+                    <MudSimpleTable Class="mb-4" Dense="true" Bordered="true" Striped="true">
+                        <tbody>
+                        <tr><td><strong>Id</strong></td><td>@_currentUser.Id</td></tr>
+                        <tr><td><strong>Fullt navn</strong></td><td>@_currentUser.FullName</td></tr>
+                        <tr><td><strong>E-post</strong></td><td>@_currentUser.Email</td></tr>
+                        <tr><td><strong>Stillingstittel</strong></td><td>@_currentUser.JobTitle</td></tr>
+                        <tr><td><strong>Ansettelsestype</strong></td><td>@_currentUser.EmploymentType</td></tr>
+                        <tr><td><strong>Aktiv</strong></td><td>@_currentUser.IsActive</td></tr>
+                        <tr><td><strong>Avdeling</strong></td><td>@(_currentUser.DepartmentId?.ToString() ?? "—")</td></tr>
+                        <tr><td><strong>Leder</strong></td><td>@(_currentUser.ManagerId?.ToString() ?? "—")</td></tr>
+                        <tr><td><strong>Roller</strong></td><td>@string.Join(", ", _currentUser.Roles)</td></tr>
+                        <tr><td><strong>Opprettet</strong></td><td>@_currentUser.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td></tr>
+                        </tbody>
+                    </MudSimpleTable>
+                }
+                
+                <MudText Typo="Typo.h6" Class="mb-4">Claims til innlogget bruker</MudText>
                 <MudStack>
                     @foreach (var claim in _claims)
                     {
@@ -79,15 +103,41 @@
     
     private IDevService? _devService;
     
-
     
     // ===================== LIFECYCLE =====================
     protected override async Task OnInitializedAsync()
     {
-        // Tilgjengelig kun i Development — i produksjon er tjenesten ikke registrert
-        if (Env.IsDevelopment())
-            _devService = ServiceProvider.GetService<IDevService>();
+        try
+        {
+            // Tilgjengelig kun i Development — i produksjon er tjenesten ikke registrert
+            if (Env.IsDevelopment())
+                _devService = ServiceProvider.GetService<IDevService>();
+            
+            var httpClient = HttpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
+            
+            HttpResponseMessage response = await httpClient.GetAsync("api/auth/dev-get-users", 
+                CancellationToken.None);
 
+            Result<List<UserDto>> getUsersResult =
+                await HttpClientExtensions.ParseResponseAsync<List<UserDto>>(response, CancellationToken.None);
+
+            if (getUsersResult.IsFailure)
+            {
+                _loginErrorMessage = getUsersResult.Error!.Message;
+                return;
+            }
+            
+            _testUsers = getUsersResult.Value!;
+        }
+        catch
+        {
+            _loginErrorMessage = "Noe galt har skjedd ved innlastning. Feil i OnInitializedAsync()";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+        
         await RefreshClaimsAsync();
     }
     
@@ -111,25 +161,17 @@
     
     private bool _isLoading;
     private string? _loginErrorMessage;
-    
-    public record TestUser(string FirstName, string LastName, string Email, string JobTitle, string[] Roles);
 
-    private List<TestUser> _testUsers =
-    [
-        new ("Kari", "Nordmann", "kari.nordmann@compvault.no", "System Administrator",["Admin"]),
-        new ("Ola", "Nordmann", "ola.nordmann@compvault.no","IT-leder", ["Admin"]),
-        new ("Lars", "Hansen", "lars.hansen@compvault.no","Systemutvikler", ["Employee"]),
-        new ("Ingrid", "Berg","ingrid.berg@compvault.no","Systemutvikler", ["Employee"]),
-        new ("Tobias", "Lie","tobias.lie@compvault.no", "Rådgiver", ["Employee"]),
-        new ("Sofie", "Dahl","sofie.dahl@compvault.no","HR-konsulent", ["Employee"])
-    ];
+    private List<UserDto> _testUsers = [];
     
     private IEnumerable<Claim> _claims = [];
+    
+    private UserDto? _currentUser;
     
     
     
     // Logger inn brukeren ved å opprette en satt OTP-kode og verifisere med VerifyOtp
-    private async Task LoginAsync(TestUser testUser)
+    private async Task LoginAsync(UserDto testUser)
     {
         if (_devService == null)
             return;
@@ -163,6 +205,9 @@
     {
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
         _claims = state.User.Claims;
+
+        var email = _claims.FirstOrDefault(c => c.Type == "email")?.Value;
+        _currentUser = _testUsers.FirstOrDefault(u => u.Email == email);
     }
 }
 

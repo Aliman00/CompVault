@@ -39,11 +39,11 @@
         <NotAuthorized>
             @if (context.User.Identity?.IsAuthenticated == true)
             {
-                <RedirectTo Href="/not-authorized"/>
+                <RedirectTo Href="@PageRoutes.Errors.NotAuthorized"/>
             }
             else
             {
-                <RedirectTo Href="/login"/>
+                <RedirectTo Href="@PageRoutes.Auth.LoginEmail"/>
             }
         </NotAuthorized>
     </AuthorizeView>

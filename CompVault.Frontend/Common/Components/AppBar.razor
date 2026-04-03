@@ -1,4 +1,4 @@
-﻿@inject IJSRuntime JsRuntime
+﻿@inject IThemeService ThemeService
 
 @* Headeren til appen med Hamburgermeny for en drawer *@
 
@@ -56,6 +56,6 @@
     {
         IsDarkMode = !IsDarkMode;
         await IsDarkModeChanged.InvokeAsync(IsDarkMode);
-        await JsRuntime.SetItemAsync(AppConstants.DarkModeKey, IsDarkMode.ToString());
+        await ThemeService.SaveDarkModeAsync(IsDarkMode);
     }
 }
