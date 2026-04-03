@@ -1,5 +1,6 @@
 ﻿using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Tests.Common.Constants;
 
@@ -62,12 +63,34 @@ public static class TestDataFactory
     /// <param name="isRevoked">Bool på om koden er gyldig eller revoked</param>
     /// <returns>En opprettet RefreshToken</returns>
     public static RefreshToken CreateRefreshToken(Guid? userId = null, string? token = null,
-        DateTime? createdAt = null, DateTime? expiresAt = null, bool isRevoked = false) => new()
+        DateTime? createdAt = null,
+        DateTime? expiresAt = null, bool isRevoked = false) => new()
         {
             UserId = userId ?? TestConstants.Users.ActiveUserId,
             Token = token ?? Guid.NewGuid().ToString(),
             CreatedAt = createdAt ?? DateTime.UtcNow,
             ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(15),
             IsRevoked = isRevoked
+        };
+
+    /// <summary>
+    /// Oppretter en Department for testing.
+    /// </summary>
+    public static Department CreateDepartment(
+        Guid? id = null,
+        string name = "Test Department",
+        string? description = null,
+        Guid? parentDepartmentId = null,
+        bool isActive = true,
+        DateTime? createdAt = null,
+        DateTime? deletedAt = null) => new()
+        {
+            Id = id ?? Guid.NewGuid(),
+            Name = name,
+            Description = description ?? string.Empty,
+            ParentDepartmentId = parentDepartmentId,
+            IsActive = isActive,
+            CreatedAt = createdAt ?? DateTime.UtcNow,
+            DeletedAt = deletedAt
         };
 }
