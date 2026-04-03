@@ -28,7 +28,7 @@ public class DepartmentRepositoryTests(
 
     public Task DisposeAsync()
     {
-        _scope.Dispose();
+        _scope?.Dispose();
         return Task.CompletedTask;
     }
 

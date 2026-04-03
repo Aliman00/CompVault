@@ -20,7 +20,7 @@ public static class TestConfiguration
         ["Otp:ExpirationMinutes"] = "10",
         ["Otp:MinResponseTimeRequestOtpMs"] = "0",
         ["Otp:MinResponseTimeVerifyOtpMs"] = "0",
-        
+
         ["Cors:AllowedOrigins"] = "http://localhost:5001",
 
         ["ConnectionStrings:Default"] = "ignored"

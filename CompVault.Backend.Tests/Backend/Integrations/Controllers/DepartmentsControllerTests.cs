@@ -40,7 +40,12 @@ public class DepartmentsControllerTests(
         _authenticatedClient = await TestDataSeeder.CreateAuthenticatedClientAsync(factory, TestConstants.Users.ActiveUserId);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync()
+    {
+        _authenticatedClient?.Dispose();
+        _client.Dispose();
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Helper to grant Departments permissions to the Admin role for happy path tests.

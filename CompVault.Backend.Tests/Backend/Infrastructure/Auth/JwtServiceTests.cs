@@ -158,7 +158,7 @@ public class JwtServiceTests
             .Where(c => c.Type == "permission")
             .Select(c => c.Value)
             .ToList();
-        
+
         permissionClaims.Should().HaveCount(3);
         permissionClaims.Should().Contain("users:read");
         permissionClaims.Should().Contain("users:write");
