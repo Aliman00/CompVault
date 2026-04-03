@@ -3,6 +3,8 @@ using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
+using CompVault.Frontend.Features.Users.Services;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -101,6 +103,8 @@ public static class ServiceCollectionExtensions
     {
         if (env.IsDevelopment())
             services.AddScoped<IDevService, DevService>();
+
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }
