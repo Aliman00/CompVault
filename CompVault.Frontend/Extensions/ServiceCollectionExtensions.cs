@@ -122,8 +122,13 @@ public static class ServiceCollectionExtensions
     {
         if (env.IsDevelopment())
             services.AddScoped<IDevService, DevService>();
-
+            
+        // ================================ Infrastruktur ================================
+        services.AddScoped<IThemeService, ThemeService>();
+        
+        // ================================ Admin forretningslogikk ================================
         services.AddScoped<IUserService, UserService>();
+   
 
         return services;
     }

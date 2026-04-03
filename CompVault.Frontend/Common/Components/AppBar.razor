@@ -1,0 +1,61 @@
+﻿@inject IJSRuntime JsRuntime
+
+@* Headeren til appen med Hamburgermeny for en drawer *@
+
+<MudAppBar Elevation="1"> <!-- Gir headeren en skygge -->
+    @if (ShowMenuButton)
+    {
+        <!-- Hamburgermeny knappen med egen metode for å lukke og åpne sidemenyen (Drawer) -->
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="OnMenuButtonClick"/>
+    }
+    
+    <!-- Header title -->
+    <AppLogo Class="app-header-logo"/>
+    <MudText Typo="Typo.h6" Class="ml-3">CompVault</MudText>
+
+    <!-- Fyller ledig plass i AppBar, skyver alle andre elementer til høyre -->
+    <MudSpacer/>
+
+    <!-- Knapp for å bytte mellom mørk og lys-modus. Skal flyttes senere -->
+    <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                   Color="Color.Inherit"
+                   OnClick="ToggleDarkMode"/>
+</MudAppBar>
+
+@code {
+    // ======================== Parametere ========================
+    /// <summary>
+    /// Viser hamburgermeny-knappen. Default = true, settes til false i AuthLayout
+    /// </summary>
+    [Parameter] public bool ShowMenuButton { get; set; } = true;
+    
+    /// <summary>
+    /// Kalles når hamburgermeny-knappen klikkes. Layoutet håndterer om sidebaren vises/skjules
+    /// </summary>
+    [Parameter]
+    public EventCallback OnMenuButtonClick { get; set; }
+    
+    /// <summary>
+    /// Mørkt/lyst tema
+    /// </summary>
+    [Parameter]
+    public bool IsDarkMode { get; set; }
+    
+    /// <summary>
+    /// Kalles når bytting av mørk/lys modus kalles
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> IsDarkModeChanged { get; set; }
+    
+    // ======================== Private metoder ========================
+    
+    private async Task ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        await IsDarkModeChanged.InvokeAsync(IsDarkMode);
+        await JsRuntime.SetItemAsync(AppConstants.DarkModeKey, IsDarkMode.ToString());
+    }
+}

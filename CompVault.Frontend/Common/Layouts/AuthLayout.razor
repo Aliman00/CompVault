@@ -1,0 +1,40 @@
+﻿@inherits LayoutComponentBase
+@inject IThemeService ThemeService
+
+<MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <AppBar ShowMenuButton="false"
+            @bind-IsDarkMode="_isDarkMode"/>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    
+    // ======================== Private felt ========================
+    private bool _isDarkMode;
+    
+    // Referansen til ThemeProvider komponenten for å endre tema
+    private MudThemeProvider _mudThemeProvider = null!;
+    
+    private readonly MudTheme _theme = CompVaultMainTheme.Theme;
+    
+    // ======================== Lifecycle ========================
+    
+    /// <summary>
+    /// Ved første render så henter vi lokalt lagret tema, eller så bruker vi nettleserens modus
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isDarkMode = await ThemeService.GetInitialDarkModeAsync(_mudThemeProvider);
+            StateHasChanged();
+        }
+    }
+}

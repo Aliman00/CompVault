@@ -1,5 +1,5 @@
 ﻿@inherits LayoutComponentBase
-@inject IJSRuntime JsRunTime
+@inject IThemeService ThemeService
 
 @* Layout for alle sider til CompVault som ikke er admin *@
 
@@ -14,38 +14,29 @@
 
 <!-- MainLayout med Mudblazor -->
 <MudLayout>
-    <MudAppBar Elevation="1">  <!-- Gir headeren en skygge -->
-        <!-- Hamburgermeny knappen med egen metode for å lukke og åpne sidemenyen (Drawer) -->
-        <!-- Edge bestemmer høyre eller venstre -->
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" 
-                       Color="Color.Inherit"
-                       Edge="Edge.Start"
-                       OnClick="ToggleDrawer" />
+    <AuthorizeView>
+        <Authorized>
+            <AppBar ShowMenuButton="true"
+                    OnMenuButtonClick="ToggleDrawer"
+                    @bind-IsDarkMode="_isDarkMode"/>
 
-        <!-- Header title -->
-        <AppLogo Class="app-header-logo"/>
-        <MudText Typo="Typo.h6" Class="ml-3">CompVault</MudText>
+            <AppDrawer @bind-IsOpen="_drawerOpen">
+                <AppNavMenu/>
+            </AppDrawer>
 
-        <!-- Fyller ledig plass i AppBar, skyver alle andre elementer til høyre -->
-        <MudSpacer />
+            <!-- Hovedcontent med Body - tilpasser seg MudDrawer automatisk -->
+            <MudMainContent>
+                <!-- Hovedcontent med Body - MaxWidth senterer inneholdet på store skjermer. pa-4 mt-4 er padding/margin -->
+                <MudContainer MaxWidth="MaxWidth.Large" Class="pa-4 mt-4">
+                    @Body
+                </MudContainer>
+            </MudMainContent>
+        </Authorized>
 
-        <!-- Knapp for å bytte mellom mørk og lys-modus. Skal flyttes senere -->
-        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                       Color="Color.Inherit"
-                       OnClick="ToggleDarkMode" />
-    </MudAppBar>
-
-    <AppDrawer @bind-IsOpen="_drawerOpen">
-        <AppNavMenu />
-    </AppDrawer>
-    
-    <!-- Hovedcontent med Body - tilpasser seg MudDrawer automatisk -->
-    <MudMainContent>
-        <!-- Hovedcontent med Body - MaxWidth senterer inneholdet på store skjermer. pa-4 mt-4 er padding/margin -->
-        <MudContainer MaxWidth="MaxWidth.Large" Class="pa-4 mt-4">
-            @Body
-        </MudContainer>
-    </MudMainContent>
+        <NotAuthorized>
+            <RedirectTo Href="/login"/>
+        </NotAuthorized>
+    </AuthorizeView>
 </MudLayout>
 
 @code {
@@ -70,19 +61,7 @@
     {
         if (firstRender)
         {
-            // Prøv å lese fra localStorage først
-            var savedThemeMode = await JsRunTime.GetItemAsync(AppConstants.DarkModeKey);
-
-            if (savedThemeMode != null && bool.TryParse(savedThemeMode, out var savedDarkMode))
-            {
-                _isDarkMode = savedDarkMode;
-            }
-            else
-            {
-                // Henter innstillingen fra nettleseren
-                _isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
-            }
-
+            _isDarkMode = await ThemeService.GetInitialDarkModeAsync(_mudThemeProvider);
             StateHasChanged();
         }
     }
@@ -90,12 +69,4 @@
     // ======================== Private metoder ========================
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
     
-    /// <summary>
-    /// Bytter tema til mørkt og lagrer valget lokalt
-    /// </summary>
-    private async Task ToggleDarkMode()
-    {
-        _isDarkMode = !_isDarkMode;
-        await JsRunTime.SetItemAsync(AppConstants.DarkModeKey, _isDarkMode.ToString());
-    }
 }
