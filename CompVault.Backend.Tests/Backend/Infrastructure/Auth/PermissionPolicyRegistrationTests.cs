@@ -26,7 +26,7 @@ public class PermissionPolicyRegistrationTests
     /// blir registrert som policies via reflection.
     /// </summary>
     [Fact]
-    public void AllPermissionConstants_HaveCorrespondingPolicy()
+    public async Task AllPermissionConstants_HaveCorrespondingPolicy()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -54,7 +54,7 @@ public class PermissionPolicyRegistrationTests
             var identity = new ClaimsIdentity(claims, "Test");
             var principal = new ClaimsPrincipal(identity);
 
-            var result = authorizationService.AuthorizeAsync(principal, permission).Result;
+            var result = await authorizationService.AuthorizeAsync(principal, permission);
             result.Succeeded.Should().BeTrue(
                 $"Policy '{permission}' should be registered and authorize when user has the correct claim");
         }
@@ -64,7 +64,7 @@ public class PermissionPolicyRegistrationTests
     /// Verifiserer at policy krever korrekt claim-type og verdi.
     /// </summary>
     [Fact]
-    public void PolicyRequiresCorrectClaim()
+    public async Task PolicyRequiresCorrectClaim()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -80,7 +80,7 @@ public class PermissionPolicyRegistrationTests
         var validIdentity = new ClaimsIdentity(validClaims, "Test");
         var validPrincipal = new ClaimsPrincipal(validIdentity);
 
-        var successResult = authorizationService.AuthorizeAsync(validPrincipal, Permissions.RolesRead).Result;
+        var successResult = await authorizationService.AuthorizeAsync(validPrincipal, Permissions.RolesRead);
         successResult.Succeeded.Should().BeTrue();
 
         // Feil claim-verdi skal ikke autoriseres
@@ -88,7 +88,7 @@ public class PermissionPolicyRegistrationTests
         var wrongIdentity = new ClaimsIdentity(wrongClaims, "Test");
         var wrongPrincipal = new ClaimsPrincipal(wrongIdentity);
 
-        var failResult = authorizationService.AuthorizeAsync(wrongPrincipal, Permissions.RolesRead).Result;
+        var failResult = await authorizationService.AuthorizeAsync(wrongPrincipal, Permissions.RolesRead);
         failResult.Succeeded.Should().BeFalse();
     }
 
