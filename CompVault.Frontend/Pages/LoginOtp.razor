@@ -1,39 +1,105 @@
-﻿@page "/login-otp"
-@inject IHttpClientFactory Http
+﻿
+@page "/login-otp"
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
+@using CompVault.Frontend.Features.Auth.Services
+@using CompVault.Shared.DTOs.Auth
+@using CompVault.Shared.Result
+@using MudBlazor
 
 <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#f5f5f5">
     <MudCard Style="width:400px">
         <MudCardContent Class="pa-6">
             <MudText Typo="Typo.h4" Class="mb-4 text-center">Bekreft OTP</MudText>
-            <MudText Typo="Typo.body1" Class="mb-4">Sendt til: <strong>@Email</strong></MudText>
-            <MudTextField Label="OTP-kode" @bind-Value="otpCode" MaxLength="6" Variant="Variant.Outlined"/>
-            <MudButton Class="mt-4" FullWidth Color="Color.Primary" OnClick="VerifyOtpAsync">Logg inn</MudButton>
+            <MudText Typo="Typo.body1" Class="mb-4">
+                Sendt til: <strong>@Email</strong>
+            </MudText>
+
+            <MudTextField Label="OTP-kode" @bind-Value="otpCode" MaxLength="6" Variant="Variant.Outlined" />
+            
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <MudText Typo="Typo.body2" Class="mt-2 mb-2" Color="Color.Error">@ErrorMessage</MudText>
+            }
+
+            <MudButton Class="mt-4" FullWidth Color="Color.Primary" OnClick="VerifyOtpAsync" Disabled="IsProcessing">
+                @(IsProcessing ? "Vennligst vent..." : "Logg inn")
+            </MudButton>
+
+            <MudButton Class="mt-2" FullWidth Color="Color.Secondary" Variant="Variant.Outlined" OnClick="ResendOtpAsync" Disabled="IsProcessing">
+                Send OTP på nytt
+            </MudButton>
         </MudCardContent>
     </MudCard>
 </div>
 
 @code {
-    // 1. HENT E-POST fra query-string (?email=test@example.com)
-    [Parameter][SupplyParameterFromQuery]
+    [Parameter]
+    [SupplyParameterFromQuery]
     public string? Email { get; set; } = "";
-    
-    // 2. Two-way binding til OTP-input
+
     private string otpCode = "";
-    
-    // 3. Verifiser OTP mot backend
+    private string? ErrorMessage;
+    private bool IsProcessing = false;
+
     private async Task VerifyOtpAsync()
     {
-        // Hent HttpClient konfigurert i Program.cs
-        var client = Http.CreateClient("BackendApi");
-        
-        // POST til din backend AuthController
-        var response = await client.PostAsJsonAsync("api/auth/verify-otp", 
-            new { email = Email, otpCode });
-        
-        /* 4. Suksess = redirect til dashboard
-           forceLoad=true fornyer auth-state */
-        if (response.IsSuccessStatusCode)
-            Navigation.NavigateTo("/dashboard", forceLoad: true);
+        ErrorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(otpCode))
+        {
+            ErrorMessage = "Vennligst skriv inn OTP-koden.";
+            return;
+        }
+
+        IsProcessing = true;
+        try
+        {
+            var request = new VerifyOtpRequest
+            {
+                Email = Email!,
+                OtpCode = otpCode
+            };
+
+            var result = await AuthService.VerifyOtpAsync(request, CancellationToken.None);
+
+            if (result.IsSuccess)
+            {
+                Navigation.NavigateTo("/dashboard", forceLoad: true);
+            }
+            else
+            {
+                ErrorMessage = result.Error?.Message ?? "Noe gikk galt. Prøv igjen.";
+            }
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task ResendOtpAsync()
+    {
+        ErrorMessage = null;
+        IsProcessing = true;
+
+        try
+        {
+            var request = new RequestOtpRequest
+            {
+                Email = Email!,
+                DeliveryMethod = CompVault.Shared.Enums.OtpDeliveryMethod.Email
+            };
+
+            var result = await AuthService.RequestOtpAsync(request, CancellationToken.None);
+            if (result.IsFailure)
+            {
+                ErrorMessage = result.Error?.Message ?? "Kunne ikke sende OTP. Prøv igjen.";
+            }
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
     }
 }
