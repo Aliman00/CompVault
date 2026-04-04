@@ -1,13 +1,10 @@
-﻿
-@page "/login-otp"
+﻿@page "/login-otp"
+@using CompVault.Frontend.Features.Auth.Services
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
-@using CompVault.Frontend.Features.Auth.Services
-@using CompVault.Shared.DTOs.Auth
-@using CompVault.Shared.Result
-@using MudBlazor
+@using System.Threading
 
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#f5f5f5">
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem; background:#f5f5f5">
     <MudCard Style="width:400px">
         <MudCardContent Class="pa-6">
             <MudText Typo="Typo.h4" Class="mb-4 text-center">Bekreft OTP</MudText>
@@ -15,20 +12,28 @@
                 Sendt til: <strong>@Email</strong>
             </MudText>
 
-            <MudTextField Label="OTP-kode" @bind-Value="otpCode" MaxLength="6" Variant="Variant.Outlined" />
-            
-            @if (!string.IsNullOrEmpty(ErrorMessage))
+            <MudTextField Label="OTP-kode" @bind-Value="OtpCode" MaxLength="6" Variant="Variant.Outlined" />
+
+            <MudButton Class="mt-4" FullWidth Color="Color.Primary" OnClick="@VerifyOtpAsync" Disabled="@IsBusy">
+                @if (IsBusy)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <text>Bekrefter...</text>
+                }
+                else
+                {
+                    <text>Logg inn</text>
+                }
+            </MudButton>
+
+            <MudButton Class="mt-2" Color="Color.Secondary" Variant="Variant.Text" Disabled="@IsBusy" OnClick="@ResendOtpAsync">
+                <text>Send OTP på nytt</text>
+            </MudButton>
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
             {
-                <MudText Typo="Typo.body2" Class="mt-2 mb-2" Color="Color.Error">@ErrorMessage</MudText>
+                <MudText Typo="Typo.body2" Class="mt-2" Color="Color.Error">@ErrorMessage</MudText>
             }
-
-            <MudButton Class="mt-4" FullWidth Color="Color.Primary" OnClick="VerifyOtpAsync" Disabled="IsProcessing">
-                @(IsProcessing ? "Vennligst vent..." : "Logg inn")
-            </MudButton>
-
-            <MudButton Class="mt-2" FullWidth Color="Color.Secondary" Variant="Variant.Outlined" OnClick="ResendOtpAsync" Disabled="IsProcessing">
-                Send OTP på nytt
-            </MudButton>
         </MudCardContent>
     </MudCard>
 </div>
@@ -36,32 +41,30 @@
 @code {
     [Parameter]
     [SupplyParameterFromQuery]
-    public string? Email { get; set; } = "";
+    public string? Email { get; set; }
 
-    private string otpCode = "";
-    private string? ErrorMessage;
-    private bool IsProcessing = false;
+    private string OtpCode { get; set; } = "";
+    private bool IsBusy { get; set; } = false;
+    private string? ErrorMessage { get; set; }
 
     private async Task VerifyOtpAsync()
     {
-        ErrorMessage = null;
-
-        if (string.IsNullOrWhiteSpace(otpCode))
+        if (string.IsNullOrWhiteSpace(OtpCode) || string.IsNullOrWhiteSpace(Email))
         {
-            ErrorMessage = "Vennligst skriv inn OTP-koden.";
+            ErrorMessage = "Fyll ut både e-post og OTP-kode.";
             return;
         }
 
-        IsProcessing = true;
         try
         {
-            var request = new VerifyOtpRequest
-            {
-                Email = Email!,
-                OtpCode = otpCode
-            };
+            IsBusy = true;
+            ErrorMessage = null;
 
-            var result = await AuthService.VerifyOtpAsync(request, CancellationToken.None);
+            var result = await AuthService.VerifyOtpAsync(new VerifyOtpRequest
+            {
+                Email = Email,
+                OtpCode = OtpCode
+            }, CancellationToken.None);
 
             if (result.IsSuccess)
             {
@@ -69,37 +72,42 @@
             }
             else
             {
-                ErrorMessage = result.Error?.Message ?? "Noe gikk galt. Prøv igjen.";
+                ErrorMessage = result.Error?.Message ?? "Ukjent feil ved OTP-verifisering.";
             }
         }
         finally
         {
-            IsProcessing = false;
+            IsBusy = false;
         }
     }
 
     private async Task ResendOtpAsync()
     {
-        ErrorMessage = null;
-        IsProcessing = true;
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            ErrorMessage = "Kan ikke sende OTP uten e-post.";
+            return;
+        }
 
         try
         {
-            var request = new RequestOtpRequest
-            {
-                Email = Email!,
-                DeliveryMethod = CompVault.Shared.Enums.OtpDeliveryMethod.Email
-            };
+            IsBusy = true;
+            ErrorMessage = null;
 
-            var result = await AuthService.RequestOtpAsync(request, CancellationToken.None);
-            if (result.IsFailure)
+            var result = await AuthService.RequestOtpAsync(new RequestOtpRequest
             {
-                ErrorMessage = result.Error?.Message ?? "Kunne ikke sende OTP. Prøv igjen.";
+                Email = Email,
+                DeliveryMethod = Shared.Enums.OtpDeliveryMethod.Email
+            }, CancellationToken.None);
+
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.Error?.Message ?? "Kunne ikke sende OTP.";
             }
         }
         finally
         {
-            IsProcessing = false;
+            IsBusy = false;
         }
     }
 }
