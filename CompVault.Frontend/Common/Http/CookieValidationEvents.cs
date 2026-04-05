@@ -19,32 +19,55 @@ public class CookieValidationEvents(
     ILogger<CookieValidationEvents> logger) 
     : CookieAuthenticationEvents
 {   
-    // Én lås per session som hindrer at parallelle requests roterer token samtidig
-    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _refreshLocks = new();
+    // En ordbok som sjekker om et kall holder på å refreshe token, og en ordbok som lar oss sjekke om vi har
+    // refreshed nylig. Sammen brukes de for å sikre ingen paralelle kall til backend
+    private static readonly ConcurrentDictionary<string, AsyncLazy<bool>> PendingRefreshes = new();
+    private static readonly ConcurrentDictionary<string, DateTimeOffset> LastRefreshed = new();
 
     public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
     {   
+        // Sjekker først om LastValidated-claimen er nylig oppdatert
         if (IsRecentlyValidated(context))
             return;
-
-        string sessionKey = GetSessionKey(context);
-        SemaphoreSlim lockObj = _refreshLocks.GetOrAdd(sessionKey, _ => new SemaphoreSlim(1, 1));
-
-        await lockObj.WaitAsync(context.HttpContext.RequestAborted);
+        
+        // Henter UserId fra claimen
+        string? userId = context.HttpContext.User.FindFirst("sub")?.Value;
+        if (userId == null)
+        {
+            logger.LogWarning("Ingen innlogget autentisert bruker - logges ut");
+            await RejectAndSignOutAsync(context);
+            return;
+        }
+        
+        // Sjekker om det finnes en eksisterende nøkkel med med denne bruker ID-en.
+        // Dette sikrer at parallelle requester bruker samme RefreshAsync-instance.
+        // Lazy sikrer at den ikke kjører før vi kaller den selv
+        AsyncLazy<bool> pendingRefresh = PendingRefreshes.GetOrAdd(userId,
+            _ => new AsyncLazy<bool>(() => RefreshAsync(context, userId)));
+        
         try
         {
-            if (IsRecentlyValidated(context))
-                return;
-
-            await RefreshAsync(context);
+            await pendingRefresh;
         }
         finally
         {
-            lockObj.Release();
+            // Vi fjerner brukerne fra PendingRefreshes til slutt
+            PendingRefreshes.TryRemove(userId, out _);
+            
+            // Begge parallelle requests leser LastRefreshed etter fornying av token.
+            // Verdien fjernes aldri, bare overskrives. Og begge setter LastValidated i sin egen context
+            if (LastRefreshed.TryGetValue(userId, out DateTimeOffset refreshedAt))
+            {
+                context.Properties.SetParameter("LastValidated", refreshedAt.ToString("O"));
+                context.ShouldRenew = true;
+            }
         }
     }
-
-    private async Task RefreshAsync(CookieValidatePrincipalContext context)
+    
+    /// <summary>
+    /// Refreshen Token - sender API-kall til backend og oppdaterer tokens og context
+    /// </summary>
+    private async Task<bool> RefreshAsync(CookieValidatePrincipalContext context, string userId)
     {
         string? refreshToken = context.HttpContext.GetRefreshTokenCookie();
         if (string.IsNullOrEmpty(refreshToken))
@@ -52,7 +75,7 @@ public class CookieValidationEvents(
             
             logger.LogWarning("Ingen refresh token funnet - logger brukeren ut");
             await RejectAndSignOutAsync(context);
-            return;
+            return false;
         }
         
         // Oppretter en klient med AuthClienten uten påkoblet AccessTokenHandler
@@ -81,11 +104,11 @@ public class CookieValidationEvents(
                     context.RejectPrincipal();
                     await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     context.HttpContext.Response.Cookies.Delete("refreshToken");
-                    return;
+                    return false;
                 }
                 
                 logger.LogDebug("Token-refresh feilet med {Code} - kan være race condition", problem?.Code);
-                return;
+                return false;
             }
             
             TokenResponse? tokenResponse = await refreshTokenResponse.Content
@@ -94,7 +117,7 @@ public class CookieValidationEvents(
             if (tokenResponse == null)
             {
                 logger.LogWarning("Tom respons fra backend ved token-refresh — feiler åpent");
-                return;
+                return false;
             }
             
             // Er Identity null og ikke et ClaimsIdentity-objekt, brukeren er ikke autentisert lenger
@@ -105,7 +128,7 @@ public class CookieValidationEvents(
                 context.RejectPrincipal();
                 await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 context.HttpContext.Response.Cookies.Delete("refreshToken");
-                return;
+                return false;
             }
             
             // Bytter ut gammel claim med ny
@@ -116,15 +139,21 @@ public class CookieValidationEvents(
             
             context.HttpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
             
+            // Lagrer tidspunktet så parallelle requests kan oppdatere egen context
+            LastRefreshed[userId] = DateTimeOffset.UtcNow;
+            
             context.Properties.SetParameter("LastValidated", DateTimeOffset.UtcNow.ToString("O"));
             context.ShouldRenew = true;
             
             logger.LogDebug("Token refreshet og principal oppdatert");
+
+            return true;
         }
         catch (Exception ex)
         {
             // Feiler åpent hvis backend er nede
             logger.LogError(ex, "Uventet feil ved token-refresh i CookieValidationEvents");
+            return false;
         }
     }
 
@@ -138,12 +167,8 @@ public class CookieValidationEvents(
             DateTimeOffset.TryParse(lastCheckedRaw, out DateTimeOffset lastChecked) &&
             lastChecked > DateTimeOffset.UtcNow.AddMinutes(-authSettings.ValidationIntervalMinutes);
     }
-
-    private static string GetSessionKey(CookieValidatePrincipalContext context) =>
-        context.Properties.GetParameter<string>("SessiondId")
-        ?? context.HttpContext.User.FindFirst("sub")?.Value
-        ?? context.HttpContext.TraceIdentifier;
-
+    
+    // Logger brukeren ut ved å rejecte Principal samt logge oss ut i contexten
     private static async Task RejectAndSignOutAsync(CookieValidatePrincipalContext context)
     {
         context.RejectPrincipal();

@@ -33,6 +33,8 @@ public class CookieValidationEventsTests
     private const string SendAsync = "SendAsync";
     private const string BaseAddress = "https://backend";
     
+    private readonly string _userId = Guid.NewGuid().ToString();
+    
     public CookieValidationEventsTests()
     {
         // Standard mocks for konstruktøren
@@ -67,10 +69,10 @@ public class CookieValidationEventsTests
     /// kreves av konstruktøren og det samme med en CookieAuthenticationOptions
     /// </summary>
     private CookieValidatePrincipalContext CreateValidatePrincipalContext(string? lastValidated = null, 
-        string? refreshTokenCookie = null, ClaimsPrincipal? principal = null)
+        string? refreshTokenCookie = null, ClaimsPrincipal? principal = null, bool setUserIdClaim = true)
     {
         // Oppretter en HttpContext med eller uten refresh token cookie
-        DefaultHttpContext httpContext = CreateDefaultHttpContext(refreshTokenCookie);
+        DefaultHttpContext httpContext = CreateDefaultHttpContext(refreshTokenCookie, setUserIdClaim);
         
         // AuthenticationProperties - Inneholder LastValidated og annen metadata
         var authenticationProperties = new AuthenticationProperties();
@@ -81,7 +83,8 @@ public class CookieValidationEventsTests
         if (principal == null)
         {
             var accessTokenClaim = new Claim("access_token", "old_token");
-            var claimsIdentity = new ClaimsIdentity([accessTokenClaim], "Cookie");
+            var userIdClaim = new Claim("sub", _userId);
+            var claimsIdentity = new ClaimsIdentity([accessTokenClaim, userIdClaim], "Cookie");
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
             principal = claimsPrincipal;
         }
@@ -98,7 +101,7 @@ public class CookieValidationEventsTests
     }
     
     // Bygger en HttpContext for forespørselen til backend. Med eller uten refresh token cookie i headeren
-    private DefaultHttpContext CreateDefaultHttpContext(string? refreshTokenCookie = null)
+    private DefaultHttpContext CreateDefaultHttpContext(string? refreshTokenCookie = null, bool setUserIdClaim = true)
     {   
         // Registerer klienten og en mocket IAuthenticationService i DI-en
         var services = new ServiceCollection();
@@ -108,6 +111,12 @@ public class CookieValidationEventsTests
         // ValidatePrincipal kaller RequestServices og trenger da å finne både en IHttpClientFactory og en
         // IAuthenticationService
         var httpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() };
+
+        if (setUserIdClaim)
+        {
+            httpContext.User = new ClaimsPrincipal(
+                new ClaimsIdentity([new Claim("sub", _userId)], "Cookie"));
+        }
         
         // Vi setter denne for å kunne sjekke om en cookie er slettet
         httpContext.Features.Set<IHttpResponseFeature>(new HttpResponseFeature
@@ -276,5 +285,31 @@ public class CookieValidationEventsTests
             .Protected()
             .Verify(SendAsync, Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
+    }
+    
+    /// <summary>
+    /// Tester at det ikke er en sub-claim med UserId. Logger brukern ut og fjernes fra contextn
+    /// </summary>
+    [Fact]
+    public async Task ValidatePrincipal_NoSubClaim_UserLoggedOut()
+    {
+        // Arrange - Principal uten sub-claim
+        var claimsIdentity = new ClaimsIdentity([new Claim("access_token", "token")], "Cookie");
+        var principal = new ClaimsPrincipal(claimsIdentity);
+        CookieValidatePrincipalContext context = CreateValidatePrincipalContext(principal: principal, 
+            setUserIdClaim: false);
+
+        // Act
+        await _sut.ValidatePrincipal(context);
+
+        // Assert - Sjekker at brukere ikke er innlogget og at vi ikke utførte kall mot backend
+        context.Principal.Should().BeNull();
+        _authClientHandlerMock
+            .Protected()
+            .Verify(SendAsync, Times.Never(), ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>());
+        _authServiceMock.Verify(x => x.SignOutAsync(
+            It.IsAny<HttpContext>(), CookieAuthenticationDefaults.AuthenticationScheme,
+            It.IsAny<AuthenticationProperties?>()), Times.Once());
     }
 }
