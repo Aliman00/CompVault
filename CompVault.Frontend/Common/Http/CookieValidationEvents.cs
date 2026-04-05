@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Collections.Concurrent;
+using System.Security.Claims;
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
@@ -18,30 +19,41 @@ public class CookieValidationEvents(
     ILogger<CookieValidationEvents> logger) 
     : CookieAuthenticationEvents
 {   
+    // Én lås per session som hindrer at parallelle requests roterer token samtidig
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _refreshLocks = new();
+
     public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
-    {
-        // Vi sjekker sist gang vi validerte at brukeren hadde gydlig refresh token.
-        // En egenskap som vi alltid setter etter vi har refreshet token
-        string? lastCheckedRaw = context.Properties.GetParameter<string>("LastValidated");
-        if (lastCheckedRaw != null &&
-            DateTimeOffset.TryParse(lastCheckedRaw, out DateTimeOffset lastChecked) &&
-            lastChecked > DateTimeOffset.UtcNow.AddMinutes(-authSettings.ValidationIntervalMinutes))
+    {   
+        if (IsRecentlyValidated(context))
             return;
-        
+
+        string sessionKey = GetSessionKey(context);
+        SemaphoreSlim lockObj = _refreshLocks.GetOrAdd(sessionKey, _ => new SemaphoreSlim(1, 1));
+
+        await lockObj.WaitAsync(context.HttpContext.RequestAborted);
+        try
+        {
+            if (IsRecentlyValidated(context))
+                return;
+
+            await RefreshAsync(context);
+        }
+        finally
+        {
+            lockObj.Release();
+        }
+    }
+
+    private async Task RefreshAsync(CookieValidatePrincipalContext context)
+    {
         string? refreshToken = context.HttpContext.GetRefreshTokenCookie();
         if (string.IsNullOrEmpty(refreshToken))
         {
             
             logger.LogWarning("Ingen refresh token funnet - logger brukeren ut");
-            context.RejectPrincipal();
-            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await RejectAndSignOutAsync(context);
             return;
         }
-
-        // Oppdaterer LastValidated optimistisk før selve kallet. Hindrer at flere requester som kjører parallelt
-        // prøver å refreshe samtidig
-        context.Properties.SetParameter("LastValidated", DateTimeOffset.UtcNow.ToString("O"));
-        context.ShouldRenew = true;
         
         // Oppretter en klient med AuthClienten uten påkoblet AccessTokenHandler
         HttpClient client = context.HttpContext.RequestServices
@@ -103,6 +115,10 @@ public class CookieValidationEvents(
             identity.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
             
             context.HttpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
+            
+            context.Properties.SetParameter("LastValidated", DateTimeOffset.UtcNow.ToString("O"));
+            context.ShouldRenew = true;
+            
             logger.LogDebug("Token refreshet og principal oppdatert");
         }
         catch (Exception ex)
@@ -110,5 +126,27 @@ public class CookieValidationEvents(
             // Feiler åpent hvis backend er nede
             logger.LogError(ex, "Uventet feil ved token-refresh i CookieValidationEvents");
         }
+    }
+
+    
+    // Vi sjekker sist gang vi validerte at brukeren hadde gydlig refresh token.
+    // En egenskap som vi alltid setter etter vi har refreshet token
+    private bool IsRecentlyValidated(CookieValidatePrincipalContext context)
+    {
+        string? lastCheckedRaw = context.Properties.GetParameter<string>("LastValidated");
+        return lastCheckedRaw != null &&
+            DateTimeOffset.TryParse(lastCheckedRaw, out DateTimeOffset lastChecked) &&
+            lastChecked > DateTimeOffset.UtcNow.AddMinutes(-authSettings.ValidationIntervalMinutes);
+    }
+
+    private static string GetSessionKey(CookieValidatePrincipalContext context) =>
+        context.Properties.GetParameter<string>("SessiondId")
+        ?? context.HttpContext.User.FindFirst("sub")?.Value
+        ?? context.HttpContext.TraceIdentifier;
+
+    private static async Task RejectAndSignOutAsync(CookieValidatePrincipalContext context)
+    {
+        context.RejectPrincipal();
+        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     }
 }
