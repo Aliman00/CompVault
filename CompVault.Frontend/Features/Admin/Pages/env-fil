@@ -1,0 +1,18 @@
+﻿# Database — matcher docker-compose.yml
+Database__Host=localhost
+Database__Port=5432
+Database__Name=compvault_db
+Database__Username=compvault_user
+Database__Password=compvault_dev_pass
+
+# JWT innstillinger — MÅ være minst 32 tegn
+JwtSettings__Secret=DEV_ONLY_SECRET_CHANGE_BEFORE_PRODUCTION_32CHARS!
+JwtSettings__Issuer=CompVault
+JwtSettings__Audience=CompVault.Clients
+
+# E-post (Resend API nøkkel)
+Email__ApiKey=re_S1Zmi8Yp_JarhY9BUFRjpnw4JFAfKV3Yr
+Email__FromAddress=donotreply@compvault.no
+
+# CORS — frontend URL
+Cors__AllowedOrigins=http://localhost:5001
