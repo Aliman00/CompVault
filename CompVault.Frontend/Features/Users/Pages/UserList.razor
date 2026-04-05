@@ -1,9 +1,11 @@
 ﻿@page "/admin/users"
 @layout AdminLayout
+@using System.Text.Json
 @using CompVault.Frontend.Features.Users.Services
 @using CompVault.Shared.DTOs.Users
 @inject IUserService UserService
 @implements IDisposable
+@inject NavigationManager NavigationManager
 
 <AppAlert @bind-Alert="_alert"/>
 
@@ -21,7 +23,8 @@
              FixedHeader="true"
              Loading="_isLoading"
              MultiSelection="true"
-             @bind-SelectedItems="_selectedUsers">
+             @bind-SelectedItems="_selectedUsers"
+             RowClick="@((DataGridRowClickEventArgs<UserDto> args) => OnUserClick(args))">
 
     @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere brukere *@
     <ToolBarContent>
@@ -84,11 +87,18 @@
             _isLoading = false;
         }
     }
-
-
+    
     public void Dispose()
     {
         _cts.Cancel();
         _cts.Dispose();
     }
+    
+    // ===================== PRVIATE METHODS =====================
+    
+    // Navigerer ved å sende UserDto via NavigationManager (ikke via URL-en, men som en string i nettlesere)
+    private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.Admin.UserDetail(args.Item.Id),
+            new NavigationOptions { HistoryEntryState = JsonSerializer.Serialize(args.Item)});
+    
 }
