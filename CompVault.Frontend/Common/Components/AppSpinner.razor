@@ -1,0 +1,12 @@
+﻿@* En gjenbruk spinner *@
+
+<MudStack AlignItems="AlignItems.Center" Class="@Class">
+    <MudProgressCircular Indeterminate="true" Color="@Color" Class="mb-4"/>
+</MudStack>
+
+@code {
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter] public Color Color { get; set; } = Color.Primary;
+
+}

@@ -41,4 +41,33 @@ public class UserService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<UserDto?>> GetByIdAsync(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.User.ById(id), ct);
+
+            Result<UserDto?> result =
+                await HttpClientExtensions.ParseResponseAsync<UserDto?>(response, ct);
+
+            if (result.IsFailure)
+                return Result<UserDto?>.Failure(result.Error!);
+            
+            return Result<UserDto?>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved henting av brukere");
+            return Result<UserDto?>.Failure(AppError.Create(ErrorCode.NetworkError, 
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved henting av brukere");
+            return Result<UserDto?>.Failure(AppError.Create(ErrorCode.Unknown, 
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
 }

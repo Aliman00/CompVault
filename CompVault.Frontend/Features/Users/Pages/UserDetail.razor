@@ -1,9 +1,117 @@
 ﻿@page "/admin/users/{Id:guid}"
+@using System.Text.Json
+@using CompVault.Frontend.Features.Users.Models
+@using CompVault.Frontend.Features.Users.Services
+@inject IUserService UserService
 @using CompVault.Shared.DTOs.Users
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
-<h3>UserDetail</h3>
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_user != null)
+{
+    @* Header med navn og tittel, og redigeringsknapper *@
+    <MudPaper Class="pa-6" Elevation="1" Square="true">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
+            <MudStack>
+                <MudText Typo="Typo.h5">
+                    @_user.FullName
+                </MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @_user.JobTitle
+                </MudText>
+            </MudStack>
+            <MudSpacer/>
+            @if (!_isEditing)
+            {
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           OnClick="StartEdit">
+                    Rediger
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           Class="mr-2"
+                           OnClick="CancelEdit">
+                    Avbryt
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="SaveEdit">
+                    Lagre
+                </MudButton>
+            }
+        </MudStack>
+        
+        <MudGrid>
+            <MudItem cs="12" sm="6">
+                <MudTextField Value="_editModel.FirstName"
+                              ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty" 
+                              Label="Fornavn"
+                              ReadOnly="!_isEditing"
+                              Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
+            </MudItem>
+            <MudItem cs="12" sm="6">
+                <MudTextField Value="_editModel.LastName"
+                              ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
+                              Label="Etternavn"
+                              ReadOnly="!_isEditing"
+                              Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
+            </MudItem>
+            <MudItem cs="12" sm="6">
+                <MudTextField Value="_editModel.Email"
+                              ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
+                              Label="Email"
+                              ReadOnly="!_isEditing"
+                              Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
+            </MudItem>
+            <MudItem cs="12" sm="6">
+                <MudTextField Value="_editModel.JobTitle"
+                              ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
+                              Label="Stillingstittel"
+                              ReadOnly="!_isEditing"
+                              Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
+            </MudItem>
+
+            <MudItem cs="12" sm="6">
+                @if (_isEditing)
+                {
+                    <MudSelect Value="_editModel.EmploymentType"
+                               ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
+                               Label="Ansettelsestype"
+                               ReadOnly="!_isEditing"
+                               Variant="_isEditing ? Variant.Outlined : Variant.Text">
+                        @foreach (EmploymentType type in Enum.GetValues<EmploymentType>())
+                        {
+                            <MudSelectItem Value="type">@type</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else
+                {
+                    <MudTextField Value="_editModel.EmploymentType"
+                                  Label="Ansettelsestype"
+                                  ReadOnly="true"
+                                  Variant="Variant.Text"/>
+                }
+                
+            </MudItem>
+            
+        </MudGrid>
+    </MudPaper>
+}
+
+
+
 
 @code {
     
@@ -13,9 +121,13 @@
     
     // ===================== PRIVATE FELT =====================
     private UserDto? _user;
+
+    private UserEditModel _editModel = new();
     
     private bool _isLoading = true;
     private AlertInfo? _alert;
+
+    private bool _isEditing;
     
     private readonly CancellationTokenSource _cts = new();
     
@@ -33,7 +145,14 @@
             }
         
             // Ved navigering med URL eller refresh - hent UserDto fra backend
-            var userResult = await UserService.GetByIdAsync(Id, _cts.Token):
+            var userResult = await UserService.GetByIdAsync(Id, _cts.Token);
+            if (userResult.IsFailure)
+            {
+                _alert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _user = userResult.Value;
         }
         catch (OperationCanceledException)
         {
@@ -43,6 +162,7 @@
         {
             _alert = new AlertInfo("Klarte ikke å laste brukeren. Oppdater siden for å prøve igjen",
                 Severity.Error);
+            
         }
         finally
         {
@@ -54,5 +174,24 @@
     {
         _cts.Cancel();
         _cts.Dispose();
+    }
+    
+    // ===================== PRVIATE METHODS =====================
+
+    private void StartEdit()
+    {
+        _editModel = UserEditModel.FromDto(_user!);
+        _isEditing = !_isEditing;
+    }
+    
+    private void CancelEdit()
+    {
+        _editModel = UserEditModel.FromDto(_user!);
+        _isEditing = false;
+    }
+    
+    private void SaveEdit()
+    {
+        _isEditing = false;
     }
 }
