@@ -31,7 +31,7 @@ public class CookieValidationEvents(
             return;
         
         // Henter UserId fra claimen
-        string? userId = context.HttpContext.User.FindFirst("sub")?.Value;
+        string? userId = context.Principal?.FindFirst("sub")?.Value;
         if (userId == null)
         {
             logger.LogWarning("Ingen innlogget autentisert bruker - logges ut");
@@ -101,13 +101,13 @@ public class CookieValidationEvents(
                 {
                     // Bruker er deaktivert — logget ut både fra context og sletter token
                     logger.LogWarning("Bruker er deaktivert — logger brukeren ut");
-                    context.RejectPrincipal();
-                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                    context.HttpContext.Response.Cookies.Delete("refreshToken");
+                    await RejectAndSignOutAsync(context);
                     return false;
                 }
                 
-                logger.LogDebug("Token-refresh feilet med {Code} - kan være race condition", problem?.Code);
+                // Backend kan returnere annen feil f.eks. ved server nede. Forblir innlogget, og AccessTokenHandler
+                // håndterer 401 på neste kall til backend
+                logger.LogDebug("Token-refresh feilet med {Code}", problem?.Code);
                 return false;
             }
             
@@ -120,16 +120,8 @@ public class CookieValidationEvents(
                 return false;
             }
             
-            // Er Identity null og ikke et ClaimsIdentity-objekt, brukeren er ikke autentisert lenger
-            if (context.Principal?.Identity is not ClaimsIdentity identity)
-            {
-                // Bruker er deaktivert — logget ut både fra context og sletter token
-                logger.LogWarning("Principal er ikke et ClaimsIdentity-objekt — logger brukeren ut");
-                context.RejectPrincipal();
-                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                context.HttpContext.Response.Cookies.Delete("refreshToken");
-                return false;
-            }
+            // Principal og Identity er garantert satt av cookie-middlewaren
+            var identity = (ClaimsIdentity)context.Principal!.Identity!;
             
             // Bytter ut gammel claim med ny
             Claim? oldClaim = identity.FindFirst("access_token");
@@ -168,10 +160,12 @@ public class CookieValidationEvents(
             lastChecked > DateTimeOffset.UtcNow.AddMinutes(-authSettings.ValidationIntervalMinutes);
     }
     
-    // Logger brukeren ut ved å rejecte Principal samt logge oss ut i contexten
+    // Logger brukeren ut ved å rejecte Principal, logge oss ut fra HttpContext (som igjen sletter auth-cookie)
+    // og manuelt slette refresh token-cookie hvis den eksisterer
     private static async Task RejectAndSignOutAsync(CookieValidatePrincipalContext context)
     {
         context.RejectPrincipal();
         await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        context.HttpContext.Response.Cookies.Delete("refreshToken");
     }
 }
