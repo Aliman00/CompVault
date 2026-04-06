@@ -220,8 +220,7 @@ public class CookieValidationEventsTests
     
     /// <summary>
     /// Tester at andre backend feil som ikke er AccountInactive feiler åpent.
-    /// Brukeren forblir innlogget. Kan forekomme ved f.eks. race condition når to requester prøver å refreshe token
-    /// samtidig
+    /// Brukeren forblir innlogget. Kan skje ved ugyldig token eller backend nede
     /// </summary>
     [Fact]
     public async Task ValidatePrincipal_RefreshFailsWithOtherError_KeepsUserLoggedIn()
