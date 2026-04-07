@@ -77,7 +77,7 @@ public static class ServiceCollectionExtensions
                 options.LoginPath = "/login";
                 options.LogoutPath = "/logout";
                 options.ExpireTimeSpan = TimeSpan.FromDays(settings.CookieExpireDays);
-                options.SlidingExpiration = true;
+                options.SlidingExpiration = false;
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Strict;
                 options.Cookie.SecurePolicy = env.IsDevelopment()
@@ -88,6 +88,7 @@ public static class ServiceCollectionExtensions
             });
         
         services.AddScoped<AuthStateProvider>();
+        services.AddSingleton<ITokenRefreshService, TokenRefreshService>();
         
         // Forteller Blazor at vår egen AuthStateProvider brukes
         services.AddScoped<AuthenticationStateProvider>(

@@ -1,9 +1,5 @@
-﻿using System.Security.Claims;
-
-using CompVault.Frontend.Common.Configuration;
-using CompVault.Frontend.Common.Extensions;
-using CompVault.Shared.Constants;
-using CompVault.Shared.DTOs.Auth;
+﻿using CompVault.Frontend.Common.Http.Models;
+using CompVault.Frontend.Common.Services;
 using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Common.Http;
@@ -14,10 +10,8 @@ namespace CompVault.Frontend.Common.Http;
 /// </summary>
 public class AccessTokenHandler(
     IHttpContextAccessor httpContextAccessor,
-    IHttpClientFactory httpClientFactory,
-    IWebHostEnvironment env,
-    AuthSettings authSettings,
-    ILogger<AccessTokenHandler> logger) : DelegatingHandler
+    ILogger<AccessTokenHandler> logger,
+    ITokenRefreshService tokenRefreshService) : DelegatingHandler
 {   
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -61,64 +55,16 @@ public class AccessTokenHandler(
         if (httpContext == null) 
             return Result.Failure(AppError.Create(ErrorCode.Unknown, "Ingen HttpContext."));
         
-        string? refreshToken = httpContext.GetRefreshTokenCookie();
-        if (string.IsNullOrEmpty(refreshToken))
-            return Result.Failure(AppError.Create(ErrorCode.InvalidToken, "Ingen refresh token i cookie."));
+        string? userId = httpContext.User.FindFirst("sub")?.Value;
+        if (userId == null)
+            return Result.Failure(AppError.Create(ErrorCode.Unauthorized, "Ingen bruker-ID i claims."));
         
-        // Oppretter en klient som ikke har AccessTokenHandler påkoblet
-        HttpClient client = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
+        Result<RefreshRecord> result = await tokenRefreshService.RefreshPairAsync(userId, httpContext, ct);
+        if (result.IsFailure)
+            return Result.Failure(result.Error!);
 
-        try
-        {
-            // En request for å fornye tokens
-            var request = new RefreshTokenRequest { RefreshToken = refreshToken };
-            HttpResponseMessage response = await client.PostAsJsonAsync(ApiRoutes.Auth.RefreshFull, request, 
-                ct);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                ProblemDetail? problem = await response.Content
-                    .ReadFromJsonAsync<ProblemDetail>(ct);
-
-                ErrorCode code = Enum.TryParse(problem?.Code, out ErrorCode parsed)
-                    ? parsed
-                    : ErrorCode.Unknown;
-                
-                logger.LogDebug("Token-refresh feilet med {Code}", code);
-                return Result.Failure(AppError.Create(code, problem?.Message ?? string.Empty));
-            }
-            
-            TokenResponse? tokenResponse = await response.Content
-                .ReadFromJsonAsync<TokenResponse>(ct);
-            if (tokenResponse == null)
-            {
-                logger.LogWarning("Tom respons fra backend ved token-refresh i AccessTokenHandler");
-                return Result.Failure(AppError.Create(ErrorCode.Unknown, "Tom respons fra backend."));
-            }
-            
-            // Sjekker at ClaimsIdentity ikke er null og at det er riktig tyype
-            if (httpContext.User.Identity is not ClaimsIdentity identity)
-            {
-                logger.LogWarning("Principal er ikke et ClaimsIdentity-objekt i AccessTokenHandler");
-                return Result.Failure(AppError.Create(ErrorCode.Unauthorized, "Ingen ClaimsIdentity."));
-            }
-            
-            // Bytter ut gammel claim med ny
-            Claim? oldClaim = identity.FindFirst("access_token");
-            if (oldClaim != null) 
-                identity.RemoveClaim(oldClaim);
-            identity.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
-            
-            httpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
-            
-            logger.LogDebug("Token refreshet og claims oppdatert i AccessTokenHandler");
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Uventet feil ved token-refresh i AccessTokenHandler");
-            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Uventet feil ved token-refresh."));
-        }
+        tokenRefreshService.ApplyTokenPair(httpContext, result.Value!);
+        return Result.Success();
     }
     
     // Kloner foprespørselen siden den er single-use og blir konsumert
