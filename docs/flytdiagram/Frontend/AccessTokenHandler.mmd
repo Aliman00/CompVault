@@ -1,0 +1,54 @@
+flowchart TB
+    subgraph NOTE1["Om AccessTokenHandler"]
+    direction TB
+    note1["Kjøres på hvert utgående HTTP-kall fra frontend til backend. Er en DelegatingHandler koblet til hoved-HttpClient. Brukes primært når brukeren sitter lenge stille på en side og access token utløper uten at CookieValidationEvents trigges."]:::note
+    note2["10 minutter er brukt som eksempel her. AuthSettings sin ValidationIntervalMinutes styrer cooldown i TokenRefreshService."]:::note
+    end
+
+    A(["Bruker utfører handling som sender API-kall til backend"]) --> B["AccessTokenHandler kjører — kloner requesten og setter Bearer-header fra access_token-claim"]
+    B --> C["Sender original request til backend"]
+    C -- "Ikke 401" --> D(["Returnerer respons til Blazor-komponenten"])
+    C -- "401 Unauthorized" --> E["Kaller TryRefreshAsync"]
+    E --> F{"Finnes sub-claim med UserId?"}
+    F -- Nei --> G["Returnerer original 401-respons til Blazor-komponenten"]
+    F -- Ja --> H{"Finnes refresh token-cookie i HttpContext?"}
+    H -- Nei --> G
+    H -- Ja --> I["Kaller RefreshPairAsync i TokenRefreshService"]
+    I --> J{"Er brukeren nylig refreshet? Har det gått mindre enn 10 min siden LastRefreshed i TokenRefreshService?"}
+    J -- Ja --> K["RecentlyRefreshed — access token i claims er allerede oppdatert av CookieValidationEvents"]
+    K --> R["Setter Bearer-header på nytt fra oppdatert claim og sender klonet request"]
+    J -- Nei --> L{"PendingRefreshes: finnes det allerede en pågående refresh-task for denne brukeren?"}
+    L -- "Nei: oppretter ny AsyncLazy-task og legger inn i PendingRefreshes" --> P["POST til RefreshToken i backend"]
+    L -- "Ja: venter på eksisterende AsyncLazy-task" --> P
+    P -- Feil --> M{"ErrorCode?"}
+    M -- "Unauthorized (bruker deaktivert)" --> G
+    M -- "Annen ErrorCode f.eks. Unknown. Kan komme av backend nede" --> G
+    P -- Suksess --> N["Oppdaterer LastRefreshed, rydder opp i PendingRefreshes etter 500ms"]
+    N --> O["ApplyRefreshResult: oppdaterer access_token-claim i HttpContext.User og oppdaterer CircuitUserContext.RefreshToken"]
+    O --> R
+    R --> S(["Returnerer respons på klonet request til Blazor-komponenten"])
+
+    A:::start
+    B:::action
+    C:::action
+    D:::start
+    E:::action
+    F:::decision
+    G:::failure
+    H:::decision
+    I:::action
+    J:::decision
+    K:::action
+    L:::async
+    P:::action
+    M:::decision
+    N:::action
+    O:::success
+    R:::action
+    S:::start
+    classDef start fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef success fill:#5BA85A,stroke:#3D7A3C,color:#fff
+    classDef failure fill:#D9534F,stroke:#A02020,color:#fff
+    classDef decision fill:#F5A623,stroke:#C47D0E,color:#fff
+    classDef action fill:#E8E8E8,stroke:#999,color:#333
+    classDef async fill:#9B59B6,stroke:#6C3483,color:#fff

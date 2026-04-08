@@ -1,4 +1,7 @@
-﻿using CompVault.Frontend.Common.Configuration;
+﻿using System.Security.Claims;
+
+using CompVault.Frontend.Common.Configuration;
+using CompVault.Frontend.Common.Extensions;
 using CompVault.Frontend.Common.Http.Models;
 using CompVault.Frontend.Common.Services;
 using CompVault.Shared.Result;
@@ -10,9 +13,10 @@ namespace CompVault.Frontend.Common.Http;
 /// Håndterer token-refresh og brukervalidering via cookie-middleware som kjøres på hver forespørsel
 /// </summary>
 public class CookieValidationEvents(
-    AuthSettings authSettings, 
     ILogger<CookieValidationEvents> logger,
-    ITokenRefreshService tokenRefreshService) 
+    ITokenRefreshService tokenRefreshService,
+    AuthSettings authSettings,
+    IWebHostEnvironment env) 
     : CookieAuthenticationEvents
 {   
     
@@ -27,15 +31,29 @@ public class CookieValidationEvents(
             return;
         }
         
-        Result<RefreshRecord> result = await tokenRefreshService.RefreshPairAsync(userId, context.HttpContext, 
+        string? refreshToken = context.HttpContext.GetRefreshTokenCookie();
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            logger.LogWarning("Ingen refresh token i cookie — logger brukeren ut");
+            await RejectAndSignOutAsync(context);
+            return;
+        }
+        
+        Result<RefreshRecord> result = await tokenRefreshService.RefreshPairAsync(userId, refreshToken,
             context.HttpContext.RequestAborted);
         
         if (result.IsFailure)
         {
+            // Nylig refreshet — ikke en feil, bare cooldown. Brukeren forblir innlogget
+            if (result.Error?.Code == ErrorCode.RecentlyRefreshed)
+                return;
+            
             // NotFound betyyr ingen refresh token i cookie og Unathorized betyr at brukeren er deaktivert
             // Begge logger brukeren ut
             if (result.Error?.Code == ErrorCode.NotFound || result.Error?.Code == ErrorCode.Unauthorized)
                 await RejectAndSignOutAsync(context);
+            
+            // Alle andre feil (Unknown, InternalError, server nede) brukeren forblir innlogget
             return;
         }
         
@@ -43,10 +61,18 @@ public class CookieValidationEvents(
     }
     
     
-    // Oppdaterer hver context med begge tokens - de overskriver hverandre hvis de sendes på forskjellige tidspunkt
+    // Skriver nytt access token inn i HttpContext.User så neste retry i samme krets får riktig token
     private void ApplyRefreshResult(CookieValidatePrincipalContext context, RefreshRecord refreshRecord)
     {
-        tokenRefreshService.ApplyTokenPair(context.HttpContext, refreshRecord);
+        if (context.Principal?.Identity is not ClaimsIdentity identity)
+            return;
+
+        Claim? gammeltToken = identity.FindFirst("access_token");
+        if (gammeltToken != null)
+            identity.RemoveClaim(gammeltToken);
+        identity.AddClaim(new Claim("access_token", refreshRecord.AccessToken));
+
+        context.HttpContext.AppendRefreshTokenCookie(refreshRecord.RefreshToken, authSettings, env);
         context.ShouldRenew = true;
     }
     

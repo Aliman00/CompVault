@@ -1,4 +1,7 @@
-﻿using CompVault.Frontend.Common.Http.Models;
+﻿using System.Security.Claims;
+
+using CompVault.Frontend.Common.Extensions;
+using CompVault.Frontend.Common.Http.Models;
 using CompVault.Frontend.Common.Services;
 using CompVault.Shared.Result;
 
@@ -11,7 +14,8 @@ namespace CompVault.Frontend.Common.Http;
 public class AccessTokenHandler(
     IHttpContextAccessor httpContextAccessor,
     ILogger<AccessTokenHandler> logger,
-    ITokenRefreshService tokenRefreshService) : DelegatingHandler
+    ITokenRefreshService tokenRefreshService,
+    CircuitUserContext circuitUserContext) : DelegatingHandler
 {   
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -42,7 +46,6 @@ public class AccessTokenHandler(
     private void SetAuthHeader(HttpRequestMessage request)
     {
         string? accessToken = httpContextAccessor.HttpContext?.User.FindFirst("access_token")?.Value;
-
         if (!string.IsNullOrEmpty(accessToken))
             request.Headers.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
@@ -52,18 +55,28 @@ public class AccessTokenHandler(
     private async Task<Result> TryRefreshAsync(CancellationToken ct)
     {
         HttpContext? httpContext = httpContextAccessor.HttpContext;
-        if (httpContext == null) 
-            return Result.Failure(AppError.Create(ErrorCode.Unknown, "Ingen HttpContext."));
         
-        string? userId = httpContext.User.FindFirst("sub")?.Value;
+        string? userId = httpContext?.User.FindFirst("sub")?.Value;
+
         if (userId == null)
             return Result.Failure(AppError.Create(ErrorCode.Unauthorized, "Ingen bruker-ID i claims."));
         
-        Result<RefreshRecord> result = await tokenRefreshService.RefreshPairAsync(userId, httpContext, ct);
-        if (result.IsFailure)
-            return Result.Failure(result.Error!);
+        string? refreshToken = httpContext?.GetRefreshTokenCookie();
+        if (string.IsNullOrEmpty(refreshToken))
+            return Result.Failure(AppError.Create(ErrorCode.Unauthorized, 
+                "Ingen refresh token i HttpContext"));
+        
+        Result<RefreshRecord> refreshResult = await tokenRefreshService.RefreshPairAsync(userId, refreshToken, ct);
+        
+        // RecentlyRefreshed betyr at CookieValidationEvents allerede har satt et ferskt
+        // access token i claims på denne requesten — vi trenger bare å retry med det nye tokenet
+        if (refreshResult.IsFailure && refreshResult.Error?.Code == ErrorCode.RecentlyRefreshed)
+            return Result.Success();
+        
+        if (refreshResult.IsFailure)
+            return Result.Failure(refreshResult.Error!);
 
-        tokenRefreshService.ApplyTokenPair(httpContext, result.Value!);
+        ApplyRefreshResult(refreshResult.Value!, httpContext!);
         return Result.Success();
     }
     
@@ -88,5 +101,19 @@ public class AccessTokenHandler(
         }
 
         return clone;
+    }
+    
+    // Skriver nytt access token inn i HttpContext, slik at forespørsler til backend er autorisert
+    private void ApplyRefreshResult(RefreshRecord refreshRecord, HttpContext httpContext)
+    {
+        if (httpContext.User.Identity is not ClaimsIdentity identity)
+            return;
+
+        Claim? gammeltToken = identity.FindFirst("access_token");
+        if (gammeltToken != null)
+            identity.RemoveClaim(gammeltToken);
+        identity.AddClaim(new Claim("access_token", refreshRecord.AccessToken));
+
+        circuitUserContext.UpdateRefreshToken(refreshRecord.RefreshToken);
     }
 }

@@ -1,7 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using System.Security.Claims;
 using CompVault.Frontend.Common.Configuration;
-using CompVault.Frontend.Common.Extensions;
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Http.Models;
 using CompVault.Shared.Constants;
@@ -13,43 +11,40 @@ namespace CompVault.Frontend.Common.Services;
 public class TokenRefreshService(
     IHttpClientFactory httpClientFactory,
     AuthSettings authSettings, 
-    IWebHostEnvironment env, 
     ILogger<TokenRefreshService> logger) : ITokenRefreshService
 {
     // En ordbok som sjekker om et kall holder på å refreshe token, slik at parallelle kall venter på samme refresh
-    private static readonly ConcurrentDictionary<string, AsyncLazy<Result<RefreshRecord>>> PendingRefreshes = new();
+    private readonly ConcurrentDictionary<string, AsyncLazy<Result<RefreshRecord>>> _pendingRefreshes = new();
     
-    private static readonly ConcurrentDictionary<string, DateTimeOffset> LastRefreshed = new();
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _lastRefreshed = new();
 
-    /// <summary>
-    /// Refresher token par for innlogget bruker. Paralelle kall venter på samme refresh-operasjon,
-    /// slik at både CookieValidationEvents og AccessTokenHandler ikke kjører om hverandre
-    /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="httpContext"></param>
-    /// <param name="ct"></param>
-    /// <returns>Result med RefreshRecord som inneholder token-par og tiden de ble satt</returns>
-    public async Task<Result<RefreshRecord>> RefreshPairAsync(string userId, HttpContext httpContext,
+    
+    /// <inheritdoc />
+    public async Task<Result<RefreshRecord>> RefreshPairAsync(string userId, string refreshToken,
         CancellationToken ct = default)
     {
-        if (LastRefreshed.TryGetValue(userId, out DateTimeOffset lastRefreshed) &&
+        if (string.IsNullOrEmpty(refreshToken))
+            return Result<RefreshRecord>.Failure(AppError.Create(ErrorCode.NotFound,
+                "Ingen refresh token"));
+        
+        if (_lastRefreshed.TryGetValue(userId, out DateTimeOffset lastRefreshed) &&
             lastRefreshed > DateTimeOffset.UtcNow.AddMinutes(-authSettings.ValidationIntervalMinutes))
         {
             logger.LogDebug("Ingen vits å oppdatere refresh - nylig oppdatert");
-            return Result<RefreshRecord>.Failure(AppError.Create(ErrorCode.Unknown, "Nylig oppdatert"));
+            return Result<RefreshRecord>.Failure(AppError.Create(ErrorCode.RecentlyRefreshed, 
+                "Nylig oppdatert"));
         }
-            
         
         // Sjekker om det finnes en eksisterende nøkkel med med denne bruker ID-en.
         // Dette sikrer at parallelle requester bruker samme RefreshAsync-instance.
         // Lazy sikrer at den ikke kjører før vi kaller den selv
-        AsyncLazy<Result<RefreshRecord>> pendingRefresh = PendingRefreshes.GetOrAdd(userId,
-            _ => new AsyncLazy<Result<RefreshRecord>>(() => GetTokenPairAsync(httpContext, ct)));
+        AsyncLazy<Result<RefreshRecord>> pendingRefresh = _pendingRefreshes.GetOrAdd(userId,
+            _ => new AsyncLazy<Result<RefreshRecord>>(() => GetTokenPairAsync(refreshToken, ct)));
         
         Result<RefreshRecord> result = await pendingRefresh;
         
         if (result.IsSuccess)
-            LastRefreshed[userId] = result.Value!.RefreshedAt;
+            _lastRefreshed[userId] = result.Value!.RefreshedAt;
         
         // Hver forespørsel rydder opp etter seg selv
         // Fjerner med forsinkelse så samtidige requests rekker å treffe samme lazy
@@ -58,24 +53,15 @@ public class TokenRefreshService(
         return result;
     }
     
-    private static async Task RemoveAfterDelayAsync(string userId)
+    private async Task RemoveAfterDelayAsync(string userId)
     {
         await Task.Delay(500);
-        PendingRefreshes.TryRemove(userId, out _);
+        _pendingRefreshes.TryRemove(userId, out _);
     }
     
     // Utfører API-kall mot backend og henter token-par
-    private async Task<Result<RefreshRecord>> GetTokenPairAsync(HttpContext httpContext, CancellationToken ct = default)
+    private async Task<Result<RefreshRecord>> GetTokenPairAsync(string refreshToken, CancellationToken ct = default)
     {
-        string? refreshToken = httpContext.GetRefreshTokenCookie();
-        if (string.IsNullOrEmpty(refreshToken))
-        {
-            
-            logger.LogWarning("Ingen refresh token funnet - logger brukeren ut");
-            return Result<RefreshRecord>.Failure(AppError.Create(ErrorCode.NotFound, 
-                "Ingen refresh token funnet"));
-        }
-        
         // Oppretter en klient med AuthClienten uten påkoblet AccessTokenHandler
         HttpClient client = httpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
 
@@ -131,25 +117,5 @@ public class TokenRefreshService(
             return Result<RefreshRecord>.Failure(AppError.Create(ErrorCode.Unknown, 
                 "Uventet feil ved token-refresh"));
         }
-    }
-    
-    /// <summary>
-    /// Oppdaterer en HttpContext med acess-token i claim og legger til refresh token-cookie
-    /// </summary>
-    /// <param name="httpContext"></param>
-    /// <param name="refreshRecord"></param>
-    public void ApplyTokenPair(HttpContext httpContext, RefreshRecord refreshRecord)
-    {
-        // Principal og Identity er garantert satt av cookie-middlewaren
-        if (httpContext.User.Identity is not ClaimsIdentity identity)
-            return;
-            
-        // Bytter ut gammel claim med ny
-        Claim? oldClaim = identity.FindFirst("access_token");
-        if (oldClaim != null) 
-            identity.RemoveClaim(oldClaim);
-        identity.AddClaim(new Claim("access_token", refreshRecord.AccessToken));
-            
-        httpContext.AppendRefreshTokenCookie(refreshRecord.RefreshToken, authSettings, env);
     }
 }
