@@ -19,7 +19,7 @@ internal sealed class CircuitUserContextHandler(
     public override Task OnConnectionUpAsync(Circuit circuit, CancellationToken ct)
     {
         ClaimsPrincipal? user = httpContextAccessor.HttpContext?.User;
-        
+
         if (user?.Identity?.IsAuthenticated != true)
             return Task.CompletedTask;
 
