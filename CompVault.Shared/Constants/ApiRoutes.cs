@@ -20,4 +20,10 @@ public static class ApiRoutes
         public const string RefreshFull = $"{Base}/{Refresh}";
         public const string RevokeFull = $"{Base}/{Revoke}";
     }
+
+    public static class User
+    {
+        public const string Base = "api/users";
+        public static string ById(Guid id) => $"{Base}/{id}";
+    }
 }

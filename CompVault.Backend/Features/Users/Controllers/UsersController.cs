@@ -1,5 +1,6 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Users.Services;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -14,7 +15,7 @@ namespace CompVault.Backend.Features.Users.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = Permissions.UsersRead)]
 [Produces("application/json")]
 public sealed class UsersController(IUserService userService) : BaseController
 {
@@ -53,7 +54,7 @@ public sealed class UsersController(IUserService userService) : BaseController
     /// <response code="400">Validering feilet.</response>
     /// <response code="409">E-posten er allerede i bruk.</response>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.UsersWrite)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -66,7 +67,9 @@ public sealed class UsersController(IUserService userService) : BaseController
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Value!.Id }, result.Value);
+        return CreatedAtAction("GetById", new { id = result.Value!.Id }, result.Value);
+        // Merk: Bruker "GetById" som action-navn, ikke "GetByIdAsync", fordi ASP.NET Core
+        // som default stripper "Async" fra action-navn i route tabellen.
     }
 
     /// <summary>Oppdaterer profilen til en eksisterende bruker.</summary>
@@ -74,7 +77,7 @@ public sealed class UsersController(IUserService userService) : BaseController
     /// <response code="400">Validering feilet.</response>
     /// <response code="404">Ingen bruker med den ID-en.</response>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Policy = Permissions.UsersWrite)]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -95,7 +98,7 @@ public sealed class UsersController(IUserService userService) : BaseController
     /// <response code="204">Bruker slettet.</response>
     /// <response code="404">Ingen bruker med den ID-en.</response>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Permissions.UsersDelete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)

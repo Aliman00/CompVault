@@ -1,20 +1,30 @@
 using System.Text;
 
 using CompVault.Backend.Common.Middleware;
+using CompVault.Backend.Common.Responses;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
+using CompVault.Backend.Features.Competencies.Services;
+using CompVault.Backend.Features.Departments.Services;
+using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
+using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.Jobs;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Backend.Infrastructure.Repositories.Competencies;
+using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.Constants;
+using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Resend;
@@ -29,7 +39,7 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Setter opp databasekoblingen med Npgsql og registrerer ASP.NET Core Identity.
-    /// Ved testing så brukes ikke PostgreSQL med UseNpgsql, men InMemory
+    /// Ved testing så brukes ikke PostgreSQL med UseNpgsql, men InMemory.
     /// </summary>
     public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration,
         IWebHostEnvironment environment)
@@ -37,9 +47,13 @@ public static class ServiceCollectionExtensions
         // Skipper oppsett av PostgreSQL hvis vi er i testing environment
         if (!environment.IsEnvironment("Testing"))
         {
+            DatabaseSettings dbSettings = configuration
+                .GetSection(DatabaseSettings.SectionName)
+                .Get<DatabaseSettings>() ?? throw new InvalidOperationException("Database-konfigurasjon mangler.");
+
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(
-                    configuration.GetConnectionString("Default"),
+                    dbSettings.BuildConnectionString(),
                     npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
         }
 
@@ -68,32 +82,98 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        IConfigurationSection jwtSection = configuration.GetSection(JwtSettings.SectionName);
+
+        services.Configure<JwtSettings>(jwtSection);
         services.Configure<OtpOptions>(configuration.GetSection(OtpOptions.SectionName));
 
-        JwtSettings jwtSettings = configuration
-            .GetSection(JwtSettings.SectionName)
-            .Get<JwtSettings>() ?? new JwtSettings();
-
+        // registerer først uten konfigurasjon for å kunne fungere med testene
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(opts =>
-            {
-                opts.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtSettings.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtSettings.Audience,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
+            .AddJwtBearer();
 
-        services.AddAuthorization();
+
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+        .Configure<IOptions<JwtSettings>>((jwtOpts, settings) =>
+        {
+            JwtSettings jwt = settings.Value;
+
+            jwtOpts.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwt.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwt.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(jwt.Secret)),
+                ValidateLifetime = true,
+                // Fjerner standard 5-minutters slingringsmonn slik at tokens utløper nøyaktig når de skal
+                ClockSkew = TimeSpan.Zero
+            };
+
+            jwtOpts.Events = new JwtBearerEvents
+            {
+                OnChallenge = context =>
+                {
+                    context.HandleResponse();
+
+                    if (context.Response.HasStarted)
+                        return Task.CompletedTask;
+
+                    string message = context.AuthenticateFailure?.Message ??
+                        ProblemDetailBuilder.GetDefaultMessage(ErrorCode.Unauthorized);
+
+                    ProblemDetail problem = ProblemDetailBuilder.Create(
+                        401, ErrorCode.Unauthorized.ToString(), message);
+
+                    context.Response.StatusCode = problem.Status;
+                    context.Response.ContentType = "application/problem+json";
+                    return context.Response.WriteAsJsonAsync(problem);
+                },
+                OnAuthenticationFailed = _ => Task.CompletedTask
+            };
+        });
+
+        services.AddAuthorization(options =>
+        {
+            // Dynamisk registrering av policies basert på Permissions.cs-konstanter
+            typeof(Permissions)
+                .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly)
+                .Where(f => f.FieldType == typeof(string))
+                .Select(f => (string)f.GetValue(null)!)
+                .ToList()
+                .ForEach(permission =>
+                {
+                    options.AddPolicy(permission, policy =>
+                        policy.RequireClaim(Permissions.ClaimType, permission));
+                });
+        });
         services.AddScoped<IJwtService, JwtService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Konfigurerer CORS slik at frontend kan sende cookies og autentiserte forespørsler til backend
+    /// </summary>
+    public static IServiceCollection AddFrontendCors(this IServiceCollection services, IConfiguration configuration)
+    {
+        CorsSettings corsSettings = configuration
+                                        .GetSection(CorsSettings.SectionName)
+                                        .Get<CorsSettings>()
+                                    ?? throw new InvalidOperationException("CORS-konfigurasjon mangler.");
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(CorsSettings.PolicyName, policy =>
+            {
+                policy
+                    .WithOrigins(corsSettings.GetOrigins())
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
 
         return services;
     }
@@ -103,46 +183,36 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
-        // ============ ERROR HANDLING ============
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+        services.AddHttpContextAccessor();
 
-        // ============ BAKGRUNNSJOBBER ============
         // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
         services.AddHostedService<TokenCleanupJob>();
+
+        // Beregner status på kompetansebevis én gang i døgnet
+        services.AddHostedService<CompetencyStatusJob>();
 
         return services;
     }
 
     /// <summary>
-    /// Konfigurerer Epost med Resend - Skippes ved testing
+    /// Konfigurerer e-post med Resend. Hoppes over i Testing-miljøet.
     /// </summary>
     public static IServiceCollection AddEmail(this IServiceCollection services, IConfiguration configuration,
         IWebHostEnvironment environment)
     {
-        // Vi mocker EmailService med en falsk nøkkel i testing - må skippes ved Test-miljø
+        // EmailService mockes i integrasjonstester — hopper over oppsett i Testing-miljøet
         if (environment.IsEnvironment("Testing"))
             return services;
 
-        // Henter config fra AppSettings
         EmailSettings emailSettings = configuration
             .GetSection(EmailSettings.SectionName)
-            .Get<EmailSettings>() ?? throw new InvalidOperationException("Email configuration is missing");
+            .Get<EmailSettings>() ?? throw new InvalidOperationException("E-postkonfigurasjon mangler.");
 
-        if (string.IsNullOrEmpty(emailSettings.ApiKey))
-            throw new InvalidOperationException("Email:ApiKey is not configured");
-
-        if (string.IsNullOrWhiteSpace(emailSettings.FromAddress))
-            throw new InvalidOperationException("Email:FromAddress is not configured");
-
-        // Register Resend options
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
-        services.Configure<ResendClientOptions>(o => o.ApiToken = emailSettings.ApiKey);
-
-        // HttpClient for Resend
+        services.Configure<ResendClientOptions>(resendOptions => resendOptions.ApiToken = emailSettings.ApiKey);
         services.AddHttpClient<IResend, ResendClient>();
-
-        // Registerer EmailService som scoped
         services.AddScoped<IEmailService, EmailService>();
 
         return services;
@@ -155,6 +225,10 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+        services.AddScoped<ICompetencyTypeRepository, CompetencyTypeRepository>();
+        services.AddScoped<ICompetencyRepository, CompetencyRepository>();
         services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
@@ -168,8 +242,13 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IDepartmentService, DepartmentService>();
+        services.AddScoped<ICompetencyTypeService, CompetencyTypeService>();
+        services.AddScoped<ICompetencyService, CompetencyService>();
         services.AddScoped<IOtpCodeService, OtpCodeService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+        services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<IRoleService, RoleService>();
 
         return services;
     }

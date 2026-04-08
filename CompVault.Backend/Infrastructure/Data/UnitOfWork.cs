@@ -38,12 +38,12 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
             return result;
 
         }
-        catch (Exception ex) // Rollback i transaksjonen, og generer en default melding
+        catch (Exception ex)
         {
-            logger.LogError(ex, "Transaction failed unexpectedly. Rolling back.");
+            logger.LogError(ex, "Transaksjonen feilet uventet. Ruller tilbake.");
             await transaction.RollbackAsync(ct);
             return Result.Failure(
-                AppError.Create(ErrorCode.InternalError, "An unexpected error occurred. Try again."));
+                AppError.Create(ErrorCode.InternalError, "En uventet feil oppstod. Prøv igjen."));
         }
     }
 
@@ -72,12 +72,12 @@ public sealed class UnitOfWork(AppDbContext dbContext, ILogger<UnitOfWork> logge
             return result;
 
         }
-        catch (Exception ex) // Rollback i transaksjonen, og generer en default melding
+        catch (Exception ex)
         {
-            logger.LogError(ex, "Transaction failed unexpectedly. Rolling back.");
+            logger.LogError(ex, "Transaksjonen feilet uventet. Ruller tilbake.");
             await transaction.RollbackAsync(ct);
             return Result<T>.Failure(
-                AppError.Create(ErrorCode.InternalError, "An unexpected error occurred. Try again."));
+                AppError.Create(ErrorCode.InternalError, "En uventet feil oppstod. Prøv igjen."));
         }
     }
 

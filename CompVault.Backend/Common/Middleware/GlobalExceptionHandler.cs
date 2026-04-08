@@ -1,3 +1,4 @@
+using CompVault.Backend.Common.Responses;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Diagnostics;
@@ -19,25 +20,9 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
         logger.LogError(exception, "Uhåndtert exception på {Method} {Path}",
             httpContext.Request.Method, httpContext.Request.Path);
 
-        (int status, ErrorCode code, string? message) = exception switch
-        {
-            ArgumentException argEx => (400, ErrorCode.Validation, argEx.Message),
-            KeyNotFoundException => (404, ErrorCode.NotFound, "Ressursen ble ikke funnet."),
-            UnauthorizedAccessException => (403, ErrorCode.Forbidden, "Du har ikke tilgang."),
-            NotImplementedException => (501, ErrorCode.Unknown, "Denne funksjonen er ikke tilgjengelig ennå."),
-            OperationCanceledException => (499, ErrorCode.Unknown, "Forespørselen ble avbrutt."),
-            _ => (500, ErrorCode.Unknown, "Noe gikk galt på vår side." +
-                                                                        " Prøv igjen litt senere.")
-        };
+        ProblemDetail problem = ProblemDetailBuilder.FromException(exception);
 
-        var problem = new ProblemDetail
-        {
-            Status = status,
-            Code = code.ToString(),
-            Message = message
-        };
-
-        httpContext.Response.StatusCode = status;
+        httpContext.Response.StatusCode = problem.Status;
         await httpContext.Response.WriteAsJsonAsync(problem, ct);
         return true;
     }

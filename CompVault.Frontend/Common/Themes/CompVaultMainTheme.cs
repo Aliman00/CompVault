@@ -1,10 +1,10 @@
 ﻿using MudBlazor;
-
 namespace CompVault.Frontend.Common.Themes;
+
 
 public static class CompVaultMainTheme
 {
-    public static MudTheme Theme => new MudTheme
+    public static MudTheme Theme => new()
     {
         PaletteLight = new PaletteLight
         {
@@ -13,11 +13,11 @@ public static class CompVaultMainTheme
             PrimaryLighten = "#4ecf7a",
             Secondary = "#1a2535",
             Tertiary = "#c9a84c",
-            AppbarBackground = "#1a2535",
+            AppbarBackground = "#1e3a5f",
             AppbarText = "#ffffff",
             Background = "#ffffff",
             BackgroundGray = "#f4f6f8",
-            DrawerBackground = "#1a2535",
+            DrawerBackground = "#1e3a5f",
             DrawerText = "#e0e0e0",
             DrawerIcon = "#4ecf7a",
             Success = "#4ecf7a",

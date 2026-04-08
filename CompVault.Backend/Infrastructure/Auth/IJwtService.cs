@@ -7,11 +7,12 @@ namespace CompVault.Backend.Infrastructure.Auth;
 /// </summary>
 public interface IJwtService
 {
-    /// <summary>Lager et signert JWT access token for brukeren med rollene sine.</summary>
+    /// <summary>Lager et signert JWT access token for brukeren med rollene og permissions sine.</summary>
     /// <param name="user">Den innloggede brukeren.</param>
     /// <param name="roles">Rollene brukeren har.</param>
+    /// <param name="permissions">Permissions brukeren har.</param>
     /// <returns>En JWT-streng.</returns>
-    string GenerateAccessToken(ApplicationUser user, IEnumerable<string> roles);
+    string GenerateAccessToken(ApplicationUser user, IEnumerable<string> roles, IEnumerable<string> permissions);
 
     /// <summary>
     /// Validerer et (evt. utgått) access token og returnerer claims fra det.

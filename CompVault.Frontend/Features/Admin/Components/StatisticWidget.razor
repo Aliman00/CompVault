@@ -1,0 +1,30 @@
+﻿@* En widget som viser statistikk for innsendte verdier *@
+
+<MudPaper Class="pa-3" Style="@($"border-top: 3px solid {AccentColor};")" Elevation="4">
+    <section class="widget-header">
+        <div class="statistic-header-left-section">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <SmallIcon Icon="@Icon"
+                           AccentColor="@AccentColor"
+                           IconBackgroundColor="@IconBackgroundColor"/>
+            }
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@Title</MudText>
+        </div>
+        <WidgetMenu OnHide="OnHide"/>
+    </section>
+    <MudText Typo="Typo.h4">@Value</MudText>
+</MudPaper>
+   
+
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "";
+    [Parameter] public string AccentColor { get; set; } = "";
+    [Parameter] public string IconBackgroundColor { get; set; } = "";
+
+    // Sender tilbake til foreldrekomponenten om OnHide i menyen har blitt trykket på
+    [Parameter] public EventCallback OnHide { get; set; }
+}

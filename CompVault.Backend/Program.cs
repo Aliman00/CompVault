@@ -1,21 +1,20 @@
+using CompVault.Backend.Common.Authorization;
 using CompVault.Backend.Dev;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Extensions;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+
+if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Testing")
+    ConfigurationLoader.LoadEnvironmentFile();
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// Sjekk at JWT Secret er konfigurert før vi starter opp applikasjonen. 
-// Dette er kritisk for sikkerheten, og det er bedre å feile tidlig enn å kjøre med en svak eller hardkodet secret.
-// TODO: Fjern denne sjekken når du har konfigurert JWT Secret i appsettings.json eller environment variables.
-// string? jwtSecret = builder.Configuration["JwtSettings:Secret"];
-// if (string.IsNullOrEmpty(jwtSecret) || jwtSecret.Contains("CHANGE_ME"))
-// {
-//     throw new InvalidOperationException(
-//         "JWT Secret er ikke konfigurert! Sett JwtSettings:Secret via environment variable eller secrets.");
-// }
+if (!builder.Environment.IsEnvironment("Testing"))
+    ConfigurationValidator.ValidateAll();
 
 builder.ConfigureSwagger();
 builder.ConfigureLogging();
@@ -23,7 +22,9 @@ builder.ConfigureLogging();
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("db");
+builder.Services.AddFrontendCors(builder.Configuration);
 builder.Services.AddInfrastructure();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationFailureHandler>();
 builder.Services.AddDatabase(builder.Configuration, builder.Environment);
 builder.Services.AddAuth(builder.Configuration);
 builder.Services.AddEmail(builder.Configuration, builder.Environment);
@@ -42,6 +43,7 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
+app.UseCors(CorsSettings.PolicyName);
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -54,11 +56,9 @@ if (app.Environment.IsDevelopment())
     using IServiceScope scope = app.Services.CreateScope();
     UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     RoleManager<ApplicationRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+    AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     ILogger logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await DatabaseSeeder.SeedAsync(userManager, roleManager, logger);
+    await DatabaseSeeder.SeedAsync(userManager, roleManager, dbContext, logger);
 }
 
 app.Run();
-
-// Eksponerer Program for integrasjonstester
-public partial class Program;

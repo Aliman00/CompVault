@@ -1,0 +1,253 @@
+﻿@page "/dev"
+@using System.Security.Claims
+@using CompVault.Frontend.Common.Configuration
+@using CompVault.Frontend.Features.Auth.Services
+@using CompVault.Shared.DTOs.Users
+@inject IWebHostEnvironment Env
+@inject IAuthService AuthService
+@inject AuthStateProvider AuthStateProvider
+@inject IServiceProvider ServiceProvider
+@inject IJSRuntime JsRuntime
+@implements IAsyncDisposable
+@layout AuthLayout
+@inject IHttpClientFactory HttpClientFactory
+
+@* Denne siden er kun tilgjengelig i development *@
+
+@if (!Env.IsDevelopment())
+{
+    return;
+}
+
+<PageTitle>CompVault Dev Panel</PageTitle>
+
+@* En skjult form som gjør at vi kan sette auth-cookie ved å poste til en Razor Page, som lagrer token i nettleseren *@
+<form id="dev-login-form" method="post" action="/login-callback">
+    <AntiforgeryToken/>
+    <input type="hidden" name="OtpRequest.Email"/>
+    <input type="hidden" name="OtpRequest.OtpCode" value="123456"/>
+</form>
+
+@* Skjult form for å slette auth-cookie fra nettleseren *@
+<form id="dev-logout-form" method="post" action="/logout-callback">
+    <AntiforgeryToken />
+</form>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudText Typo="Typo.h6" Class="mb-4">Nåværende session - innlogget eller ikke</MudText>
+    <MudPaper Class="pa-6 mb-4">
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.h6" Class="mb-4">UserDto til innlogget bruker</MudText>
+                @if (_currentUser is not null)
+                {
+                    <MudSimpleTable Class="mb-4" Dense="true" Bordered="true" Striped="true">
+                        <tbody>
+                        <tr>
+                            <td><strong>Id</strong>
+                                </td><td>@_currentUser.Id</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fullt navn</strong>
+                                </td><td>@_currentUser.FullName</td>
+                        </tr>
+                        <tr>
+                            <td><strong>E-post</strong></td>
+                            <td>@_currentUser.Email</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Stillingstittel</strong></td>
+                            <td>@_currentUser.JobTitle</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ansettelsestype</strong>
+                                </td><td>@_currentUser.EmploymentType</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Aktiv</strong></td>
+                            <td>@_currentUser.IsActive</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Avdeling</strong></td>
+                            <td>@(_currentUser.DepartmentId?.ToString() ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Leder</strong></td>
+                            <td>@(_currentUser.ManagerId?.ToString() ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Roller</strong></td>
+                            <td>@string.Join(", ", _currentUser.Roles)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Opprettet</strong></td>
+                            <td>@_currentUser.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                        </tbody>
+                    </MudSimpleTable>
+                }
+                
+                <MudText Typo="Typo.h6" Class="mb-4">Claims til innlogget bruker</MudText>
+                <MudStack>
+                    @foreach (var claim in _claims)
+                    {
+                        <MudText><strong>@claim.Type: </strong>@claim.Value</MudText>
+                    }
+                </MudStack>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           Disabled="_isLoading"
+                           OnClick="LogOutAsync">
+                    Logg ut
+                </MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudText Color="Color.Secondary">Ikke innlogget</MudText>
+            </NotAuthorized>
+        </AuthorizeView>
+
+    </MudPaper>
+    <MudText Typo="Typo.h6" Class="mb-4">Hurtigpålogging - Rød = Admin bruker, grønn = vanlig bruker</MudText>
+
+    <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+        @foreach (var testUser in _testUsers)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="@(testUser.Roles.Contains("Admin") ? Color.Error : Color.Primary)"
+                       Disabled="_isLoading"
+                       OnClick="() => LoginAsync(testUser)">
+                <MudText>Navn: @testUser.FirstName @testUser.LastName, Tittel: @testUser.JobTitle,
+                    Roller: @string.Join(", ", testUser.Roles)</MudText>
+            </MudButton>
+        }
+    </MudStack>
+    @if (_loginErrorMessage != null)
+    {
+        <MudAlert Severity="Severity.Error">@_loginErrorMessage</MudAlert>
+    }
+
+</MudContainer>
+
+
+@code {
+    
+    private IDevService? _devService;
+    
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Tilgjengelig kun i Development — i produksjon er tjenesten ikke registrert
+            if (Env.IsDevelopment())
+                _devService = ServiceProvider.GetService<IDevService>();
+            
+            var httpClient = HttpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
+            
+            HttpResponseMessage response = await httpClient.GetAsync("api/auth/dev-get-users", 
+                CancellationToken.None);
+
+            Result<List<UserDto>> getUsersResult =
+                await HttpClientExtensions.ParseResponseAsync<List<UserDto>>(response, CancellationToken.None);
+
+            if (getUsersResult.IsFailure)
+            {
+                _loginErrorMessage = getUsersResult.Error!.Message;
+                return;
+            }
+            
+            _testUsers = getUsersResult.Value!;
+        }
+        catch
+        {
+            _loginErrorMessage = "Noe galt har skjedd ved innlastning. Feil i OnInitializedAsync()";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+        
+        await RefreshClaimsAsync();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./Dev/DevPanel.razor.js");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule is not null)
+        {
+            try
+            {
+                await _jsModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // Kretsen er allerede disconnectet — ingenting å rydde opp
+            }
+        }
+    }
+    
+    
+    // ===================== LOGIN =====================
+    
+    private IJSObjectReference? _jsModule;
+    
+    private bool _isLoading;
+    private string? _loginErrorMessage;
+
+    private List<UserDto> _testUsers = [];
+    
+    private IEnumerable<Claim> _claims = [];
+    
+    private UserDto? _currentUser;
+    
+    
+    
+    // Logger inn brukeren ved å opprette en satt OTP-kode og verifisere med VerifyOtp
+    private async Task LoginAsync(UserDto testUser)
+    {
+        if (_devService == null)
+            return;
+        
+        _isLoading = true;
+        _loginErrorMessage = null;
+        
+        var requestOtpRequest = new RequestOtpRequest { Email = testUser.Email, 
+            DeliveryMethod = OtpDeliveryMethod.Email };
+        
+        Result requestOtpResult = await _devService.RequestOtpAsync(requestOtpRequest);
+        
+        if (requestOtpResult.IsFailure)
+        {
+            _loginErrorMessage = requestOtpResult.Error!.Message;
+            _isLoading = false;
+            return;
+        }
+        
+        await _jsModule!.InvokeVoidAsync("submitLoginForm", testUser.Email);
+    }
+    
+    private async Task LogOutAsync()
+    {
+        _isLoading = true;
+        await AuthService.LogOutAsync(CancellationToken.None);
+        await _jsModule!.InvokeVoidAsync("submitLogoutForm");
+    }
+
+    private async Task RefreshClaimsAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        _claims = state.User.Claims;
+
+        var email = _claims.FirstOrDefault(c => c.Type == "email")?.Value;
+        _currentUser = _testUsers.FirstOrDefault(u => u.Email == email);
+    }
+}
+
+

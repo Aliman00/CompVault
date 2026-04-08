@@ -1,13 +1,10 @@
-using System.ComponentModel.DataAnnotations;
-
+﻿using System.ComponentModel.DataAnnotations;
 namespace CompVault.Shared.DTOs.Auth;
 
-/// <summary>
-/// Det klienten sender inn for å bytte ut et utgått access token.
-/// </summary>
+
 public sealed class RefreshTokenRequest
 {
-    /// <summary>Refresh token brukt til å verifisere at klienten fortsatt er gyldig.</summary>
-    [Required]
+    [Required(ErrorMessage = "Refresh token is required")]
+    [MinLength(1, ErrorMessage = "RefreshToken cannot be empty")]
     public string RefreshToken { get; set; } = string.Empty;
 }

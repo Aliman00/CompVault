@@ -1,0 +1,94 @@
+﻿@page "/admin/users"
+@layout AdminLayout
+@using CompVault.Frontend.Features.Users.Services
+@using CompVault.Shared.DTOs.Users
+@inject IUserService UserService
+@implements IDisposable
+
+<AppAlert @bind-Alert="_alert"/>
+
+@* Grid med liste over brukere *@
+<MudDataGrid Items="_users"
+             Filterable="true"
+             FilterMode="DataGridFilterMode.ColumnFilterRow"
+             FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+             Dense="true"
+             Hover="true"
+             Striped="true"
+             Square="true"
+             Bordered="true"
+             SortMode="SortMode.Multiple"
+             FixedHeader="true"
+             Loading="_isLoading"
+             MultiSelection="true"
+             @bind-SelectedItems="_selectedUsers">
+
+    @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere brukere *@
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Brukere</MudText>
+        <MudSpacer/>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Success"
+                   StartIcon="@Icons.Material.Filled.PersonAdd">
+            Opprett bruker
+        </MudButton>
+    </ToolBarContent>
+
+    @* Selve kolonnen *@
+    <Columns>
+        <SelectColumn T="UserDto"/>
+        <PropertyColumn Property="user => user.FirstName" Title="First Name"/>
+        <PropertyColumn Property="user => user.LastName" Title="Last Name"/>
+        <PropertyColumn Property="user => user.Email" Title="Email"/>
+        <PropertyColumn Property="user => user.JobTitle" Title="Tittel"/>
+    </Columns>
+</MudDataGrid>
+
+
+@code {
+    // ===================== PRIVATE FELT =====================
+    private List<UserDto>? _users = [];
+    private HashSet<UserDto> _selectedUsers = [];
+    
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    private readonly CancellationTokenSource _cts = new();
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getUsersResult = await UserService.GetAllUsersAsync(_cts.Token);
+
+            if (getUsersResult.IsFailure)
+            {
+                _alert = new AlertInfo(getUsersResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _users = getUsersResult.Value;
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste brukere. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+}

@@ -1,0 +1,82 @@
+flowchart TB
+    subgraph NOTE1["Om CircuitUserContext-flyten"]
+    direction TB
+        note1["Viser hvordan brukerkontekst flyter fra HTTP-request gjennom SSR, til SignalR-krets og til autorisasjon i komponenter. App.razor og CircuitUserContextHandler sørger for at CircuitUserContext alltid har riktig bruker og refresh token tilgjengelig inne i kretsen der HttpContext er null."]
+    end
+    subgraph SSR["Fase 1 — HTTP/SSR"]
+        B["Browser sender GET-request til server"]
+        C["CookieValidationEvents kjøres (se eget diagram for detaljert flyt)"]
+        D["App.razor OnInitialized kjøres under SSR-fasen"]
+        E(["Redirect til /login"])
+        F{"HttpContext autentisert og refresh token-cookie finnes?"}
+        G["CircuitUserContext.SetUser kalt med User og RefreshToken fra HttpContext"]
+        H["CircuitUserContext forblir tom"]
+        I["HTML-shell sendes til browser"]
+    end
+    subgraph CIRCUIT["Fase 2 — SignalR-krets etableres"]
+        J["Browser laster assets og starter Blazor"]
+        K["WebSocket-tilkobling opprettes. CircuitUserContextHandler.OnConnectionUpAsync kjøres"]
+        L{"HttpContext tilgjengelig og bruker autentisert?"}
+        M["CircuitUserContext forblir som satt av App.razor"]
+        N{"Finnes refresh token i HttpContext-cookie eller CircuitUserContext?"}
+        O["CircuitUserContext.SetUser kalt på nytt med oppdatert User og RefreshToken"]
+        P["Kretsen er klar"]
+    end
+    subgraph AUTH["Fase 3 — Autorisasjon i komponenter"]
+        Q["AuthStateProvider.GetAuthenticationStateAsync leser CircuitUserContext.User"]
+        R{"Bruker autentisert?"}
+        S(["Beskyttet side vises"])
+        T(["Redirect til /login"])
+    end
+    A(["Bruker navigerer til en side eller trykker F5"]) --> B
+    B --> C
+    C -- Bruker autentisert --> D
+    C -- Ikke autentisert --> E
+    D --> F
+    F -- Ja --> G
+    F -- Nei --> H
+    G --> I
+    H --> I
+    I --> J
+    J --> K
+    K --> L
+    L -- Nei --> M
+    L -- Ja --> N
+    N -- Nei --> M
+    N -- Ja --> O
+    O --> P
+    M --> P
+    P --> Q
+    Q --> R
+    R -- Ja --> S
+    R -- Nei --> T
+    note1:::note
+    A:::start
+    B:::action
+    C:::action
+    D:::action
+    E:::failure
+    F:::decision
+    G:::success
+    H:::action
+    I:::action
+    J:::action
+    K:::action
+    L:::decision
+    M:::action
+    N:::decision
+    O:::success
+    P:::action
+    Q:::action
+    R:::decision
+    S:::start
+    T:::failure
+    classDef start fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef success fill:#5BA85A,stroke:#3D7A3C,color:#fff
+    classDef failure fill:#D9534F,stroke:#A02020,color:#fff
+    classDef decision fill:#F5A623,stroke:#C47D0E,color:#fff
+    classDef action fill:#E8E8E8,stroke:#999,color:#333
+    classDef async fill:#9B59B6,stroke:#6C3483,color:#fff
+    style SSR fill:#616161
+    style CIRCUIT fill:#616161
+    style AUTH fill:#757575
