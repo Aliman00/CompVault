@@ -100,7 +100,7 @@ public class TokenRefreshServiceTests
     }
     
     /// <summary>
-    /// Tester at cooldown i RefreshPariAsync fungerer. Utfører først et kall, deretter etter kall til og vi sjekker
+    /// Tester at cooldown i RefreshPariAsync fungerer. Utfører først to kall, deretter etter kall til og vi sjekker
     /// at flere kall ikke sender ny refresh token
     /// </summary>
     [Fact]
@@ -119,6 +119,7 @@ public class TokenRefreshServiceTests
                 })
             }));
         
+        await _sut.RefreshPairAsync(_userId, "valid_token");
         await _sut.RefreshPairAsync(_userId, "valid_token");
         
         // Act - Andre kall mens første kall satt oss på cooldown

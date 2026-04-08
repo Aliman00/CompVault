@@ -48,7 +48,7 @@ public class CookieValidationEvents(
             if (result.Error?.Code == ErrorCode.RecentlyRefreshed)
                 return;
             
-            // NotFound betyyr ingen refresh token i cookie og Unathorized betyr at brukeren er deaktivert
+            // NotFound betyr ingen refresh token i cookie og Unathorized betyr at brukeren er deaktivert
             // Begge logger brukeren ut
             if (result.Error?.Code == ErrorCode.NotFound || result.Error?.Code == ErrorCode.Unauthorized)
                 await RejectAndSignOutAsync(context);

@@ -37,9 +37,11 @@ public class TokenRefreshService(
         
         // Sjekker om det finnes en eksisterende nøkkel med med denne bruker ID-en.
         // Dette sikrer at parallelle requester bruker samme RefreshAsync-instance.
-        // Lazy sikrer at den ikke kjører før vi kaller den selv
+        // Lazy sikrer at den ikke kjører før vi kaller den selv. Ingen CT slik at hvis første kaller
+        // avbryter, så avbrytes den ikke for de andre
         AsyncLazy<Result<RefreshRecord>> pendingRefresh = _pendingRefreshes.GetOrAdd(userId,
-            _ => new AsyncLazy<Result<RefreshRecord>>(() => GetTokenPairAsync(refreshToken, ct)));
+            _ => new AsyncLazy<Result<RefreshRecord>>(() => GetTokenPairAsync(refreshToken, 
+                CancellationToken.None)));
         
         Result<RefreshRecord> result = await pendingRefresh;
         
@@ -53,10 +55,17 @@ public class TokenRefreshService(
         return result;
     }
     
+    // Kjøres i bakgrunn etter vellykket refresh. Fjerner først pendingRefreshes etter en kort delay
+    // så samtidige requester rekker å treffe samme AsyncLazy, og ikke prøver å refreshe igjen.
+    // Deretter fjernes cooldown-oppføringen etter at ValidationIntervalMinutes har gått —
+    // på det tidspunktet er den uansett utdatert
     private async Task RemoveAfterDelayAsync(string userId)
     {
         await Task.Delay(500);
         _pendingRefreshes.TryRemove(userId, out _);
+        
+        await Task.Delay(TimeSpan.FromMinutes(authSettings.ValidationIntervalMinutes));
+        _lastRefreshed.TryRemove(userId, out _);
     }
     
     // Utfører API-kall mot backend og henter token-par
@@ -109,6 +118,12 @@ public class TokenRefreshService(
             
             logger.LogDebug("Token refreshet vellykket");
             return Result<RefreshRecord>.Success(refreshRecord);
+        }
+        catch (OperationCanceledException)
+        {
+            // Forventet — request ble avbrutt av kalleren
+            return Result<RefreshRecord>.Failure(AppError.Create(ErrorCode.Unknown, 
+                "Token-refresh ble avbrutt"));
         }
         catch (Exception ex)
         {

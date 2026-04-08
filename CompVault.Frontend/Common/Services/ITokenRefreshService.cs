@@ -6,11 +6,11 @@ namespace CompVault.Frontend.Common.Services;
 public interface ITokenRefreshService
 {
     /// <summary>
-    /// Refresher token par for innlogget bruker. Paralelle kall venter på samme refresh-operasjon,
+    /// Refresher token par for innlogget bruker. Parallelle kall venter på samme refresh-operasjon,
     /// slik at både CookieValidationEvents og AccessTokenHandler ikke kjører om hverandre
     /// </summary>
     /// <param name="userId">Brukerens ID fra claim</param>
-    /// <param name="refreshToken">Refresh token hentet fra cookie eller CircutUserContext</param>
+    /// <param name="refreshToken">Refresh token hentet fra cookie eller CircuitUserContext</param>
     /// <param name="ct"></param>
     /// <returns>Result med RefreshRecord som inneholder token-par og tiden de ble satt</returns>
     Task<Result<RefreshRecord>> RefreshPairAsync(string userId, string refreshToken, CancellationToken ct = default);

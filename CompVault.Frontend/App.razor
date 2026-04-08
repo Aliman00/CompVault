@@ -32,7 +32,9 @@
 
 @code {
     
-    // Setter innlogget bruker i kretsen hvis det er en eksisterende refresh token cookie
+    // App.razor er en statisk SSR-komponent — OnInitialized kjøres under HTTP-fasen
+    // der HttpContext er tilgjengelig. Setter CircuitUserContext slik at brukeren
+    // er klar når SignalR-kretsen etableres
     protected override void OnInitialized()
     {
         var httpContext = HttpContextAccessor.HttpContext;
