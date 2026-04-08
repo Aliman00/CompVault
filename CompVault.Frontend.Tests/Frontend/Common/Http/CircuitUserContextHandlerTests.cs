@@ -1,8 +1,12 @@
 ﻿using System.Security.Claims;
+
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Services;
+
 using FluentAssertions;
+
 using Microsoft.AspNetCore.Http;
+
 using Moq;
 namespace CompVault.Frontend.Tests.Frontend.Common.Http;
 
@@ -20,9 +24,9 @@ public class CircuitUserContextHandlerTests
     // -------------------------------------------------------------------------
     // Hjelpemetoder
     // -------------------------------------------------------------------------
-    
+
     // Bygger en HttpContext med eller uten en autorisert bruker, og med eller uten Refresh Token-cookie
-    private DefaultHttpContext BuildHttpContext(bool isAuthenticated = true, 
+    private DefaultHttpContext BuildHttpContext(bool isAuthenticated = true,
         string? refreshToken = "valid_refresh_token")
     {
         var httpContext = new DefaultHttpContext();

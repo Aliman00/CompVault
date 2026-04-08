@@ -1,24 +1,27 @@
 # Infrastructure/Email
 
-> SMTP-basert e-posttjeneste brukt til OTP-levering og varsler.
+`Infrastructure/Email/` samler det som har med utsending av e-post å gjøre. I prosjektet brukes dette blant annet til OTP-koder og andre meldinger som sendes ut fra backend.
 
 ## Struktur
 
-```
-Email/
-  IEmailService.cs        <- interface som injiseres i services
-  EmailService.cs         <- SMTP-implementasjon
-  Config/
-    EmailSettings.cs      <- konfigurasjonsobjekt, bindes fra appsettings.json
-  Models/
-    EmailBody.cs          <- modell for e-postinnhold (mottaker, emne, kropp)
-  Templates/
-    EmailTemplates.cs     <- statiske HTML-maler
+```text
+Infrastructure/Email/
+├── IEmailService.cs      <- Interface for e-postoperasjoner
+├── EmailService.cs       <- Implementasjon
+├── EmailSettings.cs      <- Konfigurasjon for SMTP/API-innstillinger
+├── Models/
+│   └── EmailBody.cs      <- Modell for e-postinnhold
+└── Templates/
+    └── EmailTemplates.cs <- HTML-maler for ulike e-posttyper
 ```
 
-## Bruk
+## Hvordan vi bruker denne mappen
 
-Injiser `IEmailService` i ønsket service:
+Vi lar resten av applikasjonen forholde seg til `IEmailService`, i stedet for å vite noe om hvordan e-posten faktisk sendes. Det gjør det enklere å bytte leveringsmåte senere uten å måtte rydde opp i mange features samtidig.
+
+Maler ligger separat, slik at service-laget slipper å bygge opp HTML direkte. Det holder ansvaret litt ryddigere, og gjør e-postflyten lettere å lese når man kommer tilbake til den senere.
+
+## Eksempel på bruk
 
 ```csharp
 public class AuthService(IEmailService emailService) : IAuthService
@@ -31,24 +34,10 @@ public class AuthService(IEmailService emailService) : IAuthService
 }
 ```
 
-## Konfigurasjon
+## Retningslinjer
 
-Sett SMTP-verdier i `appsettings.json` (bruk `appsettings.Development.json` lokalt):
+- Injiser `IEmailService`, ikke `EmailService` direkte.
+- Maler skal returnere innholdet som skal sendes, ikke stå for selve utsendingen.
+- Metoder bør ta `CancellationToken ct = default` der det er naturlig.
 
-```json
-"EmailSettings": {
-  "Host": "smtp.example.com",
-  "Port": 587,
-  "Username": "no-reply@example.com",
-  "Password": "...",
-  "FromAddress": "no-reply@example.com",
-  "FromName": "CompVault"
-}
-```
-
-`EmailSettings` registreres i DI via `Infrastructure/Extensions/ServiceCollectionExtensions.cs`.
-
-## Ny e-postmal? Gjør slik
-
-1. Legg til en statisk metode i `Templates/EmailTemplates.cs` som returnerer en HTML-streng
-2. Kall metoden fra aktuell service via `IEmailService`
+Konfigurasjon som host, port og avsendernavn legges i `appsettings.json` via `EmailSettings`, ikke i kode.

@@ -16,19 +16,19 @@ public class AccessTokenHandler(
     ILogger<AccessTokenHandler> logger,
     ITokenRefreshService tokenRefreshService,
     CircuitUserContext circuitUserContext) : DelegatingHandler
-{   
+{
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         // Kloner forespørselen før den blir konsumert i sending
         HttpRequestMessage clonedRequest = await CloneAsync(request);
-        
+
         SetAuthHeader(request);
         HttpResponseMessage response = await base.SendAsync(request, ct);
-        
+
         // Returnerer responsen så fremt ikke vi får Unauthorized
         if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
             return response;
-        
+
         // Bruker refresh fra cookie til å autoriseres på nytt - failer det så sender vi koden videre til kalleren
         Result refreshResult = await TryRefreshAsync(ct);
         if (refreshResult.IsFailure)
@@ -36,12 +36,12 @@ public class AccessTokenHandler(
             logger.LogDebug("Token-refresh feilet med {Code} — sender responsen videre", refreshResult.Error?.Code);
             return response;
         }
-        
+
         logger.LogDebug("Token refreshet vellyket - prøver igjen");
         SetAuthHeader(clonedRequest);
         return await base.SendAsync(clonedRequest, ct);
     }
-    
+
     // Setter en Bearer header
     private void SetAuthHeader(HttpRequestMessage request)
     {
@@ -50,36 +50,36 @@ public class AccessTokenHandler(
             request.Headers.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
     }
-    
-    
+
+
     private async Task<Result> TryRefreshAsync(CancellationToken ct)
     {
         HttpContext? httpContext = httpContextAccessor.HttpContext;
-        
+
         string? userId = httpContext?.User.FindFirst("sub")?.Value;
 
         if (userId == null)
             return Result.Failure(AppError.Create(ErrorCode.Unauthorized, "Ingen bruker-ID i claims."));
-        
+
         string? refreshToken = httpContext?.GetRefreshTokenCookie();
         if (string.IsNullOrEmpty(refreshToken))
-            return Result.Failure(AppError.Create(ErrorCode.Unauthorized, 
+            return Result.Failure(AppError.Create(ErrorCode.Unauthorized,
                 "Ingen refresh token i HttpContext"));
-        
+
         Result<RefreshRecord> refreshResult = await tokenRefreshService.RefreshPairAsync(userId, refreshToken, ct);
-        
+
         // RecentlyRefreshed betyr at CookieValidationEvents allerede har satt et ferskt
         // access token i claims på denne requesten — vi trenger bare å retry med det nye tokenet
         if (refreshResult.IsFailure && refreshResult.Error?.Code == ErrorCode.RecentlyRefreshed)
             return Result.Success();
-        
+
         if (refreshResult.IsFailure)
             return Result.Failure(refreshResult.Error!);
 
         ApplyRefreshResult(refreshResult.Value!, httpContext!);
         return Result.Success();
     }
-    
+
     // Kloner foprespørselen siden den er single-use og blir konsumert
     private static async Task<HttpRequestMessage> CloneAsync(HttpRequestMessage original)
     {
@@ -88,9 +88,9 @@ public class AccessTokenHandler(
         {
             clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
-        
+
         // Hvis forespørselen har en body med innhold så kloner vi den og
-        if (original.Content is null) 
+        if (original.Content is null)
             return clone;
 
         byte[] body = await original.Content.ReadAsByteArrayAsync();
@@ -102,7 +102,7 @@ public class AccessTokenHandler(
 
         return clone;
     }
-    
+
     // Skriver nytt access token inn i HttpContext, slik at forespørsler til backend er autorisert
     private void ApplyRefreshResult(RefreshRecord refreshRecord, HttpContext httpContext)
     {

@@ -103,7 +103,7 @@ public sealed class DevAuthController(
 
         return Ok();
     }
-    
+
     [HttpGet("dev-get-users")]
     [ProducesResponseType(typeof(IReadOnlyList<UserDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<UserDto>>> GetAllAsync(CancellationToken cancellationToken)
