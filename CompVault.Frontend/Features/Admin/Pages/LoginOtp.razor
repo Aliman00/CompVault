@@ -1,0 +1,39 @@
+﻿@page "/login-otp"
+@inject IHttpClientFactory Http
+@inject NavigationManager Navigation
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#f5f5f5">
+    <MudCard Style="width:400px">
+        <MudCardContent Class="pa-6">
+            <MudText Typo="Typo.h4" Class="mb-4 text-center">Bekreft OTP</MudText>
+            <MudText Typo="Typo.body1" Class="mb-4">Sendt til: <strong>@Email</strong></MudText>
+            <MudTextField Label="OTP-kode" @bind-Value="otpCode" MaxLength="6" Variant="Variant.Outlined"/>
+            <MudButton Class="mt-4" FullWidth Color="Color.Primary" OnClick="VerifyOtpAsync">Logg inn</MudButton>
+        </MudCardContent>
+    </MudCard>
+</div>
+
+@code {
+    // 1. HENT E-POST fra query-string (?email=test@example.com)
+    [Parameter][SupplyParameterFromQuery]
+    public string? Email { get; set; } = "";
+    
+    // 2. Two-way binding til OTP-input
+    private string otpCode = "";
+    
+    // 3. Verifiser OTP mot backend
+    private async Task VerifyOtpAsync()
+    {
+        // Hent HttpClient konfigurert i Program.cs
+        var client = Http.CreateClient("BackendApi");
+        
+        // POST til din backend AuthController
+        var response = await client.PostAsJsonAsync("api/auth/verify-otp", 
+            new { email = Email, otpCode });
+        
+        /* 4. Suksess = redirect til dashboard
+           forceLoad=true fornyer auth-state */
+        if (response.IsSuccessStatusCode)
+            Navigation.NavigateTo("/dashboard", forceLoad: true);
+    }
+}

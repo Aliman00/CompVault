@@ -9,11 +9,13 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Legger til Serilog
 builder.AddSerilogLogging();
-
-// MudBlazor konfigurasjon
+builder.Services.AddHttpClients(builder.Configuration);
 builder.Services.AddMudServices();
+builder.Services.AddAuth(builder.Configuration, builder.Environment);
+builder.Services.AddAuthPolicies();
+builder.Services.AddFrontendServices(builder.Environment);
+builder.Services.AddRazorPages();
 
 WebApplication app = builder.Build();
 
@@ -26,14 +28,15 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
-
 app.UseAntiforgery();
+
+// ============ Autentisering ============
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapRazorPages();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-
-
 
 app.Run();

@@ -1,0 +1,12 @@
+﻿@inject NavigationManager NavigationManager
+
+@* Navigerings-komponenten for å redirecte til ønsket side, ved feks feil eller feil autentisering *@
+
+@code {
+    [Parameter, EditorRequired] public string Href { get; set; } = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo(Href);
+    }
+}

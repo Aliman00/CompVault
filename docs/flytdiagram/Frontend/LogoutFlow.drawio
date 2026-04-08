@@ -1,0 +1,60 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0" version="29.6.6">
+  <diagram name="Page-1" id="2YBvvXClWsGukQMizWep">
+    <mxGraphModel dx="1211" dy="1110" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-3" edge="1" parent="1" source="qSw5O6CoM6y9yGz6_Cib-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="qSw5O6CoM6y9yGz6_Cib-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Bruker trykker på logut" vertex="1">
+          <mxGeometry height="70" width="150" x="350" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-5" edge="1" parent="1" source="qSw5O6CoM6y9yGz6_Cib-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="qSw5O6CoM6y9yGz6_Cib-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="LogOutAsync fra AuthService kalles" vertex="1">
+          <mxGeometry height="60" width="140" x="355" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-8" edge="1" parent="1" source="qSw5O6CoM6y9yGz6_Cib-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="qSw5O6CoM6y9yGz6_Cib-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="Henter RefreshToken fra cookie" vertex="1">
+          <mxGeometry height="60" width="140" x="355" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-11" edge="1" parent="1" source="qSw5O6CoM6y9yGz6_Cib-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="425" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-12" edge="1" parent="1" source="qSw5O6CoM6y9yGz6_Cib-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="qSw5O6CoM6y9yGz6_Cib-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#e1d5e7;strokeColor=#9673a6;" value="&lt;div&gt;POST RevokeToken i backend&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="140" x="355" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="Revoker token" vertex="1">
+          <mxGeometry height="75" width="90" x="280" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-15" edge="1" parent="1" source="qSw5O6CoM6y9yGz6_Cib-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="qSw5O6CoM6y9yGz6_Cib-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;div&gt;Blazor kaller JS-funksjon submitLogoutForm&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="140" x="355" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-17" edge="1" parent="1" source="qSw5O6CoM6y9yGz6_Cib-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="qSw5O6CoM6y9yGz6_Cib-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;div&gt;LogoutCallback.cshtml (Razor Page)&lt;/div&gt;&lt;div&gt;1. Setter oss som logget ut ved å kalle HttpContext.SignOutAsync - den sletter auth-cookie og nullstiller HttpContext.User&lt;/div&gt;&lt;div&gt;2. Sletter refresh token-cookie&lt;/div&gt;&lt;div&gt;3. Redirect til login&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="240" x="305" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Bruker ikke autorisert" vertex="1">
+          <mxGeometry height="70" width="150" x="350" y="810" as="geometry" />
+        </mxCell>
+        <mxCell id="qSw5O6CoM6y9yGz6_Cib-18" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Forbedringspotensiale: Slette localStorage etter utlogging" vertex="1">
+          <mxGeometry height="80" width="220" x="545" y="950" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

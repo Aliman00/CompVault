@@ -7,6 +7,11 @@ namespace CompVault.Shared.Constants;
 /// </summary>
 public static class Permissions
 {
+    /// <summary>
+    /// Claim type used for permission claims in JWT tokens.
+    /// </summary>
+    public const string ClaimType = "permission";
+
     // Users
     public const string UsersRead = "users:read";
     public const string UsersWrite = "users:write";
@@ -20,7 +25,13 @@ public static class Permissions
     // Departments
     public const string DepartmentsRead = "departments:read";
     public const string DepartmentsWrite = "departments:write";
+    public const string DepartmentsDelete = "departments:delete";
+
+    // Competencies
+    public const string CompetenciesRead = "competencies:read";
+    public const string CompetenciesWrite = "competencies:write";
+    public const string CompetenciesDelete = "competencies:delete";
 
     // --- Fase 4+ (legg til etterhvert som fasene implementeres) ---
-    // Competencies, Documents, Requirements, Equipment, Onboarding, ...
+    // Documents, Requirements, Equipment, Onboarding, ...
 }

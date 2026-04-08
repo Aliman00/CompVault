@@ -1,0 +1,21 @@
+﻿@* Standard navigasjonsmeny for MainLayout - AdminLayout har egen *@
+
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+        Hjem
+    </MudNavLink>
+    <MudNavLink Href="@PageRoutes.Auth.LoginEmail" Icon="@Icons.Material.Filled.Login">
+        Logg inn
+    </MudNavLink>
+    <MudNavLink Href="@PageRoutes.Auth.LoginOtp" Icon="@Icons.Material.Filled.Pin">
+        OTP
+    </MudNavLink>
+
+    <AuthorizeView Policy="@Policies.AdminAccess">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">
+                Admin-panel
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+</MudNavMenu>

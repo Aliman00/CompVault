@@ -1,0 +1,53 @@
+﻿using MudBlazor;
+namespace CompVault.Frontend.Common.Themes;
+
+public static class CompVaultAdminTheme
+{
+    public static MudTheme Theme => new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#2d7a4f",
+            PrimaryDarken = "#1f5c3a",
+            PrimaryLighten = "#4ecf7a",
+            Secondary = "#1a2535",
+            Tertiary = "#c9a84c",
+            AppbarBackground = "#3a3f45",  // Litt mørkere
+            AppbarText = "#ffffff",
+            Background = "#ffffff",
+            BackgroundGray = "#f4f6f8",
+            DrawerBackground = "#3a3f45", // Litt mørkere
+            DrawerText = "#e0e0e0",
+            DrawerIcon = "#4ecf7a",
+            Success = "#4ecf7a",
+            TextPrimary = "#1a2535",
+            TextSecondary = "#4a5568",
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#5dd887",
+            PrimaryDarken = "#3da861",
+            PrimaryLighten = "#7ee5a0",
+            Secondary = "#d4b85a",
+            Tertiary = "#6b9fff",
+            AppbarBackground = "#2b2d2f", // Enda mørkere
+            AppbarText = "#f0f0f0",
+            Background = "#1e2937",
+            BackgroundGray = "#2a3a4d",
+            Surface = "#263545",
+            DrawerBackground = "#2b2d2f", // Enda mørkere
+            DrawerText = "#f0f0f0",
+            DrawerIcon = "#5dd887",
+            Success = "#5dd887",
+            TextPrimary = "#f5f5f5",
+            TextSecondary = "#b0c0d0",
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = ["Roboto", "sans-serif"]
+            }
+        }
+    };
+}

@@ -1,0 +1,21 @@
+﻿@* En liten meny til hver widget *@
+
+<MudMenu Icon="@Icons.Material.Filled.MoreVert"
+         Size="Size.Small"
+         Dense="true"
+         AnchorOrigin="Origin.BottomRight"
+         TransformOrigin="Origin.TopRight">
+    <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff"
+                 OnClick="OnHide">
+        Skjul widget
+    </MudMenuItem>
+</MudMenu>
+
+@code {
+    
+    /// <summary>
+    /// Skjuler widget ved trykk
+    /// </summary>
+    [Parameter]
+    public EventCallback OnHide { get; set; }
+}

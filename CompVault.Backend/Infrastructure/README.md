@@ -1,21 +1,23 @@
 # Infrastructure
 
-> Alt som kommuniserer med omverdenen: database, e-post og autentisering. Ingen kode utenfor denne mappen skal ha direkte kjennskap til EF Core.
+`Infrastructure/` samler det som snakker med ting utenfor selve domenelogikken. Hos oss betyr det først og fremst database, autentisering, e-post og annen teknisk integrasjon som backend trenger for å fungere.
+
+Det viktigste skillet her er at EF Core og andre eksterne avhengigheter holdes samlet i dette laget, i stedet for å sive utover i resten av prosjektet.
 
 ## Struktur
 
-```
+```text
 Infrastructure/
-  Data/           <- AppDbContext, IUnitOfWork, UnitOfWork, EF-konfigurasjoner og domenerepos
-  Auth/           <- IJwtService, JwtService, JwtSettings
-  Email/          <- IEmailService, EmailService, konfig, maler og modeller
-  Repositories/   <- IRepository<T> og BaseRepository<T> (generisk base)
-  Extensions/     <- ServiceCollectionExtensions, WebApplicationBuilderExtensions
+├── Data/              <- AppDbContext, IUnitOfWork, EF-konfigurasjoner
+├── Auth/              <- JWT-tjenester og innstillinger
+├── Email/             <- E-posttjeneste, maler og konfigurasjon
+├── Repositories/      <- Generisk repository-base (IRepository<T>, BaseRepository<T>)
+├── Jobs/              <- Bakgrunnsjobber
+└── Extensions/        <- DI-registrering og middleware-oppsett
 ```
 
-## Regler
+## Retningslinjer
 
-- Ingen kode utenfor `Infrastructure` skal importere EF Core-navnerom direkte
-- `AppDbContext` brukes kun fra `Infrastructure` og eventuelt entrypoint 
-(`Program.cs`) for f.eks. health checks
-- Repositories kaller aldri `SaveChangesAsync()` — det eies av service-laget via `IUnitOfWork`
+- Kode utenfor `Infrastructure` bør ikke importere EF Core-navnerom direkte.
+- `AppDbContext` brukes i utgangspunktet bare fra `Infrastructure` og eventuelt i entrypointet (`Program.cs`).
+- Nye eksterne tjenester legges i egne undermapper under `Infrastructure/` når det gir mening.

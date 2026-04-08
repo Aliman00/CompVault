@@ -1,0 +1,23 @@
+﻿@using CompVault.Frontend.Common.Models
+
+@* Banner for å vise en melding for feilmeldinger eller suksess. Fjernes ved klikk *@
+@if (Alert != null)
+{
+    <MudAlert Severity="Alert.Severity"
+              Variant="Variant.Filled"
+              ShowCloseIcon="true"
+              CloseIconClicked="CloseAlert"
+              Class="mb-4">
+        @Alert.Message
+    </MudAlert>
+}
+
+@code {
+    [Parameter]
+    public AlertInfo? Alert { get; set; }
+    
+    [Parameter]
+    public EventCallback<AlertInfo?> AlertChanged { get; set; }
+
+    private async Task CloseAlert() => await AlertChanged.InvokeAsync(null);
+}

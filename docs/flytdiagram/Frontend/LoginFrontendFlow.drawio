@@ -1,0 +1,70 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0" version="29.6.0">
+  <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
+    <mxGraphModel dx="1211" dy="1110" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-39" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Bruker skriver inn epost i RequestOtpPage" vertex="1">
+          <mxGeometry height="50" width="120" x="280" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-40" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="PWQJC6fIwrJGpOGGygFa-39" style="rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;endFill=0;endSize=8;strokeWidth=1;shadow=0;labelBackgroundColor=none;edgeStyle=orthogonalEdgeStyle;" target="PWQJC6fIwrJGpOGGygFa-42" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="140" as="sourcePoint" />
+            <mxPoint x="340" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-41" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="PWQJC6fIwrJGpOGGygFa-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="PWQJC6fIwrJGpOGGygFa-44">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-42" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div&gt;HTTP-forespørsel til backend&lt;/div&gt;&lt;div&gt;POST RequestOtp&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="280" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-43" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="PWQJC6fIwrJGpOGGygFa-44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="PWQJC6fIwrJGpOGGygFa-51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-44" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Bruker skriver inn OTP-kode fra epost" vertex="1">
+          <mxGeometry height="50" width="120" x="280" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-45" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="PWQJC6fIwrJGpOGGygFa-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="PWQJC6fIwrJGpOGGygFa-50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-46" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;div&gt;LoginCallback.cshtml (Razor Page)&lt;/div&gt;&lt;div&gt;1. Sender OTP-kode til POST VerifyOtp.&lt;/div&gt;&lt;div&gt;2. Bygger ClaimsPrincipal&lt;/div&gt;&lt;div&gt;3. Lagrer ClaimsPrincipal i HttpContext med SigninAsync()&lt;/div&gt;&lt;div&gt;4. Oppretter auth-cookie (HTTP Only) og refresh token-cookie (HTTP Only)&lt;/div&gt;&lt;div&gt;5. Legger til cookies i nettleseren&lt;/div&gt;&lt;div&gt;6. Redirect hovedskjermen&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="240" x="220" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-47" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="PWQJC6fIwrJGpOGGygFa-48" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="PWQJC6fIwrJGpOGGygFa-46">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-48" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;div&gt;Submitter et skjult HTML-form&lt;/div&gt;&lt;div&gt;med POST /login-callback&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="180" x="250" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-49" parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Vi bruker Razor Page da Blazor komponenter ikke kan sette cookies i nettleseren. Den kommuniserer med SIgnalR og har ingen HTTP-response" vertex="1">
+          <mxGeometry height="50" width="220" x="520" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-50" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Bruker er autorisert" vertex="1">
+          <mxGeometry height="60" width="130" x="275" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-51" parent="WIyWlLk6GJQsqaUBKTNV-1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;div&gt;Blazor kaller JS-funksjon submitLoginForm&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="150" x="265" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-52" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="PWQJC6fIwrJGpOGGygFa-51" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="PWQJC6fIwrJGpOGGygFa-48">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="PWQJC6fIwrJGpOGGygFa-53" parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;Dokumentasjon:&lt;/div&gt;&lt;div&gt;https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/blazor/security/index.md&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="350" x="40" y="810" as="geometry" />
+        </mxCell>
+        <UserObject label="https://learn.microsoft.com/en-us/aspnet/core/security/authentication/cookie?view=aspnetcore-10.0" link="https://learn.microsoft.com/en-us/aspnet/core/security/authentication/cookie?view=aspnetcore-10.0" id="PWQJC6fIwrJGpOGGygFa-54">
+          <mxCell parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;whiteSpace=wrap;" vertex="1">
+            <mxGeometry height="50" width="300" x="65" y="860" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="https://learn.microsoft.com/en-us/aspnet/core/blazor/security/?view=aspnetcore-10.0&amp;preserve-view=true&amp;tabs=visual-studio" link="https://learn.microsoft.com/en-us/aspnet/core/blazor/security/?view=aspnetcore-10.0&amp;preserve-view=true&amp;tabs=visual-studio" id="PWQJC6fIwrJGpOGGygFa-55">
+          <mxCell parent="WIyWlLk6GJQsqaUBKTNV-1" style="text;whiteSpace=wrap;" vertex="1">
+            <mxGeometry height="40" width="270" x="65" y="900" as="geometry" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,32 @@
+﻿@page "/login-email"
+@layout AuthLayout
+@inject IHttpClientFactory Http
+@inject NavigationManager Navigation
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#f5f5f5">
+    <MudCard Style="width:400px">
+        <MudCardContent Class="pa-6">
+            <MudText Typo="Typo.h4" Class="mb-6 text-center">Logg inn</MudText>
+            <MudTextField Label="E-post (æøå OK)" @bind-Value="email" Variant="Variant.Outlined"/>
+            <MudButton Class="mt-4" FullWidth Color="Color.Primary" OnClick="SendOtpAsync">Send OTP</MudButton>
+        </MudCardContent>
+    </MudCard>
+</div>
+
+@code {
+    // Two-way binding til e-post input
+    private string email = "";
+    
+    // Steg 1: Request OTP fra backend
+    private async Task SendOtpAsync()
+    {
+        // BackendApi fra Program.cs (localhost:5010)
+        var client = Http.CreateClient("BackendApi");
+        
+        // POST til din AuthController.RequestOtpAsync
+        await client.PostAsJsonAsync("api/auth/request-otp", new { email });
+        
+        // Gå til OTP-side med e-post i URL
+        Navigation.NavigateTo($"/login-otp?email={Uri.EscapeDataString(email)}");
+    }
+}

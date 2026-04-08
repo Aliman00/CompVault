@@ -1,0 +1,43 @@
+﻿@* Widget med shortcuts til hurtig handlinger *@
+
+<MudPaper Class="pa-4 mb-4" Elevation="4">
+    <WidgetHeader Title="Snarveier" OnHide="OnHide"/>
+    
+    <MudGrid>
+        @foreach (var shortcut in _shortcuts)
+        {
+            <MudItem xs="6" sm="4">
+                <MudButton FullWidth="true"
+                           Href="@shortcut.Url"
+                           Class="shortcut-item"
+                           Variant="Variant.Text">
+                    <SmallIcon Icon="@shortcut.Icon"
+                               AccentColor="@shortcut.AccentColor"
+                               IconBackgroundColor="@shortcut.IconBackgroundColor"/>
+                    <MudText Typo="Typo.caption" Align="Align.Center">@shortcut.Label</MudText>
+                </MudButton>
+            </MudItem>
+        }
+    </MudGrid>
+    
+</MudPaper>
+
+
+@code {
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    private record Shortcut(string Label, string Icon, string Url, string AccentColor, string IconBackgroundColor);
+    private readonly List<Shortcut> _shortcuts =
+    [
+        new("Opprett bruker", Icons.Material.Filled.PersonAdd, "/admin/users/new", 
+            "#2d7a4f", "#e8f5ee"),
+        new("Opprett rolle", Icons.Material.Filled.ShieldMoon, "/admin/role/new", 
+            "#1e3a5f", "#e4eaf2"),
+        new("Opprett avdeling", Icons.Material.Filled.Business, "/admin/department/new", 
+            "#c9a84c", "#faf3e0"),
+        new("Tildel rolle til bruker", Icons.Material.Filled.ManageAccounts, "/admin/users", 
+            "#2d7a4f", "#e8f5ee")
+    ];
+}
+
+

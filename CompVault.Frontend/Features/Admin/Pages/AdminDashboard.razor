@@ -1,0 +1,141 @@
+﻿@page "/admin/dashboard"
+@layout AdminLayout
+@inject IJSRuntime JsRuntime
+
+@* Admin dashboard for å vise statistikk, grafer, historikk og snarveier til administratoren *@
+<section class="dashboard-header">
+    <MudText Typo="Typo.h5">Admin-dashboard</MudText>
+
+    @* En dropdown som viser skjulte widgets for å enkelt vise de igjen. Kun synlig hvis noen widgets er skjult *@
+    @if (HiddenWidgets.Any())
+    {
+        <MudMenu StartIcon="@Icons.Material.Filled.VisibilityOff"
+                 EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                 Label="@($"Skjulte widgets ({HiddenWidgets.Count()})")"
+                 Variant="Variant.Outlined"
+                 Size="Size.Small"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight"
+                 Dense="true">
+            @foreach (var widget in HiddenWidgets)
+            {
+                <MudMenuItem OnClick="() => ToggleWidget(widget)">
+                    Vis @widget
+                </MudMenuItem>
+            }
+        </MudMenu>
+    }
+</section>
+
+@* En grid slik at widgetene er etterhverandre. Skjules en widget så fyller neste widget opp den ledige plassen*@
+<MudGrid Class="mb-4">
+    @if (_widgetVisibility[AdminConstants.TotalUsers])
+    {
+        <MudItem xs="12" sm="4">
+            <StatisticWidget Title="@AdminConstants.TotalUsers" 
+                              Value="3 brukere"
+                              Icon="@Icons.Material.Filled.People"
+                              AccentColor="#2d7a4f"
+                              IconBackgroundColor="#e8f5ee"
+                              OnHide='() => ToggleWidget(AdminConstants.TotalUsers)'/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[AdminConstants.TotalRoles])
+    {
+        <MudItem xs="12" sm="4">
+            <StatisticWidget Title="@AdminConstants.TotalRoles" 
+                              Value="10 roller"
+                              Icon="@Icons.Material.Filled.Shield"
+                              AccentColor="#1e3a5f"
+                              IconBackgroundColor="#e4eaf2"
+                              OnHide='() => ToggleWidget(AdminConstants.TotalRoles)'/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[AdminConstants.TotalDepartments])
+    {
+        <MudItem xs="12" sm="4">
+            <StatisticWidget Title="@AdminConstants.TotalDepartments" 
+                              Value="2 avdelinger"
+                              Icon="@Icons.Material.Filled.Business"
+                              AccentColor="#c9a84c"
+                              IconBackgroundColor="#faf3e0"
+                              OnHide='() => ToggleWidget(AdminConstants.TotalDepartments)'/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[AdminConstants.RecentActivity])
+    {
+        <MudItem xs="12" sm="8">
+            <RecentActivityWidget OnHide="() => ToggleWidget(AdminConstants.RecentActivity)"/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[AdminConstants.Shortcuts])
+    {
+        <MudItem xs="12" sm="4">
+            <ShortcutWidget OnHide="() => ToggleWidget(AdminConstants.Shortcuts)"/>
+        </MudItem>
+    }
+</MudGrid>
+
+
+@code {
+    // ======================== Private felt ========================
+    // Lar oss telle antall hidden-objecter når den kalles
+    private IEnumerable<string> HiddenWidgets => _widgetVisibility.Where(kv => !kv.Value).Select(kv => kv.Key);
+    
+    // Key = Navnet på Widget, Value = true hvis synlig, false hvis hidden
+    private readonly Dictionary<string, bool> _widgetVisibility = new()
+    {
+        [AdminConstants.TotalUsers] = true,
+        [AdminConstants.TotalRoles] = true,
+        [AdminConstants.TotalDepartments] = true,
+        [AdminConstants.RecentActivity] = true,
+        [AdminConstants.Shortcuts] = true
+    };
+    
+    // ======================== Lifecycle ========================
+    
+    /// <summary>
+    /// Henter fra lokalstorage hvis det er første render
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        await LoadPreferencesAsync();
+        StateHasChanged();
+    }
+    
+    // ======================== Private metoder ========================
+    // Toggler om en widget er synlig i UI-en eller ikke ved å endre boolen i ordboka
+    private async Task ToggleWidget(string widgetName)
+    {
+        _widgetVisibility[widgetName] = !_widgetVisibility[widgetName];
+        await SavePreferencesAsync();
+    }
+    
+    // Lagrer skjulte widgets lokalt i localstorage
+    private async Task SavePreferencesAsync()
+    {
+        var hidden = string.Join(",", HiddenWidgets);
+        await JsRuntime.SetItemAsync(AdminConstants.StorageKey, hidden);
+    }
+    
+    // Henter skjulte widgets fra localstorage og legger de til i komponenten sin liste
+    private async Task LoadPreferencesAsync()
+    {
+        var saved = await JsRuntime.GetItemAsync(AdminConstants.StorageKey);
+        // Ingen lagrede skjulte widgets
+        if (string.IsNullOrWhiteSpace(saved))
+            return;
+        
+        // Iterer igjennom hver widget vi har lagret da de blir lagret i en sammenslått string
+        foreach (var widgetName in saved.Split(',', StringSplitOptions.RemoveEmptyEntries | 
+                                                    StringSplitOptions.TrimEntries))
+        {
+            // Skipper ukjente nøkler hvis nøkler ikke er korrekt
+            if (_widgetVisibility.ContainsKey(widgetName))
+                _widgetVisibility[widgetName] = false;
+        }
+    }
+}
