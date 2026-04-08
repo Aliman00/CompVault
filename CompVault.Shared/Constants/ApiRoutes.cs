@@ -24,6 +24,6 @@ public static class ApiRoutes
     public static class User
     {
         public const string Base = "api/users";
-        public static string ById(Guid guid) => $"api/users/{guid}";
+        public static string ById(Guid id) => $"{Base}/{id}";
     }
 }

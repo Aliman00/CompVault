@@ -1,28 +1,51 @@
-﻿<!DOCTYPE html>
+﻿@inject CircuitUserContext CircuitUserContext
+@inject IHttpContextAccessor HttpContextAccessor
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
-    <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["CompVault.Frontend.styles.css"]" />
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <base href="/"/>
+    <ResourcePreloader/>
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]"/>
+    <link rel="stylesheet" href="@Assets["app.css"]"/>
+    <link rel="stylesheet" href="@Assets["CompVault.Frontend.styles.css"]"/>
     <!-- MudBlazor CSS -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"/>
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet"/>
+    <ImportMap/>
+    <link rel="icon" type="image/png" href="favicon.png"/>
+    <HeadOutlet/>
 </head>
 
 <body>
-    <Routes @rendermode="InteractiveServer" />
-    <ReconnectModal/>
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <!-- MudBlazor JS -->
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+<Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
+<ReconnectModal/>
+<script src="@Assets["_framework/blazor.web.js"]"></script>
+<!-- MudBlazor JS -->
+<script src="_content/MudBlazor/MudBlazor.min.js"></script>
 </body>
 
 </html>
+
+@code {
+    
+    // App.razor er en statisk SSR-komponent — OnInitialized kjøres under HTTP-fasen
+    // der HttpContext er tilgjengelig. Setter CircuitUserContext slik at brukeren
+    // er klar når SignalR-kretsen etableres
+    protected override void OnInitialized()
+    {
+        var httpContext = HttpContextAccessor.HttpContext;
+        
+        if (httpContext?.User.Identity?.IsAuthenticated != true)
+            return;
+
+        string? refreshToken = httpContext.GetRefreshTokenCookie();
+        if (refreshToken is null)
+            return;
+
+        CircuitUserContext.SetUser(httpContext.User, refreshToken);
+    }
+}

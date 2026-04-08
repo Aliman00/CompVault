@@ -1,9 +1,11 @@
 ﻿using System.Security.Claims;
+
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +18,9 @@ namespace CompVault.Frontend.Pages;
 /// </summary>
 public class LoginCallback(IAuthService authService, AuthSettings authSettings, IWebHostEnvironment env) : PageModel
 {
-    [BindProperty] 
+    [BindProperty]
     public VerifyOtpRequest OtpRequest { get; set; } = new();
-    
+
     /// <summary>
     /// Sender VerifyOtpRequest til backend og legger til en cookie i nettleseren.
     /// Redirecter til Login-siden hvis noe failer TODO: Må implementeres i Login-page
@@ -34,15 +36,16 @@ public class LoginCallback(IAuthService authService, AuthSettings authSettings, 
         if (verifyOtpResult.IsFailure)
             return LocalRedirect("/login?error=invalid");
 
-        var (principal, tokens) = verifyOtpResult.Value;
-        
+        (ClaimsPrincipal? principal, TokenResponse? tokens) = verifyOtpResult.Value;
+
         if (principal.Identity is not ClaimsIdentity identity)
             return LocalRedirect("/login?error=invalid");
-        
+
         // Setter opp auth-cookie først, deretter RefreshToken-cookie
         identity.AddClaim(new Claim("access_token", tokens.AccessToken));
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-        
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
+            new AuthenticationProperties { IsPersistent = true });
+
         HttpContext.AppendRefreshTokenCookie(tokens.RefreshToken, authSettings, env);
 
         return LocalRedirect("/");

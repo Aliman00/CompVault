@@ -1,0 +1,49 @@
+flowchart TB
+    subgraph NOTE1["Om CookieValidationEvents"]
+    direction TB
+    note1["Kjøres når brukeren åpner siden for første gang, oppdaterer siden (F5), navigerer til ny URL eller krets brytes og gjenopprettes. Kjøres av UseAuthentication()-middleware på hver HTTP-request til server-side."]:::note
+    note2["10 minutter er brukt som eksempel her. AuthSettings sin ValidationIntervalMinutes styrer hvor ofte CookieValidationEvents kjører. Skal være noen minutter mindre enn utløpstiden på en RefreshToken i backend."]:::note
+    end
+
+    A(["Bruker refresher en side eller navigerer til en side"]) --> B["CookieValidationEvents kjører på hver HTTP-request"]
+    B --> C{"Har bruker en sub-claim med UserId?"}
+    C -- Nei --> F["RejectPrincipal, SignOut fra HttpContext og slett refresh token-cookie"]
+    C -- Ja --> RC{"Finnes refresh token-cookie i HttpContext?"}
+    RC -- Nei --> F
+    RC -- Ja --> G["Kaller RefreshPairAsync i TokenRefreshService"]
+    G --> H{"Er brukeren nylig refreshet? Har det gått mindre enn 10 min siden LastRefreshed i TokenRefreshService?"}
+    H -- Ja --> N(["Nylig refreshet tokens. Forblir autorisert."])
+    H -- Nei --> I{"PendingRefreshes: finnes det allerede en pågående refresh-task for denne brukeren?"}
+    I -- "Nei: oppretter ny AsyncLazy-task og legger inn i PendingRefreshes" --> P["POST til RefreshToken i backend"]
+    I -- "Ja: venter på eksisterende AsyncLazy-task" --> P
+    P -- Feil --> L{"ErrorCode?"}
+    L -- "NotFound (ingen refresh token)" --> F
+    L -- "Unauthorized (bruker deaktivert)" --> F
+    L -- "Annen ErrorCode f.eks. Unknown. Kan komme av backend nede" --> N2(["Feiler åpent og bruker forblir autorisert"])
+    P -- Suksess --> S["Oppdaterer LastRefreshed, rydder opp i PendingRefreshes etter 500ms"]
+    S --> T["CookieValidationEvents kaller ApplyRefreshResult: oppdaterer access_token-claim, setter ny refresh token-cookie og setter ShouldRenew = true"]
+    T --> D(["Brukeren er autorisert"])
+    F --> E(["Brukeren er utlogget"])
+
+    A:::start
+    B:::action
+    C:::decision
+    RC:::decision
+    D:::start
+    E:::failure
+    F:::failure
+    G:::action
+    H:::decision
+    I:::async
+    P:::action
+    S:::action
+    T:::success
+    L:::decision
+    N:::start
+    N2:::start
+    classDef start fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef success fill:#5BA85A,stroke:#3D7A3C,color:#fff
+    classDef failure fill:#D9534F,stroke:#A02020,color:#fff
+    classDef decision fill:#F5A623,stroke:#C47D0E,color:#fff
+    classDef action fill:#E8E8E8,stroke:#999,color:#333
+    classDef async fill:#9B59B6,stroke:#6C3483,color:#fff

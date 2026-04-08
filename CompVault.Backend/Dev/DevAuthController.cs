@@ -104,13 +104,9 @@ public sealed class DevAuthController(
         return Ok();
     }
 
-    /// <summary>
-    /// Henter alle brukere for dev-panelet. Returnerer kun info nødvendig for hurtigpålogging.
-    /// </summary>
     [HttpGet("dev-get-users")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<UserDto>>> DevGetUsersAsync(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(IReadOnlyList<UserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<UserDto>>> GetAllAsync(CancellationToken cancellationToken)
     {
         Result<IReadOnlyList<UserDto>> result = await userService.GetAllUsersAsync(cancellationToken);
 

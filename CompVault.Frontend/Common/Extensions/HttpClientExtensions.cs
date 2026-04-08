@@ -20,7 +20,7 @@ public static class HttpClientExtensions
 
         return Result.Success();
     }
-    
+
     /// <summary>
     /// Sjekker at endepunkter som returnerer verdi er vellykket eller så henter den ut ProblemDetail-objektet
     /// fra responsen
@@ -47,7 +47,7 @@ public static class HttpClientExtensions
                 "Kunne ikke lese JSON-respons fra server"));
         }
     }
-    
+
     // Henter vårt ProblemDetail-objekt fra en error-response fra backend. Noe er galt, så får den Defaulte verdier
     private static async Task<AppError> ReadProblemDetailAsync(HttpResponseMessage response, CancellationToken ct)
     {
