@@ -35,6 +35,7 @@ public enum ErrorCode
 
 
     // Frontend
-    NetworkError = 5000
+    NetworkError = 5000,
+    RecentlyRefreshed = 5001
 
 }

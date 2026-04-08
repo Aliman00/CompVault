@@ -43,7 +43,8 @@ public class LoginCallback(IAuthService authService, AuthSettings authSettings, 
 
         // Setter opp auth-cookie først, deretter RefreshToken-cookie
         identity.AddClaim(new Claim("access_token", tokens.AccessToken));
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
+            new AuthenticationProperties { IsPersistent = true });
 
         HttpContext.AppendRefreshTokenCookie(tokens.RefreshToken, authSettings, env);
 

@@ -2,8 +2,8 @@
 
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
-using CompVault.Shared.Constants;
-using CompVault.Shared.DTOs.Auth;
+using CompVault.Frontend.Common.Http.Models;
+using CompVault.Frontend.Common.Services;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authentication;
@@ -14,102 +14,76 @@ namespace CompVault.Frontend.Common.Http;
 /// Håndterer token-refresh og brukervalidering via cookie-middleware som kjøres på hver forespørsel
 /// </summary>
 public class CookieValidationEvents(
+    ILogger<CookieValidationEvents> logger,
+    ITokenRefreshService tokenRefreshService,
     AuthSettings authSettings,
-    IWebHostEnvironment env,
-    ILogger<CookieValidationEvents> logger)
+    IWebHostEnvironment env)
     : CookieAuthenticationEvents
 {
+
     public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
     {
-        // Vi sjekker sist gang vi validerte at brukeren hadde gydlig refresh token.
-        // En egenskap som vi alltid setter etter vi har refreshet token
-        string? lastCheckedRaw = context.Properties.GetParameter<string>("LastValidated");
-        if (lastCheckedRaw != null &&
-            DateTimeOffset.TryParse(lastCheckedRaw, out DateTimeOffset lastChecked) &&
-            lastChecked > DateTimeOffset.UtcNow.AddMinutes(-authSettings.ValidationIntervalMinutes))
+        // Henter UserId fra claimen
+        string? userId = context.Principal?.FindFirst("sub")?.Value;
+        if (userId == null)
+        {
+            logger.LogWarning("Ingen innlogget autentisert bruker - logges ut");
+            await RejectAndSignOutAsync(context);
             return;
+        }
 
         string? refreshToken = context.HttpContext.GetRefreshTokenCookie();
         if (string.IsNullOrEmpty(refreshToken))
         {
-
-            logger.LogWarning("Ingen refresh token funnet - logger brukeren ut");
-            context.RejectPrincipal();
-            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            logger.LogWarning("Ingen refresh token i cookie — logger brukeren ut");
+            await RejectAndSignOutAsync(context);
             return;
         }
 
-        // Oppdaterer LastValidated optimistisk før selve kallet. Hindrer at flere requester som kjører parallelt
-        // prøver å refreshe samtidig
-        context.Properties.SetParameter("LastValidated", DateTimeOffset.UtcNow.ToString("O"));
+        Result<RefreshRecord> result = await tokenRefreshService.RefreshPairAsync(userId, refreshToken,
+            context.HttpContext.RequestAborted);
+
+        if (result.IsFailure)
+        {
+            // Nylig refreshet — ikke en feil, bare cooldown. Brukeren forblir innlogget
+            if (result.Error?.Code == ErrorCode.RecentlyRefreshed)
+                return;
+
+            // NotFound betyr ingen refresh token i cookie og Unathorized betyr at brukeren er deaktivert
+            // Begge logger brukeren ut
+            if (result.Error?.Code == ErrorCode.NotFound || result.Error?.Code == ErrorCode.Unauthorized)
+                await RejectAndSignOutAsync(context);
+
+            // Alle andre feil (Unknown, InternalError, server nede) brukeren forblir innlogget
+            return;
+        }
+
+        ApplyRefreshResult(context, result.Value!);
+    }
+
+
+    // Skriver nytt access token inn i HttpContext.User så neste retry i samme krets får riktig token
+    private void ApplyRefreshResult(CookieValidatePrincipalContext context, RefreshRecord refreshRecord)
+    {
+        if (context.Principal?.Identity is not ClaimsIdentity identity)
+            return;
+
+        Claim? gammeltToken = identity.FindFirst("access_token");
+        if (gammeltToken != null)
+            identity.RemoveClaim(gammeltToken);
+        identity.AddClaim(new Claim("access_token", refreshRecord.AccessToken));
+
+        context.HttpContext.AppendRefreshTokenCookie(refreshRecord.RefreshToken, authSettings, env);
         context.ShouldRenew = true;
+    }
 
-        // Oppretter en klient med AuthClienten uten påkoblet AccessTokenHandler
-        HttpClient client = context.HttpContext.RequestServices
-            .GetRequiredService<IHttpClientFactory>()
-            .CreateClient(BackendApiSettings.AuthClientName);
 
-        try
-        {
-            var refreshTokenRequest = new RefreshTokenRequest { RefreshToken = refreshToken };
-            HttpResponseMessage refreshTokenResponse = await client.PostAsJsonAsync(
-                ApiRoutes.Auth.RefreshFull, refreshTokenRequest, context.HttpContext.RequestAborted);
-
-            // Sjekker om errorkoden er AccountInactive, det setter brukeren som utlogget.
-            // Hvis feks race condition - to requester kjører nesten paralellelt så sender backend InvalidToken.
-            // Vi lar den faile åpent, i og med at en av forespørslene kan ha refreshet token
-            if (!refreshTokenResponse.IsSuccessStatusCode)
-            {
-                ProblemDetail? problem = await refreshTokenResponse.Content
-                    .ReadFromJsonAsync<ProblemDetail>(context.HttpContext.RequestAborted);
-
-                if (problem?.Code == nameof(ErrorCode.AccountInactive))
-                {
-                    // Bruker er deaktivert — logget ut både fra context og sletter token
-                    logger.LogWarning("Bruker er deaktivert — logger brukeren ut");
-                    context.RejectPrincipal();
-                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                    context.HttpContext.Response.Cookies.Delete("refreshToken");
-                    return;
-                }
-
-                logger.LogDebug("Token-refresh feilet med {Code} - kan være race condition", problem?.Code);
-                return;
-            }
-
-            TokenResponse? tokenResponse = await refreshTokenResponse.Content
-                .ReadFromJsonAsync<TokenResponse>(context.HttpContext.RequestAborted);
-
-            if (tokenResponse == null)
-            {
-                logger.LogWarning("Tom respons fra backend ved token-refresh — feiler åpent");
-                return;
-            }
-
-            // Er Identity null og ikke et ClaimsIdentity-objekt, brukeren er ikke autentisert lenger
-            if (context.Principal?.Identity is not ClaimsIdentity identity)
-            {
-                // Bruker er deaktivert — logget ut både fra context og sletter token
-                logger.LogWarning("Principal er ikke et ClaimsIdentity-objekt — logger brukeren ut");
-                context.RejectPrincipal();
-                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                context.HttpContext.Response.Cookies.Delete("refreshToken");
-                return;
-            }
-
-            // Bytter ut gammel claim med ny
-            Claim? oldClaim = identity.FindFirst("access_token");
-            if (oldClaim != null)
-                identity.RemoveClaim(oldClaim);
-            identity.AddClaim(new Claim("access_token", tokenResponse.AccessToken));
-
-            context.HttpContext.AppendRefreshTokenCookie(tokenResponse.RefreshToken, authSettings, env);
-            logger.LogDebug("Token refreshet og principal oppdatert");
-        }
-        catch (Exception ex)
-        {
-            // Feiler åpent hvis backend er nede
-            logger.LogError(ex, "Uventet feil ved token-refresh i CookieValidationEvents");
-        }
+    // Logger brukeren ut ved å rejecte Principal, logge oss ut fra HttpContext (som igjen sletter auth-cookie)
+    // og manuelt slette refresh token-cookie hvis den eksisterer
+    private static async Task RejectAndSignOutAsync(CookieValidatePrincipalContext context)
+    {
+        context.RejectPrincipal();
+        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        context.HttpContext.Response.Cookies.Delete("refreshToken");
     }
 }
