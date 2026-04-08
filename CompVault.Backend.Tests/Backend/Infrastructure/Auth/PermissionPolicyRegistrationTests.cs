@@ -43,18 +43,18 @@ public class PermissionPolicyRegistrationTests
         ServiceProvider provider = services.BuildServiceProvider();
 
         // Assert
-        using var scope = provider.CreateScope();
-        var authorizationService = scope.ServiceProvider.GetRequiredService<IAuthorizationService>();
+        using IServiceScope scope = provider.CreateScope();
+        IAuthorizationService authorizationService = scope.ServiceProvider.GetRequiredService<IAuthorizationService>();
         authorizationService.Should().NotBeNull();
 
         // Verifiser at hver permission kan autoriseres når brukeren har korrekt claim
         foreach (string permission in expectedPermissions)
         {
-            var claims = new[] { new Claim(Permissions.ClaimType, permission) };
+            Claim[] claims = new[] { new Claim(Permissions.ClaimType, permission) };
             var identity = new ClaimsIdentity(claims, "Test");
             var principal = new ClaimsPrincipal(identity);
 
-            var result = await authorizationService.AuthorizeAsync(principal, permission);
+            AuthorizationResult result = await authorizationService.AuthorizeAsync(principal, permission);
             result.Succeeded.Should().BeTrue(
                 $"Policy '{permission}' should be registered and authorize when user has the correct claim");
         }
@@ -72,23 +72,23 @@ public class PermissionPolicyRegistrationTests
         services.AddAuth(ConfigurationStub());
         ServiceProvider provider = services.BuildServiceProvider();
 
-        using var scope = provider.CreateScope();
-        var authorizationService = scope.ServiceProvider.GetRequiredService<IAuthorizationService>();
+        using IServiceScope scope = provider.CreateScope();
+        IAuthorizationService authorizationService = scope.ServiceProvider.GetRequiredService<IAuthorizationService>();
 
         // Act & Assert - Policy godkjenner kun når claim-type OG verdi matcher
-        var validClaims = new[] { new Claim(Permissions.ClaimType, Permissions.RolesRead) };
+        Claim[] validClaims = new[] { new Claim(Permissions.ClaimType, Permissions.RolesRead) };
         var validIdentity = new ClaimsIdentity(validClaims, "Test");
         var validPrincipal = new ClaimsPrincipal(validIdentity);
 
-        var successResult = await authorizationService.AuthorizeAsync(validPrincipal, Permissions.RolesRead);
+        AuthorizationResult successResult = await authorizationService.AuthorizeAsync(validPrincipal, Permissions.RolesRead);
         successResult.Succeeded.Should().BeTrue();
 
         // Feil claim-verdi skal ikke autoriseres
-        var wrongClaims = new[] { new Claim(Permissions.ClaimType, "wrong:permission") };
+        Claim[] wrongClaims = new[] { new Claim(Permissions.ClaimType, "wrong:permission") };
         var wrongIdentity = new ClaimsIdentity(wrongClaims, "Test");
         var wrongPrincipal = new ClaimsPrincipal(wrongIdentity);
 
-        var failResult = await authorizationService.AuthorizeAsync(wrongPrincipal, Permissions.RolesRead);
+        AuthorizationResult failResult = await authorizationService.AuthorizeAsync(wrongPrincipal, Permissions.RolesRead);
         failResult.Succeeded.Should().BeFalse();
     }
 

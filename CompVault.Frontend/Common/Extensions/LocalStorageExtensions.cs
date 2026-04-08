@@ -11,7 +11,7 @@ public static class LocalStorageExtensions
     /// </summary>
     public static async Task SetItemAsync(this IJSRuntime js, string key, string value) =>
         await js.InvokeVoidAsync("localStorage.setItem", key, value);
-    
+
     /// <summary>
     /// Henter en verdi fra local storage med nøkkelen
     /// </summary>

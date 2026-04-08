@@ -10,12 +10,14 @@ public static class FrontendTestDataFactory
     /// <param name="statusCode">HTTP-status koden</param>
     /// <param name="errorCode">AppError-kode som string</param>
     /// <param name="message">Feilmeldingen</param>
-    public static ProblemDetail BuildProblemDetail(int statusCode, string errorCode, string message) => 
-        new ()
+    public static ProblemDetail BuildProblemDetail(int statusCode, string errorCode, string message) =>
+        new()
         {
-            Status = statusCode, Code = errorCode, Message = message
+            Status = statusCode,
+            Code = errorCode,
+            Message = message
         };
-    
+
     /// <summary>
     /// Bygger em TestResponse (DTO) for å bruke i frontend metoder. Kan endres fritt
     /// </summary>
@@ -23,7 +25,7 @@ public static class FrontendTestDataFactory
     /// <param name="value">En verdi uten tilknytning til noe annet</param>
     public static TestResponse BuildTestResponse(string name = "Test", int value = 1) =>
         new() { Name = name, Value = value };
-    
+
     /// <summary>
     /// Hjelperesponse som brukes kun til testing
     /// </summary>

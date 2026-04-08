@@ -10,7 +10,7 @@ public interface IThemeService
     /// <param name="provider">MudThemeProvider som styrer fargene til hver modus</param>
     /// <returns>True hvis dark mode, false hvis light mode</returns>
     Task<bool> GetInitialDarkModeAsync(MudThemeProvider provider);
-    
+
     /// <summary>
     /// Lagrer valget av lys/mørkt modus i localstorage
     /// </summary>

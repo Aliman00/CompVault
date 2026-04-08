@@ -30,10 +30,10 @@ public static class ServiceCollectionExtensions
 
         if (string.IsNullOrWhiteSpace(settings.BaseUrl))
             throw new InvalidOperationException("BackendApi:BaseUrl does not exist in appsettings");
-        
+
         // Registrer handleren som Scoped så den får riktig HttpContext per krets
         services.AddScoped<AccessTokenHandler>();
-        
+
         // Hovedklienten med handler for autentisering — brukes av alle vanlige kall
         services.AddHttpClient(BackendApiSettings.MainClientName, client =>
         {
@@ -41,7 +41,7 @@ public static class ServiceCollectionExtensions
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         })
         .AddHttpMessageHandler<AccessTokenHandler>();
-            
+
         // Anonymklient uten Bearer — brukes kun til refresh i OnValidatePrincipal
         services.AddHttpClient(BackendApiSettings.AuthClientName, client =>
         {
@@ -51,26 +51,26 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    
-    
+
+
     /// <summary>
     /// Legger til autentisering for Blazor Server
     /// </summary>
-    public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration, 
+    public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration,
         IWebHostEnvironment env)
     {
         AuthSettings settings = configuration
             .GetSection(AuthSettings.SectionName)
             .Get<AuthSettings>() ?? new AuthSettings();
-        
+
         // Gjør den tilgjengelig for LoginCallback SSR
         services.AddSingleton(settings);
-        
+
         // Vi må registrere denne for å hente ut instanser som brukes av den aktive kretsen
         services.AddHttpContextAccessor();
-        
+
         services.AddScoped<CookieValidationEvents>();
-        
+
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
@@ -86,18 +86,18 @@ public static class ServiceCollectionExtensions
 
                 options.EventsType = typeof(CookieValidationEvents);
             });
-        
+
         services.AddScoped<AuthStateProvider>();
-        
+
         // Forteller Blazor at vår egen AuthStateProvider brukes
         services.AddScoped<AuthenticationStateProvider>(
             sp => sp.GetRequiredService<AuthStateProvider>());
-        
+
         services.AddScoped<IAuthService, AuthService>();
-        
+
         return services;
     }
-    
+
     /// <summary>
     /// Legger til autorisasjon og policies i Blazor
     /// </summary>
@@ -122,13 +122,13 @@ public static class ServiceCollectionExtensions
     {
         if (env.IsDevelopment())
             services.AddScoped<IDevService, DevService>();
-            
+
         // ================================ Infrastruktur ================================
         services.AddScoped<IThemeService, ThemeService>();
-        
+
         // ================================ Admin forretningslogikk ================================
         services.AddScoped<IUserService, UserService>();
-   
+
 
         return services;
     }

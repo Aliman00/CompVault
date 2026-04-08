@@ -2,7 +2,6 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
-using CompVault.Backend.Tests.Common;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Roles;
 using CompVault.Shared.Result;
@@ -11,6 +10,7 @@ using FluentAssertions;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+
 using Moq;
 
 namespace CompVault.Backend.Tests.Backend.Features.Roles.Services;
