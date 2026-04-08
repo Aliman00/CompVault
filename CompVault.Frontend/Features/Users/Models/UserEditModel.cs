@@ -11,6 +11,8 @@ public class UserEditModel
     public string JobTitle { get; set; } = string.Empty;
     public EmploymentType EmploymentType { get; set; }
     public bool IsActive { get; set; }
+    
+    public DateTime CreatedAt { get; set; }
 
     public static UserEditModel FromDto(UserDto dto) => new()
     {
@@ -19,6 +21,7 @@ public class UserEditModel
         Email = dto.Email,
         JobTitle = dto.JobTitle,
         EmploymentType = dto.EmploymentType,
-        IsActive = dto.IsActive
+        IsActive = dto.IsActive,
+        CreatedAt = dto.CreatedAt
     };
 }
