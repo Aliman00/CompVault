@@ -1,19 +1,12 @@
-﻿using System.Security.Claims;
-
-using Microsoft.AspNetCore.Components.Authorization;
-
+﻿using Microsoft.AspNetCore.Components.Authorization;
 namespace CompVault.Frontend.Common.Services;
 
 /// <summary>
-/// Henter autentiseringstilstanden fra HttpContexen som bestemmes om bruker har auth-cookie
+/// Henter autentiseringstilstanden fra CircuitUserContext som henter brukeren fra HttpContext under SSR-fasen,
+/// og holder den tilgjengelig gjennom SignalR-kretsen der HttpContext er null
 /// </summary>
-public class AuthStateProvider(IHttpContextAccessor httpContextAccessor) : AuthenticationStateProvider
+public class AuthStateProvider(CircuitUserContext circuitUserContext) : AuthenticationStateProvider
 {
-    /// <inheritdoc />
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
-    {
-        ClaimsPrincipal user = httpContextAccessor.HttpContext?.User ?? new ClaimsPrincipal(new ClaimsIdentity());
-
-        return Task.FromResult(new AuthenticationState(user));
-    }
+        => Task.FromResult(new AuthenticationState(circuitUserContext.User));
 }

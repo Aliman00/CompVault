@@ -1,10 +1,13 @@
+using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Services;
+using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authorization;
@@ -27,7 +30,8 @@ public sealed class DevAuthController(
     IHostEnvironment env,
     IRefreshTokenService refreshTokenService,
     IOtpCodeRepository otpCodeRepository,
-    IPermissionService permissionService) : ControllerBase
+    IPermissionService permissionService,
+    IUserService userService) : BaseController
 {
     /// <summary>
     /// Logger inn med e-post og passord. Returnerer JWT identisk med OTP-flyten.
@@ -98,5 +102,17 @@ public sealed class DevAuthController(
         await otpCodeRepository.SaveChangesAsync();
 
         return Ok();
+    }
+
+    [HttpGet("dev-get-users")]
+    [ProducesResponseType(typeof(IReadOnlyList<UserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<UserDto>>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        Result<IReadOnlyList<UserDto>> result = await userService.GetAllUsersAsync(cancellationToken);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
     }
 }

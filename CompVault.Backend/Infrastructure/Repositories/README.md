@@ -1,65 +1,34 @@
 # Infrastructure/Repositories
 
-> Generisk repository-base. Alle domenespesifikke repositories extender disse.
+`Infrastructure/Repositories/` inneholder den generiske repository-basen som resten av repositoryene bygger på. Her ligger felles interface og baseimplementasjon, slik at domenespesifikke repositories slipper å gjenta det samme grunnoppsettet.
 
-## Innhold
+## Struktur
 
-| Fil | Ansvar |
-|---|---|
-| `IRepository.cs` | Generisk base-interface med standard CRUD-operasjoner |
-| `BaseRepository.cs` | Implementasjon av `IRepository<T>` — extender denne for alle repositories |
-
-## Domenespesifikke repositories
-
-Domenespesifikke repositories opprettes i `Infrastructure/Data/<Domene>/` — ikke her:
-
-```
-Infrastructure/Data/
-  Identity/        <- IUserRepository, UserRepository
-  <Domene>/        <- ny undermappe per domeneområde som legges til
+```text
+Infrastructure/Repositories/
+├── IRepository.cs        <- Generisk base-interface med standard CRUD
+└── BaseRepository.cs     <- Generisk base-implementasjon
 ```
 
-## Unit of Work-mønsteret
+## Hvordan vi bruker denne mappen
 
-Repositories registrerer endringer i EF Cores change-tracker, men kaller aldri `SaveChangesAsync()`. Service-laget eier transaksjonen via `IUnitOfWork`:
+Tanken med denne mappen er å samle det som går igjen i flere repositories. Når et domene trenger egne oppslag eller mer spesifikk dataaksess, kan repositoryet bygge videre på `BaseRepository<T>` i stedet for å starte helt fra bunnen av.
+
+Det betyr at denne mappen ikke prøver å beskrive alle konkrete repositories i prosjektet, bare den felles basen de bygger på.
+
+## Lagring
+
+Siden alle repositories arver fra `BaseRepository`, har de også tilgang til `SaveChangesAsync()`:
 
 ```csharp
-public class MinService(IMinRepository repo, IUnitOfWork unitOfWork) : IMinService
-{
-    public async Task OppdaterAsync(MinEntity entity, CancellationToken ct)
-    {
-        await repo.UpdateAsync(entity, ct);
-        await unitOfWork.SaveChangesAsync(ct); // én atomisk lagring
-    }
-}
+await competencyRepository.SaveChangesAsync(ct);
 ```
 
-`IUnitOfWork` og `UnitOfWork` ligger i `Infrastructure/Data/`.
+Dette er greit for enkle operasjoner der ett repository alene gjør endringer. Når flere operasjoner må skje samlet i én transaksjon, brukes `IUnitOfWork` fra `Infrastructure/Data/` i stedet.
 
-## Ny feature? Gjør slik
+## Retningslinjer
 
-1. Opprett `Infrastructure/Data/<Domene>/I<Feature>Repository.cs` med domenespesifikke metoder
-2. Opprett `Infrastructure/Data/<Domene>/<Feature>Repository.cs` og extend `BaseRepository<T>`
-3. Registrer i `Infrastructure/Extensions/ServiceCollectionExtensions.cs`
-
-```csharp
-public interface IUserRepository : IRepository<ApplicationUser>
-{
-    Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken ct = default);
-}
-
-public class UserRepository : BaseRepository<ApplicationUser>, IUserRepository
-{
-    public UserRepository(AppDbContext context) : base(context) { }
-
-    public async Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken ct = default)
-        => await DbSet.FirstOrDefaultAsync(u => u.Email == email && u.IsActive, ct);
-}
-```
-
-## Regler
-
-- Ingen forretningslogikk — kun datahenting og change-tracking
-- Bruk `IQueryable` internt, men returner alltid materialiserte lister (`List<T>`) ut av metoden
-- Alle metoder skal ha `CancellationToken ct = default`-parameter
-- Kall aldri `SaveChangesAsync()` inne i en repository-metode
+- Repositories skal håndtere dataaksess og change tracking, ikke forretningslogikk.
+- `IQueryable` kan brukes internt, men det er som regel bedre å returnere materialiserte resultater ut av repositoryet.
+- Metoder bør ta `CancellationToken ct = default` der det er naturlig.
+- `SaveChangesAsync()` kan brukes for enkel lagring, mens transaksjoner håndteres via `IUnitOfWork`.

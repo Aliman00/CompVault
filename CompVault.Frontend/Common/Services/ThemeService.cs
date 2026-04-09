@@ -19,7 +19,7 @@ public class ThemeService(IJSRuntime jsRuntime) : IThemeService
 
         return await provider.GetSystemDarkModeAsync();
     }
-    
+
     /// <inheritdoc />
     public async Task SaveDarkModeAsync(bool isDarkMode) =>
         await jsRuntime.SetItemAsync(AppConstants.DarkModeKey, isDarkMode.ToString());

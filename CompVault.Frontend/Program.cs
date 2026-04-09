@@ -1,5 +1,6 @@
 using CompVault.Frontend;
 using CompVault.Frontend.Extensions;
+
 using MudBlazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);

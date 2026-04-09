@@ -8,7 +8,7 @@ public static class AdminConstants
     public const string TotalDepartments = "Totale avdelinger i bedriften";
     public const string RecentActivity = "Siste aktivitet";
     public const string Shortcuts = "Snarveier";
-    
+
     // ================================= Local storage nøkler =================================
     public const string StorageKey = "compvault-admin-widgets";
 }
