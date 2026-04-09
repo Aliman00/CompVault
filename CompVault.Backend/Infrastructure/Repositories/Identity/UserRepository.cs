@@ -17,17 +17,21 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> 
+        GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default)
     {
         var result = await DbSet
             .AsNoTracking()
+            .Include(u => u.Department)
+            .Include(u => u.Manager)
             .Where(u => u.IsActive && u.DeletedAt == null)
             .Select(u => new
             {
                 User = u,
                 Roles = DbContext.UserRoles
                     .Where(ur => ur.UserId == u.Id)
-                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id, 
+                        (ur, r) => r.Name)
                     .Where(name => name != null)
                     .Select(name => name!)
                     .ToList()

@@ -22,7 +22,8 @@ public sealed class UserService(
     public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles = await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
+        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles = 
+            await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
 
         var dtos = usersWithRoles
             .Select(uwr => UserMapper.ToDto(uwr.User, uwr.Roles))

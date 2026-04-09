@@ -14,9 +14,9 @@ public class UserEditModel
     
     public DateTime CreatedAt { get; set; }
     
-    public string DepartmentName { get; set; }
+    public string? DepartmentName { get; set; }
     
-    public string ManagerName { get; set; }
+    public string? ManagerName { get; set; }
     
     public Guid? DepartmentId { get; set; }
     
@@ -32,6 +32,8 @@ public class UserEditModel
         IsActive = dto.IsActive,
         CreatedAt = dto.CreatedAt,
         ManagerId = dto.ManagerId,
-        DepartmentId = dto.DepartmentId
+        ManagerName = dto.ManagerName,
+        DepartmentId = dto.DepartmentId,
+        DepartmentName = dto.DepartmentName
     };
 }
