@@ -13,6 +13,14 @@ public class UserEditModel
     public bool IsActive { get; set; }
     
     public DateTime CreatedAt { get; set; }
+    
+    public string DepartmentName { get; set; }
+    
+    public string ManagerName { get; set; }
+    
+    public Guid? DepartmentId { get; set; }
+    
+    public Guid? ManagerId { get; set; }
 
     public static UserEditModel FromDto(UserDto dto) => new()
     {
@@ -22,6 +30,8 @@ public class UserEditModel
         JobTitle = dto.JobTitle,
         EmploymentType = dto.EmploymentType,
         IsActive = dto.IsActive,
-        CreatedAt = dto.CreatedAt
+        CreatedAt = dto.CreatedAt,
+        ManagerId = dto.ManagerId,
+        DepartmentId = dto.DepartmentId
     };
 }

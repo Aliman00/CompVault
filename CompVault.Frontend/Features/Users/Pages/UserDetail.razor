@@ -1,13 +1,16 @@
 ﻿@page "/admin/users/{Id:guid}"
 @using System.Text.Json
+@using CompVault.Frontend.Features.Departments.Services
 @using CompVault.Frontend.Features.Users.Models
 @using CompVault.Frontend.Features.Users.Services
-@inject IUserService UserService
+@using CompVault.Shared.DTOs.Departments
 @using CompVault.Shared.DTOs.Users
+@inject IUserService UserService
+@inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
-<AppAlert @bind-Alert="_alert"/>
+<AppAlert @bind-Alert="_userAlert"/>
 
 @if (_isLoading)
 {
@@ -97,7 +100,7 @@ else if (_user != null)
                                ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
                                Label="Ansettelsestype"
                                ReadOnly="!_isEditing"
-                               Variant="_isEditing ? Variant.Outlined : Variant.Text">
+                               Variant="Variant.Outlined">
                         @foreach (EmploymentType type in Enum.GetValues<EmploymentType>())
                         {
                             <MudSelectItem Value="type">@type</MudSelectItem>
@@ -113,9 +116,42 @@ else if (_user != null)
                 }
             </MudItem>
 
+            @* Opprettelsesdato *@
             <MudItem cs="12" sm="6">
                 <MudTextField Value="_editModel.CreatedAt"
                               Label="Opprettet"
+                              ReadOnly="true"
+                              Variant="Variant.Text"/>
+            </MudItem>
+
+            @* Avdeling TODO: Lenke til avdeling *@
+            <MudItem cs="12" sm="6">
+                @if (_isEditing)
+                {
+                    <MudSelect Value="_editModel.DepartmentId"
+                               ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
+                               Label="Avdeling"
+                               ReadOnly="!_isEditing"
+                               Variant="Variant.Outlined">
+                        @foreach (var department in _departments)
+                        {
+                            <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else
+                {
+                    <MudTextField Value="_editModel.DepartmentName"
+                                  Label="Avdeling"
+                                  ReadOnly="true"
+                                  Variant="Variant.Text"/>
+                }
+            </MudItem>
+
+            @* Manager TODO: FELT FOR MANAGER *@
+            <MudItem cs="12" sm="6">
+                <MudTextField Value="_editModel.ManagerName"
+                              Label="Nærmeste leder"
                               ReadOnly="true"
                               Variant="Variant.Text"/>
             </MudItem>
@@ -133,6 +169,7 @@ else if (_user != null)
                 </MudStack>
             </MudItem>
 
+            
 
 
         </MudGrid>
@@ -147,11 +184,13 @@ else if (_user != null)
     
     // ===================== PRIVATE FELT =====================
     private UserDto? _user;
+    private List<DepartmentDto> _departments = [];
 
     private UserEditModel _editModel = new();
     
     private bool _isLoading = true;
-    private AlertInfo? _alert;
+    
+    private AlertInfo? _userAlert;
 
     private bool _isEditing;
     
@@ -167,18 +206,23 @@ else if (_user != null)
             if (!string.IsNullOrEmpty(deserializedUserDto))
             {
                 _user = JsonSerializer.Deserialize<UserDto>(deserializedUserDto);
-                return;
             }
-        
-            // Ved navigering med URL eller refresh - hent UserDto fra backend
-            var userResult = await UserService.GetByIdAsync(Id, _cts.Token);
-            if (userResult.IsFailure)
+            else
             {
-                _alert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
-                return;
+                // Ved navigering med URL eller refresh - hent UserDto fra backend
+                var userResult = await UserService.GetByIdAsync(Id, _cts.Token);
+                if (userResult.IsFailure)
+                {
+                    _userAlert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
+                    return;
+                }
+                
+                _user = userResult.Value;
             }
 
-            _user = userResult.Value;
+            if (_user != null)
+                _editModel = UserEditModel.FromDto(_user);
+
         }
         catch (OperationCanceledException)
         {
@@ -186,7 +230,7 @@ else if (_user != null)
         }
         catch
         {
-            _alert = new AlertInfo("Klarte ikke å laste brukeren. Oppdater siden for å prøve igjen",
+            _userAlert = new AlertInfo("Klarte ikke å laste brukeren. Oppdater siden for å prøve igjen",
                 Severity.Error);
             
         }
@@ -204,10 +248,22 @@ else if (_user != null)
     
     // ===================== PRVIATE METHODS =====================
 
-    private void StartEdit()
+    private async Task StartEdit()
     {
         _editModel = UserEditModel.FromDto(_user!);
         _isEditing = !_isEditing;
+
+        if (_departments.Count == 0)
+        {
+            var departmentResults = await DepartmentService.GetAllAsync(_cts.Token);
+            if (departmentResults.IsFailure)
+            {
+                _userAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _departments = departmentResults.Value!;
+        }
     }
     
     private void CancelEdit()
