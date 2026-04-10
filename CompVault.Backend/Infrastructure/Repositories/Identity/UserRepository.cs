@@ -40,6 +40,13 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
 
         return result.Select(x => (x.User, x.Roles)).ToList();
     }
+    
+    /// <inheritdoc />
+    public async Task<ApplicationUser?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default) =>
+        await DbSet
+            .Include(u => u.Department)
+            .Include(u => u.Manager)
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<ApplicationUser>> GetActiveUsersAsync(CancellationToken cancellationToken = default) =>

@@ -63,7 +63,7 @@
     {
         try
         {
-            var getUsersResult = await UserService.GetAllUsersAsync(_cts.Token);
+            var getUsersResult = await UserService.GetAllAsync(_cts.Token);
 
             if (getUsersResult.IsFailure)
             {

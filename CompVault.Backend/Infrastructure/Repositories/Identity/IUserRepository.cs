@@ -9,6 +9,9 @@ public interface IUserRepository : IRepository<ApplicationUser>
 {
     /// <summary>Finner en bruker basert på e-postadressen.</summary>
     Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+    
+    /// <summary>Bruker ID til å hente en bruker, med Department og Manager-tabellene</summary>
+    Task<ApplicationUser?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>Henter alle aktive brukere inkludert rollene deres i én operasjon for å unngå N+1 problemer.</summary>
     Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default);

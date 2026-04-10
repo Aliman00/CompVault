@@ -14,7 +14,7 @@ public class UserService(
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
 
     /// <inheritdoc />
-    public async Task<Result<List<UserDto>>> GetAllUsersAsync(CancellationToken ct)
+    public async Task<Result<List<UserDto>>> GetAllAsync(CancellationToken ct)
     {
         try
         {
@@ -67,6 +67,35 @@ public class UserService(
         {
             logger.LogError(ex, "Uventet feil ved henting av brukere");
             return Result<UserDto?>.Failure(AppError.Create(ErrorCode.Unknown, 
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
+    
+    /// <inheritdoc />
+    public async Task<Result<UserDto>> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response = 
+                await _httpClient.PutAsJsonAsync(ApiRoutes.User.ById(id), request, ct);
+
+            Result<UserDto> result = await HttpClientExtensions.ParseResponseAsync<UserDto>(response, ct);
+
+            if (result.IsFailure)
+                return Result<UserDto>.Failure(result.Error!);
+
+            return Result<UserDto>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved oppdatering av bruker {Id}", id);
+            return Result<UserDto>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved oppdatering av bruker {Id}", id);
+            return Result<UserDto>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }

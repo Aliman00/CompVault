@@ -10,7 +10,8 @@
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
-<AppAlert @bind-Alert="_userAlert"/>
+<AppAlert @bind-Alert="_errorAlert"/>
+<AppAlert @bind-Alert="_departmentAlert"/>
 
 @if (_isLoading)
 {
@@ -19,161 +20,181 @@
 else if (_user != null)
 {
     @* Header med navn og tittel, og redigeringsknapper *@
-    <MudPaper Class="pa-6" Elevation="1" Square="true">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
-            @* Navn og tittel *@
-            <MudStack>
-                <MudText Typo="Typo.h5">
-                    @_user.FullName
-                </MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    @_user.JobTitle
-                </MudText>
-            </MudStack>
-            @* Redigeringsknapper *@
-            <MudSpacer/>
-            @if (!_isEditing)
-            {
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Edit"
-                           OnClick="StartEdit">
-                    Rediger
-                </MudButton>
-            }
-            else
-            {
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Error"
-                           Class="mr-2"
-                           OnClick="CancelEdit">
-                    Avbryt
-                </MudButton>
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           OnClick="SaveEdit">
-                    Lagre
-                </MudButton>
-            }
-        </MudStack>
-
-        @* Alle felt med egenskaper fra UserDto *@
-        <MudGrid>
-            @* Fornavn *@
-            <MudItem cs="12" sm="6">
-                <MudTextField Value="_editModel.FirstName"
-                              ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
-                              Label="Fornavn"
-                              ReadOnly="!_isEditing"
-                              Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
-            </MudItem>
-            @* Etternavn *@
-            <MudItem cs="12" sm="6">
-                <MudTextField Value="_editModel.LastName"
-                              ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
-                              Label="Etternavn"
-                              ReadOnly="!_isEditing"
-                              Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
-            </MudItem>
-            @* Email *@
-            <MudItem cs="12" sm="6">
-                <MudTextField Value="_editModel.Email"
-                              ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
-                              Label="Email"
-                              ReadOnly="!_isEditing"
-                              Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
-            </MudItem>
-            @* Job tittel *@
-            <MudItem cs="12" sm="6">
-                <MudTextField Value="_editModel.JobTitle"
-                              ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
-                              Label="Stillingstittel"
-                              ReadOnly="!_isEditing"
-                              Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
-            </MudItem>
-
-            @* EmploymentType *@
-            <MudItem cs="12" sm="6">
-                @if (_isEditing)
-                {
-                    <MudSelect Value="_editModel.EmploymentType"
-                               ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
-                               Label="Ansettelsestype"
-                               ReadOnly="!_isEditing"
-                               Variant="Variant.Outlined">
-                        @foreach (EmploymentType type in Enum.GetValues<EmploymentType>())
-                        {
-                            <MudSelectItem Value="type">@type</MudSelectItem>
-                        }
-                    </MudSelect>
-                }
-                else
-                {
-                    <MudTextField Value="_editModel.EmploymentType"
-                                  Label="Ansettelsestype"
-                                  ReadOnly="true"
-                                  Variant="Variant.Text"/>
-                }
-            </MudItem>
-
-            @* Opprettelsesdato *@
-            <MudItem cs="12" sm="6">
-                <MudTextField Value="_editModel.CreatedAt"
-                              Label="Opprettet"
-                              ReadOnly="true"
-                              Variant="Variant.Text"/>
-            </MudItem>
-
-            @* Avdeling TODO: Lenke til avdeling *@
-            <MudItem cs="12" sm="6">
-                @if (_isEditing)
-                {
-                    <MudSelect Value="_editModel.DepartmentId"
-                               ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
-                               Label="Avdeling"
-                               ReadOnly="!_isEditing"
-                               Variant="Variant.Outlined">
-                        @foreach (var department in _departments)
-                        {
-                            <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-                }
-                else
-                {
-                    <MudTextField Value="_editModel.DepartmentName"
-                                  Label="Avdeling"
-                                  ReadOnly="true"
-                                  Variant="Variant.Text"/>
-                }
-            </MudItem>
-
-            @* Manager TODO: FELT FOR MANAGER *@
-            <MudItem cs="12" sm="6">
-                <MudTextField Value="_editModel.ManagerName"
-                              Label="Nærmeste leder"
-                              ReadOnly="true"
-                              Variant="Variant.Text"/>
-            </MudItem>
-            
-            @* Roller TODO: Lenke til roller *@
-            <MudItem cs="12" sm="6">
-                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Roller</MudText>
-                <MudStack Row="true" Spacing="1">
-                    @foreach (var role in _user.Roles)
-                    {
-                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
-                            @role
-                        </MudChip>
-                    }
+    <EditForm Model="_editModel" OnValidSubmit="SaveEdit">
+        <DataAnnotationsValidator/>
+        <MudPaper Class="pa-6" Elevation="1" Square="true">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
+                @* Navn og tittel *@
+                <MudStack>
+                    <MudText Typo="Typo.h5">
+                        @_user.FullName
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @_user.JobTitle
+                    </MudText>
                 </MudStack>
-            </MudItem>
+                @* Redigeringsknapper *@
+                <MudSpacer/>
+                @if (!_isEditing)
+                {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="StartEdit">
+                        Rediger
+                    </MudButton>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Error"
+                               Class="mr-2"
+                               OnClick="CancelEdit">
+                        Avbryt
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               ButtonType="ButtonType.Submit">
+                        Lagre
+                    </MudButton>
+                }
+            </MudStack>
 
+            @* Alle felt med egenskaper fra UserDto *@
+        
+            <MudGrid>
+                @* Fornavn *@
+                <MudItem cs="12" sm="6">
+                    <MudTextField Value="_editModel.FirstName"
+                                  ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
+                                  Label="Fornavn"
+                                  ReadOnly="!_isEditing"
+                                  Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
+                </MudItem>
+                @* Etternavn *@
+                <MudItem cs="12" sm="6">
+                    <MudTextField Value="_editModel.LastName"
+                                  ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
+                                  Label="Etternavn"
+                                  ReadOnly="!_isEditing"
+                                  Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
+                </MudItem>
+                @* Email *@
+                <MudItem cs="12" sm="6">
+                    <MudTextField Value="_editModel.Email"
+                                  ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
+                                  Label="Email"
+                                  ReadOnly="!_isEditing"
+                                  Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
+                </MudItem>
+                @* Job tittel *@
+                <MudItem cs="12" sm="6">
+                    <MudTextField Value="_editModel.JobTitle"
+                                  ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
+                                  Label="Stillingstittel"
+                                  ReadOnly="!_isEditing"
+                                  Variant="_isEditing ? Variant.Outlined : Variant.Text"/>
+                </MudItem>
+
+                @* EmploymentType *@
+                <MudItem cs="12" sm="6">
+                    @if (_isEditing)
+                    {
+                        <MudSelect Value="_editModel.EmploymentType"
+                                   ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
+                                   Label="Ansettelsestype"
+                                   ReadOnly="!_isEditing"
+                                   Variant="Variant.Outlined">
+                            @foreach (EmploymentType type in Enum.GetValues<EmploymentType>())
+                            {
+                                <MudSelectItem Value="type">@type</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudTextField Value="_editModel.EmploymentType"
+                                      Label="Ansettelsestype"
+                                      ReadOnly="true"
+                                      Variant="Variant.Text"/>
+                    }
+                </MudItem>
+
+                @* Opprettelsesdato *@
+                <MudItem cs="12" sm="6">
+                    <MudTextField Value="_editModel.CreatedAt"
+                                  Label="Opprettet"
+                                  ReadOnly="true"
+                                  Variant="Variant.Text"/>
+                </MudItem>
+
+                @* Avdeling TODO: Lenke til avdeling *@
+                <MudItem cs="12" sm="6">
+                    @if (_isEditing)
+                    {
+                        <MudSelect Value="_editModel.DepartmentId"
+                                   ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
+                                   Label="Avdeling"
+                                   ReadOnly="!_isEditing"
+                                   Variant="Variant.Outlined">
+                            @foreach (var department in _departments)
+                            {
+                                <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudTextField Value="_editModel.DepartmentName"
+                                      Label="Avdeling"
+                                      ReadOnly="true"
+                                      Variant="Variant.Text"/>
+                    }
+                </MudItem>
+
+                @* Manager TODO: FELT FOR MANAGER *@
+                <MudItem cs="12" sm="6">
+                    @if (_isEditing)
+                    {
+                        <MudSelect Value="_editModel.ManagerId"
+                                   ValueChanged="(Guid? v) => _editModel.ManagerId = v"
+                                   Label="Nærmeste leder"
+                                   Variant="Variant.Outlined">
+                            @foreach (var user in _allUsers.Where(u => u.Id != Id))
+                            {
+                                <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudTextField Value="@(_editModel.ManagerName.DashIfEmpty())"
+                                      Label="Nærmeste leder"
+                                      ReadOnly="true"
+                                      Variant="Variant.Text"/>
+                    }
+                </MudItem>
+            
+                @* Roller TODO: Lenke til roller *@
+                <MudItem cs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Roller</MudText>
+                    <MudStack Row="true" Spacing="1">
+                        @foreach (var role in _user.Roles)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
+                                @role
+                            </MudChip>
+                        }
+                    </MudStack>
+                </MudItem>
+            
             
 
 
-        </MudGrid>
-    </MudPaper>
+            </MudGrid>
+        
+        </MudPaper>
+    </EditForm>
 }
 
 @code {
@@ -184,13 +205,17 @@ else if (_user != null)
     
     // ===================== PRIVATE FELT =====================
     private UserDto? _user;
+    private List<UserDto> _allUsers = [];
     private List<DepartmentDto> _departments = [];
 
     private UserEditModel _editModel = new();
     
     private bool _isLoading = true;
     
-    private AlertInfo? _userAlert;
+    private AlertInfo? _errorAlert;
+    private AlertInfo? _departmentAlert;
+    
+    private EditContext _editContext = null!;
 
     private bool _isEditing;
     
@@ -201,6 +226,8 @@ else if (_user != null)
     {
         try
         {
+            _editContext = new EditContext(_editModel);
+            
             // Ved navigering fra UserList - hent UserDto fra nettleserens historikk
             string? deserializedUserDto = NavigationManager.HistoryEntryState;
             if (!string.IsNullOrEmpty(deserializedUserDto))
@@ -213,7 +240,7 @@ else if (_user != null)
                 var userResult = await UserService.GetByIdAsync(Id, _cts.Token);
                 if (userResult.IsFailure)
                 {
-                    _userAlert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
+                    _errorAlert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
                     return;
                 }
                 
@@ -230,7 +257,7 @@ else if (_user != null)
         }
         catch
         {
-            _userAlert = new AlertInfo("Klarte ikke å laste brukeren. Oppdater siden for å prøve igjen",
+            _errorAlert = new AlertInfo("Klarte ikke å laste brukeren. Oppdater siden for å prøve igjen",
                 Severity.Error);
             
         }
@@ -250,21 +277,43 @@ else if (_user != null)
 
     private async Task StartEdit()
     {
+        _errorAlert = null;
+        _departmentAlert = null;
         _editModel = UserEditModel.FromDto(_user!);
         _isEditing = !_isEditing;
+        
+        var tasks = new List<Task>();
 
         if (_departments.Count == 0)
-        {
-            var departmentResults = await DepartmentService.GetAllAsync(_cts.Token);
-            if (departmentResults.IsFailure)
-            {
-                _userAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
-                return;
-            }
+            tasks.Add(LoadDepartmentsAsync());
 
-            _departments = departmentResults.Value!;
-        }
+        if (_allUsers.Count == 0)
+            tasks.Add(LoadUsersAsync());
+        
+        await Task.WhenAll(tasks);
+        
+        bool loadedSuccessfully = _departmentAlert == null && _errorAlert == null;
+        _isEditing = loadedSuccessfully;
     }
+
+    private async Task LoadDepartmentsAsync()
+    {
+        var departmentResults = await DepartmentService.GetAllAsync(_cts.Token);
+        if (departmentResults.IsFailure)
+            _departmentAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
+        else
+            _departments = departmentResults.Value!;
+    }
+    
+    private async Task LoadUsersAsync()
+    {
+        var result = await UserService.GetAllAsync(_cts.Token);
+        if (result.IsFailure)
+            _errorAlert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+        else
+            _allUsers = result.Value!;
+    }
+    
     
     private void CancelEdit()
     {
@@ -272,8 +321,34 @@ else if (_user != null)
         _isEditing = false;
     }
     
-    private void SaveEdit()
+    private void ResetEditModel(UserDto user)
     {
+        _editModel = UserEditModel.FromDto(user);
+        _editContext = new EditContext(_editModel);
+    }
+    
+    private async Task SaveEdit()
+    {
+        var request = new UpdateUserRequest
+        {
+            FirstName = _editModel.FirstName,
+            LastName = _editModel.LastName,
+            JobTitle = _editModel.JobTitle,
+            EmploymentType = _editModel.EmploymentType,
+            DepartmentId = _editModel.DepartmentId,
+            ClearDepartmentId = _editModel.DepartmentId == null
+        };
+
+        var updateResult = await UserService.UpdateAsync(Id, request, _cts.Token);
+        if (updateResult.IsFailure)
+        {
+            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        _user = updateResult.Value;
+        _editModel = UserEditModel.FromDto(_user!);
         _isEditing = false;
+        
     }
 }

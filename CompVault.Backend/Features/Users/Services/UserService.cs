@@ -37,7 +37,7 @@ public sealed class UserService(
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        ApplicationUser? user = await userRepository.GetByIdWithDetailsAsync(userId, cancellationToken);
 
         if (user is null || user.DeletedAt is not null || !user.IsActive)
             return Result<UserDto>.Failure(
