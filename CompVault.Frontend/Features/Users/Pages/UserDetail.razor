@@ -7,7 +7,7 @@
 @inject IUserService UserService
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
-@implements IDisposable
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 
 <AppAlert @bind-Alert="_errorAlert"/>
 <AppAlert @bind-Alert="_departmentAlert"/>
@@ -238,8 +238,6 @@ else if (_user != null)
 
     private bool _isEditing;
     
-    private readonly CancellationTokenSource _cts = new();
-    
     // ===================== LIFECYCLE =====================
     protected override async Task OnInitializedAsync()
     {
@@ -248,7 +246,7 @@ else if (_user != null)
             _editContext = new EditContext(_editModel);
             
             // Ved navigering fra UserList - hent UserDto fra nettleserens historikk
-            var userResult = await UserService.GetByIdAsync(Id, _cts.Token);
+            var userResult = await UserService.GetByIdAsync(Id, Cts.Token);
             if (userResult.IsFailure)
             {
                 _errorAlert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
@@ -275,12 +273,6 @@ else if (_user != null)
         {
             _isLoading = false;
         }
-    }
-    
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
     }
     
     // ===================== PRVIATE METHODS =====================
@@ -311,7 +303,7 @@ else if (_user != null)
 
     private async Task LoadDepartmentsAsync()
     {
-        var departmentResults = await DepartmentService.GetAllAsync(_cts.Token);
+        var departmentResults = await DepartmentService.GetAllAsync(Cts.Token);
         if (departmentResults.IsFailure)
             _departmentAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
         else
@@ -320,7 +312,7 @@ else if (_user != null)
     
     private async Task LoadUsersAsync()
     {
-        var result = await UserService.GetAllAsync(_cts.Token);
+        var result = await UserService.GetAllAsync(Cts.Token);
         if (result.IsFailure)
             _errorAlert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
@@ -344,7 +336,7 @@ else if (_user != null)
     {
         var request = _editModel.ToRequest();
 
-        var updateResult = await UserService.UpdateAsync(Id, request, _cts.Token);
+        var updateResult = await UserService.UpdateAsync(Id, request, Cts.Token);
         if (updateResult.IsFailure)
         {
             _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);

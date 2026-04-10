@@ -1,6 +1,24 @@
 ﻿@page "/admin/users/create"
-<h3>UserCreate</h3>
+@using CompVault.Frontend.Features.Users.Models
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+
+
+<AppAlert @bind-Alert="_errorAlert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
 
 @code {
+    // ===================== PRIVATE FELT =====================
+    private CreateUserModel _editModel = new();
     
+    private bool _isLoading = true;
+    
+    private AlertInfo? _errorAlert;
+    
+    private EditContext _editContext = null!;
+    
+    // ===================== LIFECYCLE =====================
 }

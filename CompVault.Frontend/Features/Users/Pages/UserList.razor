@@ -3,7 +3,7 @@
 @using CompVault.Frontend.Features.Users.Services
 @using CompVault.Shared.DTOs.Users
 @inject IUserService UserService
-@implements IDisposable
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @inject NavigationManager NavigationManager
 
 <AppAlert @bind-Alert="_alert"/>
@@ -55,15 +55,13 @@
     
     private bool _isLoading = true;
     private AlertInfo? _alert;
-
-    private readonly CancellationTokenSource _cts = new();
     
     // ===================== LIFECYCLE =====================
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var getUsersResult = await UserService.GetAllAsync(_cts.Token);
+            var getUsersResult = await UserService.GetAllAsync(Cts.Token);
 
             if (getUsersResult.IsFailure)
             {
@@ -86,12 +84,6 @@
         {
             _isLoading = false;
         }
-    }
-    
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
     }
     
     // ===================== PRVIATE METHODS =====================
