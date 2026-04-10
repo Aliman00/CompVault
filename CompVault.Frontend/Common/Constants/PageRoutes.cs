@@ -19,6 +19,7 @@ public static class PageRoutes
         // ================= USERS =================
         public const string UserList = "/admin/users";
         public static string UserDetail(Guid id) => $"/admin/users/{id}";
+        public const string UserCreate = "admin/users/create";
     }
 
     public static class Errors

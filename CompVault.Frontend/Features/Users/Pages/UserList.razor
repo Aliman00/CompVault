@@ -1,6 +1,5 @@
 ﻿@page "/admin/users"
 @layout AdminLayout
-@using System.Text.Json
 @using CompVault.Frontend.Features.Users.Services
 @using CompVault.Shared.DTOs.Users
 @inject IUserService UserService
@@ -32,7 +31,8 @@
         <MudSpacer/>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Success"
-                   StartIcon="@Icons.Material.Filled.PersonAdd">
+                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                   Href="@PageRoutes.Admin.UserCreate">
             Opprett bruker
         </MudButton>
     </ToolBarContent>
@@ -98,7 +98,6 @@
     
     // Navigerer ved å sende UserDto via NavigationManager (ikke via URL-en, men som en string i nettlesere)
     private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
-        NavigationManager.NavigateTo(PageRoutes.Admin.UserDetail(args.Item.Id),
-            new NavigationOptions { HistoryEntryState = JsonSerializer.Serialize(args.Item)});
+        NavigationManager.NavigateTo(PageRoutes.Admin.UserDetail(args.Item.Id));
     
 }

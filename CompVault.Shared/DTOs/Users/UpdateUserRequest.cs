@@ -16,6 +16,11 @@ public sealed class UpdateUserRequest
     /// <summary>Nytt etternavn (valgfritt).</summary>
     [MaxLength(100)]
     public string? LastName { get; set; }
+    
+    /// <summary>Bytt epost (valgfritt).</summary>
+    [EmailAddress(ErrorMessage = "Ugyldig e-postadresse")]
+    [MaxLength(256, ErrorMessage = "E-post kan ikke være mer enn 256 tegn")]
+    public string? Email { get; set; }
 
     /// <summary>Ny stillingstittel (valgfritt).</summary>
     [MaxLength(150)]

@@ -150,13 +150,22 @@ public sealed class UserService(
     public async Task<Result<UserDto>> UpdateUserAsync(
         Guid userId,
         UpdateUserRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken ct = default)
     {
-        ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        ApplicationUser? user = await userRepository.GetByIdWithDetailsAsync(userId, ct);
 
         if (user is null || user.DeletedAt is not null || (!user.IsActive && request.IsActive != true))
             return Result<UserDto>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            bool emailExist = await userRepository.ExistsAsync(
+                u => u.Email == request.Email && u.Id != user.Id, ct);
+            if (emailExist)
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Conflict, "E-posten er allerede i bruk."));
+        }
 
         if (request.ManagerId.HasValue && request.ManagerId.Value == userId)
             return Result<UserDto>.Failure(
@@ -165,7 +174,7 @@ public sealed class UserService(
         if (request.DepartmentId.HasValue)
         {
             bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
+                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, ct);
             if (!departmentExists)
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Avdeling med ID '{request.DepartmentId.Value}' ble ikke funnet."));
@@ -174,7 +183,7 @@ public sealed class UserService(
         if (request.ManagerId.HasValue)
         {
             bool managerExists = await userRepository.ExistsAsync(
-                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
+                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, ct);
             if (!managerExists)
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
@@ -182,6 +191,16 @@ public sealed class UserService(
 
         if (request.FirstName is not null) user.FirstName = request.FirstName;
         if (request.LastName is not null) user.LastName = request.LastName;
+        
+        // Normaliserer og oppdater brukernavn da det endres ved epost bytte
+        if (request.Email is not null)
+        {
+            user.Email = request.Email;
+            user.NormalizedEmail = request.Email.ToUpperInvariant();
+            user.UserName = request.Email;
+            user.NormalizedUserName = request.Email.ToUpperInvariant();
+        }
+        
         if (request.JobTitle is not null) user.JobTitle = request.JobTitle;
         if (request.EmploymentType.HasValue) user.EmploymentType = request.EmploymentType.Value;
         if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
@@ -196,12 +215,14 @@ public sealed class UserService(
         else if (request.ClearManagerId)
             user.ManagerId = null;
 
-        await userRepository.UpdateAsync(user, cancellationToken);
-        await userRepository.SaveChangesAsync(cancellationToken);
-
+        await userRepository.UpdateAsync(user, ct);
+        await userRepository.SaveChangesAsync(ct);
+        
+        ApplicationUser? updatedUser = (await userRepository.GetByIdWithDetailsAsync(userId, ct))!;
+        
         logger.LogInformation("Bruker {UserId} oppdatert", userId);
-        IList<string> roles = await userManager.GetRolesAsync(user);
-        return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
+        IList<string> roles = await userManager.GetRolesAsync(updatedUser);
+        return Result<UserDto>.Success(UserMapper.ToDto(updatedUser, roles));
     }
 
     /// <inheritdoc />
