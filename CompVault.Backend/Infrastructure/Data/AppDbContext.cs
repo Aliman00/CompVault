@@ -1,6 +1,7 @@
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
+using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -22,6 +23,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     // ============= COMPETENCIES ==============
     public DbSet<CompetencyType> CompetencyTypes => Set<CompetencyType>();
     public DbSet<Competency> Competencies => Set<Competency>();
+
+    // ============= DOCUMENTS ==============
+    public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
+    public DbSet<DocumentTypeCategory> DocumentTypeCategories => Set<DocumentTypeCategory>();
+    public DbSet<Document> Documents => Set<Document>();
+    public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
+    public DbSet<DocumentSignature> DocumentSignatures => Set<DocumentSignature>();
 
     // ============= AUTH ==============
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();

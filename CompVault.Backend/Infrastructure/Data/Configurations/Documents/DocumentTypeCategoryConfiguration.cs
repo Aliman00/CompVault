@@ -1,0 +1,31 @@
+using CompVault.Backend.Domain.Entities.Documents;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace CompVault.Backend.Infrastructure.Data.Configurations.Documents;
+
+/// <summary>
+/// EF Core-konfigurasjon for DocumentTypeCategory-tabellen.
+/// </summary>
+internal sealed class DocumentTypeCategoryConfiguration : IEntityTypeConfiguration<DocumentTypeCategory>
+{
+    public void Configure(EntityTypeBuilder<DocumentTypeCategory> builder)
+    {
+        builder.HasKey(c => c.Id);
+
+        builder.Property(c => c.Name).HasMaxLength(100).IsRequired();
+        builder.Property(c => c.Slug).HasMaxLength(50).IsRequired();
+        builder.Property(c => c.IsActive).IsRequired().HasDefaultValue(true);
+
+        builder.HasIndex(c => new { c.DocumentTypeId, c.Slug }).IsUnique();
+
+        // Matcher DocumentType's query filter slik at navigasjon til DocumentType alltid fungerer
+        builder.HasQueryFilter(c => c.DocumentType == null || c.DocumentType.DeletedAt == null);
+
+        builder.HasMany(c => c.Documents)
+            .WithOne(d => d.Category)
+            .HasForeignKey(d => d.DocumentTypeCategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+}
