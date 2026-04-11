@@ -52,4 +52,7 @@ public sealed class DocumentListDto
 
     /// <summary>Om dokumentet er arkivert.</summary>
     public bool IsArchived { get; set; }
+
+    /// <summary>Om dokumentet er aktivt (ikke slettet).</summary>
+    public bool IsActive { get; set; }
 }

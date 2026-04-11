@@ -17,6 +17,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.Category)
             .Include(d => d.Uploader)
             .Include(d => d.TargetDepartment)
+            .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
@@ -33,6 +34,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     {
         return await DbSet
             .Include(d => d.Signatures)
+            .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id && d.IsCurrent, cancellationToken);
     }
 
@@ -54,6 +56,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
 
         return await query
             .OrderByDescending(d => d.UploadedAt)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -67,6 +70,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
                         && d.IsActive
                         && d.IsCurrent
                         && (d.TargetDepartmentId == null || d.TargetDepartmentId == departmentId))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -80,6 +84,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
                         && d.IsActive
                         && d.IsCurrent
                         && (d.TargetJobTitle == null || d.TargetJobTitle == jobTitle))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -92,6 +97,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Where(d => d.DocumentTypeId == documentTypeId
                         && d.IsActive
                         && d.IsCurrent)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -115,7 +121,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
                 (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId) ||
                 (d.TargetJobTitle != null && d.TargetJobTitle == jobTitle));
 
-        var documents = await query.ToListAsync(cancellationToken);
+        List<Document> documents = await query.AsNoTracking().ToListAsync(cancellationToken);
 
         // Filtrer bort dokumenter som ikke krever signatur og dokumenter brukeren allerede har signert
         return documents
@@ -131,6 +137,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
             .Where(d => idList.Contains(d.Id))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -146,7 +153,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     {
         document.IsActive = false;
         document.DeletedAt = DateTime.UtcNow;
-        DbSet.Update(document);
+        // Entity already tracked from GetForUpdateAsync call — no Update() needed
         return Task.CompletedTask;
     }
 }

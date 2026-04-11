@@ -56,7 +56,8 @@ public static class DocumentMapper
             UploadedAt = document.UploadedAt,
             TotalSignatures = totalSignatures,
             SignedByCurrentUser = signedByCurrentUser,
-            IsArchived = !document.IsCurrent
+            IsArchived = !document.IsCurrent,
+            IsActive = document.IsActive
         };
     }
 

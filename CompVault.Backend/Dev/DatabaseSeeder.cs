@@ -67,7 +67,7 @@ public static class DatabaseSeeder
     // CompetencyTypes: (Name, Description, Category, RequiresExpiration)
     private static readonly (string Name, string? Description, string? Category, bool RequiresExpiration)[] CompetencyTypes =
     [
-        ("HMS-kurs (årlig)",       "Pliktarig HMS-opplæring for alle ansatte.",           "HMS",        true),
+        ("HMS-kurs (årlig)",       "Pliktig HMS-opplæring for alle ansatte.",           "HMS",        true),
         ("Førstehjelp",            "Kurs i førstehjelp og livredning.",                  "HMS",        true),
         ("Førerkort klasse B",     "Vanlig personbilførerkort.",                        "Sertifikat", true),
         ("Førerkort klasse C",     "Tung lastebilførerkort.",                           "Sertifikat", true),
