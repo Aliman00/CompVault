@@ -1,0 +1,113 @@
+﻿@page "/login-otp"
+@using CompVault.Frontend.Features.Auth.Services
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@using System.Threading
+
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem; background:#f5f5f5">
+    <MudCard Style="width:400px">
+        <MudCardContent Class="pa-6">
+            <MudText Typo="Typo.h4" Class="mb-4 text-center">Bekreft OTP</MudText>
+            <MudText Typo="Typo.body1" Class="mb-4">
+                Sendt til: <strong>@Email</strong>
+            </MudText>
+
+            <MudTextField Label="OTP-kode" @bind-Value="OtpCode" MaxLength="6" Variant="Variant.Outlined" />
+
+            <MudButton Class="mt-4" FullWidth Color="Color.Primary" OnClick="@VerifyOtpAsync" Disabled="@IsBusy">
+                @if (IsBusy)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <text>Bekrefter...</text>
+                }
+                else
+                {
+                    <text>Logg inn</text>
+                }
+            </MudButton>
+
+            <MudButton Class="mt-2" Color="Color.Secondary" Variant="Variant.Text" Disabled="@IsBusy" OnClick="@ResendOtpAsync">
+                <text>Send OTP på nytt</text>
+            </MudButton>
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <MudText Typo="Typo.body2" Class="mt-2" Color="Color.Error">@ErrorMessage</MudText>
+            }
+        </MudCardContent>
+    </MudCard>
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Email { get; set; }
+
+    private string OtpCode { get; set; } = "";
+    private bool IsBusy { get; set; } = false;
+    private string? ErrorMessage { get; set; }
+
+    private async Task VerifyOtpAsync()
+    {
+        if (string.IsNullOrWhiteSpace(OtpCode) || string.IsNullOrWhiteSpace(Email))
+        {
+            ErrorMessage = "Fyll ut både e-post og OTP-kode.";
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            ErrorMessage = null;
+
+            var result = await AuthService.VerifyOtpAsync(new VerifyOtpRequest
+            {
+                Email = Email,
+                OtpCode = OtpCode
+            }, CancellationToken.None);
+
+            if (result.IsSuccess)
+            {
+                Navigation.NavigateTo("/dashboard", forceLoad: true);
+            }
+            else
+            {
+                ErrorMessage = result.Error?.Message ?? "Ukjent feil ved OTP-verifisering.";
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task ResendOtpAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            ErrorMessage = "Kan ikke sende OTP uten e-post.";
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            ErrorMessage = null;
+
+            var result = await AuthService.RequestOtpAsync(new RequestOtpRequest
+            {
+                Email = Email,
+                DeliveryMethod = Shared.Enums.OtpDeliveryMethod.Email
+            }, CancellationToken.None);
+
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.Error?.Message ?? "Kunne ikke sende OTP.";
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}
