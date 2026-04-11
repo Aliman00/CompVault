@@ -376,7 +376,6 @@ public static class TestDataSeeder
                 Title = "Brannverninstruks",
                 RequiresSignature = true,
                 Version = 1,
-                IsCurrent = true,
                 IsActive = true,
                 UploadedBy = Guid.Empty,
                 UploadedAt = DateTime.UtcNow
@@ -388,7 +387,6 @@ public static class TestDataSeeder
                 Title = "Onboarding-guide",
                 RequiresSignature = false,
                 Version = 1,
-                IsCurrent = true,
                 IsActive = true,
                 UploadedBy = Guid.Empty,
                 UploadedAt = DateTime.UtcNow

@@ -124,7 +124,7 @@ public class DocumentServiceTests
             .ReturnsAsync(type);
 
         _documentRepositoryMock
-            .Setup(x => x.GetByDocumentTypeAsync(type.Id, null, false, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByDocumentTypeAsync(type.Id, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         // Act
@@ -152,7 +152,7 @@ public class DocumentServiceTests
             new()
             {
                 Id = docId, DocumentTypeId = type.Id, DocumentType = type,
-                Title = "Test dokument", Version = 1, IsCurrent = true, IsActive = true
+                Title = "Test dokument", Version = 1, IsActive = true
             }
         };
 
@@ -170,7 +170,7 @@ public class DocumentServiceTests
             .ReturnsAsync(type);
 
         _documentRepositoryMock
-            .Setup(x => x.GetByDocumentTypeAsync(type.Id, null, false, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByDocumentTypeAsync(type.Id, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);
 
         _signatureRepositoryMock
@@ -229,8 +229,7 @@ public class DocumentServiceTests
             DocumentTypeId = type.Id,
             DocumentType = type,
             Title = "Test dokument",
-            Version = 1,
-            IsCurrent = true
+            Version = 1
         };
 
         _documentRepositoryMock
@@ -260,7 +259,7 @@ public class DocumentServiceTests
         var request = new CreateDocumentRequest { Title = "Test" };
 
         _documentTypeRepositoryMock
-            .Setup(x => x.GetBySlugAsync("nonexistent", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithCategoriesBySlugAsync("nonexistent", It.IsAny<CancellationToken>()))
             .ReturnsAsync((DocumentType?)null);
 
         // Act
@@ -288,7 +287,7 @@ public class DocumentServiceTests
         };
 
         _documentTypeRepositoryMock
-            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithCategoriesBySlugAsync("test-type", It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
         // Act
@@ -316,7 +315,7 @@ public class DocumentServiceTests
         };
 
         _documentTypeRepositoryMock
-            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithCategoriesBySlugAsync("test-type", It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
         // Act
@@ -344,7 +343,7 @@ public class DocumentServiceTests
         };
 
         _documentTypeRepositoryMock
-            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithCategoriesBySlugAsync("test-type", It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
         _departmentRepositoryMock
@@ -381,7 +380,7 @@ public class DocumentServiceTests
         };
 
         _documentTypeRepositoryMock
-            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithCategoriesBySlugAsync("test-type", It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
         _documentTypeRepositoryMock
@@ -409,7 +408,7 @@ public class DocumentServiceTests
         var request = new CreateDocumentRequest { Title = "Nytt dokument" };
 
         _documentTypeRepositoryMock
-            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithCategoriesBySlugAsync("test-type", It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
         _documentRepositoryMock
@@ -429,8 +428,7 @@ public class DocumentServiceTests
                     DocumentTypeId = type.Id,
                     DocumentType = type,
                     Title = request.Title,
-                    Version = 1,
-                    IsCurrent = true
+                    Version = 1
                 });
 
         // Act
@@ -462,7 +460,7 @@ public class DocumentServiceTests
         var stream = new MemoryStream([1, 2, 3, 4, 5]);
 
         _documentTypeRepositoryMock
-            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithCategoriesBySlugAsync("test-type", It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
         _fileStorageMock
@@ -490,8 +488,7 @@ public class DocumentServiceTests
                     DocumentTypeId = type.Id,
                     DocumentType = type,
                     Title = request.Title,
-                    Version = 1,
-                    IsCurrent = true
+                    Version = 1
                 });
 
         // Act
@@ -714,8 +711,7 @@ public class DocumentServiceTests
         var document = new Document
         {
             Id = docId,
-            Version = 1,
-            IsCurrent = true
+            Version = 1
         };
 
         _documentRepositoryMock
@@ -746,8 +742,7 @@ public class DocumentServiceTests
         var document = new Document
         {
             Id = docId,
-            Version = 2,
-            IsCurrent = true
+            Version = 2
         };
 
         _documentRepositoryMock
@@ -997,7 +992,7 @@ public class DocumentServiceTests
             {
                 Id = docId, DocumentTypeId = typeId,
                 DocumentType = type,
-                Title = "Avdelingsdok", Version = 1, IsCurrent = true, IsActive = true
+                Title = "Avdelingsdok", Version = 1, IsActive = true
             }
         };
 
@@ -1051,7 +1046,7 @@ public class DocumentServiceTests
             {
                 Id = docId, DocumentTypeId = typeId,
                 DocumentType = type,
-                Title = "Lederdok", Version = 1, IsCurrent = true, IsActive = true
+                Title = "Lederdok", Version = 1, IsActive = true
             }
         };
 
@@ -1110,7 +1105,7 @@ public class DocumentServiceTests
             {
                 Id = unsignedDocId, DocumentTypeId = typeId,
                 DocumentType = type,
-                Title = "Usignert", Version = 1, IsCurrent = true, IsActive = true
+                Title = "Usignert", Version = 1, IsActive = true
             }
         };
 
@@ -1169,7 +1164,6 @@ public class DocumentServiceTests
             DocumentType = type,
             Title = "Test",
             Version = 1,
-            IsCurrent = true,
             IsActive = true,
             FileName = "old.pdf",
             FilePath = "test-folder/active/doc/file_v1.pdf",
@@ -1218,7 +1212,6 @@ public class DocumentServiceTests
                 DocumentType = type,
                 Title = "Test",
                 Version = 2,
-                IsCurrent = true,
                 IsActive = true,
                 FileName = "new.pdf",
                 FilePath = "test-folder/active/doc/file_v2.pdf",
@@ -1289,7 +1282,6 @@ public class DocumentServiceTests
             DocumentType = type,
             Title = "Test",
             Version = 1,
-            IsCurrent = true,
             IsActive = true
         };
 
@@ -1333,7 +1325,6 @@ public class DocumentServiceTests
             DocumentType = type,
             Title = "Test",
             Version = 1,
-            IsCurrent = true,
             IsActive = true
         };
 
@@ -1377,7 +1368,6 @@ public class DocumentServiceTests
             DocumentType = type,
             Title = "Test",
             Version = 1,
-            IsCurrent = true,
             IsActive = true,
             Checksum = "samechecksum"
         };
@@ -1435,17 +1425,16 @@ public class DocumentServiceTests
         var document = new Document
         {
             Id = docId,
-            DocumentTypeId = wrongTypeId, // Dokumentet tilhører wrongType
+            DocumentTypeId = wrongTypeId,
             DocumentType = wrongType,
             Title = "Test",
             Version = 1,
-            IsCurrent = true,
             IsActive = true
         };
 
         _documentTypeRepositoryMock
             .Setup(x => x.GetBySlugAsync("correct-type", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(correctType); // URL slug er "correct-type"
+            .ReturnsAsync(correctType);
 
         _documentRepositoryMock
             .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))

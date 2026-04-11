@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CompVault.Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260411180850_AddDocumentVersionUniqueIndex")]
-    partial class AddDocumentVersionUniqueIndex
+    [Migration("20260411220618_AddDocuments")]
+    partial class AddDocuments
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -253,9 +253,6 @@ namespace CompVault.Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Checksum")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
@@ -293,16 +290,11 @@ namespace CompVault.Backend.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
-                    b.Property<bool>("IsCurrent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
                     b.Property<string>("MimeType")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<bool?>("RequiresSignature")
+                    b.Property<bool>("RequiresSignature")
                         .HasColumnType("boolean");
 
                     b.Property<Guid?>("TargetDepartmentId")
@@ -428,6 +420,8 @@ namespace CompVault.Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedById");
+
                     b.HasIndex("DeletedAt");
 
                     b.HasIndex("Slug")
@@ -441,6 +435,9 @@ namespace CompVault.Backend.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("DocumentTypeId")
                         .HasColumnType("uuid");
@@ -504,8 +501,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DocumentId", "Version")
-                        .IsUnique();
+                    b.HasIndex("DocumentId", "Version");
 
                     b.ToTable("DocumentVersions");
                 });
@@ -927,6 +923,16 @@ namespace CompVault.Backend.Migrations
                     b.Navigation("Document");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentType", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentTypeCategory", b =>

@@ -26,7 +26,6 @@ public sealed class DocumentService(
         string documentTypeSlug,
         Guid? currentUserId,
         Guid? documentTypeCategoryId,
-        bool includeArchived = false,
         CancellationToken cancellationToken = default)
     {
         DocumentType? documentType = await documentTypeRepository.GetBySlugAsync(documentTypeSlug, cancellationToken);
@@ -36,7 +35,7 @@ public sealed class DocumentService(
                 AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
 
         IReadOnlyList<Document> documents = await documentRepository.GetByDocumentTypeAsync(
-            documentType.Id, documentTypeCategoryId, includeArchived, cancellationToken);
+            documentType.Id, documentTypeCategoryId, cancellationToken);
 
         if (documents.Count == 0)
             return Result<IReadOnlyList<DocumentListDto>>.Success(Array.Empty<DocumentListDto>());
@@ -51,7 +50,7 @@ public sealed class DocumentService(
             int signatureCount = allSignatures.Count(s =>
                 s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
 
-            bool signedByCurrentUser = currentUserId.HasValue && doc.IsCurrent && allSignatures.Any(s =>
+            bool signedByCurrentUser = currentUserId.HasValue && allSignatures.Any(s =>
                 s.DocumentId == doc.Id && s.SignatureVersion == doc.Version && s.UserId == currentUserId.Value);
 
             dtos.Add(DocumentMapper.ToListDto(doc, signatureCount, signedByCurrentUser));
@@ -83,7 +82,7 @@ public sealed class DocumentService(
         Stream? fileStream = null,
         CancellationToken cancellationToken = default)
     {
-        DocumentType? documentType = await documentTypeRepository.GetBySlugAsync(documentTypeSlug, cancellationToken);
+        DocumentType? documentType = await documentTypeRepository.GetWithCategoriesBySlugAsync(documentTypeSlug, cancellationToken);
 
         if (documentType is null)
             return Result<DocumentDto>.Failure(
@@ -107,13 +106,9 @@ public sealed class DocumentService(
         }
 
         // Valider kategori tilhører riktig dokumenttype og er aktiv
-        if (request.DocumentTypeCategoryId.HasValue)
-        {
-            DocumentType? documentTypeWithCategories = await documentTypeRepository.GetWithCategoriesBySlugAsync(documentType.Slug, cancellationToken);
-            if (documentTypeWithCategories is null || documentTypeWithCategories.Categories.All(c => c.Id != request.DocumentTypeCategoryId.Value))
-                return Result<DocumentDto>.Failure(
-                    AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for denne dokumenttypen."));
-        }
+        if (request.DocumentTypeCategoryId.HasValue && documentType.Categories.All(c => c.Id != request.DocumentTypeCategoryId.Value))
+            return Result<DocumentDto>.Failure(
+                AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for denne dokumenttypen."));
 
         var document = new Document
         {
@@ -126,7 +121,6 @@ public sealed class DocumentService(
             TargetJobTitle = request.TargetJobTitle,
             RequiresSignature = request.RequiresSignature,
             Version = 1,
-            IsCurrent = true,
             UploadedBy = uploadedById,
             IsActive = true
         };
@@ -311,7 +305,7 @@ public sealed class DocumentService(
                 AppError.NotFound($"Dokument med ID '{documentId}' ble ikke funnet."));
 
         // RequiresSignature == false betyr at signering ikke er nødvendig
-        if (document.RequiresSignature == false)
+        if (!document.RequiresSignature)
             return Result<bool>.Failure(
                 AppError.Create(ErrorCode.Validation,
                     "Dette dokumentet krever ikke signering."));
@@ -451,7 +445,6 @@ public sealed class DocumentService(
             document.Checksum = newChecksum;
             document.UploadedBy = uploadedById;
             document.UploadedAt = DateTime.UtcNow;
-            document.IsCurrent = true;
 
             // Slett signaturer — ny versjon krever re-signering
             await signatureRepository.DeleteAllForDocumentAsync(documentId, cancellationToken);
@@ -482,8 +475,8 @@ public sealed class DocumentService(
             await documentRepository.SaveChangesAsync(cancellationToken);
 
             // Flytt nye filen til active etter at alt annet er commitet.
-            // Hvis dette feiler er ikke dokumentet i en inkonsistent tilstand —
-            // den gamle filen er fortsatt på plass og DB er allerede oppdatert.
+            // Hvis dette feiler er dokumentet fortsatt konsistent — den gamle filen
+            // er allerede flyttet til arkiv og DB er oppdatert med nye verdier.
             await fileStorage.MoveAsync(tempPath, newFilePath, cancellationToken);
 
             Document? updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken);
@@ -567,7 +560,7 @@ public sealed class DocumentService(
             return Result<IReadOnlyList<DocumentListDto>>.Success(Array.Empty<DocumentListDto>());
 
         var documents = (await documentRepository.GetByIdsAsync(signedDocumentIds, cancellationToken))
-            .Where(d => d.IsCurrent && d.IsActive)
+            .Where(d => d.IsActive)
             .ToList();
 
         var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(documents.Select(d => d.Id).ToList(), cancellationToken)).ToList();

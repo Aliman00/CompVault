@@ -53,9 +53,6 @@ public sealed class DocumentDto
     /// <summary>MIME-type.</summary>
     public string? MimeType { get; set; }
 
-    /// <summary>Om dette er gjeldende versjon.</summary>
-    public bool IsCurrent { get; set; }
-
     /// <summary>Om dokumentet er aktivt.</summary>
     public bool IsActive { get; set; }
 
@@ -64,7 +61,4 @@ public sealed class DocumentDto
 
     /// <summary>Når dokumentet ble lastet opp (UTC).</summary>
     public DateTime UploadedAt { get; set; }
-
-    /// <summary>Når dokumentet ble arkivert (UTC).</summary>
-    public DateTime? ArchivedAt { get; set; }
 }

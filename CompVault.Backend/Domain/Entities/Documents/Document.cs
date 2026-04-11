@@ -42,8 +42,12 @@ public class Document
     public string? TargetJobTitle { get; set; }
 
     // ======================== Signatur ========================
-    /// <summary>Om dette dokumentet krever signering. Null betyr at signering kreves (standard).</summary>
-    public bool? RequiresSignature { get; set; }
+    /// <summary>Om dette dokumentet krever signering.</summary>
+    public bool RequiresSignature { get; set; } = true;
+
+    // ======================== Status ========================
+    /// <summary>Om dokumentet er aktivt (ikke slettet).</summary>
+    public bool IsActive { get; set; } = true;
 
     // ======================== Filinfo ========================
     /// <summary>Versjonsnummer. Starter på 1, økes ved hver opplasting.</summary>
@@ -64,22 +68,12 @@ public class Document
     /// <summary>SHA256-sjekksum for filintegritet.</summary>
     public string? Checksum { get; set; }
 
-    // ======================== Status ========================
-    /// <summary>Om dette er gjeldende versjon.</summary>
-    public bool IsCurrent { get; set; } = true;
-
-    /// <summary>Om dokumentet er aktivt (ikke slettet).</summary>
-    public bool IsActive { get; set; } = true;
-
     // ======================== Metadata ========================
     /// <summary>ID til brukeren som lastet opp.</summary>
     public Guid UploadedBy { get; set; }
 
     /// <summary>Når dokumentet ble lastet opp (UTC).</summary>
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
-
-    /// <summary>Når dokumentet ble arkivert (UTC). Null hvis aktivt.</summary>
-    public DateTime? ArchivedAt { get; set; }
 
     /// <summary>Når dokumentet ble soft-slettet (UTC). Null hvis aktivt.</summary>
     public DateTime? DeletedAt { get; set; }

@@ -27,12 +27,11 @@ public sealed class DocumentsController(
     public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetAllAsync(
         string documentTypeSlug,
         [FromQuery] Guid? documentTypeCategoryId,
-        [FromQuery] bool includeArchived = false,
         CancellationToken cancellationToken = default)
     {
         Guid? currentUserId = User.TryGetUserId();
         Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetAllAsync(
-            documentTypeSlug, currentUserId, documentTypeCategoryId, includeArchived, cancellationToken);
+            documentTypeSlug, currentUserId, documentTypeCategoryId, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

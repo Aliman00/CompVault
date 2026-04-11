@@ -22,17 +22,15 @@ public static class DocumentMapper
             ExternalUrl = document.ExternalUrl,
             TargetDepartmentId = document.TargetDepartmentId,
             TargetJobTitle = document.TargetJobTitle,
-            RequiresSignature = document.RequiresSignature ?? true, // Null = arv fra standard (krever signering)
+            RequiresSignature = document.RequiresSignature,
             HasFile = !string.IsNullOrEmpty(document.FilePath),
             Version = document.Version,
             FileName = document.FileName,
             FileSize = document.FileSize,
             MimeType = document.MimeType,
-            IsCurrent = document.IsCurrent,
             IsActive = document.IsActive,
             UploadedBy = document.UploadedBy,
-            UploadedAt = document.UploadedAt,
-            ArchivedAt = document.ArchivedAt
+            UploadedAt = document.UploadedAt
         };
     }
 
@@ -52,11 +50,9 @@ public static class DocumentMapper
             TargetDepartmentId = document.TargetDepartmentId,
             TargetJobTitle = document.TargetJobTitle,
             Version = document.Version,
-            IsCurrent = document.IsCurrent,
             UploadedAt = document.UploadedAt,
             TotalSignatures = totalSignatures,
             SignedByCurrentUser = signedByCurrentUser,
-            IsArchived = !document.IsCurrent,
             IsActive = document.IsActive
         };
     }

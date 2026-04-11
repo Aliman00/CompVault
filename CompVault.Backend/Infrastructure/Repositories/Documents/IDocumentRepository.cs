@@ -18,20 +18,8 @@ public interface IDocumentRepository : IRepository<Document>
 
     /// <summary>Henter alle aktive dokumenter for en gitt dokumenttype.</summary>
     Task<IReadOnlyList<Document>> GetByDocumentTypeAsync(
-        Guid documentTypeId, Guid? categoryId, bool includeArchived,
+        Guid documentTypeId, Guid? categoryId,
         CancellationToken cancellationToken = default);
-
-    /// <summary>Henter aktive gjeldende dokumenter for en avdeling (inkludert generelle).</summary>
-    Task<IReadOnlyList<Document>> GetActiveCurrentForDepartmentAsync(
-        Guid departmentId, Guid documentTypeId, CancellationToken cancellationToken = default);
-
-    /// <summary>Henter aktive gjeldende dokumenter for en jobbtittel (inkludert generelle).</summary>
-    Task<IReadOnlyList<Document>> GetActiveCurrentForJobTitleAsync(
-        string jobTitle, Guid documentTypeId, CancellationToken cancellationToken = default);
-
-    /// <summary>Henter alle aktive gjeldende dokumenter for en type (ingen targeting-filter).</summary>
-    Task<IReadOnlyList<Document>> GetAllActiveCurrentAsync(
-        Guid documentTypeId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Henter alle pending dokumenter for en bruker i én spørring.

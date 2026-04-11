@@ -219,6 +219,7 @@ public sealed class DocumentTypeService(
                 AppError.NotFound($"Kategori med ID '{categoryId}' ble ikke funnet for dokumenttype '{documentTypeSlug}'."));
 
         category.IsActive = false;
+        category.DeletedAt = DateTime.UtcNow;
         await categoryRepository.UpdateAsync(category, cancellationToken);
         await categoryRepository.SaveChangesAsync(cancellationToken);
 

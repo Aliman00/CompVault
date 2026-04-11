@@ -250,9 +250,6 @@ namespace CompVault.Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Checksum")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
@@ -290,16 +287,11 @@ namespace CompVault.Backend.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
-                    b.Property<bool>("IsCurrent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
                     b.Property<string>("MimeType")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<bool?>("RequiresSignature")
+                    b.Property<bool>("RequiresSignature")
                         .HasColumnType("boolean");
 
                     b.Property<Guid?>("TargetDepartmentId")
@@ -506,8 +498,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DocumentId", "Version")
-                        .IsUnique();
+                    b.HasIndex("DocumentId", "Version");
 
                     b.ToTable("DocumentVersions");
                 });

@@ -14,7 +14,6 @@ public interface IDocumentService
         string documentTypeSlug,
         Guid? currentUserId,
         Guid? documentTypeCategoryId,
-        bool includeArchived = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>Henter ett dokument basert på ID.</summary>

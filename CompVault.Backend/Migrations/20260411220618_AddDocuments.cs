@@ -31,6 +31,12 @@ namespace CompVault.Backend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_DocumentTypes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DocumentTypes_AspNetUsers_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -41,7 +47,8 @@ namespace CompVault.Backend.Migrations
                     DocumentTypeId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Slug = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -66,18 +73,16 @@ namespace CompVault.Backend.Migrations
                     ExternalUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     TargetDepartmentId = table.Column<Guid>(type: "uuid", nullable: true),
                     TargetJobTitle = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    RequiresSignature = table.Column<bool>(type: "boolean", nullable: true),
+                    RequiresSignature = table.Column<bool>(type: "boolean", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     Version = table.Column<int>(type: "integer", nullable: false),
                     FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     FilePath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     FileSize = table.Column<long>(type: "bigint", nullable: true),
                     MimeType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Checksum = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    IsCurrent = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     UploadedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     UploadedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ArchivedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
@@ -208,6 +213,11 @@ namespace CompVault.Backend.Migrations
                 table: "DocumentTypeCategories",
                 columns: new[] { "DocumentTypeId", "Slug" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DocumentTypes_CreatedById",
+                table: "DocumentTypes",
+                column: "CreatedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DocumentTypes_DeletedAt",

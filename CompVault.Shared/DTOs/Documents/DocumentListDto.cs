@@ -38,9 +38,6 @@ public sealed class DocumentListDto
     /// <summary>Versjonsnummer.</summary>
     public int Version { get; set; }
 
-    /// <summary>Om dette er gjeldende versjon.</summary>
-    public bool IsCurrent { get; set; }
-
     /// <summary>Når dokumentet ble lastet opp (UTC).</summary>
     public DateTime UploadedAt { get; set; }
 
@@ -49,9 +46,6 @@ public sealed class DocumentListDto
 
     /// <summary>Om gjeldende bruker har signert.</summary>
     public bool SignedByCurrentUser { get; set; }
-
-    /// <summary>Om dokumentet er arkivert.</summary>
-    public bool IsArchived { get; set; }
 
     /// <summary>Om dokumentet er aktivt (ikke slettet).</summary>
     public bool IsActive { get; set; }

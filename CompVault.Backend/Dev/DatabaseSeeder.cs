@@ -671,7 +671,6 @@ public static class DatabaseSeeder
                 TargetDepartmentId = targetDeptId,
                 TargetJobTitle = targetJobTitle,
                 Version = 1,
-                IsCurrent = true,
                 IsActive = true,
                 UploadedBy = admin.Id,
                 UploadedAt = DateTime.UtcNow,
