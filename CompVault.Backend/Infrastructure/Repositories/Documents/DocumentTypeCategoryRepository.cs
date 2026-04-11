@@ -23,7 +23,7 @@ public sealed class DocumentTypeCategoryRepository(AppDbContext dbContext)
         CancellationToken cancellationToken = default)
     {
         return await DbSet.AnyAsync(
-            c => c.DocumentTypeId == documentTypeId && c.Slug == slug
+            c => c.DocumentTypeId == documentTypeId && c.Slug == slug && c.IsActive
                  && (!excludeId.HasValue || c.Id != excludeId.Value),
             cancellationToken);
     }

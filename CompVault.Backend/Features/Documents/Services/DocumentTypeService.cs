@@ -57,8 +57,10 @@ public sealed class DocumentTypeService(
         await documentTypeRepository.AddAsync(documentType, cancellationToken);
         await documentTypeRepository.SaveChangesAsync(cancellationToken);
 
-        DocumentType created = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Dokumenttype med ID '{documentType.Id}' ble ikke funnet etter opprettelse.");
+        DocumentType? created = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken);
+        if (created is null)
+            return Result<DocumentTypeDto>.Failure(
+                AppError.NotFound($"Dokumenttype med ID '{documentType.Id}' ble ikke funnet etter opprettelse."));
 
         return Result<DocumentTypeDto>.Success(DocumentMapper.ToTypeDto(created));
     }
@@ -93,8 +95,10 @@ public sealed class DocumentTypeService(
         await documentTypeRepository.UpdateAsync(documentType, cancellationToken);
         await documentTypeRepository.SaveChangesAsync(cancellationToken);
 
-        DocumentType updated = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Dokumenttype med ID '{documentType.Id}' ble ikke funnet etter oppdatering.");
+        DocumentType? updated = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken);
+        if (updated is null)
+            return Result<DocumentTypeDto>.Failure(
+                AppError.NotFound($"Dokumenttype med ID '{documentType.Id}' ble ikke funnet etter oppdatering."));
 
         return Result<DocumentTypeDto>.Success(DocumentMapper.ToTypeDto(updated));
     }

@@ -91,7 +91,10 @@ public sealed class LocalFileStorageService(
     private string GetFullPath(string relativePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(relativePath);
-        return Path.GetFullPath(Path.Combine(Settings.RootPath, relativePath));
+        string rootPath = Settings.RootPath;
+        if (string.IsNullOrWhiteSpace(rootPath))
+            throw new InvalidOperationException("FileStorageSettings.RootPath is not configured.");
+        return Path.GetFullPath(Path.Combine(rootPath, relativePath));
     }
 
     private void EnsurePathIsWithinRoot(string fullPath)

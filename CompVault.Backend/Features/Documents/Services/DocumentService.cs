@@ -211,7 +211,7 @@ public sealed class DocumentService(
 
         if (wantsTargetDepartment || wantsTargetJobTitle)
         {
-            Result targetValidation = ValidateTargetForUpdate(documentType, wantsTargetDepartment, request.TargetDepartmentId, wantsTargetJobTitle, request.TargetJobTitle);
+            Result targetValidation = ValidateTargetForUpdate(documentType, wantsTargetDepartment, request.TargetDepartmentId, wantsTargetJobTitle);
             if (targetValidation.IsFailure)
                 return Result<DocumentDto>.Failure(targetValidation.Error!);
         }
@@ -315,6 +315,24 @@ public sealed class DocumentService(
             return Result<bool>.Failure(
                 AppError.Create(ErrorCode.Validation,
                     "Dette dokumentet krever ikke signering."));
+
+        // Sjekk at bruker tilhører dokumentets målgruppe
+        if (document.TargetDepartmentId.HasValue || !string.IsNullOrEmpty(document.TargetJobTitle))
+        {
+            ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
+            if (user is null)
+                return Result<bool>.Failure(
+                    AppError.NotFound("Bruker ble ikke funnet."));
+
+            bool inTargetGroup =
+                (document.TargetDepartmentId is null || document.TargetDepartmentId == user.DepartmentId) &&
+                (string.IsNullOrEmpty(document.TargetJobTitle) || document.TargetJobTitle == user.JobTitle);
+
+            if (!inTargetGroup)
+                return Result<bool>.Failure(
+                    AppError.Create(ErrorCode.Forbidden,
+                        "Du tilhører ikke målgruppen for dette dokumentet."));
+        }
 
         bool alreadySigned = await signatureRepository.HasUserSignedVersionAsync(
             documentId, userId, document.Version, cancellationToken);
@@ -601,7 +619,7 @@ public sealed class DocumentService(
     private static Result ValidateTargetForUpdate(
         DocumentType documentType,
         bool wantsTargetDepartment, Guid? targetDepartmentId,
-        bool wantsTargetJobTitle, string? targetJobTitle)
+        bool wantsTargetJobTitle)
     {
         return documentType.TargetMode switch
         {
