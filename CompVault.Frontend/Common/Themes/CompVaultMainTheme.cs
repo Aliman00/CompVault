@@ -1,7 +1,6 @@
 ﻿using MudBlazor;
 namespace CompVault.Frontend.Common.Themes;
 
-
 public static class CompVaultMainTheme
 {
     public static MudTheme Theme => new()
@@ -23,6 +22,7 @@ public static class CompVaultMainTheme
             Success = "#4ecf7a",
             TextPrimary = "#1a2535",
             TextSecondary = "#4a5568",
+            TableHover = "rgba(45, 122, 79, 0.08)"
         },
         PaletteDark = new PaletteDark
         {
@@ -42,6 +42,7 @@ public static class CompVaultMainTheme
             Success = "#5dd887",
             TextPrimary = "#f5f5f5",
             TextSecondary = "#b0c0d0",
+            TableHover = "rgba(93, 216, 135, 0.12)",
         },
         Typography = new Typography
         {

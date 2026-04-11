@@ -1,6 +1,7 @@
 ﻿using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Constants;
 using CompVault.Frontend.Common.Http;
+using CompVault.Frontend.Common.Localization;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
@@ -11,6 +12,9 @@ using CompVault.Shared.Constants;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
+using MudBlazor;
 
 namespace CompVault.Frontend.Extensions;
 
@@ -130,7 +134,9 @@ public static class ServiceCollectionExtensions
 
         // ================================ Infrastruktur ================================
         services.AddScoped<IThemeService, ThemeService>();
-
+        services.AddLocalization();
+        services.AddTransient<MudLocalizer, NorwegianMudLocalizer>();
+        
         // ================================ Admin forretningslogikk ================================
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();

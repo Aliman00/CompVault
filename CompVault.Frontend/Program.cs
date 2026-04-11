@@ -1,6 +1,7 @@
+using System.Globalization;
 using CompVault.Frontend;
 using CompVault.Frontend.Extensions;
-
+using Microsoft.AspNetCore.Localization;
 using MudBlazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,14 @@ builder.Services.AddFrontendServices(builder.Environment);
 builder.Services.AddRazorPages();
 
 WebApplication app = builder.Build();
+
+CultureInfo[] supportedCultures = [ new("nb-NO") ];
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("nb-NO"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

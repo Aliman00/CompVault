@@ -1,0 +1,79 @@
+﻿@* Header for detail-sider med tittel/undertittel og redigerings-knapper. Lagre-knappen er Submit, brukes i FormEdit *@
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
+    @* Navn og tittel *@
+    <MudStack>
+        <MudText Typo="Typo.h5">@Title</MudText>
+        @if (!string.IsNullOrWhiteSpace(Subtitle))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Subtitle</MudText>
+        }
+    </MudStack>
+    @* Redigeringsknapper og meny-knapp - En rediger knapp, og en avbryt og lagre knapp hvis IsEditing = true *@
+    <MudSpacer/>
+    @if (!IsEditing)
+    {
+        @* Meny-knapp for ekstra handlinger som feks slett *@
+        @if (Actions != null)
+        {
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                     Variant="Variant.Outlined"
+                     AnchorOrigin="Origin.BottomRight">
+                @Actions
+            </MudMenu>
+        }
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Edit"
+                   OnClick="OnStartEdit">
+            Rediger
+        </MudButton>
+    }
+    else
+    {
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Error"
+                   Class="mr-2"
+                   OnClick="OnCancelEdit">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   ButtonType="ButtonType.Submit">
+            Lagre
+        </MudButton>
+    }
+</MudStack>
+
+@code {
+    
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Tittelen til kortet
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Subtitlen til kortet
+    /// </summary>
+    [Parameter] public string? Subtitle { get; set; }
+    
+    /// <summary>
+    /// Bytter mellom visning av redigerknapper
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing { get; set; }
+    
+    /// <summary>
+    /// Handling som skjer ved trykk på Redigerings-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnStartEdit { get; set; }
+    
+    /// <summary>
+    /// Handling som skjer ved trykk på Avbryt-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnCancelEdit { get; set; }
+    
+    /// <summary>
+    /// Ekstra handlinger som feks sletting
+    /// </summary>
+    [Parameter] public RenderFragment? Actions { get; set; }
+}

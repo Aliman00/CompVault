@@ -1,0 +1,44 @@
+﻿@* Enum-felt for bruk i redigeringsmodus. Brukes til alle typer enums. Oversetter til norsk *@
+@typeparam T where T : struct, Enum
+
+@if (IsEditing)
+{
+    <MudSelect Value="Value"
+               ValueChanged="ValueChanged"
+               Label="@Label"
+               Variant="Variant.Outlined">
+        @foreach (T item in Enum.GetValues<T>())
+        {
+            <MudSelectItem Value="item">@item.ToDisplayString()</MudSelectItem>
+        }
+    </MudSelect>
+}
+else
+{
+    <DetailTextField Value="@Value.ToDisplayString()"
+                                         Label="@Label"
+                                         IsEditing="false"/>
+}
+
+@code {
+    /// <summary>
+    /// Verdien for input - datatype
+    /// </summary>
+    [Parameter, EditorRequired] public T Value {get; set; }
+    
+    /// <summary>
+    /// Handling som skjer når verdi endres
+    /// </summary>
+    [Parameter] public EventCallback<T> ValueChanged {get; set; }
+    
+    /// <summary>
+    /// Label som vises over feltet (eller i feltet hvis ingen value)
+    /// </summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Endrer utseende i UI for å skille mellom redigering og visning
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing {get; set; }
+    
+}

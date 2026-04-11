@@ -99,4 +99,63 @@ public class UserService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<UserDto>> CreateAsync(CreateUserRequest request, CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response = 
+                await _httpClient.PostAsJsonAsync(ApiRoutes.User.Base, request, ct);
+
+            Result<UserDto> result = await HttpClientExtensions.ParseResponseAsync<UserDto>(response, ct);
+
+            if (result.IsFailure)
+                return Result<UserDto>.Failure(result.Error!);
+
+            return Result<UserDto>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved oppretting av bruker");
+            return Result<UserDto>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved oppretting av bruker");
+            return Result<UserDto>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
+    
+    
+    /// <inheritdoc />
+    public async Task<Result> DeleteAsync(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response = await _httpClient.DeleteAsync(ApiRoutes.User.ById(id), ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Result<UserDto> errorResult = await HttpClientExtensions.ParseResponseAsync<UserDto>(response, ct);
+                return Result.Failure(errorResult.Error!);
+            }
+
+            return Result.Success();
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved sletting av bruker {Id}", id);
+            return Result.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved sletting av bruker {Id}", id);
+            return Result.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
 }

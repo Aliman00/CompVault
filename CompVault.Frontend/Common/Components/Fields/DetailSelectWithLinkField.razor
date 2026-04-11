@@ -1,0 +1,68 @@
+﻿@* Select-felt for andre entiteter som kobles til en annen entitet. Med navigeringslenke til denne entiteten 
+   Eks. avdelingen til en bruker *@
+@if (IsEditing)
+{
+    <MudSelect Value="Value"
+               ValueChanged="ValueChanged"
+               Label="@Label"
+               Variant="Variant.Outlined"
+               ToStringFunc="ToStringFunc">
+        @Items
+    </MudSelect>
+}
+else
+{
+    <DetailTextField Value="@DisplayValue.DashIfEmpty()"
+                     Label="@Label"
+                     IsEditing="false"
+                     OnAdornmentClick="OnNavigate"
+                     HelperText="@(OnNavigate.HasDelegate ? HelperText : null)"/>
+}
+
+@code {
+    /// <summary>
+    /// Guid 
+    /// </summary>
+    [Parameter, EditorRequired] public Guid? Value { get; set; }
+    
+    /// <summary>
+    /// Handling som skjer når verdi endres
+    /// </summary>
+    [Parameter] public EventCallback<Guid?> ValueChanged {get; set; }
+    
+    /// <summary>
+    /// Label som vises over feltet (eller i feltet hvis ingen value)
+    /// </summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Endrer utseende i UI for å skille mellom redigering og visning
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing {get; set; }
+    
+    /// <summary>
+    /// Teksten som vises i lese-modus, eks navnet på en avdeling
+    /// </summary>
+    [Parameter] public string? DisplayValue { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Konverterer Guid-veriden til visningsnavn i MudSelect
+    /// </summary>
+    [Parameter, EditorRequired] public Func<Guid?, string> ToStringFunc { get; set; } = null!;
+    
+    /// <summary>
+    /// Valgene som vises i redigerings-modus
+    /// </summary>
+    [Parameter, EditorRequired] public RenderFragment Items { get; set; } = null!;
+    
+    /// <summary>
+    /// Navigerer til siden til objektet. Eks. bruker-siden for en manager
+    /// </summary>
+    [Parameter] public EventCallback OnNavigate { get; set; }
+    
+    /// <summary>
+    /// Valgtfritt hjeletekst for å vise hva navigeringsknappen gjør når feltet er i fokus i lese-modus
+    /// </summary>
+    [Parameter] public string? HelperText { get; set; }
+    
+}
