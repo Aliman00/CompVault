@@ -56,7 +56,18 @@ public class DocumentServiceTests
             Slug = "test-type",
             TargetMode = targetMode,
             IsActive = true,
-            StorageFolder = "test-type"
+            StorageFolder = "test-type",
+            AllowedMimeTypes = new[]
+            {
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "text/plain",
+                "text/csv",
+                "image/png",
+                "image/jpeg"
+            }
         };
     }
 
@@ -877,10 +888,6 @@ public class DocumentServiceTests
             .Setup(x => x.ExistsAsync("/files/test.pdf", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        _fileStorageMock
-            .Setup(x => x.OpenReadAsync("/files/test.pdf", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new MemoryStream([1, 2, 3]));
-
         // Act
         Result<DocumentDownloadResult> result = await _sut.GetDownloadAsync(id);
 
@@ -888,7 +895,7 @@ public class DocumentServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value?.FileName.Should().Be("test.pdf");
         result.Value?.ContentType.Should().Be("application/pdf");
-        result.Value?.Stream.Should().NotBeNull();
+        result.Value?.FilePath.Should().Be("/files/test.pdf");
     }
 
     // -------------------------------------------------------------------------
@@ -909,7 +916,7 @@ public class DocumentServiceTests
 
         // Act
         Result<IReadOnlyList<DocumentSignatureDto>> result =
-            await _sut.GetSignaturesAsync(id, Guid.NewGuid());
+            await _sut.GetSignaturesAsync(id);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -969,8 +976,8 @@ public class DocumentServiceTests
     }
 
     /// <summary>
-    /// Tester at GetMyPendingDocumentsAsync for Department-modus henter
-    /// dokumenter for brukerens avdeling.
+    /// Tester at GetMyPendingDocumentsAsync bruker batch-metoden
+    /// GetPendingForUserAsync og returnerer korrekte dokumenter.
     /// </summary>
     [Fact]
     public async Task GetMyPendingDocumentsAsync_DepartmentMode_ReturnsPendingDocs()
@@ -980,15 +987,16 @@ public class DocumentServiceTests
         var departmentId = Guid.NewGuid();
         ApplicationUser user = CreateUser(userId, departmentId);
 
-        var deptTypeId = Guid.NewGuid();
-        DocumentType deptType = CreateDocumentType(DocumentTargetMode.Department, deptTypeId);
+        var typeId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department, typeId);
 
         var docId = Guid.NewGuid();
         var documents = new List<Document>
         {
             new()
             {
-                Id = docId, DocumentTypeId = deptTypeId,
+                Id = docId, DocumentTypeId = typeId,
+                DocumentType = type,
                 Title = "Avdelingsdok", Version = 1, IsCurrent = true, IsActive = true
             }
         };
@@ -1001,24 +1009,17 @@ public class DocumentServiceTests
             .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        _documentTypeRepositoryMock
-            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([deptType]);
-
         _documentRepositoryMock
-            .Setup(x => x.GetActiveCurrentForDepartmentAsync(
-                departmentId, deptTypeId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetPendingForUserAsync(
+                userId, departmentId, It.IsAny<string?>(),
+                It.IsAny<IReadOnlyList<Guid>>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);
-
-        _signatureRepositoryMock
-            .Setup(x => x.CountForCurrentVersionAsync(
-                docId, 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(0);
 
         _signatureRepositoryMock
             .Setup(x => x.GetByDocumentIdsAsync(
                 It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+            .ReturnsAsync(new List<DocumentSignature> { new() { DocumentId = docId, SignatureVersion = 1 } });
 
         // Act
         Result<IReadOnlyList<DocumentListDto>> result =
@@ -1031,26 +1032,26 @@ public class DocumentServiceTests
     }
 
     /// <summary>
-    /// Tester at GetMyPendingDocumentsAsync for None-modus bruker
-    /// GetAllActiveCurrentAsync i stedet for departement-søk.
+    /// Tester at GetMyPendingDocumentsAsync henter dokumenter for brukerens jobbtittel.
     /// </summary>
     [Fact]
-    public async Task GetMyPendingDocumentsAsync_NoneMode_UsesGetAllActiveCurrent()
+    public async Task GetMyPendingDocumentsAsync_JobTitleMode_ReturnsPendingDocs()
     {
         // Arrange
         var userId = Guid.NewGuid();
-        ApplicationUser user = CreateUser(userId);
+        ApplicationUser user = CreateUser(userId, jobTitle: "Leder");
 
-        var noneTypeId = Guid.NewGuid();
-        DocumentType noneType = CreateDocumentType(DocumentTargetMode.None, noneTypeId);
+        var typeId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.JobTitle, typeId);
 
         var docId = Guid.NewGuid();
         var documents = new List<Document>
         {
             new()
             {
-                Id = docId, DocumentTypeId = noneTypeId,
-                Title = "Generelt dokument", Version = 1, IsCurrent = true, IsActive = true
+                Id = docId, DocumentTypeId = typeId,
+                DocumentType = type,
+                Title = "Lederdok", Version = 1, IsCurrent = true, IsActive = true
             }
         };
 
@@ -1062,18 +1063,12 @@ public class DocumentServiceTests
             .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        _documentTypeRepositoryMock
-            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([noneType]);
-
         _documentRepositoryMock
-            .Setup(x => x.GetAllActiveCurrentAsync(noneTypeId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetPendingForUserAsync(
+                userId, It.IsAny<Guid?>(), "Leder",
+                It.IsAny<IReadOnlyList<Guid>>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);
-
-        _signatureRepositoryMock
-            .Setup(x => x.CountForCurrentVersionAsync(
-                docId, 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(0);
 
         _signatureRepositoryMock
             .Setup(x => x.GetByDocumentIdsAsync(
@@ -1087,16 +1082,7 @@ public class DocumentServiceTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(1);
-
-        // Verifiser at GetAllActiveCurrentAsync ble brukt, IKKE GetActiveCurrentForDepartmentAsync
-        _documentRepositoryMock.Verify(
-            x => x.GetAllActiveCurrentAsync(noneTypeId, It.IsAny<CancellationToken>()),
-            Times.Once);
-
-        _documentRepositoryMock.Verify(
-            x => x.GetActiveCurrentForDepartmentAsync(
-                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        result.Value[0].Title.Should().Be("Lederdok");
     }
 
     /// <summary>
@@ -1116,6 +1102,18 @@ public class DocumentServiceTests
         var signedDocId = Guid.NewGuid();
         var unsignedDocId = Guid.NewGuid();
 
+        // GetPendingForUserAsync filtrerer bort signerte dokumenter allerede,
+        // så vi setter kun opp retur for usignerte
+        var documents = new List<Document>
+        {
+            new()
+            {
+                Id = unsignedDocId, DocumentTypeId = typeId,
+                DocumentType = type,
+                Title = "Usignert", Version = 1, IsCurrent = true, IsActive = true
+            }
+        };
+
         _userRepositoryMock
             .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
@@ -1124,32 +1122,12 @@ public class DocumentServiceTests
             .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([signedDocId]);
 
-        _documentTypeRepositoryMock
-            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([type]);
-
-        var allDocs = new List<Document>
-        {
-            new()
-            {
-                Id = signedDocId, DocumentTypeId = typeId,
-                Title = "Signert", Version = 1, IsCurrent = true, IsActive = true
-            },
-            new()
-            {
-                Id = unsignedDocId, DocumentTypeId = typeId,
-                Title = "Usignert", Version = 1, IsCurrent = true, IsActive = true
-            }
-        };
-
         _documentRepositoryMock
-            .Setup(x => x.GetAllActiveCurrentAsync(typeId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(allDocs);
-
-        _signatureRepositoryMock
-            .Setup(x => x.CountForCurrentVersionAsync(
-                unsignedDocId, 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(0);
+            .Setup(x => x.GetPendingForUserAsync(
+                userId, It.IsAny<Guid?>(), It.IsAny<string?>(),
+                It.IsAny<IReadOnlyList<Guid>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(documents);
 
         _signatureRepositoryMock
             .Setup(x => x.GetByDocumentIdsAsync(
@@ -1164,66 +1142,5 @@ public class DocumentServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(1);
         result.Value[0].Title.Should().Be("Usignert");
-    }
-
-    /// <summary>
-    /// Tester at GetMyPendingDocumentsAsync for JobTitle-modus henter
-    /// dokumenter for brukerens jobbtittel.
-    /// </summary>
-    [Fact]
-    public async Task GetMyPendingDocumentsAsync_JobTitleMode_ReturnsPendingDocs()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        ApplicationUser user = CreateUser(userId, jobTitle: "Leder");
-
-        var jtTypeId = Guid.NewGuid();
-        DocumentType jtType = CreateDocumentType(DocumentTargetMode.JobTitle, jtTypeId);
-
-        var docId = Guid.NewGuid();
-        var documents = new List<Document>
-        {
-            new()
-            {
-                Id = docId, DocumentTypeId = jtTypeId,
-                Title = "Lederdok", Version = 1, IsCurrent = true, IsActive = true
-            }
-        };
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _signatureRepositoryMock
-            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
-
-        _documentTypeRepositoryMock
-            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([jtType]);
-
-        _documentRepositoryMock
-            .Setup(x => x.GetActiveCurrentForJobTitleAsync(
-                "Leder", jtTypeId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(documents);
-
-        _signatureRepositoryMock
-            .Setup(x => x.CountForCurrentVersionAsync(
-                docId, 1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(0);
-
-        _signatureRepositoryMock
-            .Setup(x => x.GetByDocumentIdsAsync(
-                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
-
-        // Act
-        Result<IReadOnlyList<DocumentListDto>> result =
-            await _sut.GetMyPendingDocumentsAsync(userId);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value[0].Title.Should().Be("Lederdok");
     }
 }

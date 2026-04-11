@@ -61,6 +61,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         Guid departmentId, Guid documentTypeId, CancellationToken cancellationToken = default)
     {
         return await DbSet
+            .Include(d => d.DocumentType)
+            .Include(d => d.Category)
             .Where(d => d.DocumentTypeId == documentTypeId
                         && d.IsActive
                         && d.IsCurrent
@@ -72,6 +74,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         string jobTitle, Guid documentTypeId, CancellationToken cancellationToken = default)
     {
         return await DbSet
+            .Include(d => d.DocumentType)
+            .Include(d => d.Category)
             .Where(d => d.DocumentTypeId == documentTypeId
                         && d.IsActive
                         && d.IsCurrent
@@ -83,10 +87,40 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         Guid documentTypeId, CancellationToken cancellationToken = default)
     {
         return await DbSet
+            .Include(d => d.DocumentType)
+            .Include(d => d.Category)
             .Where(d => d.DocumentTypeId == documentTypeId
                         && d.IsActive
                         && d.IsCurrent)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Document>> GetPendingForUserAsync(
+        Guid userId,
+        Guid? departmentId,
+        string? jobTitle,
+        IReadOnlyList<Guid> signedDocumentIds,
+        CancellationToken cancellationToken = default)
+    {
+        // Hent alle aktive, gjeldende dokumenter som:
+        // 1) Er udirigerte (TargetDepartmentId == null AND TargetJobTitle == null), ELLER
+        // 2) Matcher brukerens avdeling, ELLER
+        // 3) Matcher brukerens jobbtittel
+        IQueryable<Document> query = DbSet
+            .Include(d => d.DocumentType)
+            .Include(d => d.Category)
+            .Where(d => d.IsActive && d.IsCurrent)
+            .Where(d =>
+                (d.TargetDepartmentId == null && d.TargetJobTitle == null) ||
+                (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId) ||
+                (d.TargetJobTitle != null && d.TargetJobTitle == jobTitle));
+
+        var documents = await query.ToListAsync(cancellationToken);
+
+        // Filtrer bort dokumenter som ikke krever signatur og dokumenter brukeren allerede har signert
+        return documents
+            .Where(d => d.RequiresSignature != false && !signedDocumentIds.Contains(d.Id))
+            .ToList();
     }
 
     public async Task<IReadOnlyList<Document>> GetByIdsAsync(
@@ -107,11 +141,12 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         return version;
     }
 
-    public async Task SoftDeleteAsync(
+    public Task SoftDeleteAsync(
         Document document, CancellationToken cancellationToken = default)
     {
         document.IsActive = false;
         document.DeletedAt = DateTime.UtcNow;
         DbSet.Update(document);
+        return Task.CompletedTask;
     }
 }

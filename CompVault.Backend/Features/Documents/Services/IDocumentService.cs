@@ -50,12 +50,16 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>Henter fil for nedlasting.</summary>
+    /// <remarks>Returnerer path slik at controlleren kan åpne streamen direkte.</remarks>
     Task<Result<DocumentDownloadResult>> GetDownloadAsync(
         Guid documentId, CancellationToken cancellationToken = default);
 
+    /// <summary>Åpner en filstream for lesing. Streamen eies av calleren.</summary>
+    Task<Stream> OpenFileStreamAsync(string relativePath, CancellationToken cancellationToken = default);
+
     /// <summary>Henter signaturer for et dokument.</summary>
     Task<Result<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
-        Guid documentId, Guid currentUserId, CancellationToken cancellationToken = default);
+        Guid documentId, CancellationToken cancellationToken = default);
 
     /// <summary>Henter alle dokumenter brukeren har signert (på tvers av typer).</summary>
     Task<Result<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(

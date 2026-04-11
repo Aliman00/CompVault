@@ -134,6 +134,12 @@ public sealed class DocumentService(
         // Hvis fil er lastet opp, lagre den
         if (fileStream is not null && fileName is not null && contentType is not null)
         {
+            // Valider MIME-type mot dokumenttypens tillatte typer
+            if (!documentType.AllowedMimeTypes.Contains(contentType))
+                return Result<DocumentDto>.Failure(
+                    AppError.Create(ErrorCode.Validation,
+                        $"Filtypen '{contentType}' er ikke tillatt for denne dokumenttypen."));
+
             string extension = Path.GetExtension(fileName);
             string newFilePath = $"{documentType.StorageFolder}/active/{document.Id}/file_v1{extension}";
 
@@ -242,12 +248,7 @@ public sealed class DocumentService(
             return Result<bool>.Failure(
                 AppError.NotFound($"Dokument med ID '{documentId}' ble ikke funnet."));
 
-        if (!document.IsCurrent)
-            return Result<bool>.Failure(
-                AppError.Create(ErrorCode.Validation,
-                    "Kun gjeldende versjon av et dokument kan signeres."));
-
-        // null/true = signering tillatt, false = dokumentet krever ikke signering
+        // RequiresSignature == false betyr at signering ikke er nødvendig
         if (document.RequiresSignature == false)
             return Result<bool>.Failure(
                 AppError.Create(ErrorCode.Validation,
@@ -268,8 +269,19 @@ public sealed class DocumentService(
             SignatureVersion = document.Version
         };
 
-        await signatureRepository.AddAsync(signature, cancellationToken);
-        await signatureRepository.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await signatureRepository.AddAsync(signature, cancellationToken);
+            await signatureRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Unique constraint på (DocumentId, UserId, SignatureVersion) beskytter mot
+            // doble signaturer ved concurrent requests
+            return Result<bool>.Failure(
+                AppError.Create(ErrorCode.Conflict,
+                    "Du har allerede signert denne versjonen av dokumentet."));
+        }
 
         return Result<bool>.Success(true);
     }
@@ -293,68 +305,80 @@ public sealed class DocumentService(
         string storageFolder = document.DocumentType?.StorageFolder ?? DocumentConstants.DefaultStorageFolder;
         string tempPath = $"{storageFolder}/active/{documentId}/file_v{document.Version + 1}_tmp{extension}";
 
-        // Lagre til midlertidig fil for sjekksum-beregning
+        // Lagre stream-lengden før kopiering — etter CopyToAsync kan positionen være endret
+        long fileSize = stream.Length;
         stream.Position = 0;
-        await fileStorage.SaveAsync(stream, tempPath, cancellationToken);
 
-        string newChecksum = await fileStorage.ComputeChecksumAsync(tempPath, cancellationToken);
-
-        // Sjekk om filen er identisk med forrige versjon
-        if (document.Checksum is not null && document.Checksum == newChecksum)
+        try
         {
-            await fileStorage.DeleteAsync(tempPath, cancellationToken);
-            return Result<DocumentDto>.Failure(
-                AppError.Create(ErrorCode.Validation,
-                    "Filinnholdet er identisk med forrige versjon. Ingen ny versjon opprettet."));
-        }
+            // Lagre til midlertidig fil for sjekksum-beregning
+            await fileStorage.SaveAsync(stream, tempPath, cancellationToken);
 
-        int newVersion = document.Version + 1;
+            string newChecksum = await fileStorage.ComputeChecksumAsync(tempPath, cancellationToken);
 
-        // Arkiver gammel fil hvis den eksisterer
-        if (!string.IsNullOrEmpty(document.FilePath))
-        {
-            string archivedPath = $"{storageFolder}/archived/{documentId}/file_v{document.Version}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}{Path.GetExtension(document.FileName)}";
-            await fileStorage.MoveAsync(document.FilePath, archivedPath, cancellationToken);
-
-            var versionRecord = new DocumentVersion
+            // Sjekk om filen er identisk med forrige versjon
+            if (document.Checksum is not null && document.Checksum == newChecksum)
             {
-                DocumentId = documentId,
-                Version = document.Version,
-                FileName = document.FileName,
-                FilePath = archivedPath,
-                FileSize = document.FileSize,
-                MimeType = document.MimeType,
-                Checksum = document.Checksum,
-                ArchivedAt = DateTime.UtcNow
-            };
+                await fileStorage.DeleteAsync(tempPath, cancellationToken);
+                return Result<DocumentDto>.Failure(
+                    AppError.Create(ErrorCode.Validation,
+                        "Filinnholdet er identisk med forrige versjon. Ingen ny versjon opprettet."));
+            }
 
-            await documentRepository.AddVersionAsync(versionRecord, cancellationToken);
+            int newVersion = document.Version + 1;
+
+            // Arkiver gammel fil hvis den eksisterer
+            if (!string.IsNullOrEmpty(document.FilePath))
+            {
+                string archivedPath = $"{storageFolder}/archived/{documentId}/file_v{document.Version}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}{Path.GetExtension(document.FileName)}";
+                await fileStorage.MoveAsync(document.FilePath, archivedPath, cancellationToken);
+
+                var versionRecord = new DocumentVersion
+                {
+                    DocumentId = documentId,
+                    Version = document.Version,
+                    FileName = document.FileName,
+                    FilePath = archivedPath,
+                    FileSize = document.FileSize,
+                    MimeType = document.MimeType,
+                    Checksum = document.Checksum,
+                    ArchivedAt = DateTime.UtcNow
+                };
+
+                await documentRepository.AddVersionAsync(versionRecord, cancellationToken);
+            }
+
+            // Flytt midlertidig fil til endelig plassering
+            string newFilePath = $"{storageFolder}/active/{documentId}/file_v{newVersion}{extension}";
+            await fileStorage.MoveAsync(tempPath, newFilePath, cancellationToken);
+
+            // Oppdater dokument
+            document.Version = newVersion;
+            document.FileName = fileName;
+            document.FilePath = newFilePath;
+            document.FileSize = fileSize;
+            document.MimeType = contentType;
+            document.Checksum = newChecksum;
+            document.UploadedBy = uploadedById;
+            document.UploadedAt = DateTime.UtcNow;
+            document.IsCurrent = true;
+
+            // Slett signaturer — ny versjon krever re-signering
+            await signatureRepository.DeleteAllForDocumentAsync(documentId, cancellationToken);
+
+            await documentRepository.SaveChangesAsync(cancellationToken);
+
+            Document updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken)
+                ?? throw new InvalidOperationException($"Dokument med ID '{document.Id}' ble ikke funnet etter opplasting.");
+
+            return Result<DocumentDto>.Success(DocumentMapper.ToDto(updated));
         }
-
-        // Flytt midlertidig fil til endelig plassering
-        string newFilePath = $"{storageFolder}/active/{documentId}/file_v{newVersion}{extension}";
-        await fileStorage.MoveAsync(tempPath, newFilePath, cancellationToken);
-
-        // Oppdater dokument
-        document.Version = newVersion;
-        document.FileName = fileName;
-        document.FilePath = newFilePath;
-        document.FileSize = stream.Length;
-        document.MimeType = contentType;
-        document.Checksum = newChecksum;
-        document.UploadedBy = uploadedById;
-        document.UploadedAt = DateTime.UtcNow;
-        document.IsCurrent = true;
-
-        // Slett signaturer — ny versjon krever re-signering
-        await signatureRepository.DeleteAllForDocumentAsync(documentId, cancellationToken);
-
-        await documentRepository.SaveChangesAsync(cancellationToken);
-
-        Document updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Dokument med ID '{document.Id}' ble ikke funnet etter opplasting.");
-
-        return Result<DocumentDto>.Success(DocumentMapper.ToDto(updated));
+        catch
+        {
+            // Rydd opp i midlertidig fil ved alle typer feil
+            await fileStorage.DeleteAsync(tempPath, CancellationToken.None);
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -378,11 +402,9 @@ public sealed class DocumentService(
             return Result<DocumentDownloadResult>.Failure(
                 AppError.NotFound($"Filen for dokument med ID '{documentId}' ble ikke funnet på lagring."));
 
-        Stream fileStream = await fileStorage.OpenReadAsync(document.FilePath, cancellationToken);
-
         var result = new DocumentDownloadResult
         {
-            Stream = fileStream,
+            FilePath = document.FilePath,
             FileName = document.FileName ?? "dokument.pdf",
             ContentType = document.MimeType ?? "application/octet-stream",
             FileSize = document.FileSize
@@ -392,8 +414,12 @@ public sealed class DocumentService(
     }
 
     /// <inheritdoc />
+    Task<Stream> IDocumentService.OpenFileStreamAsync(string relativePath, CancellationToken cancellationToken)
+        => fileStorage.OpenReadAsync(relativePath, cancellationToken);
+
+    /// <inheritdoc />
     public async Task<Result<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
-        Guid documentId, Guid currentUserId, CancellationToken cancellationToken = default)
+        Guid documentId, CancellationToken cancellationToken = default)
     {
         Document? document = await documentRepository.GetByIdAsync(documentId, cancellationToken);
 
@@ -446,34 +472,15 @@ public sealed class DocumentService(
 
         IReadOnlyList<Guid> signedDocumentIds = await signatureRepository.GetSignedDocumentIdsAsync(userId, cancellationToken);
 
-        // Hent alle aktive dokumenttyper
-        IReadOnlyList<DocumentType> documentTypes = await documentTypeRepository.GetAllAsync(cancellationToken);
-        var pendingDocuments = new List<Document>();
+        // Hent alle pending dokumenter i én spørring
+        IReadOnlyList<Document> pendingDocuments = await documentRepository.GetPendingForUserAsync(
+            userId, user.DepartmentId, user.JobTitle, signedDocumentIds, cancellationToken);
 
-        foreach (DocumentType documentType in documentTypes.Where(dt => dt.IsActive))
-        {
-            IReadOnlyList<Document> docsForType = documentType.TargetMode switch
-            {
-                DocumentTargetMode.Department when user.DepartmentId.HasValue =>
-                    await documentRepository.GetActiveCurrentForDepartmentAsync(
-                        user.DepartmentId.Value, documentType.Id, cancellationToken),
-                DocumentTargetMode.JobTitle when !string.IsNullOrEmpty(user.JobTitle) =>
-                    await documentRepository.GetActiveCurrentForJobTitleAsync(
-                        user.JobTitle, documentType.Id, cancellationToken),
-                DocumentTargetMode.None =>
-                    await documentRepository.GetAllActiveCurrentAsync(
-                        documentType.Id, cancellationToken),
-                _ => Array.Empty<Document>()
-            };
-
-            // Filtrer bort dokumenter brukeren allerede har signert
-            pendingDocuments.AddRange(docsForType.Where(d => !signedDocumentIds.Contains(d.Id)));
-        }
-
-        if (pendingDocuments.Count == 0)
+        if (pendingDocuments is null || pendingDocuments.Count == 0)
             return Result<IReadOnlyList<DocumentListDto>>.Success(Array.Empty<DocumentListDto>());
 
-        var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(pendingDocuments.Select(d => d.Id).ToList(), cancellationToken)).ToList();
+        var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(
+            pendingDocuments.Select(d => d.Id).ToList(), cancellationToken)).ToList();
 
         var dtos = new List<DocumentListDto>();
         foreach (Document doc in pendingDocuments)

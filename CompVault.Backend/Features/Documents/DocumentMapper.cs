@@ -67,8 +67,8 @@ public static class DocumentMapper
             Id = signature.Id,
             DocumentId = signature.DocumentId,
             UserId = signature.UserId,
-            UserName = signature.User != null
-                ? $"{signature.User.FirstName} {signature.User.LastName}".Trim()
+            UserName = signature.User is { } user
+                ? $"{user.FirstName} {user.LastName}".Trim()
                 : string.Empty,
             SignedAt = signature.SignedAt,
             SignatureVersion = signature.SignatureVersion,

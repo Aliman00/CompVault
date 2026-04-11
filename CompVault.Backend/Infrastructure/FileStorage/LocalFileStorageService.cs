@@ -18,6 +18,7 @@ public sealed class LocalFileStorageService(
     public async Task<string> SaveAsync(Stream stream, string relativePath, CancellationToken cancellationToken = default)
     {
         string fullPath = GetFullPath(relativePath);
+        EnsurePathIsWithinRoot(fullPath);
         string? directory = Path.GetDirectoryName(fullPath);
 
         if (!string.IsNullOrEmpty(directory))
@@ -33,6 +34,7 @@ public sealed class LocalFileStorageService(
     public Task DeleteAsync(string relativePath, CancellationToken cancellationToken = default)
     {
         string fullPath = GetFullPath(relativePath);
+        EnsurePathIsWithinRoot(fullPath);
 
         if (File.Exists(fullPath))
             File.Delete(fullPath);
@@ -44,6 +46,7 @@ public sealed class LocalFileStorageService(
     public Task<bool> ExistsAsync(string relativePath, CancellationToken cancellationToken = default)
     {
         string fullPath = GetFullPath(relativePath);
+        EnsurePathIsWithinRoot(fullPath);
         return Task.FromResult(File.Exists(fullPath));
     }
 
@@ -52,6 +55,8 @@ public sealed class LocalFileStorageService(
     {
         string sourceFullPath = GetFullPath(sourceRelativePath);
         string destFullPath = GetFullPath(destinationRelativePath);
+        EnsurePathIsWithinRoot(sourceFullPath);
+        EnsurePathIsWithinRoot(destFullPath);
         string? destDirectory = Path.GetDirectoryName(destFullPath);
 
         if (!string.IsNullOrEmpty(destDirectory))
@@ -66,6 +71,7 @@ public sealed class LocalFileStorageService(
     public Task<Stream> OpenReadAsync(string relativePath, CancellationToken cancellationToken = default)
     {
         string fullPath = GetFullPath(relativePath);
+        EnsurePathIsWithinRoot(fullPath);
         Stream stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return Task.FromResult(stream);
     }
@@ -74,6 +80,7 @@ public sealed class LocalFileStorageService(
     public async Task<string> ComputeChecksumAsync(string relativePath, CancellationToken cancellationToken = default)
     {
         string fullPath = GetFullPath(relativePath);
+        EnsurePathIsWithinRoot(fullPath);
 
         await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         using var sha256 = SHA256.Create();
@@ -83,6 +90,14 @@ public sealed class LocalFileStorageService(
 
     private string GetFullPath(string relativePath)
     {
-        return Path.Combine(Settings.RootPath, relativePath);
+        return Path.GetFullPath(Path.Combine(Settings.RootPath, relativePath));
+    }
+
+    private void EnsurePathIsWithinRoot(string fullPath)
+    {
+        string rootPath = Path.GetFullPath(Settings.RootPath);
+        if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException(
+                $"Stien '{fullPath}' er utenfor lagringsområdet '{rootPath}'.");
     }
 }

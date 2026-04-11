@@ -1,18 +1,17 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Documents.Services;
-using CompVault.Backend.Infrastructure.FileStorage.Configuration;
+using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace CompVault.Backend.Features.Documents.Controllers;
 
 /// <summary>
-/// Generell dokumentkontroller. Henter dokumenter basert på dokumenttype-slug.
+/// Generisk dokumentkontroller. Henter dokumenter basert på dokumenttype-slug.
 /// </summary>
 [ApiController]
 [Route("api/documents/{documentTypeSlug}")]
@@ -20,9 +19,8 @@ namespace CompVault.Backend.Features.Documents.Controllers;
 [Produces("application/json")]
 public sealed class DocumentsController(
     IDocumentService documentService,
-    IOptions<FileStorageSettings> options) : BaseController
+    IDocumentTypeService documentTypeService) : BaseController
 {
-    private FileStorageSettings FileStorageSettings => options.Value;
     /// <summary>Henter alle dokumenter for en dokumenttype.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<DocumentListDto>), StatusCodes.Status200OK)]
@@ -32,7 +30,7 @@ public sealed class DocumentsController(
         [FromQuery] bool includeArchived = false,
         CancellationToken cancellationToken = default)
     {
-        Guid? currentUserId = GetCurrentUserId();
+        Guid? currentUserId = User.TryGetUserId();
         Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetAllAsync(
             documentTypeSlug, currentUserId, documentTypeCategoryId, includeArchived, cancellationToken);
 
@@ -59,7 +57,7 @@ public sealed class DocumentsController(
     /// <summary>Oppretter et nytt dokument med valgfri filopplasting.</summary>
     [HttpPost]
     [Authorize(Policy = Permissions.DocumentsWrite)]
-    [RequestSizeLimit(20 * 1024 * 1024)]
+    [RequestSizeLimit(100 * 1024 * 1024)]
     [ProducesResponseType(typeof(DocumentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -74,14 +72,23 @@ public sealed class DocumentsController(
             if (file.Length == 0)
                 return BadRequest("Filen er tom.");
 
-            if (file.Length > FileStorageSettings.MaxFileSizeBytes)
-                return BadRequest($"Filen er for stor. Maks tillatt størrelse: {FileStorageSettings.MaxFileSizeBytes / (1024 * 1024)}MB.");
+            // Hent dokumenttype for å validere mot typespesifikke grenser
+            Result<Shared.DTOs.Documents.DocumentTypeDto> typeResult =
+                await documentTypeService.GetBySlugAsync(documentTypeSlug, cancellationToken);
 
-            if (!FileStorageSettings.AllowedMimeTypes.Contains(file.ContentType))
-                return BadRequest($"Filtypen '{file.ContentType}' er ikke tillatt.");
+            if (typeResult.IsFailure)
+                return HandleFailure(typeResult);
+
+            Shared.DTOs.Documents.DocumentTypeDto docType = typeResult.Value!;
+
+            if (file.Length > docType.MaxFileSizeBytes)
+                return BadRequest($"Filen er for stor. Maks tillatt størrelse for denne dokumenttypen: {docType.MaxFileSizeBytes / (1024 * 1024)}MB.");
+
+            if (!docType.AllowedMimeTypes.Contains(file.ContentType))
+                return BadRequest($"Filtypen '{file.ContentType}' er ikke tillatt for denne dokumenttypen.");
         }
 
-        Guid uploadedById = GetCurrentUserId()
+        Guid uploadedById = User.TryGetUserId()
             ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
 
         Stream? fileStream = file is not null ? file.OpenReadStream() : null;
@@ -139,7 +146,7 @@ public sealed class DocumentsController(
     /// <summary>Laster opp en ny filversjon.</summary>
     [HttpPost("{id:guid}/upload")]
     [Authorize(Policy = Permissions.DocumentsWrite)]
-    [RequestSizeLimit(20 * 1024 * 1024)]
+    [RequestSizeLimit(100 * 1024 * 1024)]
     [ProducesResponseType(typeof(DocumentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -150,13 +157,22 @@ public sealed class DocumentsController(
         if (file is null || file.Length == 0)
             return BadRequest("Ingen fil lastet opp.");
 
-        if (file.Length > FileStorageSettings.MaxFileSizeBytes)
-            return BadRequest($"Filen er for stor. Maks tillatt størrelse: {FileStorageSettings.MaxFileSizeBytes / (1024 * 1024)}MB.");
+        // Hent dokumenttype for å validere mot typespesifikke grenser
+        Result<Shared.DTOs.Documents.DocumentTypeDto> typeResult =
+            await documentTypeService.GetBySlugAsync(documentTypeSlug, cancellationToken);
 
-        if (!FileStorageSettings.AllowedMimeTypes.Contains(file.ContentType))
-            return BadRequest($"Filtypen '{file.ContentType}' er ikke tillatt.");
+        if (typeResult.IsFailure)
+            return HandleFailure(typeResult);
 
-        Guid uploadedById = GetCurrentUserId()
+        Shared.DTOs.Documents.DocumentTypeDto docType = typeResult.Value!;
+
+        if (file.Length > docType.MaxFileSizeBytes)
+            return BadRequest($"Filen er for stor. Maks tillatt størrelse for denne dokumenttypen: {docType.MaxFileSizeBytes / (1024 * 1024)}MB.");
+
+        if (!docType.AllowedMimeTypes.Contains(file.ContentType))
+            return BadRequest($"Filtypen '{file.ContentType}' er ikke tillatt for denne dokumenttypen.");
+
+        Guid uploadedById = User.TryGetUserId()
             ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
 
         await using Stream stream = file.OpenReadStream();
@@ -179,7 +195,7 @@ public sealed class DocumentsController(
     public async Task<IActionResult> SignAsync(
         string documentTypeSlug, Guid id, CancellationToken cancellationToken)
     {
-        Guid userId = GetCurrentUserId()
+        Guid userId = User.TryGetUserId()
             ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
 
         Result<bool> result = await documentService.SignAsync(id, userId, cancellationToken);
@@ -202,7 +218,13 @@ public sealed class DocumentsController(
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return File(result.Value!.Stream, result.Value.ContentType, result.Value.FileName);
+        DocumentDownloadResult download = result.Value!;
+
+        // Åpne stream her i controlleren slik at ASP.NET Core kan håndtere disposal
+        Stream fileStream = await documentService.OpenFileStreamAsync(
+            download.FilePath, cancellationToken);
+
+        return File(fileStream, download.ContentType, download.FileName);
     }
 
     /// <summary>Henter signaturer for et dokument.</summary>
@@ -212,12 +234,8 @@ public sealed class DocumentsController(
     public async Task<ActionResult<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
         Guid id, CancellationToken cancellationToken)
     {
-        Guid? currentUserId = GetCurrentUserId();
-        if (!currentUserId.HasValue)
-            return Unauthorized();
-
         Result<IReadOnlyList<DocumentSignatureDto>> result = await documentService.GetSignaturesAsync(
-            id, currentUserId.Value, cancellationToken);
+            id, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -231,7 +249,7 @@ public sealed class DocumentsController(
     public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(
         CancellationToken cancellationToken)
     {
-        Guid? userId = GetCurrentUserId();
+        Guid? userId = User.TryGetUserId();
         if (!userId.HasValue)
             return Unauthorized();
 
@@ -250,7 +268,7 @@ public sealed class DocumentsController(
     public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetMyPendingDocumentsAsync(
         CancellationToken cancellationToken)
     {
-        Guid? userId = GetCurrentUserId();
+        Guid? userId = User.TryGetUserId();
         if (!userId.HasValue)
             return Unauthorized();
 
@@ -261,13 +279,5 @@ public sealed class DocumentsController(
             return HandleFailure(result);
 
         return Ok(result.Value);
-    }
-
-    private Guid? GetCurrentUserId()
-    {
-        string? userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst("sub")?.Value;
-
-        return Guid.TryParse(userIdClaim, out Guid userId) ? userId : null;
     }
 }

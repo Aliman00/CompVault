@@ -545,7 +545,7 @@ public class DocumentTypeServiceTests
         string typeSlug = "hms-documents";
         var categoryId = Guid.NewGuid();
         var documentType = new DocumentType { Id = typeId, Slug = typeSlug, IsActive = true };
-        var request = new CreateDocumentTypeCategoryRequest { Name = "Test", Slug = "test" };
+        var request = new UpdateDocumentTypeCategoryRequest { Name = "Test", Slug = "test" };
 
         _documentTypeRepositoryMock
             .Setup(x => x.GetBySlugAsync(typeSlug, It.IsAny<CancellationToken>()))
@@ -595,7 +595,7 @@ public class DocumentTypeServiceTests
             .Setup(x => x.GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(category);
 
-        var request = new CreateDocumentTypeCategoryRequest { Name = "Ny", Slug = "ny" };
+        var request = new UpdateDocumentTypeCategoryRequest { Name = "Ny", Slug = "ny" };
 
         // Act
         Result<DocumentTypeCategoryDto> result =
@@ -625,7 +625,7 @@ public class DocumentTypeServiceTests
             Slug = "gammel"
         };
 
-        var request = new CreateDocumentTypeCategoryRequest { Name = "Ny", Slug = "ny" };
+        var request = new UpdateDocumentTypeCategoryRequest { Name = "Ny", Slug = "ny" };
 
         _documentTypeRepositoryMock
             .Setup(x => x.GetBySlugAsync(typeSlug, It.IsAny<CancellationToken>()))

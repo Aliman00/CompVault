@@ -145,6 +145,13 @@ public static class TestDataSeeder
                 Permissions.CompetenciesRead,
                 Permissions.CompetenciesWrite,
                 Permissions.CompetenciesDelete,
+                Permissions.DocumentTypesRead,
+                Permissions.DocumentTypesWrite,
+                Permissions.DocumentTypesDelete,
+                Permissions.DocumentsRead,
+                Permissions.DocumentsWrite,
+                Permissions.DocumentsDelete,
+                Permissions.DocumentsSign,
             },
             TestConstants.Roles.Default => new[]
             {

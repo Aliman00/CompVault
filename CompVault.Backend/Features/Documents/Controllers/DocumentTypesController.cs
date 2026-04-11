@@ -1,5 +1,6 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Documents.Services;
+using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
@@ -55,7 +56,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
     public async Task<ActionResult<DocumentTypeDto>> CreateAsync(
         [FromBody] CreateDocumentTypeRequest request, CancellationToken cancellationToken)
     {
-        Guid createdById = GetCurrentUserId()
+        Guid createdById = User.TryGetUserId()
             ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
 
         Result<DocumentTypeDto> result = await documentTypeService.CreateAsync(
@@ -143,7 +144,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<DocumentTypeCategoryDto>> UpdateCategoryAsync(
         string documentTypeSlug, Guid categoryId,
-        [FromBody] CreateDocumentTypeCategoryRequest request,
+        [FromBody] UpdateDocumentTypeCategoryRequest request,
         CancellationToken cancellationToken)
     {
         Result<DocumentTypeCategoryDto> result = await documentTypeService.UpdateCategoryAsync(
@@ -170,13 +171,5 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
             return HandleFailure(result);
 
         return NoContent();
-    }
-
-    private Guid? GetCurrentUserId()
-    {
-        string? userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst("sub")?.Value;
-
-        return Guid.TryParse(userIdClaim, out Guid userId) ? userId : null;
     }
 }

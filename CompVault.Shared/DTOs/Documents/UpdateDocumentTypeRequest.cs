@@ -17,6 +17,9 @@ public sealed class UpdateDocumentTypeRequest
     [MaxLength(500)]
     public string? Description { get; set; }
 
+    /// <summary>Fjerner beskrivelsen hvis satt.</summary>
+    public bool ClearDescription { get; set; }
+
     /// <summary>Ny targeting-modus.</summary>
     public DocumentTargetMode? TargetMode { get; set; }
 

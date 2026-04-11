@@ -36,7 +36,7 @@ public interface IDocumentTypeService
 
     /// <summary>Oppdaterer en kategori.</summary>
     Task<Result<DocumentTypeCategoryDto>> UpdateCategoryAsync(
-        string documentTypeSlug, Guid categoryId, CreateDocumentTypeCategoryRequest request,
+        string documentTypeSlug, Guid categoryId, UpdateDocumentTypeCategoryRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>Sletter en kategori.</summary>

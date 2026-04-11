@@ -76,7 +76,9 @@ public sealed class DocumentTypeService(
         if (!string.IsNullOrEmpty(request.Name))
             documentType.Name = request.Name;
 
-        if (request.Description is not null)
+        if (request.ClearDescription)
+            documentType.Description = null;
+        else if (request.Description is not null)
             documentType.Description = request.Description;
 
         if (request.TargetMode.HasValue)
@@ -165,7 +167,7 @@ public sealed class DocumentTypeService(
 
     /// <inheritdoc />
     public async Task<Result<DocumentTypeCategoryDto>> UpdateCategoryAsync(
-        string documentTypeSlug, Guid categoryId, CreateDocumentTypeCategoryRequest request,
+        string documentTypeSlug, Guid categoryId, UpdateDocumentTypeCategoryRequest request,
         CancellationToken cancellationToken = default)
     {
         DocumentType? documentType = await documentTypeRepository.GetBySlugAsync(documentTypeSlug, cancellationToken);
