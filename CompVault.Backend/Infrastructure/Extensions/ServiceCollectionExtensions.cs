@@ -134,7 +134,15 @@ public static class ServiceCollectionExtensions
                     context.Response.ContentType = "application/problem+json";
                     return context.Response.WriteAsJsonAsync(problem);
                 },
-                OnAuthenticationFailed = _ => Task.CompletedTask
+                OnAuthenticationFailed = context =>
+                {
+                    ILogger? logger = context.HttpContext.RequestServices.GetService<ILogger>();
+                    logger?.LogWarning(
+                        context.Exception,
+                        "JWT authentication failed: {Error}",
+                        context.Exception?.Message ?? "Unknown error");
+                    return Task.CompletedTask;
+                }
             };
         });
 

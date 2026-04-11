@@ -140,6 +140,12 @@ public sealed class DocumentService(
                     AppError.Create(ErrorCode.Validation,
                         $"Filtypen '{contentType}' er ikke tillatt for denne dokumenttypen."));
 
+            // Valider filstørrelse mot dokumenttypens grense
+            if (documentType.MaxFileSizeBytes > 0 && fileStream.Length > documentType.MaxFileSizeBytes)
+                return Result<DocumentDto>.Failure(
+                    AppError.Create(ErrorCode.Validation,
+                        $"Filen er for stor. Maks tillatt størrelse: {documentType.MaxFileSizeBytes / (1024 * 1024)}MB."));
+
             string extension = Path.GetExtension(fileName);
             string newFilePath = $"{documentType.StorageFolder}/active/{document.Id}/file_v1{extension}";
 
@@ -162,7 +168,7 @@ public sealed class DocumentService(
         {
             await documentRepository.SaveChangesAsync(cancellationToken);
         }
-        catch
+        catch (DbUpdateException)
         {
             return Result<DocumentDto>.Failure(
                 AppError.Create(ErrorCode.InternalError,
@@ -263,7 +269,7 @@ public sealed class DocumentService(
         {
             await documentRepository.SaveChangesAsync(cancellationToken);
         }
-        catch
+        catch (DbUpdateException)
         {
             return Result<DocumentDto>.Failure(
                 AppError.Create(ErrorCode.InternalError,

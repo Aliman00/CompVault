@@ -42,7 +42,7 @@ public class Document
     public string? TargetJobTitle { get; set; }
 
     // ======================== Signatur ========================
-    /// <summary>Om dette dokumentet krever signering. Overstyrer DocumentType.RequiresSignature hvis satt.</summary>
+    /// <summary>Om dette dokumentet krever signering. Null betyr at signering kreves (standard).</summary>
     public bool? RequiresSignature { get; set; }
 
     // ======================== Filinfo ========================

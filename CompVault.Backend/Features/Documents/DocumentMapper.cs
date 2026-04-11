@@ -22,7 +22,7 @@ public static class DocumentMapper
             ExternalUrl = document.ExternalUrl,
             TargetDepartmentId = document.TargetDepartmentId,
             TargetJobTitle = document.TargetJobTitle,
-            RequiresSignature = document.RequiresSignature ?? true,
+            RequiresSignature = document.RequiresSignature ?? true, // Null = arv fra standard (krever signering)
             HasFile = !string.IsNullOrEmpty(document.FilePath),
             Version = document.Version,
             FileName = document.FileName,

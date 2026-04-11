@@ -21,7 +21,7 @@ internal sealed class DocumentVersionConfiguration : IEntityTypeConfiguration<Do
         builder.Property(v => v.Checksum).HasMaxLength(64);
         builder.Property(v => v.ArchivedAt).IsRequired();
 
-        builder.HasIndex(v => new { v.DocumentId, v.Version });
+        builder.HasIndex(v => new { v.DocumentId, v.Version }).IsUnique();
 
         // Matcher Document's query filter slik at navigasjon til Document alltid fungerer
         builder.HasQueryFilter(v => v.Document == null || v.Document.DeletedAt == null);
