@@ -86,6 +86,7 @@ public static class DocumentMapper
             Slug = documentType.Slug,
             Description = documentType.Description,
             TargetMode = documentType.TargetMode,
+            AllowedMimeTypes = documentType.AllowedMimeTypes,
             MaxFileSizeBytes = documentType.MaxFileSizeBytes,
             IsActive = documentType.IsActive,
             CreatedAt = documentType.CreatedAt,

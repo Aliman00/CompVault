@@ -22,10 +22,7 @@ public sealed class DocumentTypeDto
     /// <summary>Targeting-modus.</summary>
     public DocumentTargetMode TargetMode { get; set; }
 
-    /// <summary>Storage-mappe.</summary>
-    public string StorageFolder { get; set; } = string.Empty;
-
-    /// <summary>Tillatte MIME-typer.</summary>
+    /// <summary>Tillatte MIME-typer for opplasting.</summary>
     public string[] AllowedMimeTypes { get; set; } = [];
 
     /// <summary>Maksimal filstørrelse i bytes.</summary>
