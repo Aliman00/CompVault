@@ -1,5 +1,4 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
-using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
@@ -290,7 +289,7 @@ public static class TestDataSeeder
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // Seed document types
-        var documentTypes = new[]
+        DocumentType[] documentTypes = new[]
         {
             new DocumentType
             {
@@ -320,7 +319,7 @@ public static class TestDataSeeder
             },
         };
 
-        foreach (var dt in documentTypes)
+        foreach (DocumentType? dt in documentTypes)
         {
             if (!await context.DocumentTypes.AnyAsync(d => d.Slug == dt.Slug))
             {
@@ -330,7 +329,7 @@ public static class TestDataSeeder
         await context.SaveChangesAsync();
 
         // Seed document type categories
-        var categories = new[]
+        DocumentTypeCategory[] categories = new[]
         {
             new DocumentTypeCategory
             {
@@ -350,7 +349,7 @@ public static class TestDataSeeder
             },
         };
 
-        foreach (var cat in categories)
+        foreach (DocumentTypeCategory? cat in categories)
         {
             if (!await context.DocumentTypeCategories.AnyAsync(c => c.Slug == cat.Slug))
             {
@@ -360,7 +359,7 @@ public static class TestDataSeeder
         await context.SaveChangesAsync();
 
         // Seed documents (UploadedBy set to a placeholder GUID - will be linked when users are seeded)
-        var documents = new[]
+        Document[] documents = new[]
         {
             new Document
             {
@@ -389,7 +388,7 @@ public static class TestDataSeeder
             },
         };
 
-        foreach (var doc in documents)
+        foreach (Document? doc in documents)
         {
             if (!await context.Documents.AnyAsync(d => d.Title == doc.Title))
             {
