@@ -249,12 +249,10 @@ public sealed class DocumentsController(
     public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(
         CancellationToken cancellationToken)
     {
-        Guid? userId = User.TryGetUserId();
-        if (!userId.HasValue)
-            return Unauthorized();
+        Guid userId = User.GetUserId();
 
         Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetMySignedDocumentsAsync(
-            userId.Value, cancellationToken);
+            userId, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -268,12 +266,10 @@ public sealed class DocumentsController(
     public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetMyPendingDocumentsAsync(
         CancellationToken cancellationToken)
     {
-        Guid? userId = User.TryGetUserId();
-        if (!userId.HasValue)
-            return Unauthorized();
+        Guid userId = User.GetUserId();
 
         Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetMyPendingDocumentsAsync(
-            userId.Value, cancellationToken);
+            userId, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

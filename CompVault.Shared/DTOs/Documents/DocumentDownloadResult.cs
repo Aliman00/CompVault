@@ -3,7 +3,7 @@ namespace CompVault.Shared.DTOs.Documents;
 /// <summary>
 /// Resultat av filnedlasting. Inneholder filsti og metadata.
 /// Streamen åpnes av controlleren for å unngå lekkasjer.
-//种子 </summary>
+/// </summary>
 public sealed class DocumentDownloadResult
 {
     /// <summary>Relativ filsti i lagringen.</summary>

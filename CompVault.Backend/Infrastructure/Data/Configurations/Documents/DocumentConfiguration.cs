@@ -22,7 +22,6 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.Property(d => d.FilePath).HasMaxLength(500);
         builder.Property(d => d.MimeType).HasMaxLength(100);
         builder.Property(d => d.Checksum).HasMaxLength(64);
-        builder.Property(d => d.RequiresSignature);
         builder.Property(d => d.Version).IsRequired();
         builder.Property(d => d.IsCurrent).IsRequired().HasDefaultValue(true);
         builder.Property(d => d.IsActive).IsRequired().HasDefaultValue(true);

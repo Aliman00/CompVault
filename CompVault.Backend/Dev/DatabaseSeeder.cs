@@ -62,6 +62,7 @@ public static class DatabaseSeeder
         ("sofie.dahl@compvault.no",    "Rekruttering"),
         ("gamingnerd824@gmail.com",     "Utvikling"),
         ("fredrik@magee.no",           "Utvikling"),
+        ("almin.dev@pm.me",           "Utvikling"),
     ];
 
     // CompetencyTypes: (Name, Description, Category, RequiresExpiration)
@@ -655,6 +656,11 @@ public static class DatabaseSeeder
                 continue;
 
             ApplicationUser? admin = await dbContext.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+            if (admin is null)
+            {
+                logger.LogWarning("[DatabaseSeeder] Ingen admin funnet — dokument {Title} hoppes over.", title);
+                continue;
+            }
 
             var document = new Document
             {
@@ -667,7 +673,7 @@ public static class DatabaseSeeder
                 Version = 1,
                 IsCurrent = true,
                 IsActive = true,
-                UploadedBy = admin?.Id ?? Guid.Empty,
+                UploadedBy = admin.Id,
                 UploadedAt = DateTime.UtcNow,
             };
 
