@@ -38,7 +38,7 @@ public class DocumentTypeServiceTests
     {
         // Arrange
         _documentTypeRepositoryMock
-            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetAllWithCategoriesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         // Act
@@ -71,7 +71,7 @@ public class DocumentTypeServiceTests
         };
 
         _documentTypeRepositoryMock
-            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetAllWithCategoriesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(types);
 
         // Act

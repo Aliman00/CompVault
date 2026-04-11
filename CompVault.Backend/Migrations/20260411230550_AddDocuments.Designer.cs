@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CompVault.Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260411220618_AddDocuments")]
+    [Migration("20260411230550_AddDocuments")]
     partial class AddDocuments
     {
         /// <inheritdoc />
@@ -460,7 +460,8 @@ namespace CompVault.Backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DocumentTypeId", "Slug")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
 
                     b.ToTable("DocumentTypeCategories");
                 });

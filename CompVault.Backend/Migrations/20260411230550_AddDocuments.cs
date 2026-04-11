@@ -212,7 +212,8 @@ namespace CompVault.Backend.Migrations
                 name: "IX_DocumentTypeCategories_DocumentTypeId_Slug",
                 table: "DocumentTypeCategories",
                 columns: new[] { "DocumentTypeId", "Slug" },
-                unique: true);
+                unique: true,
+                filter: "\"DeletedAt\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DocumentTypes_CreatedById",

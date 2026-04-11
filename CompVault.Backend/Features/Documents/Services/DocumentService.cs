@@ -449,9 +449,13 @@ public sealed class DocumentService(
             // Slett signaturer — ny versjon krever re-signering
             await signatureRepository.DeleteAllForDocumentAsync(documentId, cancellationToken);
 
-            // Arkiver gammel fil etter at DB-endringen er persistent.
-            // Hvis SaveChangesAsync feiler, er ingen filer flyttet og operasjonen
-            // kan trygt gjentas uten datatap.
+            // Persistér DB-endringer FØR filer flyttes.
+            // Hvis SaveChanges feiler er ingen filer berørt og operasjonen kan trygt gjentas.
+            await documentRepository.SaveChangesAsync(cancellationToken);
+
+            // Nå som DB er persistent — flytt filer.
+            // Ved feil her er DB konsistent, men filer kan være i en ufullstendig tilstand.
+            // Det er akseptabelt — filene kan ryddes manuelt, og ingen data går tapt.
             if (!string.IsNullOrEmpty(oldFilePath) && oldFilePath != newFilePath)
             {
                 string archivedPath = $"{storageFolder}/archived/{documentId}/file_v{newVersion - 1}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}{Path.GetExtension(oldFileName ?? fileName)}";
@@ -470,13 +474,10 @@ public sealed class DocumentService(
                 };
 
                 await documentRepository.AddVersionAsync(versionRecord, cancellationToken);
+                await documentRepository.SaveChangesAsync(cancellationToken);
             }
 
-            await documentRepository.SaveChangesAsync(cancellationToken);
-
-            // Flytt nye filen til active etter at alt annet er commitet.
-            // Hvis dette feiler er dokumentet fortsatt konsistent — den gamle filen
-            // er allerede flyttet til arkiv og DB er oppdatert med nye verdier.
+            // Flytt temp-fil til endelig aktiv lokasjon
             await fileStorage.MoveAsync(tempPath, newFilePath, cancellationToken);
 
             Document? updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken);
@@ -560,7 +561,6 @@ public sealed class DocumentService(
             return Result<IReadOnlyList<DocumentListDto>>.Success(Array.Empty<DocumentListDto>());
 
         var documents = (await documentRepository.GetByIdsAsync(signedDocumentIds, cancellationToken))
-            .Where(d => d.IsActive)
             .ToList();
 
         var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(documents.Select(d => d.Id).ToList(), cancellationToken)).ToList();

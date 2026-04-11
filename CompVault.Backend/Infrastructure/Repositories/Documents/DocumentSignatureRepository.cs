@@ -46,14 +46,6 @@ public sealed class DocumentSignatureRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<int> CountForCurrentVersionAsync(
-        Guid documentId, int currentVersion, CancellationToken cancellationToken = default)
-    {
-        return await DbSet.CountAsync(
-            s => s.DocumentId == documentId && s.SignatureVersion == currentVersion,
-            cancellationToken);
-    }
-
     public async Task DeleteAllForDocumentAsync(
         Guid documentId, CancellationToken cancellationToken = default)
     {

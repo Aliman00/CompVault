@@ -13,8 +13,16 @@ public sealed class DocumentTypeRepository(AppDbContext dbContext)
         string slug, CancellationToken cancellationToken = default)
     {
         return await DbSet
-            .Include(dt => dt.Categories)
             .FirstOrDefaultAsync(dt => dt.Slug == slug, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<DocumentType>> GetAllWithCategoriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .Include(dt => dt.Categories.Where(c => c.IsActive))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<DocumentType?> GetWithCategoriesBySlugAsync(

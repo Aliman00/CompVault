@@ -18,7 +18,9 @@ internal sealed class DocumentTypeCategoryConfiguration : IEntityTypeConfigurati
         builder.Property(c => c.Slug).HasMaxLength(50).IsRequired();
         builder.Property(c => c.IsActive).IsRequired().HasDefaultValue(true);
 
-        builder.HasIndex(c => new { c.DocumentTypeId, c.Slug }).IsUnique();
+        builder.HasIndex(c => new { c.DocumentTypeId, c.Slug })
+            .IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL");
 
         // Kategorien er usynlig hvis den selv er soft-slettet ELLER hvis foreldretypen er soft-slettet
         builder.HasQueryFilter(c => c.DeletedAt == null && (c.DocumentType == null || c.DocumentType.DeletedAt == null));

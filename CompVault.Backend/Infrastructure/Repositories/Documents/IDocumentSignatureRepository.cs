@@ -23,10 +23,6 @@ public interface IDocumentSignatureRepository : IRepository<DocumentSignature>
     Task<IReadOnlyList<Guid>> GetSignedDocumentIdsAsync(
         Guid userId, CancellationToken cancellationToken = default);
 
-    /// <summary>Teller signaturer for gjeldende versjon.</summary>
-    Task<int> CountForCurrentVersionAsync(
-        Guid documentId, int currentVersion, CancellationToken cancellationToken = default);
-
     /// <summary>Sletter alle signaturer for et dokument.</summary>
     Task DeleteAllForDocumentAsync(Guid documentId, CancellationToken cancellationToken = default);
 }

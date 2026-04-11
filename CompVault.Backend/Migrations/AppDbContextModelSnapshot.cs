@@ -457,7 +457,8 @@ namespace CompVault.Backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DocumentTypeId", "Slug")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
 
                     b.ToTable("DocumentTypeCategories");
                 });

@@ -14,7 +14,7 @@ public sealed class DocumentTypeService(
     public async Task<Result<IReadOnlyList<DocumentTypeDto>>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<DocumentType> types = await documentTypeRepository.GetAllAsync(cancellationToken);
+        IReadOnlyList<DocumentType> types = await documentTypeRepository.GetAllWithCategoriesAsync(cancellationToken);
         var dtos = types.Select(DocumentMapper.ToTypeDto).ToList();
         return Result<IReadOnlyList<DocumentTypeDto>>.Success(dtos);
     }

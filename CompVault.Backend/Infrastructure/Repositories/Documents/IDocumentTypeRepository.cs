@@ -7,8 +7,11 @@ namespace CompVault.Backend.Infrastructure.Repositories.Documents;
 /// </summary>
 public interface IDocumentTypeRepository : IRepository<DocumentType>
 {
-    /// <summary>Henter en dokumenttype basert på slug.</summary>
+    /// <summary>Henter en dokumenttype basert på slug (uten kategorier).</summary>
     Task<DocumentType?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
+
+    /// <summary>Henter alle dokumenttyper med aktive kategorier.</summary>
+    Task<IReadOnlyList<DocumentType>> GetAllWithCategoriesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Henter en dokumenttype med tilhørende kategorier.</summary>
     Task<DocumentType?> GetWithCategoriesAsync(Guid id, CancellationToken cancellationToken = default);
