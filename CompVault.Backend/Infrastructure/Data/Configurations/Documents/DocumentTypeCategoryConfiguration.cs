@@ -20,8 +20,8 @@ internal sealed class DocumentTypeCategoryConfiguration : IEntityTypeConfigurati
 
         builder.HasIndex(c => new { c.DocumentTypeId, c.Slug }).IsUnique();
 
-        // Matcher DocumentType's query filter slik at navigasjon til DocumentType alltid fungerer
-        builder.HasQueryFilter(c => c.DocumentType == null || c.DocumentType.DeletedAt == null);
+        // Kategorien er usynlig hvis den selv er soft-slettet ELLER hvis foreldretypen er soft-slettet
+        builder.HasQueryFilter(c => c.DeletedAt == null && (c.DocumentType == null || c.DocumentType.DeletedAt == null));
 
         builder.HasMany(c => c.Documents)
             .WithOne(d => d.Category)

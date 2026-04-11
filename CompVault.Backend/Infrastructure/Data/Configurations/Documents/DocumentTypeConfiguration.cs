@@ -23,6 +23,11 @@ internal sealed class DocumentTypeConfiguration : IEntityTypeConfiguration<Docum
         builder.Property(dt => dt.IsActive).IsRequired().HasDefaultValue(true);
         builder.Property(dt => dt.CreatedAt).IsRequired();
 
+        builder.HasOne(dt => dt.CreatedBy)
+            .WithMany()
+            .HasForeignKey(dt => dt.CreatedById)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasIndex(dt => dt.Slug).IsUnique();
         builder.HasIndex(dt => dt.DeletedAt);
 

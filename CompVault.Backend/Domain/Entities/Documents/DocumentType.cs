@@ -1,3 +1,4 @@
+using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Shared.Enums;
 
 namespace CompVault.Backend.Domain.Entities.Documents;
@@ -46,6 +47,9 @@ public class DocumentType
 
     /// <summary>Hvem som opprettet dokumenttypen.</summary>
     public Guid? CreatedById { get; set; }
+
+    /// <summary>Brukeren som opprettet dokumenttypen.</summary>
+    public ApplicationUser? CreatedBy { get; set; }
 
     // ======================== Soft delete ========================
     /// <summary>Når dokumenttypen ble soft-slettet (UTC). Null hvis aktiv.</summary>

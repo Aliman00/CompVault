@@ -24,6 +24,9 @@ public class DocumentTypeCategory
     /// <summary>Om kategorien er aktiv.</summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Når kategorien ble soft-slettet (UTC). Null hvis aktiv.</summary>
+    public DateTime? DeletedAt { get; set; }
+
     // ======================== Navigasjonsegenskaper ========================
     /// <summary>Dokumenttypen kategorien tilhører.</summary>
     public DocumentType? DocumentType { get; set; }
