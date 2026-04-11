@@ -113,12 +113,42 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAuthPolicies(this IServiceCollection services)
     {
         services.AddAuthorization(options =>
-        {
-            options.AddPolicy(Policies.AdminAccess, policy =>
-                policy.RequireClaim(Permissions.ClaimType,
-                    Permissions.UsersRead,
-                    Permissions.RolesRead,
-                    Permissions.DepartmentsRead));
+        {   
+            // Admin-panel tilgang 
+            options.AddPolicy(Permissions.AdminAccess, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.AdminAccess));
+            
+            // Users
+            options.AddPolicy(Permissions.UsersRead, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersRead));
+            options.AddPolicy(Permissions.UsersWrite, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersWrite));
+            options.AddPolicy(Permissions.UsersDelete, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersDelete));
+            
+            // Roles
+            options.AddPolicy(Permissions.RolesRead, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesRead));
+            options.AddPolicy(Permissions.RolesWrite, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesWrite));
+            options.AddPolicy(Permissions.RolesDelete, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesDelete));
+            
+            // Department
+            options.AddPolicy(Permissions.DepartmentsRead, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsRead));
+            options.AddPolicy(Permissions.DepartmentsWrite, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsWrite));
+            options.AddPolicy(Permissions.DepartmentsDelete, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsDelete));
+            
+            // Competencies
+            options.AddPolicy(Permissions.CompetenciesRead, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesRead));
+            options.AddPolicy(Permissions.CompetenciesWrite, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesWrite));
+            options.AddPolicy(Permissions.CompetenciesDelete, policy =>
+                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesDelete));
         });
 
         return services;

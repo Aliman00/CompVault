@@ -380,6 +380,7 @@ public static class DatabaseSeeder
             (Permissions.CompetenciesRead, "Se kompetanser", "Competencies"),
             (Permissions.CompetenciesWrite, "Opprett/endre kompetanser", "Competencies"),
             (Permissions.CompetenciesDelete, "Slett kompetanser", "Competencies"),
+            (Permissions.AdminAccess, "Se administratorpanel", "Admins"),
         ];
 
         int addedCount = 0;

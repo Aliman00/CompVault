@@ -1,5 +1,6 @@
 ﻿@page "/admin/users"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.UsersRead)]
 @inject IUserService UserService
 @inject NavigationManager NavigationManager
 
@@ -25,15 +26,30 @@
              RowClick="@((DataGridRowClickEventArgs<UserDto> args) => OnUserClick(args))">
 
     @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere brukere *@
+    @* For øyeblikket kun Rediger-bruker knapp som er disabled hvis bruker ikke har user:write tilgang*@
     <ToolBarContent>
         <MudText Typo="Typo.h6">Brukere</MudText>
         <MudSpacer/>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Success"
-                   StartIcon="@Icons.Material.Filled.PersonAdd"
-                   Href="@PageRoutes.Admin.UserCreate">
-            Opprett bruker
-        </MudButton>
+        <AuthorizeView Policy="@Permissions.UsersWrite">
+            <Authorized>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.PersonAdd"
+                           Href="@PageRoutes.Admin.UserCreate">
+                    Opprett bruker
+                </MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudTooltip Text="Du har ikke tilgang til å opprette brukere">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Success"
+                               StartIcon="@Icons.Material.Filled.PersonAdd"
+                               Disabled="true">
+                        Opprett bruker
+                    </MudButton>
+                </MudTooltip>
+            </NotAuthorized>
+        </AuthorizeView>
     </ToolBarContent>
 
     @* Selve kolonnene *@

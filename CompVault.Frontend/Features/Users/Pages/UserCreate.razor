@@ -1,5 +1,6 @@
 ﻿@page "/admin/users/create"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.UsersWrite)]
 @inject IUserService UserService
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager

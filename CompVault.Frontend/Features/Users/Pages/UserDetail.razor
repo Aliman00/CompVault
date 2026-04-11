@@ -1,5 +1,6 @@
 ﻿@page "/admin/users/{Id:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.UsersRead)]
 @inject IUserService UserService
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
@@ -26,6 +27,7 @@ else if (_user != null)
         @* Header med navn og tittel, og redigeringsknapper *@
         <MudPaper Class="pa-6" Elevation="1" Square="true">
             <DetailHeader Title="@_user.FullName"
+                          EditPolicy="@Permissions.UsersWrite"
                           Subtitle="@_user.JobTitle"
                           IsEditing="_isEditing"
                           OnStartEdit="StartEdit"

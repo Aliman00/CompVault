@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace CompVault.Frontend.Pages;
+namespace CompVault.Frontend.Features.Auth.Pages;
 
 public class LogoutCallback : PageModel
 {
