@@ -21,4 +21,7 @@ public interface IUserRepository : IRepository<ApplicationUser>
 
     /// <summary>Soft-sletter brukeren ved å sette <see cref="ApplicationUser.DeletedAt"/> og <see cref="ApplicationUser.IsActive"/>.</summary>
     Task SoftDeleteAsync(ApplicationUser user, CancellationToken cancellationToken = default);
+
+    /// <summary>Henter alle unike jobbtitler fra aktive brukere for autocomplete.</summary>
+    Task<IReadOnlyList<string>> GetUniqueJobTitlesAsync(CancellationToken cancellationToken = default);
 }
