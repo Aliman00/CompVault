@@ -1,0 +1,1229 @@
+using CompVault.Backend.Domain.Entities.Departments;
+using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Documents.Services;
+using CompVault.Backend.Infrastructure.FileStorage;
+using CompVault.Backend.Infrastructure.Repositories.Departments;
+using CompVault.Backend.Infrastructure.Repositories.Documents;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.DTOs.Documents;
+using CompVault.Shared.Enums;
+using CompVault.Shared.Result;
+
+using FluentAssertions;
+
+using Moq;
+
+namespace CompVault.Backend.Tests.Backend.Features.Documents.Services;
+
+public class DocumentServiceTests
+{
+    private readonly Mock<IDocumentRepository> _documentRepositoryMock;
+    private readonly Mock<IDocumentSignatureRepository> _signatureRepositoryMock;
+    private readonly Mock<IDocumentTypeRepository> _documentTypeRepositoryMock;
+    private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IFileStorageService> _fileStorageMock;
+    private readonly DocumentService _sut;
+
+    public DocumentServiceTests()
+    {
+        _documentRepositoryMock = new Mock<IDocumentRepository>();
+        _signatureRepositoryMock = new Mock<IDocumentSignatureRepository>();
+        _documentTypeRepositoryMock = new Mock<IDocumentTypeRepository>();
+        _departmentRepositoryMock = new Mock<IDepartmentRepository>();
+        _userRepositoryMock = new Mock<IUserRepository>();
+        _fileStorageMock = new Mock<IFileStorageService>();
+
+        _sut = new DocumentService(
+            _documentRepositoryMock.Object,
+            _signatureRepositoryMock.Object,
+            _documentTypeRepositoryMock.Object,
+            _departmentRepositoryMock.Object,
+            _userRepositoryMock.Object,
+            _fileStorageMock.Object);
+    }
+
+    // Hjelpemetode for å opprette en gyldig DocumentType
+    private static DocumentType CreateDocumentType(
+        DocumentTargetMode targetMode = DocumentTargetMode.None,
+        Guid? id = null)
+    {
+        return new DocumentType
+        {
+            Id = id ?? Guid.NewGuid(),
+            Name = "Test Type",
+            Slug = "test-type",
+            TargetMode = targetMode,
+            IsActive = true,
+            StorageFolder = "test-type"
+        };
+    }
+
+    // Hjelpemetode for å opprette en bruker
+    private static ApplicationUser CreateUser(
+        Guid? id = null, Guid? departmentId = null, string? jobTitle = null)
+    {
+        return new ApplicationUser
+        {
+            Id = id ?? Guid.NewGuid(),
+            FirstName = "Test",
+            LastName = "Bruker",
+            Email = "test@test.no",
+            DepartmentId = departmentId,
+            JobTitle = jobTitle ?? string.Empty
+        };
+    }
+
+    // -------------------------------------------------------------------------
+    // GetAllAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at GetAllAsync returnerer failure når dokumenttypen ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task GetAllAsync_DocumentTypeNotFound_ReturnsFailure()
+    {
+        // Arrange
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("nonexistent", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DocumentType?)null);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetAllAsync("nonexistent", Guid.NewGuid(), null);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at GetAllAsync returnerer tom liste når ingen dokumenter finnes.
+    /// </summary>
+    [Fact]
+    public async Task GetAllAsync_NoDocuments_ReturnsEmptyList()
+    {
+        // Arrange
+        DocumentType type = CreateDocumentType();
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetByDocumentTypeAsync(type.Id, null, false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetAllAsync("test-type", Guid.NewGuid(), null);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Tester at GetAllAsync returnerer dokumenter med signaturinformasjon.
+    /// </summary>
+    [Fact]
+    public async Task GetAllAsync_HasDocuments_ReturnsWithSignatureInfo()
+    {
+        // Arrange
+        DocumentType type = CreateDocumentType();
+        var userId = Guid.NewGuid();
+        var docId = Guid.NewGuid();
+
+        var documents = new List<Document>
+        {
+            new()
+            {
+                Id = docId, DocumentTypeId = type.Id, DocumentType = type,
+                Title = "Test dokument", Version = 1, IsCurrent = true, IsActive = true
+            }
+        };
+
+        var signatures = new List<DocumentSignature>
+        {
+            new()
+            {
+                DocumentId = docId, UserId = userId,
+                SignatureVersion = 1
+            }
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetByDocumentTypeAsync(type.Id, null, false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(documents);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetByDocumentIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => ids.Contains(docId)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(signatures);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetAllAsync("test-type", userId, null);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(1);
+        result.Value[0].TotalSignatures.Should().Be(1);
+        result.Value[0].SignedByCurrentUser.Should().BeTrue();
+    }
+
+    // -------------------------------------------------------------------------
+    // GetByIdAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at GetByIdAsync returnerer failure når dokumentet ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task GetByIdAsync_NotFound_ReturnsFailure()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document?)null);
+
+        // Act
+        Result<DocumentDto> result = await _sut.GetByIdAsync(id);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at GetByIdAsync returnerer korrekt DTO.
+    /// </summary>
+    [Fact]
+    public async Task GetByIdAsync_Found_ReturnsDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        DocumentType type = CreateDocumentType();
+        var document = new Document
+        {
+            Id = id,
+            DocumentTypeId = type.Id,
+            DocumentType = type,
+            Title = "Test dokument",
+            Version = 1,
+            IsCurrent = true
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        // Act
+        Result<DocumentDto> result = await _sut.GetByIdAsync(id);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value?.Id.Should().Be(id);
+        result.Value?.Title.Should().Be("Test dokument");
+    }
+
+    // -------------------------------------------------------------------------
+    // CreateAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at CreateAsync returnerer failure når dokumenttypen ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_DocumentTypeNotFound_ReturnsFailure()
+    {
+        // Arrange
+        var request = new CreateDocumentRequest { Title = "Test" };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("nonexistent", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DocumentType?)null);
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            "nonexistent", request, Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at CreateAsync returnerer failure når TargetMode er Department
+    /// men TargetDepartmentId mangler.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_DepartmentModeWithoutTarget_ReturnsValidationFailure()
+    {
+        // Arrange
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        var request = new CreateDocumentRequest
+        {
+            Title = "Test",
+            TargetDepartmentId = null // Mangler for Department-modus
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            "test-type", request, Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Validation);
+    }
+
+    /// <summary>
+    /// Tester at CreateAsync returnerer failure når TargetMode er None
+    /// men target-felt er satt.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_NoneModeWithTarget_ReturnsValidationFailure()
+    {
+        // Arrange
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None);
+        var request = new CreateDocumentRequest
+        {
+            Title = "Test",
+            TargetDepartmentId = Guid.NewGuid() // Ikke tillatt for None
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            "test-type", request, Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Validation);
+    }
+
+    /// <summary>
+    /// Tester at CreateAsync returnerer failure når avdelingen ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_DepartmentNotFound_ReturnsFailure()
+    {
+        // Arrange
+        var departmentId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        var request = new CreateDocumentRequest
+        {
+            Title = "Test",
+            TargetDepartmentId = departmentId
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _departmentRepositoryMock
+            .Setup(x => x.ExistsAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<Department, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            "test-type", request, Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at CreateAsync returnerer failure når kategorien ikke tilhører
+    /// riktig dokumenttype.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_InvalidCategory_ReturnsFailure()
+    {
+        // Arrange
+        var categoryId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None);
+        type.Categories = []; // Tom liste — kategorien finnes ikke
+
+        var request = new CreateDocumentRequest
+        {
+            Title = "Test",
+            DocumentTypeCategoryId = categoryId
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetWithCategoriesAsync(type.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            "test-type", request, Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester happy path for CreateAsync uten filvedlegg.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_ValidRequestWithoutFile_ReturnsSuccess()
+    {
+        // Arrange
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None);
+        var uploadedById = Guid.NewGuid();
+        var request = new CreateDocumentRequest { Title = "Nytt dokument" };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _documentRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document d, CancellationToken _) => d);
+
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, CancellationToken _) =>
+                new Document
+                {
+                    Id = id,
+                    DocumentTypeId = type.Id,
+                    DocumentType = type,
+                    Title = request.Title,
+                    Version = 1,
+                    IsCurrent = true
+                });
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            "test-type", request, uploadedById);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value?.Title.Should().Be("Nytt dokument");
+
+        _documentRepositoryMock.Verify(
+            x => x.AddAsync(It.Is<Document>(d =>
+                d.Title == "Nytt dokument" &&
+                d.DocumentTypeId == type.Id &&
+                d.UploadedBy == uploadedById), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Tester at CreateAsync med fil lagrer filen og setter filmetadata.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_WithFile_SavesFileAndSetsMetadata()
+    {
+        // Arrange
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None);
+        var uploadedById = Guid.NewGuid();
+        var request = new CreateDocumentRequest { Title = "Dok med fil" };
+        var stream = new MemoryStream([1, 2, 3, 4, 5]);
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _fileStorageMock
+            .Setup(x => x.SaveAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("saved/path");
+
+        _fileStorageMock
+            .Setup(x => x.ComputeChecksumAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("sha256hash");
+
+        _documentRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document d, CancellationToken _) => d);
+
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, CancellationToken _) =>
+                new Document
+                {
+                    Id = id,
+                    DocumentTypeId = type.Id,
+                    DocumentType = type,
+                    Title = request.Title,
+                    Version = 1,
+                    IsCurrent = true
+                });
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            "test-type", request, uploadedById,
+            "test.pdf", "application/pdf", stream);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+
+        _fileStorageMock.Verify(
+            x => x.SaveAsync(It.IsAny<Stream>(),
+                It.Is<string>(p => p.Contains("active")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _fileStorageMock.Verify(
+            x => x.ComputeChecksumAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // UpdateAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at UpdateAsync returnerer failure når dokumentet ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_NotFound_ReturnsFailure()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document?)null);
+
+        // Act
+        Result<DocumentDto> result = await _sut.UpdateAsync(id, new UpdateDocumentRequest());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at UpdateAsync oppdaterer tittel.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_UpdatesTitle_ReturnsSuccess()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        DocumentType type = CreateDocumentType();
+        var document = new Document
+        {
+            Id = id,
+            DocumentTypeId = type.Id,
+            DocumentType = type,
+            Title = "Gammel tittel",
+            Version = 1
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        // Act
+        Result<DocumentDto> result = await _sut.UpdateAsync(
+            id, new UpdateDocumentRequest { Title = "Ny tittel" });
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        document.Title.Should().Be("Ny tittel");
+    }
+
+    /// <summary>
+    /// Tester at UpdateAsync kan fjerne felt med clear-flagg.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_ClearsTargetDepartment_ReturnsSuccess()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var departmentId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType();
+        var document = new Document
+        {
+            Id = id,
+            DocumentTypeId = type.Id,
+            DocumentType = type,
+            Title = "Test",
+            Version = 1,
+            TargetDepartmentId = departmentId
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        // Act
+        Result<DocumentDto> result = await _sut.UpdateAsync(
+            id, new UpdateDocumentRequest { ClearTargetDepartment = true });
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        document.TargetDepartmentId.Should().BeNull();
+    }
+
+    // -------------------------------------------------------------------------
+    // DeleteAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at DeleteAsync returnerer failure når dokumentet ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task DeleteAsync_NotFound_ReturnsFailure()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _documentRepositoryMock
+            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document?)null);
+
+        // Act
+        Result<bool> result = await _sut.DeleteAsync(id);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at DeleteAsync soft-sletter dokumentet.
+    /// </summary>
+    [Fact]
+    public async Task DeleteAsync_Found_SoftDeletesAndReturnsTrue()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var document = new Document { Id = id, Title = "Test", IsActive = true };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _documentRepositoryMock
+            .Setup(x => x.SoftDeleteAsync(document, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        Result<bool> result = await _sut.DeleteAsync(id);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeTrue();
+
+        _documentRepositoryMock.Verify(
+            x => x.SoftDeleteAsync(document, It.IsAny<CancellationToken>()), Times.Once);
+        _documentRepositoryMock.Verify(
+            x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // SignAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at SignAsync returnerer failure når dokumentet ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task SignAsync_DocumentNotFound_ReturnsFailure()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        _documentRepositoryMock
+            .Setup(x => x.GetCurrentWithSignaturesAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document?)null);
+
+        // Act
+        Result<bool> result = await _sut.SignAsync(docId, userId);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at SignAsync returnerer conflict når brukeren allerede har signert.
+    /// </summary>
+    [Fact]
+    public async Task SignAsync_AlreadySigned_ReturnsConflictFailure()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var document = new Document
+        {
+            Id = docId,
+            Version = 1,
+            IsCurrent = true
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetCurrentWithSignaturesAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _signatureRepositoryMock
+            .Setup(x => x.HasUserSignedVersionAsync(docId, userId, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        Result<bool> result = await _sut.SignAsync(docId, userId);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Conflict);
+    }
+
+    /// <summary>
+    /// Tester happy path for SignAsync.
+    /// </summary>
+    [Fact]
+    public async Task SignAsync_ValidRequest_ReturnsSuccess()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var document = new Document
+        {
+            Id = docId,
+            Version = 2,
+            IsCurrent = true
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetCurrentWithSignaturesAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _signatureRepositoryMock
+            .Setup(x => x.HasUserSignedVersionAsync(docId, userId, 2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        _signatureRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<DocumentSignature>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DocumentSignature s, CancellationToken _) => s);
+
+        _signatureRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        Result<bool> result = await _sut.SignAsync(docId, userId);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeTrue();
+
+        _signatureRepositoryMock.Verify(
+            x => x.AddAsync(It.Is<DocumentSignature>(s =>
+                s.DocumentId == docId &&
+                s.UserId == userId &&
+                s.SignatureVersion == 2), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetDownloadAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at GetDownloadAsync returnerer failure når dokumentet ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task GetDownloadAsync_NotFound_ReturnsFailure()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _documentRepositoryMock
+            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document?)null);
+
+        // Act
+        Result<DocumentDownloadResult> result = await _sut.GetDownloadAsync(id);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at GetDownloadAsync returnerer failure når dokumentet ikke har fil.
+    /// </summary>
+    [Fact]
+    public async Task GetDownloadAsync_NoFile_ReturnsValidationFailure()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var document = new Document
+        {
+            Id = id,
+            FilePath = null,
+            FileName = null
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        // Act
+        Result<DocumentDownloadResult> result = await _sut.GetDownloadAsync(id);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Validation);
+    }
+
+    /// <summary>
+    /// Tester at GetDownloadAsync returnerer failure når filen mangler på lagring.
+    /// </summary>
+    [Fact]
+    public async Task GetDownloadAsync_FileNotFoundOnStorage_ReturnsFailure()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var document = new Document
+        {
+            Id = id,
+            FilePath = "/some/path.pdf",
+            FileName = "test.pdf"
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _fileStorageMock
+            .Setup(x => x.ExistsAsync("/some/path.pdf", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        Result<DocumentDownloadResult> result = await _sut.GetDownloadAsync(id);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester happy path for GetDownloadAsync.
+    /// </summary>
+    [Fact]
+    public async Task GetDownloadAsync_FileExists_ReturnsStream()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var document = new Document
+        {
+            Id = id,
+            FilePath = "/files/test.pdf",
+            FileName = "test.pdf",
+            MimeType = "application/pdf",
+            FileSize = 1024
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _fileStorageMock
+            .Setup(x => x.ExistsAsync("/files/test.pdf", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        _fileStorageMock
+            .Setup(x => x.OpenReadAsync("/files/test.pdf", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MemoryStream([1, 2, 3]));
+
+        // Act
+        Result<DocumentDownloadResult> result = await _sut.GetDownloadAsync(id);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value?.FileName.Should().Be("test.pdf");
+        result.Value?.ContentType.Should().Be("application/pdf");
+        result.Value?.Stream.Should().NotBeNull();
+    }
+
+    // -------------------------------------------------------------------------
+    // GetSignaturesAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at GetSignaturesAsync returnerer failure når dokumentet ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task GetSignaturesAsync_DocumentNotFound_ReturnsFailure()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _documentRepositoryMock
+            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document?)null);
+
+        // Act
+        Result<IReadOnlyList<DocumentSignatureDto>> result =
+            await _sut.GetSignaturesAsync(id, Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetMySignedDocumentsAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at GetMySignedDocumentsAsync returnerer tom liste når brukeren
+    /// ikke har signert noen dokumenter.
+    /// </summary>
+    [Fact]
+    public async Task GetMySignedDocumentsAsync_NoSignatures_ReturnsEmptyList()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        _signatureRepositoryMock
+            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetMySignedDocumentsAsync(userId);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeEmpty();
+    }
+
+    // -------------------------------------------------------------------------
+    // GetMyPendingDocumentsAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at GetMyPendingDocumentsAsync returnerer failure når brukeren
+    /// ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task GetMyPendingDocumentsAsync_UserNotFound_ReturnsFailure()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetMyPendingDocumentsAsync(userId);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at GetMyPendingDocumentsAsync for Department-modus henter
+    /// dokumenter for brukerens avdeling.
+    /// </summary>
+    [Fact]
+    public async Task GetMyPendingDocumentsAsync_DepartmentMode_ReturnsPendingDocs()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var departmentId = Guid.NewGuid();
+        ApplicationUser user = CreateUser(userId, departmentId);
+
+        var deptTypeId = Guid.NewGuid();
+        DocumentType deptType = CreateDocumentType(DocumentTargetMode.Department, deptTypeId);
+
+        var docId = Guid.NewGuid();
+        var documents = new List<Document>
+        {
+            new()
+            {
+                Id = docId, DocumentTypeId = deptTypeId,
+                Title = "Avdelingsdok", Version = 1, IsCurrent = true, IsActive = true
+            }
+        };
+
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([deptType]);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetActiveCurrentForDepartmentAsync(
+                departmentId, deptTypeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(documents);
+
+        _signatureRepositoryMock
+            .Setup(x => x.CountForCurrentVersionAsync(
+                docId, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetByDocumentIdsAsync(
+                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetMyPendingDocumentsAsync(userId);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(1);
+        result.Value[0].SignedByCurrentUser.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Tester at GetMyPendingDocumentsAsync for None-modus bruker
+    /// GetAllActiveCurrentAsync i stedet for departement-søk.
+    /// </summary>
+    [Fact]
+    public async Task GetMyPendingDocumentsAsync_NoneMode_UsesGetAllActiveCurrent()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        ApplicationUser user = CreateUser(userId);
+
+        var noneTypeId = Guid.NewGuid();
+        DocumentType noneType = CreateDocumentType(DocumentTargetMode.None, noneTypeId);
+
+        var docId = Guid.NewGuid();
+        var documents = new List<Document>
+        {
+            new()
+            {
+                Id = docId, DocumentTypeId = noneTypeId,
+                Title = "Generelt dokument", Version = 1, IsCurrent = true, IsActive = true
+            }
+        };
+
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([noneType]);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetAllActiveCurrentAsync(noneTypeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(documents);
+
+        _signatureRepositoryMock
+            .Setup(x => x.CountForCurrentVersionAsync(
+                docId, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetByDocumentIdsAsync(
+                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetMyPendingDocumentsAsync(userId);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(1);
+
+        // Verifiser at GetAllActiveCurrentAsync ble brukt, IKKE GetActiveCurrentForDepartmentAsync
+        _documentRepositoryMock.Verify(
+            x => x.GetAllActiveCurrentAsync(noneTypeId, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _documentRepositoryMock.Verify(
+            x => x.GetActiveCurrentForDepartmentAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Tester at GetMyPendingDocumentsAsync filtrerer bort dokumenter
+    /// brukeren allerede har signert.
+    /// </summary>
+    [Fact]
+    public async Task GetMyPendingDocumentsAsync_AlreadySigned_FiltersOutSigned()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        ApplicationUser user = CreateUser(userId);
+
+        var typeId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None, typeId);
+
+        var signedDocId = Guid.NewGuid();
+        var unsignedDocId = Guid.NewGuid();
+
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([signedDocId]);
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([type]);
+
+        var allDocs = new List<Document>
+        {
+            new()
+            {
+                Id = signedDocId, DocumentTypeId = typeId,
+                Title = "Signert", Version = 1, IsCurrent = true, IsActive = true
+            },
+            new()
+            {
+                Id = unsignedDocId, DocumentTypeId = typeId,
+                Title = "Usignert", Version = 1, IsCurrent = true, IsActive = true
+            }
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetAllActiveCurrentAsync(typeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allDocs);
+
+        _signatureRepositoryMock
+            .Setup(x => x.CountForCurrentVersionAsync(
+                unsignedDocId, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetByDocumentIdsAsync(
+                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetMyPendingDocumentsAsync(userId);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(1);
+        result.Value[0].Title.Should().Be("Usignert");
+    }
+
+    /// <summary>
+    /// Tester at GetMyPendingDocumentsAsync for JobTitle-modus henter
+    /// dokumenter for brukerens jobbtittel.
+    /// </summary>
+    [Fact]
+    public async Task GetMyPendingDocumentsAsync_JobTitleMode_ReturnsPendingDocs()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        ApplicationUser user = CreateUser(userId, jobTitle: "Leder");
+
+        var jtTypeId = Guid.NewGuid();
+        DocumentType jtType = CreateDocumentType(DocumentTargetMode.JobTitle, jtTypeId);
+
+        var docId = Guid.NewGuid();
+        var documents = new List<Document>
+        {
+            new()
+            {
+                Id = docId, DocumentTypeId = jtTypeId,
+                Title = "Lederdok", Version = 1, IsCurrent = true, IsActive = true
+            }
+        };
+
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([jtType]);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetActiveCurrentForJobTitleAsync(
+                "Leder", jtTypeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(documents);
+
+        _signatureRepositoryMock
+            .Setup(x => x.CountForCurrentVersionAsync(
+                docId, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        _signatureRepositoryMock
+            .Setup(x => x.GetByDocumentIdsAsync(
+                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        Result<IReadOnlyList<DocumentListDto>> result =
+            await _sut.GetMyPendingDocumentsAsync(userId);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(1);
+        result.Value[0].Title.Should().Be("Lederdok");
+    }
+}
