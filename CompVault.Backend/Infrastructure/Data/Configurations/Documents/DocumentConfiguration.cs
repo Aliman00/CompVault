@@ -43,13 +43,14 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.HasQueryFilter(d => d.DeletedAt == null);
 
         // Relasjon: Document → DocumentTypeCategory (Many-to-One, optional)
-        // Merk: DocumentTypeCategoryConfiguration definerer OnDelete(SetNull) for samme relasjon.
-        // EF Core bruker den strengeste atferden (SetNull), som er korrekt her —
-        // når en kategori slettes, settes DocumentTypeCategoryId til null på tilhørende dokumenter.
+        // OnDelete er definert fra DocumentTypeCategory-siden (SetNull) i
+        // DocumentTypeCategoryConfiguration. EF Core bruker den atferden.
+        // Merk: Restrict ville forhindre sletting av kategorier med mindre alle
+        // tilknyttede dokumenter først ble oppdatert. SetNull er valgt for å
+        // la kategorier slettes uten å måtte oppdatere dokumenter manuelt.
         builder.HasOne(d => d.Category)
             .WithMany(c => c.Documents)
-            .HasForeignKey(d => d.DocumentTypeCategoryId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(d => d.DocumentTypeCategoryId);
 
         // Relasjon: Document → Department (Many-to-One, optional)
         builder.HasOne(d => d.TargetDepartment)

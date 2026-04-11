@@ -106,10 +106,10 @@ public sealed class DocumentService(
                     AppError.NotFound($"Avdeling med ID '{request.TargetDepartmentId.Value}' ble ikke funnet."));
         }
 
-        // Valider kategori tilhører riktig dokumenttype
+        // Valider kategori tilhører riktig dokumenttype og er aktiv
         if (request.DocumentTypeCategoryId.HasValue)
         {
-            DocumentType? documentTypeWithCategories = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken);
+            DocumentType? documentTypeWithCategories = await documentTypeRepository.GetWithCategoriesBySlugAsync(documentType.Slug, cancellationToken);
             if (documentTypeWithCategories is null || documentTypeWithCategories.Categories.All(c => c.Id != request.DocumentTypeCategoryId.Value))
                 return Result<DocumentDto>.Failure(
                     AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for denne dokumenttypen."));
@@ -221,10 +221,10 @@ public sealed class DocumentService(
                     AppError.NotFound($"Avdeling med ID '{request.TargetDepartmentId.Value}' ble ikke funnet."));
         }
 
-        // Valider kategori tilhører dokumenttypen hvis den settes
+        // Valider kategori tilhører dokumenttypen og er aktiv hvis den settes
         if (request.DocumentTypeCategoryId.HasValue && !request.ClearDocumentTypeCategoryId)
         {
-            DocumentType? documentTypeWithCategories = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken);
+            DocumentType? documentTypeWithCategories = await documentTypeRepository.GetWithCategoriesBySlugAsync(documentType.Slug, cancellationToken);
             if (documentTypeWithCategories is null || documentTypeWithCategories.Categories.All(c => c.Id != request.DocumentTypeCategoryId.Value))
                 return Result<DocumentDto>.Failure(
                     AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for dokumentets dokumenttype."));
@@ -407,33 +407,18 @@ public sealed class DocumentService(
             }
 
             int newVersion = document.Version + 1;
-
-            // Arkiver gammel fil hvis den eksisterer
-            if (!string.IsNullOrEmpty(document.FilePath))
-            {
-                string archivedPath = $"{storageFolder}/archived/{documentId}/file_v{document.Version}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}{Path.GetExtension(document.FileName)}";
-                await fileStorage.MoveAsync(document.FilePath, archivedPath, cancellationToken);
-
-                var versionRecord = new DocumentVersion
-                {
-                    DocumentId = documentId,
-                    Version = document.Version,
-                    FileName = document.FileName,
-                    FilePath = archivedPath,
-                    FileSize = document.FileSize,
-                    MimeType = document.MimeType,
-                    Checksum = document.Checksum,
-                    ArchivedAt = DateTime.UtcNow
-                };
-
-                await documentRepository.AddVersionAsync(versionRecord, cancellationToken);
-            }
-
-            // Flytt midlertidig fil til endelig plassering
             string newFilePath = $"{storageFolder}/active/{documentId}/file_v{newVersion}{extension}";
-            await fileStorage.MoveAsync(tempPath, newFilePath, cancellationToken);
 
-            // Oppdater dokument
+            // Arkivér eksisterende fil OG dens metadata FØR vi overskriver document.FilePath.
+            // Vi trenger begge verdiene etter at document.* er endret.
+            string? oldFilePath = document.FilePath;
+            string? oldFileName = document.FileName;
+            string? oldMimeType = document.MimeType;
+            long? oldFileSize = document.FileSize;
+            string? oldChecksum = document.Checksum;
+
+            // Oppdater dokument metadata først — database-endringen blir persistent
+            // ved SaveChangesAsync. Først når det lykkes flytter vi filer.
             document.Version = newVersion;
             document.FileName = fileName;
             document.FilePath = newFilePath;
@@ -447,19 +432,35 @@ public sealed class DocumentService(
             // Slett signaturer — ny versjon krever re-signering
             await signatureRepository.DeleteAllForDocumentAsync(documentId, cancellationToken);
 
-            try
+            // Arkiver gammel fil etter at DB-endringen er persistent.
+            // Hvis SaveChangesAsync feiler, er ingen filer flyttet og operasjonen
+            // kan trygt gjentas uten datatap.
+            if (!string.IsNullOrEmpty(oldFilePath) && oldFilePath != newFilePath)
             {
-                await documentRepository.SaveChangesAsync(cancellationToken);
+                string archivedPath = $"{storageFolder}/archived/{documentId}/file_v{newVersion - 1}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}{Path.GetExtension(oldFileName ?? fileName)}";
+                await fileStorage.MoveAsync(oldFilePath, archivedPath, cancellationToken);
+
+                var versionRecord = new DocumentVersion
+                {
+                    DocumentId = documentId,
+                    Version = newVersion - 1,
+                    FileName = oldFileName,
+                    FilePath = archivedPath,
+                    FileSize = oldFileSize,
+                    MimeType = oldMimeType,
+                    Checksum = oldChecksum,
+                    ArchivedAt = DateTime.UtcNow
+                };
+
+                await documentRepository.AddVersionAsync(versionRecord, cancellationToken);
             }
-            catch
-            {
-                // Ved DB-feil: slett den nye fila og la den gamle arkiverte bli værende.
-                // Versjonsrekord ble ikke persistert, så arkivfila er foreldreløs —
-                // dette er en kjent begrensning uten ekte filtransaksjon.
-                await fileStorage.DeleteAsync(newFilePath, CancellationToken.None);
-                await fileStorage.DeleteAsync(tempPath, CancellationToken.None);
-                throw;
-            }
+
+            await documentRepository.SaveChangesAsync(cancellationToken);
+
+            // Flytt nye filen til active etter at alt annet er commitet.
+            // Hvis dette feiler er ikke dokumentet i en inkonsistent tilstand —
+            // den gamle filen er fortsatt på plass og DB er allerede oppdatert.
+            await fileStorage.MoveAsync(tempPath, newFilePath, cancellationToken);
 
             Document? updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken);
 

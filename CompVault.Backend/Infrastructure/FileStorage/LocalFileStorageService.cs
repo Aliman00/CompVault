@@ -90,12 +90,16 @@ public sealed class LocalFileStorageService(
 
     private string GetFullPath(string relativePath)
     {
+        ArgumentException.ThrowIfNullOrEmpty(relativePath);
         return Path.GetFullPath(Path.Combine(Settings.RootPath, relativePath));
     }
 
     private void EnsurePathIsWithinRoot(string fullPath)
     {
         string rootPath = Path.GetFullPath(Settings.RootPath);
+        if (!rootPath.EndsWith(Path.DirectorySeparatorChar))
+            rootPath += Path.DirectorySeparatorChar;
+
         if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
             throw new UnauthorizedAccessException(
                 $"Stien '{fullPath}' er utenfor lagringsområdet '{rootPath}'.");

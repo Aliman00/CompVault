@@ -91,7 +91,7 @@ public sealed class DocumentsController(
         Guid uploadedById = User.TryGetUserId()
             ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
 
-        Stream? fileStream = file is not null ? file.OpenReadStream() : null;
+        await using Stream? fileStream = file is not null ? file.OpenReadStream() : null;
 
         Result<DocumentDto> result = await documentService.CreateAsync(
             documentTypeSlug,
