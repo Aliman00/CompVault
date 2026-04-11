@@ -157,10 +157,23 @@ public sealed class DocumentService(
         }
 
         await documentRepository.AddAsync(document, cancellationToken);
-        await documentRepository.SaveChangesAsync(cancellationToken);
 
-        Document created = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Dokument med ID '{document.Id}' ble ikke funnet etter opprettelse.");
+        try
+        {
+            await documentRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            return Result<DocumentDto>.Failure(
+                AppError.Create(ErrorCode.InternalError,
+                    "Kunne ikke lagre dokumentet. Prøv på nytt."));
+        }
+
+        Document? created = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken);
+
+        if (created is null)
+            return Result<DocumentDto>.Failure(
+                AppError.NotFound($"Dokument med ID '{document.Id}' ble ikke funnet etter opprettelse."));
 
         return Result<DocumentDto>.Success(DocumentMapper.ToDto(created));
     }
@@ -175,7 +188,29 @@ public sealed class DocumentService(
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokument med ID '{id}' ble ikke funnet."));
 
-        // Valider avdeling hvis endret
+        // Hent dokumenttype for å validere TargetMode og kategori-eierskap
+        DocumentType? documentType = document.DocumentType;
+        if (documentType is null)
+        {
+            DocumentType? fetched = await documentTypeRepository.GetByIdAsync(document.DocumentTypeId, cancellationToken);
+            if (fetched is null)
+                return Result<DocumentDto>.Failure(
+                    AppError.NotFound($"Dokumenttype for dokumentet ble ikke funnet."));
+            documentType = fetched;
+        }
+
+        // Valider TargetMode hvis target-felter forsøkes endret
+        bool wantsTargetDepartment = request.TargetDepartmentId.HasValue && !request.ClearTargetDepartment;
+        bool wantsTargetJobTitle = !string.IsNullOrEmpty(request.TargetJobTitle) && !request.ClearTargetJobTitle;
+
+        if (wantsTargetDepartment || wantsTargetJobTitle)
+        {
+            Result targetValidation = ValidateTargetForUpdate(documentType, wantsTargetDepartment, request.TargetDepartmentId, wantsTargetJobTitle, request.TargetJobTitle);
+            if (targetValidation.IsFailure)
+                return Result<DocumentDto>.Failure(targetValidation.Error!);
+        }
+
+        // Valider at target-department eksisterer hvis det settes
         if (request.TargetDepartmentId.HasValue && !request.ClearTargetDepartment)
         {
             bool departmentExists = await departmentRepository.ExistsAsync(
@@ -184,6 +219,15 @@ public sealed class DocumentService(
             if (!departmentExists)
                 return Result<DocumentDto>.Failure(
                     AppError.NotFound($"Avdeling med ID '{request.TargetDepartmentId.Value}' ble ikke funnet."));
+        }
+
+        // Valider kategori tilhører dokumenttypen hvis den settes
+        if (request.DocumentTypeCategoryId.HasValue && !request.ClearDocumentTypeCategoryId)
+        {
+            DocumentType? documentTypeWithCategories = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken);
+            if (documentTypeWithCategories is null || documentTypeWithCategories.Categories.All(c => c.Id != request.DocumentTypeCategoryId.Value))
+                return Result<DocumentDto>.Failure(
+                    AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for dokumentets dokumenttype."));
         }
 
         if (!string.IsNullOrEmpty(request.Title))
@@ -215,10 +259,22 @@ public sealed class DocumentService(
         else if (request.TargetJobTitle is not null)
             document.TargetJobTitle = request.TargetJobTitle;
 
-        await documentRepository.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await documentRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            return Result<DocumentDto>.Failure(
+                AppError.Create(ErrorCode.InternalError,
+                    "Kunne ikke lagre dokumentendringene. Prøv på nytt."));
+        }
 
-        Document updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Dokument med ID '{document.Id}' ble ikke funnet etter oppdatering.");
+        Document? updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken);
+
+        if (updated is null)
+            return Result<DocumentDto>.Failure(
+                AppError.NotFound($"Dokument med ID '{id}' ble ikke funnet etter oppdatering."));
 
         return Result<DocumentDto>.Success(DocumentMapper.ToDto(updated));
     }
@@ -289,24 +345,49 @@ public sealed class DocumentService(
     /// <inheritdoc />
     public async Task<Result<DocumentDto>> UploadVersionAsync(
         Guid documentId,
+        string documentTypeSlug,
         string fileName,
         string contentType,
         Stream stream,
         Guid uploadedById,
         CancellationToken cancellationToken = default)
     {
+        // Hent dokumenttype fra slug og bekreft at dokumentet tilhører denne typen
+        DocumentType? documentType = await documentTypeRepository.GetBySlugAsync(documentTypeSlug, cancellationToken);
+
+        if (documentType is null)
+            return Result<DocumentDto>.Failure(
+                AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
+
         Document? document = await documentRepository.GetForUpdateAsync(documentId, cancellationToken);
 
         if (document is null)
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokument med ID '{documentId}' ble ikke funnet."));
 
+        // Bekreft at dokumentet faktisk tilhører slugens dokumenttype
+        if (document.DocumentTypeId != documentType.Id)
+            return Result<DocumentDto>.Failure(
+                AppError.NotFound($"Dokument med ID '{documentId}' er ikke av dokumenttype '{documentTypeSlug}'."));
+
+        // Valider at filtypen er tillatt for denne dokumenttypen
+        if (!documentType.AllowedMimeTypes.Contains(contentType))
+            return Result<DocumentDto>.Failure(
+                AppError.Create(ErrorCode.Validation,
+                    $"Filtypen '{contentType}' er ikke tillatt for denne dokumenttypen."));
+
+        // Valider at filstørrelse ikke overskrider dokumenttypens grense
+        long fileSize = stream.Length;
+        if (documentType.MaxFileSizeBytes > 0 && fileSize > documentType.MaxFileSizeBytes)
+            return Result<DocumentDto>.Failure(
+                AppError.Create(ErrorCode.Validation,
+                    $"Filen er for stor. Maks tillatt størrelse: {documentType.MaxFileSizeBytes / (1024 * 1024)}MB."));
+
         string extension = Path.GetExtension(fileName);
-        string storageFolder = document.DocumentType?.StorageFolder ?? DocumentConstants.DefaultStorageFolder;
+        string storageFolder = documentType.StorageFolder;
         string tempPath = $"{storageFolder}/active/{documentId}/file_v{document.Version + 1}_tmp{extension}";
 
         // Lagre stream-lengden før kopiering — etter CopyToAsync kan positionen være endret
-        long fileSize = stream.Length;
         stream.Position = 0;
 
         try
@@ -366,10 +447,25 @@ public sealed class DocumentService(
             // Slett signaturer — ny versjon krever re-signering
             await signatureRepository.DeleteAllForDocumentAsync(documentId, cancellationToken);
 
-            await documentRepository.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await documentRepository.SaveChangesAsync(cancellationToken);
+            }
+            catch
+            {
+                // Ved DB-feil: slett den nye fila og la den gamle arkiverte bli værende.
+                // Versjonsrekord ble ikke persistert, så arkivfila er foreldreløs —
+                // dette er en kjent begrensning uten ekte filtransaksjon.
+                await fileStorage.DeleteAsync(newFilePath, CancellationToken.None);
+                await fileStorage.DeleteAsync(tempPath, CancellationToken.None);
+                throw;
+            }
 
-            Document updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken)
-                ?? throw new InvalidOperationException($"Dokument med ID '{document.Id}' ble ikke funnet etter opplasting.");
+            Document? updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken);
+
+            if (updated is null)
+                return Result<DocumentDto>.Failure(
+                    AppError.NotFound($"Dokument med ID '{document.Id}' ble ikke funnet etter opplasting."));
 
             return Result<DocumentDto>.Success(DocumentMapper.ToDto(updated));
         }
@@ -490,6 +586,26 @@ public sealed class DocumentService(
         }
 
         return Result<IReadOnlyList<DocumentListDto>>.Success(dtos);
+    }
+
+    /// <summary>
+    /// Validerer at target-feltene stemmer med dokumenttypens TargetMode ved oppdatering.
+    /// </summary>
+    private static Result ValidateTargetForUpdate(
+        DocumentType documentType,
+        bool wantsTargetDepartment, Guid? targetDepartmentId,
+        bool wantsTargetJobTitle, string? targetJobTitle)
+    {
+        return documentType.TargetMode switch
+        {
+            DocumentTargetMode.None when wantsTargetDepartment || wantsTargetJobTitle =>
+                Result.Failure(AppError.Create(ErrorCode.Validation,
+                    $"Dokumenttype '{documentType.Name}' har TargetMode=None. Target-felt kan ikke settes.")),
+            DocumentTargetMode.Department when wantsTargetJobTitle && !wantsTargetDepartment && targetDepartmentId is null =>
+                Result.Failure(AppError.Create(ErrorCode.Validation,
+                    $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentId er satt når TargetJobTitle brukes.")),
+            _ => Result.Success()
+        };
     }
 
     /// <summary>

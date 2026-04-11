@@ -177,7 +177,7 @@ public sealed class DocumentsController(
 
         await using Stream stream = file.OpenReadStream();
         Result<DocumentDto> result = await documentService.UploadVersionAsync(
-            id, file.FileName, file.ContentType, stream, uploadedById, cancellationToken);
+            id, documentTypeSlug, file.FileName, file.ContentType, stream, uploadedById, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

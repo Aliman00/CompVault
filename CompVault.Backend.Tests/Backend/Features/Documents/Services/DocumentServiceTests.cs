@@ -1143,4 +1143,321 @@ public class DocumentServiceTests
         result.Value.Should().HaveCount(1);
         result.Value[0].Title.Should().Be("Usignert");
     }
+
+    // -------------------------------------------------------------------------
+    // UploadVersionAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester at UploadVersionAsync laster opp fil og oppdaterer dokumentmetadata.
+    /// </summary>
+    [Fact]
+    public async Task UploadVersionAsync_ValidFile_UpdatesDocumentAndArchivesOld()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None, typeId);
+        type.StorageFolder = "test-folder";
+        type.MaxFileSizeBytes = 50 * 1024 * 1024;
+        type.AllowedMimeTypes = ["application/pdf"];
+
+        var document = new Document
+        {
+            Id = docId,
+            DocumentTypeId = typeId,
+            DocumentType = type,
+            Title = "Test",
+            Version = 1,
+            IsCurrent = true,
+            IsActive = true,
+            FileName = "old.pdf",
+            FilePath = "test-folder/active/doc/file_v1.pdf",
+            FileSize = 1024,
+            MimeType = "application/pdf",
+            Checksum = "oldsum"
+        };
+
+        var userId = Guid.NewGuid();
+        var stream = new MemoryStream([1, 2, 3, 4, 5]);
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _fileStorageMock
+            .Setup(x => x.SaveAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(It.IsAny<string>());
+
+        _fileStorageMock
+            .Setup(x => x.ComputeChecksumAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("newsum");
+
+        _fileStorageMock
+            .Setup(x => x.MoveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _signatureRepositoryMock
+            .Setup(x => x.DeleteAllForDocumentAsync(docId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, CancellationToken _) => new Document
+            {
+                Id = docId,
+                DocumentTypeId = typeId,
+                DocumentType = type,
+                Title = "Test",
+                Version = 2,
+                IsCurrent = true,
+                IsActive = true,
+                FileName = "new.pdf",
+                FilePath = "test-folder/active/doc/file_v2.pdf",
+                FileSize = 5,
+                MimeType = "application/pdf",
+                Checksum = "newsum"
+            });
+
+        // Act
+        Result<DocumentDto> result = await _sut.UploadVersionAsync(
+            docId, "test-type", "new.pdf", "application/pdf", stream, userId);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Version.Should().Be(2);
+
+        _fileStorageMock.Verify(
+            x => x.MoveAsync(
+                "test-folder/active/doc/file_v1.pdf",
+                It.Is<string>(p => p.Contains("archived")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _signatureRepositoryMock.Verify(
+            x => x.DeleteAllForDocumentAsync(docId, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Tester at UploadVersionAsync returnerer NotFound når dokument ikke finnes.
+    /// </summary>
+    [Fact]
+    public async Task UploadVersionAsync_DocumentNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DocumentType?)null);
+
+        // Act
+        Result<DocumentDto> result = await _sut.UploadVersionAsync(
+            docId, "test-type", "new.pdf", "application/pdf", new MemoryStream([1]), Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+    }
+
+    /// <summary>
+    /// Tester at UploadVersionAsync avviser MIME-type som ikke er tillatt for dokumenttypen.
+    /// </summary>
+    [Fact]
+    public async Task UploadVersionAsync_DisallowedMimeType_ReturnsValidationError()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None, typeId);
+        type.StorageFolder = "test-folder";
+        type.AllowedMimeTypes = ["application/pdf"]; // Ikke text/plain
+
+        var document = new Document
+        {
+            Id = docId,
+            DocumentTypeId = typeId,
+            DocumentType = type,
+            Title = "Test",
+            Version = 1,
+            IsCurrent = true,
+            IsActive = true
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        // Act
+        Result<DocumentDto> result = await _sut.UploadVersionAsync(
+            docId, "test-type", "malicious.txt", "text/plain", new MemoryStream([1]), Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Validation);
+        result.Error.Message.Should().Contain("text/plain");
+        result.Error.Message.Should().Contain("ikke tillatt");
+    }
+
+    /// <summary>
+    /// Tester at UploadVersionAsync avviser fil som er for stor for dokumenttypen.
+    /// </summary>
+    [Fact]
+    public async Task UploadVersionAsync_FileTooLarge_ReturnsValidationError()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None, typeId);
+        type.StorageFolder = "test-folder";
+        type.MaxFileSizeBytes = 10; // Max 10 bytes
+        type.AllowedMimeTypes = ["application/pdf"];
+
+        var document = new Document
+        {
+            Id = docId,
+            DocumentTypeId = typeId,
+            DocumentType = type,
+            Title = "Test",
+            Version = 1,
+            IsCurrent = true,
+            IsActive = true
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var largeStream = new MemoryStream(new byte[100]); // 100 bytes
+
+        // Act
+        Result<DocumentDto> result = await _sut.UploadVersionAsync(
+            docId, "test-type", "large.pdf", "application/pdf", largeStream, Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Validation);
+        result.Error.Message.Should().Contain("for stor");
+    }
+
+    /// <summary>
+    /// Tester at UploadVersionAsync avviser fil med identisk checksum som forrige versjon.
+    /// </summary>
+    [Fact]
+    public async Task UploadVersionAsync_IdenticalChecksum_ReturnsValidationError()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.None, typeId);
+        type.StorageFolder = "test-folder";
+        type.AllowedMimeTypes = ["application/pdf"];
+
+        var document = new Document
+        {
+            Id = docId,
+            DocumentTypeId = typeId,
+            DocumentType = type,
+            Title = "Test",
+            Version = 1,
+            IsCurrent = true,
+            IsActive = true,
+            Checksum = "samechecksum"
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("test-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _fileStorageMock
+            .Setup(x => x.SaveAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(It.IsAny<string>());
+
+        _fileStorageMock
+            .Setup(x => x.ComputeChecksumAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("samechecksum"); // Samme som dokumentets nåværende
+
+        _fileStorageMock
+            .Setup(x => x.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        Result<DocumentDto> result = await _sut.UploadVersionAsync(
+            docId, "test-type", "same.pdf", "application/pdf", new MemoryStream([1]), Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Validation);
+        result.Error.Message.Should().Contain("identisk med forrige versjon");
+
+        // Temp-fil skal være slettet
+        _fileStorageMock.Verify(
+            x => x.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
+    /// <summary>
+    /// Tester at UploadVersionAsync bekrefter at slug matcher dokumentets faktiske type.
+    /// </summary>
+    [Fact]
+    public async Task UploadVersionAsync_SlugMismatch_ReturnsNotFound()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var typeId = Guid.NewGuid();
+        var wrongTypeId = Guid.NewGuid();
+
+        DocumentType correctType = CreateDocumentType(DocumentTargetMode.None, typeId);
+        DocumentType wrongType = CreateDocumentType(DocumentTargetMode.None, wrongTypeId);
+        wrongType.Slug = "wrong-type";
+
+        var document = new Document
+        {
+            Id = docId,
+            DocumentTypeId = wrongTypeId, // Dokumentet tilhører wrongType
+            DocumentType = wrongType,
+            Title = "Test",
+            Version = 1,
+            IsCurrent = true,
+            IsActive = true
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetBySlugAsync("correct-type", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(correctType); // URL slug er "correct-type"
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        // Act
+        Result<DocumentDto> result = await _sut.UploadVersionAsync(
+            docId, "correct-type", "file.pdf", "application/pdf", new MemoryStream([1]), Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+        result.Error.Message.Should().Contain("ikke av dokumenttype");
+    }
 }

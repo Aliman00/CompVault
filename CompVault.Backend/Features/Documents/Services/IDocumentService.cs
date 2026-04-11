@@ -43,6 +43,7 @@ public interface IDocumentService
     /// <summary>Laster opp en ny filversjon til et dokument.</summary>
     Task<Result<DocumentDto>> UploadVersionAsync(
         Guid documentId,
+        string documentTypeSlug,
         string fileName,
         string contentType,
         Stream stream,
