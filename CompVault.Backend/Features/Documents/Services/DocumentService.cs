@@ -87,7 +87,7 @@ public sealed class DocumentService(
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
 
-        Result targetValidation = ValidateTarget(documentType, request.TargetDepartmentId, request.TargetJobTitle);
+        Result targetValidation = ValidateTarget(documentType, request.TargetDepartmentId, request.TargetJobTitle, isCreate: true);
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
@@ -191,9 +191,15 @@ public sealed class DocumentService(
             documentType = fetched;
         }
 
-        Result targetValidation = ValidateTargetForUpdate(
-            documentType, wantsTargetDepartment: request.TargetDepartmentId.HasValue && !request.ClearTargetDepartment,
-            wantsTargetJobTitle: !string.IsNullOrEmpty(request.TargetJobTitle) && !request.ClearTargetJobTitle);
+        bool wantsTargetDepartment = request.TargetDepartmentId.HasValue && !request.ClearTargetDepartment;
+        bool wantsTargetJobTitle = !string.IsNullOrEmpty(request.TargetJobTitle) && !request.ClearTargetJobTitle;
+
+        // Ved oppdatering sendes kun de verdiene som faktisk skal settes;
+        // ClearFlags-tømming av felt sjekkes ikke her fordi de nullstiller til null/empty
+        Guid? effectiveDepartmentId = wantsTargetDepartment ? request.TargetDepartmentId : null;
+        string? effectiveJobTitle = wantsTargetJobTitle ? request.TargetJobTitle : null;
+
+        Result targetValidation = ValidateTarget(documentType, effectiveDepartmentId, effectiveJobTitle, isCreate: false);
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
@@ -497,6 +503,7 @@ public sealed class DocumentService(
         foreach (Document doc in documents)
         {
             int signatureCount = allSignatures.Count(s => s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
+            // signertByCurrentUser er alltid true her — dette er "mine signerte dokumenter"
             dtos.Add(DocumentMapper.ToListDto(doc, signatureCount, signedByCurrentUser: true));
         }
 
@@ -527,7 +534,7 @@ public sealed class DocumentService(
         foreach (Document doc in pendingDocuments)
         {
             int signatureCount = allSignatures.Count(s => s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
-            // Pending-dokumenter er per definisjon ikke signert av gjeldende bruker
+            // signedByCurrentUser er alltid false her — brukeren har ikke signert disse dokumentene ennå
             dtos.Add(DocumentMapper.ToListDto(doc, signatureCount, signedByCurrentUser: false));
         }
 
@@ -570,43 +577,33 @@ public sealed class DocumentService(
     }
 
     /// <summary>
-    /// Validerer at target-feltene stemmer med dokumenttypens TargetMode.
-    /// Brukes for nye dokumenter der alle felt er eksplisitte.
+    /// Validerer at target-feltene er konsistente med dokumenttypens TargetMode.
+    /// Ved opprettelse (isCreate=true) kreves at påkrevde felt er satt.
+    /// Ved oppdatering (isCreate=false) sjekkes kun at regler ikke brytes.
     /// </summary>
     private static Result ValidateTarget(
-        DocumentType documentType, Guid? targetDepartmentId, string? targetJobTitle)
+        DocumentType documentType,
+        Guid? targetDepartmentId,
+        string? targetJobTitle,
+        bool isCreate)
     {
+        bool hasDepartment = targetDepartmentId.HasValue;
+        bool hasJobTitle = !string.IsNullOrEmpty(targetJobTitle);
+
         return documentType.TargetMode switch
         {
-            DocumentTargetMode.None when targetDepartmentId.HasValue || !string.IsNullOrEmpty(targetJobTitle) =>
+            DocumentTargetMode.None when hasDepartment || hasJobTitle =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
                     $"Dokumenttype '{documentType.Name}' har TargetMode=None. Target-felt kan ikke settes.")),
-            DocumentTargetMode.Department when !targetDepartmentId.HasValue =>
+            DocumentTargetMode.Department when isCreate && !hasDepartment =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
                     $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentId er satt.")),
-            DocumentTargetMode.JobTitle when string.IsNullOrEmpty(targetJobTitle) =>
-                Result.Failure(AppError.Create(ErrorCode.Validation,
-                    $"Dokumenttype '{documentType.Name}' krever at TargetJobTitle er satt.")),
-            _ => Result.Success()
-        };
-    }
-
-    /// <summary>
-    /// Validerer target-feltene for oppdatering der kun noen felt er satt.
-    /// </summary>
-    private static Result ValidateTargetForUpdate(
-        DocumentType documentType,
-        bool wantsTargetDepartment,
-        bool wantsTargetJobTitle)
-    {
-        return documentType.TargetMode switch
-        {
-            DocumentTargetMode.None when wantsTargetDepartment || wantsTargetJobTitle =>
-                Result.Failure(AppError.Create(ErrorCode.Validation,
-                    $"Dokumenttype '{documentType.Name}' har TargetMode=None. Target-felt kan ikke settes.")),
-            DocumentTargetMode.Department when wantsTargetJobTitle && !wantsTargetDepartment =>
+            DocumentTargetMode.Department when hasJobTitle && !hasDepartment =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
                     $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentId er satt når TargetJobTitle brukes.")),
+            DocumentTargetMode.JobTitle when isCreate && !hasJobTitle =>
+                Result.Failure(AppError.Create(ErrorCode.Validation,
+                    $"Dokumenttype '{documentType.Name}' krever at TargetJobTitle er satt.")),
             _ => Result.Success()
         };
     }
