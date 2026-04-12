@@ -13,7 +13,9 @@
   <ItemGroup>
     <Folder Include="Common\Components\Buttons\" />
     <Folder Include="Features\Auth\Components\" />
+    <Folder Include="Features\Auth\Pages\" />
     <Folder Include="Features\Users\Components\" />
+    <Folder Include="Pages\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,8 +24,8 @@
     <_ContentIncludedByDefault Remove="Layout\MainLayout.razor" />
     <_ContentIncludedByDefault Remove="Layout\NavMenu.razor" />
     <_ContentIncludedByDefault Remove="Layout\ReconnectModal.razor" />
-    <_ContentIncludedByDefault Remove="Pages\LoginCallback.cshtml" />
-    <_ContentIncludedByDefault Remove="Pages\LogoutCallback.cshtml" />
+    <_ContentIncludedByDefault Remove="Common\Pages\LoginCallback.cshtml" /> 
+    <_ContentIncludedByDefault Remove="Common\Pages\LogoutCallback.cshtml" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -37,10 +39,5 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>CompVault.Frontend.Tests</_Parameter1>
     </AssemblyAttribute>
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="Features\Auth\Pages\LoginCallback.cshtml" />
-    <AdditionalFiles Include="Features\Auth\Pages\LogoutCallback.cshtml" />
   </ItemGroup>
 </Project>

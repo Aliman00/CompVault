@@ -16,7 +16,10 @@ builder.Services.AddMudServices();
 builder.Services.AddAuth(builder.Configuration, builder.Environment);
 builder.Services.AddAuthPolicies();
 builder.Services.AddFrontendServices(builder.Environment);
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+    options.RootDirectory = "/Common/Pages";
+});
 
 WebApplication app = builder.Build();
 

@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace CompVault.Frontend.Features.Auth.Pages;
+namespace CompVault.Frontend.Common.Pages;
 
 /// <summary>
 /// Modellen til en SSR-side som lar oss legge til token i nettlesere - JS-scriptet submitter som gjør at

@@ -24,7 +24,7 @@ else if (_user != null)
     <EditForm EditContext="_editContext" OnValidSubmit="SaveEdit">
         <DataAnnotationsValidator/>
 
-        @* Header med navn og tittel, og redigeringsknapper *@
+        @* Header med navn og tittel, redigeringsknapper og dropdown meny for flere valg*@
         <MudPaper Class="pa-6" Elevation="1" Square="true">
             <DetailHeader Title="@_user.FullName"
                           EditPolicy="@Permissions.UsersWrite"
@@ -32,12 +32,26 @@ else if (_user != null)
                           IsEditing="_isEditing"
                           OnStartEdit="StartEdit"
                           OnCancelEdit="CancelEdit">
+                @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
                 <Actions>
-                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                 IconColor="Color.Error"
-                                 OnClick="DeleteUser">
-                        <MudText Color="Color.Error">Slett bruker</MudText>
-                    </MudMenuItem>
+                    <AuthorizeView Policy="@Permissions.UsersDelete">
+                        <Authorized>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                         IconColor="Color.Error"
+                                         OnClick="DeleteUser">
+                                <MudText Color="Color.Error">Slett bruker</MudText>
+                            </MudMenuItem>
+                        </Authorized>
+                        <NotAuthorized>
+                            <MudTooltip Text="Du har ikke tilgang til å slette brukere">
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                             IconColor="Color.Default"
+                                             Disabled="true">
+                                    <MudText>Slett bruker</MudText>
+                                </MudMenuItem>
+                            </MudTooltip>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </Actions>
             </DetailHeader>
 
