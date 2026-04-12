@@ -18,8 +18,7 @@ namespace CompVault.Backend.Features.Documents.Controllers;
 [Authorize(Policy = Permissions.DocumentsRead)]
 [Produces("application/json")]
 public sealed class DocumentsController(
-    IDocumentService documentService,
-    IDocumentTypeService documentTypeService) : BaseController
+    IDocumentService documentService) : BaseController
 {
     /// <summary>Henter alle dokumenter for en dokumenttype.</summary>
     [HttpGet]
@@ -66,26 +65,8 @@ public sealed class DocumentsController(
         IFormFile? file,
         CancellationToken cancellationToken)
     {
-        if (file is not null)
-        {
-            if (file.Length == 0)
-                return BadRequest("Filen er tom.");
-
-            // Hent dokumenttype for å validere mot typespesifikke grenser
-            Result<Shared.DTOs.Documents.DocumentTypeDto> typeResult =
-                await documentTypeService.GetBySlugAsync(documentTypeSlug, cancellationToken);
-
-            if (typeResult.IsFailure)
-                return HandleFailure(typeResult);
-
-            Shared.DTOs.Documents.DocumentTypeDto docType = typeResult.Value!;
-
-            if (file.Length > docType.MaxFileSizeBytes)
-                return BadRequest($"Filen er for stor. Maks tillatt størrelse for denne dokumenttypen: {docType.MaxFileSizeBytes / (1024 * 1024)}MB.");
-
-            if (!docType.AllowedMimeTypes.Contains(file.ContentType))
-                return BadRequest($"Filtypen '{file.ContentType}' er ikke tillatt for denne dokumenttypen.");
-        }
+        if (file is not null && file.Length == 0)
+            return BadRequest("Filen er tom.");
 
         Guid uploadedById = User.TryGetUserId()
             ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
@@ -150,26 +131,11 @@ public sealed class DocumentsController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DocumentDto>> UploadAsync(
-       string documentTypeSlug, Guid id, IFormFile file,
+        string documentTypeSlug, Guid id, IFormFile file,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
             return BadRequest("Ingen fil lastet opp.");
-
-        // Hent dokumenttype for å validere mot typespesifikke grenser
-        Result<Shared.DTOs.Documents.DocumentTypeDto> typeResult =
-            await documentTypeService.GetBySlugAsync(documentTypeSlug, cancellationToken);
-
-        if (typeResult.IsFailure)
-            return HandleFailure(typeResult);
-
-        Shared.DTOs.Documents.DocumentTypeDto docType = typeResult.Value!;
-
-        if (file.Length > docType.MaxFileSizeBytes)
-            return BadRequest($"Filen er for stor. Maks tillatt størrelse for denne dokumenttypen: {docType.MaxFileSizeBytes / (1024 * 1024)}MB.");
-
-        if (!docType.AllowedMimeTypes.Contains(file.ContentType))
-            return BadRequest($"Filtypen '{file.ContentType}' er ikke tillatt for denne dokumenttypen.");
 
         Guid uploadedById = User.TryGetUserId()
             ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
@@ -188,7 +154,7 @@ public sealed class DocumentsController(
     /// <summary>Signerer et dokument.</summary>
     [HttpPost("{id:guid}/sign")]
     [Authorize(Policy = Permissions.DocumentsSign)]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SignAsync(
@@ -202,7 +168,7 @@ public sealed class DocumentsController(
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return Created(new Uri($"/api/documents/{documentTypeSlug}/{id}", UriKind.Relative), null);
+        return NoContent();
     }
 
     /// <summary>Laster ned filen for et dokument.</summary>
