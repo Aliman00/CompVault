@@ -101,6 +101,7 @@ public sealed class DocumentService(
                     AppError.NotFound($"Avdeling med ID '{request.TargetDepartmentId.Value}' ble ikke funnet."));
         }
 
+        // Categories er alltid lastet via GetWithCategoriesBySlugAsync
         if (request.DocumentTypeCategoryId.HasValue && documentType.Categories.All(c => c.Id != request.DocumentTypeCategoryId.Value))
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for denne dokumenttypen."));
@@ -191,11 +192,11 @@ public sealed class DocumentService(
             documentType = fetched;
         }
 
+        // Beregn verdiene som faktisk skal valideres.
+        // ClearFlags betyr "nullstill feltet", ikke "sett feltet" — derfor filtrerer vi
+        // ut verdier som bare er sendt for å nullstilles, og sender kun de som faktisk skal settes.
         bool wantsTargetDepartment = request.TargetDepartmentId.HasValue && !request.ClearTargetDepartment;
         bool wantsTargetJobTitle = !string.IsNullOrEmpty(request.TargetJobTitle) && !request.ClearTargetJobTitle;
-
-        // Ved oppdatering sendes kun de verdiene som faktisk skal settes;
-        // ClearFlags-tømming av felt sjekkes ikke her fordi de nullstiller til null/empty
         Guid? effectiveDepartmentId = wantsTargetDepartment ? request.TargetDepartmentId : null;
         string? effectiveJobTitle = wantsTargetJobTitle ? request.TargetJobTitle : null;
 
@@ -542,7 +543,7 @@ public sealed class DocumentService(
     }
 
     /// <summary>
-    /// Aplikerer oppdateringer fra DTO på dokumententiteten.
+    /// Applierer oppdateringer fra DTO på dokumententiteten.
     /// </summary>
     private static void ApplyUpdate(Document document, UpdateDocumentRequest request)
     {

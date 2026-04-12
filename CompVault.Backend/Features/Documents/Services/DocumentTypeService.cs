@@ -3,6 +3,8 @@ using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
+using Microsoft.EntityFrameworkCore;
+
 namespace CompVault.Backend.Features.Documents.Services;
 
 /// <inheritdoc />
@@ -55,7 +57,18 @@ public sealed class DocumentTypeService(
         };
 
         await documentTypeRepository.AddAsync(documentType, cancellationToken);
-        await documentTypeRepository.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await documentTypeRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Slug-unikhet sjekkes før lagring, men concurrent requests kan likevel
+            // opprette samme slug. Unique constraint fanger dette opp.
+            return Result<DocumentTypeDto>.Failure(
+                AppError.Conflict($"Dokumenttype med slug '{request.Slug}' kunne ikke opprettes. Prøv på nytt."));
+        }
 
         DocumentType? created = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken);
         if (created is null)
