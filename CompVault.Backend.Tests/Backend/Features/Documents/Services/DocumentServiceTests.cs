@@ -2,7 +2,6 @@ using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Documents.Services;
-using CompVault.Backend.Infrastructure.FileStorage;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
@@ -23,7 +22,7 @@ public class DocumentServiceTests
     private readonly Mock<IDocumentTypeRepository> _documentTypeRepositoryMock;
     private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
-    private readonly Mock<IFileStorageService> _fileStorageMock;
+    private readonly Mock<IDocumentFileService> _fileServiceMock;
     private readonly DocumentService _sut;
 
     public DocumentServiceTests()
@@ -33,7 +32,7 @@ public class DocumentServiceTests
         _documentTypeRepositoryMock = new Mock<IDocumentTypeRepository>();
         _departmentRepositoryMock = new Mock<IDepartmentRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
-        _fileStorageMock = new Mock<IFileStorageService>();
+        _fileServiceMock = new Mock<IDocumentFileService>();
 
         _sut = new DocumentService(
             _documentRepositoryMock.Object,
@@ -41,7 +40,7 @@ public class DocumentServiceTests
             _documentTypeRepositoryMock.Object,
             _departmentRepositoryMock.Object,
             _userRepositoryMock.Object,
-            _fileStorageMock.Object);
+            _fileServiceMock.Object);
     }
 
     // Hjelpemetode for å opprette en gyldig DocumentType
@@ -463,13 +462,17 @@ public class DocumentServiceTests
             .Setup(x => x.GetWithCategoriesBySlugAsync("test-type", It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
-        _fileStorageMock
-            .Setup(x => x.SaveAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("saved/path");
+        _fileServiceMock
+            .Setup(x => x.ValidateMimeType("application/pdf", type.AllowedMimeTypes))
+            .Returns(Result.Success());
 
-        _fileStorageMock
-            .Setup(x => x.ComputeChecksumAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("sha256hash");
+        _fileServiceMock
+            .Setup(x => x.ValidateFileSize(It.IsAny<long>(), It.IsAny<long>()))
+            .Returns(Result.Success());
+
+        _fileServiceMock
+            .Setup(x => x.SaveWithChecksumAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("saved/path", "sha256hash"));
 
         _documentRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()))
@@ -499,14 +502,10 @@ public class DocumentServiceTests
         // Assert
         result.IsSuccess.Should().BeTrue();
 
-        _fileStorageMock.Verify(
-            x => x.SaveAsync(It.IsAny<Stream>(),
+        _fileServiceMock.Verify(
+            x => x.SaveWithChecksumAsync(It.IsAny<Stream>(),
                 It.Is<string>(p => p.Contains("active")),
                 It.IsAny<CancellationToken>()),
-            Times.Once);
-
-        _fileStorageMock.Verify(
-            x => x.ComputeChecksumAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -846,7 +845,7 @@ public class DocumentServiceTests
             .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
-        _fileStorageMock
+        _fileServiceMock
             .Setup(x => x.ExistsAsync("/some/path.pdf", It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
@@ -879,7 +878,7 @@ public class DocumentServiceTests
             .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
-        _fileStorageMock
+        _fileServiceMock
             .Setup(x => x.ExistsAsync("/files/test.pdf", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
@@ -1183,15 +1182,19 @@ public class DocumentServiceTests
             .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
-        _fileStorageMock
-            .Setup(x => x.SaveAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(It.IsAny<string>());
+        _fileServiceMock
+            .Setup(x => x.ValidateMimeType("application/pdf", type.AllowedMimeTypes))
+            .Returns(Result.Success());
 
-        _fileStorageMock
-            .Setup(x => x.ComputeChecksumAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("newsum");
+        _fileServiceMock
+            .Setup(x => x.ValidateFileSize(It.IsAny<long>(), type.MaxFileSizeBytes))
+            .Returns(Result.Success());
 
-        _fileStorageMock
+        _fileServiceMock
+            .Setup(x => x.SaveWithChecksumAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("test-folder/active/doc/file_v2_tmp.pdf", "newsum"));
+
+        _fileServiceMock
             .Setup(x => x.MoveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -1228,7 +1231,7 @@ public class DocumentServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Version.Should().Be(2);
 
-        _fileStorageMock.Verify(
+        _fileServiceMock.Verify(
             x => x.MoveAsync(
                 "test-folder/active/doc/file_v1.pdf",
                 It.Is<string>(p => p.Contains("archived")),
@@ -1293,6 +1296,11 @@ public class DocumentServiceTests
             .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
+        _fileServiceMock
+            .Setup(x => x.ValidateMimeType("text/plain", type.AllowedMimeTypes))
+            .Returns(Result.Failure(AppError.Create(ErrorCode.Validation,
+                "Filtypen 'text/plain' er ikke tillatt for denne dokumenttypen.")));
+
         // Act
         Result<DocumentDto> result = await _sut.UploadVersionAsync(
             docId, "test-type", "malicious.txt", "text/plain", new MemoryStream([1]), Guid.NewGuid());
@@ -1300,7 +1308,6 @@ public class DocumentServiceTests
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.Validation);
-        result.Error.Message.Should().Contain("text/plain");
         result.Error.Message.Should().Contain("ikke tillatt");
     }
 
@@ -1335,6 +1342,15 @@ public class DocumentServiceTests
         _documentRepositoryMock
             .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
+
+        _fileServiceMock
+            .Setup(x => x.ValidateMimeType("application/pdf", type.AllowedMimeTypes))
+            .Returns(Result.Success());
+
+        _fileServiceMock
+            .Setup(x => x.ValidateFileSize(100, type.MaxFileSizeBytes))
+            .Returns(Result.Failure(AppError.Create(ErrorCode.Validation,
+                "Filen er for stor. Maks tillatt størrelse: 0MB.")));
 
         var largeStream = new MemoryStream(new byte[100]); // 100 bytes
 
@@ -1380,15 +1396,19 @@ public class DocumentServiceTests
             .Setup(x => x.GetForUpdateAsync(docId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
-        _fileStorageMock
-            .Setup(x => x.SaveAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(It.IsAny<string>());
+        _fileServiceMock
+            .Setup(x => x.ValidateMimeType("application/pdf", type.AllowedMimeTypes))
+            .Returns(Result.Success());
 
-        _fileStorageMock
-            .Setup(x => x.ComputeChecksumAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("samechecksum"); // Samme som dokumentets nåværende
+        _fileServiceMock
+            .Setup(x => x.ValidateFileSize(It.IsAny<long>(), It.IsAny<long>()))
+            .Returns(Result.Success());
 
-        _fileStorageMock
+        _fileServiceMock
+            .Setup(x => x.SaveWithChecksumAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("test-folder/active/doc/file_v2_tmp.pdf", "samechecksum")); // Samme som dokumentets nåværende
+
+        _fileServiceMock
             .Setup(x => x.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -1402,7 +1422,7 @@ public class DocumentServiceTests
         result.Error.Message.Should().Contain("identisk med forrige versjon");
 
         // Temp-fil skal være slettet
-        _fileStorageMock.Verify(
+        _fileServiceMock.Verify(
             x => x.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
     }

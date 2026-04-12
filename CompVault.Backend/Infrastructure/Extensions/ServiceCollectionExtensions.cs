@@ -273,6 +273,7 @@ public static class ServiceCollectionExtensions
 
         // Documents
         services.AddScoped<IDocumentTypeService, DocumentTypeService>();
+        services.AddScoped<IDocumentFileService, DocumentFileService>();
         services.AddScoped<IDocumentService, DocumentService>();
 
         return services;
