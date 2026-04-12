@@ -137,13 +137,7 @@ public class UserService(
         {
             HttpResponseMessage response = await _httpClient.DeleteAsync(ApiRoutes.User.ById(id), ct);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                Result<UserDto> errorResult = await HttpClientExtensions.ParseResponseAsync<UserDto>(response, ct);
-                return Result.Failure(errorResult.Error!);
-            }
-
-            return Result.Success();
+            return await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);
         }
         catch (HttpRequestException ex)
         {

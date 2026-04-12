@@ -1,5 +1,6 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Departments.Services;
+using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Departments;
 using CompVault.Shared.Result;
@@ -62,7 +63,8 @@ public sealed class DepartmentsController(IDepartmentService departmentService) 
         [FromBody] CreateDepartmentRequest request,
         CancellationToken cancellationToken)
     {
-        Result<DepartmentDto> result = await departmentService.CreateAsync(request, cancellationToken);
+        Guid createdById = User.GetUserId();
+        Result<DepartmentDto> result = await departmentService.CreateAsync(createdById, request, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

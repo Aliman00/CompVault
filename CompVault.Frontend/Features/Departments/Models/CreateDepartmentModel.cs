@@ -1,23 +1,23 @@
-using System.ComponentModel.DataAnnotations;
-
+﻿using System.ComponentModel.DataAnnotations;
 using CompVault.Shared.Constants.Validations;
+using CompVault.Shared.DTOs.Departments;
+namespace CompVault.Frontend.Features.Departments.Models;
 
-namespace CompVault.Shared.DTOs.Departments;
-
-/// <summary>
-/// Det som sendes inn for å opprette en ny avdeling.
-/// </summary>
-public sealed class CreateDepartmentRequest
+public class CreateDepartmentModel
 {
-    /// <summary>Avdelingens navn.</summary>
     [Required(ErrorMessage = DepValidations.Errors.NameRequired)]
     [MaxLength(DepValidations.NameMaxLength, ErrorMessage = DepValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>Valgfri beskrivelse av hva avdelingen driver med.</summary>
+    
     [MaxLength(DepValidations.DescriptionMaxLength, ErrorMessage = DepValidations.Errors.DescriptionMaxLength)]
     public string? Description { get; set; }
-
-    /// <summary>ID til overordnet avdeling (valgfritt — null = toppnivå).</summary>
+    
     public Guid? ParentDepartmentId { get; set; }
+
+    public CreateDepartmentRequest ToRequest() => new()
+    {
+        Name = Name,
+        Description = Description,
+        ParentDepartmentId = ParentDepartmentId
+    };
 }

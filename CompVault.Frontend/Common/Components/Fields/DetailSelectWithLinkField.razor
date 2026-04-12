@@ -15,7 +15,7 @@ else
     <DetailTextField Value="@DisplayValue.DashIfEmpty()"
                      Label="@Label"
                      IsEditing="false"
-                     OnAdornmentClick="OnNavigate"
+                     OnAdornmentClick="@(ShowLink ? OnNavigate : default)"
                      HelperText="@(OnNavigate.HasDelegate ? HelperText : null)"/>
 }
 
@@ -56,6 +56,11 @@ else
     [Parameter, EditorRequired] public RenderFragment Items { get; set; } = null!;
     
     /// <summary>
+    /// Skjuler lenke for navigering selv om OnNavigate har en delegate, f.eks. når entiteten ikke eksisterer
+    /// </summary>
+    [Parameter] public bool ShowLink { get; set; } = true;
+    
+    /// <summary>
     /// Navigerer til siden til objektet. Eks. bruker-siden for en manager
     /// </summary>
     [Parameter] public EventCallback OnNavigate { get; set; }
@@ -64,5 +69,7 @@ else
     /// Valgtfritt hjeletekst for å vise hva navigeringsknappen gjør når feltet er i fokus i lese-modus
     /// </summary>
     [Parameter] public string? HelperText { get; set; }
+    
+    
     
 }

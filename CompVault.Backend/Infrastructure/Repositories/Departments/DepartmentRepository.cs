@@ -16,6 +16,7 @@ public sealed class DepartmentRepository(AppDbContext dbContext) : BaseRepositor
             .AsNoTracking()
             .Include(d => d.ParentDepartment)
             .Include(d => d.SubDepartments)
+            .Include(d => d.CreatedBy)
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
 
     /// <inheritdoc />
@@ -24,6 +25,7 @@ public sealed class DepartmentRepository(AppDbContext dbContext) : BaseRepositor
             .AsNoTracking()
             .Include(d => d.ParentDepartment)
             .Include(d => d.SubDepartments)
+            .Include(d => d.CreatedBy)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />

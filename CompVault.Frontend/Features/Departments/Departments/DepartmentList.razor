@@ -1,225 +1,121 @@
-﻿@page "/DepartmentList"
+﻿@page "/departments"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.DepartmentsRead)]
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
-@inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
 
-@* Detalje visning av en bruker med mulighet for oppdatering *@
+@* Side for liste visning av alle avdelinger *@
 
-<AppAlert @bind-Alert="_successAlert"/>
-<AppAlert @bind-Alert="_errorAlert"/>
-<AppAlert @bind-Alert="_departmentAlert"/>
+<AppAlert @bind-Alert="_alert"/>
 
 @if (_isLoading)
 {
     <AppSpinner Class="pa-20"/>
 }
-else if (_user != null)
+else
 {
-    @* SkjemaForm med validering med DataAnnotations *@
-    <EditForm EditContext="_editContext" OnValidSubmit="SaveEdit">
-        <DataAnnotationsValidator/>
+    <ListHeader Title="Avdelinger"
+            CreateHref="@PageRoutes.Departments.DepartmentsCreate"
+            CreateLabel="Opprett avdeling"
+            CreateIcon="@Icons.Material.Filled.CorporateFare"
+            CreatePolicy="@Permissions.DepartmentsWrite">
+        <Actions>
+            <MudToggleIconButton Toggled="_showDepartmentTree"
+                                 ToggledChanged="ToggleTreeView"
+                                 Icon="@Icons.Material.Outlined.AccountTree"
+                                 ToggledIcon="@Icons.Material.Filled.TableRows"
+                                 Title="Bytt til hierarki-visning"
+                                 ToggledTitle="Bytt til liste"
+                                 Class="mr-2"/>
+        </Actions>
+    </ListHeader>
 
-        @* Header med navn og tittel, redigeringsknapper og dropdown meny for flere valg*@
-        <MudPaper Class="pa-6" Elevation="1" Square="true">
-            <DetailHeader Title="@_user.FullName"
-                          EditPolicy="@Permissions.UsersWrite"
-                          Subtitle="@_user.JobTitle"
-                          IsEditing="_isEditing"
-                          OnStartEdit="StartEdit"
-                          OnCancelEdit="CancelEdit">
-                @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
-                <Actions>
-                    <AuthorizeView Policy="@Permissions.UsersDelete">
-                        <Authorized>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                         IconColor="Color.Error"
-                                         OnClick="DeleteUser">
-                                <MudText Color="Color.Error">Slett bruker</MudText>
-                            </MudMenuItem>
-                        </Authorized>
-                        <NotAuthorized>
-                            <MudTooltip Text="Du har ikke tilgang til å slette brukere">
-                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                             IconColor="Color.Default"
-                                             Disabled="true">
-                                    <MudText>Slett bruker</MudText>
-                                </MudMenuItem>
-                            </MudTooltip>
-                        </NotAuthorized>
-                    </AuthorizeView>
-                </Actions>
-            </DetailHeader>
+    @if (!_showDepartmentTree)
+    {
+        @* Grid med liste over avdelinger *@
+        <MudDataGrid Items="_department"
+                     Filterable="true"
+                     FilterMode="DataGridFilterMode.ColumnFilterRow"
+                     FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+                     Dense="true"
+                     Hover="true"
+                     Striped="true"
+                     Square="true"
+                     Bordered="true"
+                     SortMode="SortMode.Multiple"
+                     FixedHeader="true"
+                     Loading="_isLoading"
+                     MultiSelection="true"
+                     @bind-SelectedItems="_selectedDepartments"
+                     RowClick="@((DataGridRowClickEventArgs<DepartmentDto> args) => OnDepartmentClick(args.Item.Id))">
 
-            @* Alle felt med egenskaper fra UserDto *@
-            <MudGrid>
-                @* Fornavn *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.FirstName"
-                                     ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
-                                     Label="Fornavn"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.FirstName"/> 
-                </MudItem>
-                @* Etternavn *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.LastName"
-                                     ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
-                                     Label="Etternavn"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.LastName"/>
-                </MudItem>
-                @* Email *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.Email"
-                                     ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
-                                     Label="Email"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.Email"/>
-                </MudItem>
-                @* Stillingstittel *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.JobTitle"
-                                     ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
-                                     Label="Stillingstittel"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.JobTitle"/>
-                </MudItem>
+            @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere avdelinger *@
+            @* For øyeblikket kun Rediger-avdeling knapp som er disabled hvis bruker ikke har department:write tilgang*@
 
-                @* EmploymentType *@
-                <MudItem xs="12" sm="6">
-                    <DetailEnumField Value="@_editModel.EmploymentType"
-                                     ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
-                                     Label="Ansettelsestype"
-                                     IsEditing="_isEditing"/>
-                </MudItem>
-
-                @* Opprettelsesdato *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_user.CreatedAt.ToString(CultureInfo.InvariantCulture)"
-                                     Label="Opprettet"
-                                     IsEditing="false"/>
-                </MudItem>
-
-                @* Avdeling TODO: Lenke til avdeling etter avdeling er satt opp *@
-                <MudItem xs="12" sm="6">
-                    <DetailSelectWithLinkField Value="_editModel.DepartmentId"
-                                               ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
-                                               Label="Avdeling"
-                                               ToStringFunc="@(id => _departments.FirstOrDefault(
-                                                                 d => d.Id == id)?.Name ?? string.Empty)"
-                                               IsEditing="_isEditing"
-                                               DisplayValue="@_user.DepartmentName"
-                                               OnNavigate="NavigateToDepartment"
-                                               HelperText="Trykk på knappen for å gå til avdelingen">
-                        <Items>
-                            @foreach (var department in _departments)
-                            {
-                                <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
-                            }
-                        </Items>
-                    </DetailSelectWithLinkField>
-                </MudItem>
-                
-                @* Manager TODO: Filtrerering av brukere som kan være managere for 
-                denne brukeren/avdelingen til brukeren*@
-                <MudItem xs="12" sm="6">
-                    <DetailSelectWithLinkField Value="_editModel.ManagerId"
-                                               ValueChanged="(Guid? v) => _editModel.ManagerId = v"
-                                               Label="Nærmeste leder"
-                                               ToStringFunc="@(id => _allUsers.FirstOrDefault(
-                                                                 u => u.Id == id)?.FullName ?? string.Empty)"
-                                               IsEditing="_isEditing"
-                                               DisplayValue="@_user.ManagerName"
-                                               OnNavigate="NavigateToManager"
-                                               HelperText="Trykk på knappen for å gå til brukeren til nærmeste leder">
-                        <Items>
-                            @foreach (var user in _allUsers.Where(u => u.Id != Id))
-                            {
-                                <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
-                            }
-                        </Items>
-                    </DetailSelectWithLinkField>
-                </MudItem>
-            
-                @* Roller TODO: Lenke til roller *@
-                <MudItem xs="12" sm="6">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Roller</MudText>
-                    <MudStack Row="true" Spacing="1">
-                        @foreach (var role in _user.Roles)
-                        {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
-                                @role
-                            </MudChip>
-                        }
-                    </MudStack>
-                </MudItem>
-            </MudGrid>
-        
+            @* Selve kolonnene *@
+            <Columns>
+                <SelectColumn T="DepartmentDto"/>
+                <PropertyColumn Property="departmentDto => departmentDto.Name" Title="Navn"/>
+                <PropertyColumn Property="departmentDto => departmentDto.ParentDepartmentName" Title="Overordnet avdeling"/>
+                <PropertyColumn Property="departmentDto => departmentDto.SubDepartmentCount" Title="Underavdelinger"/>
+                <TemplateColumn Title="Status" Sortable="true" SortBy="@(departmentDto => departmentDto.IsActive)">
+                    <CellTemplate>
+                        <MudChip T="string"
+                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                                 Size="Size.Small">
+                            @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+        </MudDataGrid>
+    }
+    else
+    {
+        @* Hierarkisk trevisning av avdelinger *@
+        <MudPaper Elevation="1" Square="true" Class="pa-4">
+            <DepartmentTree Departments="_department" OnNavigate="OnDepartmentClick"/>
         </MudPaper>
-    </EditForm>
+    }
 }
 
+
+
 @code {
-    
     // ===================== PARAMETER =====================
-    [Parameter, EditorRequired]
-    public Guid Id { get; set; }
-    
-    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en bruker
-    public bool Created { get; set; }
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
     
     // ===================== PRIVATE FELT =====================
-    private UserDto? _user;
-    private List<UserDto> _allUsers = [];
-    private List<DepartmentDto> _departments = [];
-    
-    private UserEditModel _editModel = new();
+    private List<DepartmentDto> _department = [];
+    private HashSet<DepartmentDto> _selectedDepartments = [];
     
     private bool _isLoading = true;
-    
-    // Forskjellige feilmeldinger for forkjellige beskjeder
-    private AlertInfo? _errorAlert;
-    private AlertInfo? _departmentAlert;
-    private AlertInfo? _successAlert;
-    
-    private EditContext _editContext = null!;
-
-    private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
+    private AlertInfo? _alert;
+    public bool _showDepartmentTree;
     
     // ===================== LIFECYCLE =====================
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
-        // Resetter alle feltene ved oppdatering/navigering til siden - feks ved navigering til en annen bruker
-        _isLoading = true;
-        _isEditing = false;
-        _allUsers = [];
-        _departments = [];
-        _editModel = new();
-        
         try
         {
-            _editContext = new EditContext(_editModel);
-            
-            // Hent brukeren
-            var userResult = await UserService.GetByIdAsync(Id, Cts.Token);
-            if (userResult.IsFailure)
+            var getDepartmentResults = await DepartmentService.GetAllAsync(Cts.Token);
+
+            if (getDepartmentResults.IsFailure)
             {
-                _errorAlert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
+                _alert = new AlertInfo(getDepartmentResults.Error!.ToString(), Severity.Error);
                 return;
             }
-                
-            _user = userResult.Value;
 
-            if (_user == null) // Brukeren kan være null ved feil Guid
-            {
-                _errorAlert = new AlertInfo("Fant ikke brukeren", Severity.Error);
-                return;
-            }
+            _department = getDepartmentResults.Value!;
             
-            ResetEditModel();
-
+            if (Deleted)
+                _alert = new AlertInfo("Avdelingen er slettet", Severity.Info);
+            
+            var stored = await JsRuntime.GetItemAsync(AppConstants.DepartmentTreeViewKey);
+            if (stored != null)
+                _showDepartmentTree = stored == "true";
         }
         catch (OperationCanceledException)
         {
@@ -227,134 +123,25 @@ else if (_user != null)
         }
         catch
         {
-            _errorAlert = new AlertInfo("Klarte ikke å laste brukeren. Oppdater siden for å prøve igjen",
+            _alert = new AlertInfo("Klarte ikke å laste avdelinger. Oppdater siden for å prøve igjen",
                 Severity.Error);
         }
         finally
         {
             _isLoading = false;
-            
-            if (Created)
-                _successAlert = new AlertInfo("Brukeren ble opprettet", Severity.Success);
         }
     }
     
     // ===================== PRIVATE METHODS =====================
     
-    // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger, laster avdelinger og
-    // alle brukere for å så sette oss i redigerings-modus
-    private async Task StartEdit()
+    // Navigerer ved å sende UserDto via NavigationManager (ikke via URL-en, men som en string i nettlesere)
+    private void OnDepartmentClick(Guid id) =>
+        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentsDetail(id));
+    
+    private async Task ToggleTreeView(bool value)
     {
-        _errorAlert = null;
-        _departmentAlert = null;
-        _successAlert = null; 
-        
-        // Utfører begge API-kall samtidig
-        var tasks = new List<Task>();
-
-        if (_departments.Count == 0)
-            tasks.Add(LoadDepartmentsAsync());
-
-        if (_allUsers.Count == 0)
-            tasks.Add(LoadUsersAsync());
-        
-        await Task.WhenAll(tasks);
-        
-        // Tilatter kun redigeringsmodus hvis API-kall er vellykket
-        bool loadedSuccessfully = _departmentAlert == null && _errorAlert == null;
-        if (loadedSuccessfully)
-        {
-            ResetEditModel();
-            _isEditing = true;
-        }
+        _showDepartmentTree = value;
+        await JsRuntime.SetItemAsync(AppConstants.DepartmentTreeViewKey, value.ToString().ToLower());
     }
     
-    private async Task LoadDepartmentsAsync()
-    {
-        var departmentResults = await DepartmentService.GetAllAsync(Cts.Token);
-        if (departmentResults.IsFailure)
-            _departmentAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
-        else
-            _departments = departmentResults.Value!;
-    }
-    
-    private async Task LoadUsersAsync()
-    {
-        var result = await UserService.GetAllAsync(Cts.Token);
-        if (result.IsFailure)
-            _errorAlert = new AlertInfo(result.Error!.ToString(), Severity.Error);
-        else
-            _allUsers = result.Value!;
-    }
-    
-    // Handling når vi avbryter redigering - Resetter modellene og fjerner redigeringsmodus
-    private void CancelEdit()
-    {
-        ResetEditModel();
-        _isEditing = false;
-    }
-    
-    // Resetter redigeringsmodellen og editcontexten med data fra user-objektet
-    private void ResetEditModel()
-    {
-        _editModel = UserEditModel.FromDto(_user!);
-        _editContext = new EditContext(_editModel);
-    }
-    
-    // Handling som utføres når vi trykker på lagring - Bygger en request og utfører kall til backend
-    private async Task SaveEdit()
-    {
-        var request = _editModel.ToRequest();
-
-        var updateResult = await UserService.UpdateAsync(Id, request, Cts.Token);
-        if (updateResult.IsFailure)
-        {
-            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
-            return;
-        }
-        
-        // Resetter feltene kun hvis det var vellykket
-        _user = updateResult.Value;
-        ResetEditModel();
-        _isEditing = false;
-        _successAlert = new AlertInfo("Brukeren ble oppdatert", Severity.Success);
-    }
-    
-    private void NavigateToDepartment()
-    {
-        if (_user?.DepartmentId.HasValue == true)
-            NavigationManager.NavigateTo($"/admin/departments/{_user.DepartmentId}");
-    }
-    
-    private void NavigateToManager()
-    {
-        if (_user?.ManagerId.HasValue == true)
-            NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(_user.ManagerId.Value));
-    }
-    
-    // Viser en dialog som brukeren må godkjenne for å kunne slette en bruker. Navigerer til UserList etter sletting
-    private async Task DeleteUser()
-    {
-        // Oppretter parameterne for dialogen
-        var parameters = new DialogParameters
-        {
-            { nameof(ConfirmDeleteDialog.Title), "Slett bruker"},
-            { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette {_user!.FullName}?"},
-        };
-        
-        // Kaller dialogen
-        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters);
-        var dialogResult = await dialog.Result;
-        if (dialogResult!.Canceled) 
-            return;
-        
-        var updateResult = await UserService.DeleteAsync(Id, Cts.Token);
-        if (updateResult.IsFailure)
-        {
-            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
-            return;
-        }
-        
-        NavigationManager.NavigateTo(PageRoutes.Users.UserList + "?deleted=true");
-    }
 }

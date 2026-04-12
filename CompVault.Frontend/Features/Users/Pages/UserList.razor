@@ -8,60 +8,50 @@
 
 <AppAlert @bind-Alert="_alert"/>
 
-@* Grid med liste over brukere *@
-<MudDataGrid Items="_users"
-             Filterable="true"
-             FilterMode="DataGridFilterMode.ColumnFilterRow"
-             FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
-             Dense="true"
-             Hover="true"
-             Striped="true"
-             Square="true"
-             Bordered="true"
-             SortMode="SortMode.Multiple"
-             FixedHeader="true"
-             Loading="_isLoading"
-             MultiSelection="true"
-             @bind-SelectedItems="_selectedUsers"
-             RowClick="@((DataGridRowClickEventArgs<UserDto> args) => OnUserClick(args))">
-
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else
+{
     @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere brukere *@
     @* For øyeblikket kun Rediger-bruker knapp som er disabled hvis bruker ikke har user:write tilgang*@
-    <ToolBarContent>
-        <MudText Typo="Typo.h6">Brukere</MudText>
-        <MudSpacer/>
-        <AuthorizeView Policy="@Permissions.UsersWrite">
-            <Authorized>
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Success"
-                           StartIcon="@Icons.Material.Filled.PersonAdd"
-                           Href="@PageRoutes.Users.UserCreate">
-                    Opprett bruker
-                </MudButton>
-            </Authorized>
-            <NotAuthorized>
-                <MudTooltip Text="Du har ikke tilgang til å opprette brukere">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Success"
-                               StartIcon="@Icons.Material.Filled.PersonAdd"
-                               Disabled="true">
-                        Opprett bruker
-                    </MudButton>
-                </MudTooltip>
-            </NotAuthorized>
-        </AuthorizeView>
-    </ToolBarContent>
+    <ListHeader Title="Brukere"
+                CreateHref="@PageRoutes.Users.UserCreate"
+                CreateLabel="Opprett bruker"
+                CreateIcon="@Icons.Material.Filled.PersonAdd"
+                CreatePolicy="@Permissions.UsersWrite"/>
+    
+    @* Grid med liste over brukere *@
+    <MudDataGrid Items="_users"
+                 Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterRow"
+                 FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Square="true"
+                 Bordered="true"
+                 SortMode="SortMode.Multiple"
+                 FixedHeader="true"
+                 Loading="_isLoading"
+                 MultiSelection="true"
+                 @bind-SelectedItems="_selectedUsers"
+                 RowClick="@((DataGridRowClickEventArgs<UserDto> args) => OnUserClick(args))">
 
-    @* Selve kolonnene *@
-    <Columns>
-        <SelectColumn T="UserDto"/>
-        <PropertyColumn Property="x => x.FullName" Title="Navn"
-                        SortBy="x => x.LastName" />
-        <PropertyColumn Property="user => user.JobTitle" Title="Stillingstittel"/>
-        <PropertyColumn Property="user => user.DepartmentName" Title="Avdeling"/>
-        <PropertyColumn Property="user => user.ManagerName" Title="Nærmeste leder"/>
-    </Columns>
-</MudDataGrid>
+        @* Selve kolonnene *@
+        <Columns>
+            <SelectColumn T="UserDto"/>
+            <PropertyColumn Property="x => x.FullName" Title="Navn"
+                            SortBy="x => x.LastName" />
+            <PropertyColumn Property="user => user.JobTitle" Title="Stillingstittel"/>
+            <PropertyColumn Property="user => user.DepartmentName" Title="Avdeling"/>
+            <PropertyColumn Property="user => user.ManagerName" Title="Nærmeste leder"/>
+        </Columns>
+    </MudDataGrid>
+}
+
+
 
 
 @code {

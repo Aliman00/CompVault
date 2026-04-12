@@ -1,0 +1,35 @@
+﻿@* Rekursiv komponent som viser en avdeling og avdelingen sine underavdelinger i et hierarki-tre *@
+@if (Node.Children.Count > 0)
+{
+    <MudTreeViewItem Value="Node"
+                     Text="@Node.Department.Name"
+                     Icon="@Icons.Material.Filled.CorporateFare"
+                     IconColor="@(Node.Department.IsActive ? Color.Info : Color.Default)"
+                     OnClick="() => OnNavigate.InvokeAsync(Node.Department.Id)"
+                     Expanded="true">
+        @foreach (var child in Node.Children)
+        {
+            <DepartmentTreeItem Node="child" OnNavigate="OnNavigate"/>
+        }
+    </MudTreeViewItem>
+}
+else
+{
+    <MudTreeViewItem Value="Node"
+                     Text="@Node.Department.Name"
+                     Icon="@Icons.Material.Outlined.CorporateFare"
+                     IconColor="@(Node.Department.IsActive ? Color.Info : Color.Default)"
+                     OnClick="() => OnNavigate.InvokeAsync(Node.Department.Id)"/>
+}
+
+@code {
+    /// <summary>
+    /// En avdeling satt som en node
+    /// </summary>
+    [Parameter, EditorRequired] public DepartmentTreeNode Node { get; set; } = null!;
+    
+    /// <summary>
+    /// Handling som utføres på navigiering
+    /// </summary>
+    [Parameter, EditorRequired] public EventCallback<Guid> OnNavigate { get; set; }
+}

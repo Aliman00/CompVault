@@ -30,5 +30,6 @@ public static class ApiRoutes
     public static class Department
     {
         public const string Base = "api/departments";
+        public static string ById(Guid id) => $"{Base}/{id}";
     }
 }

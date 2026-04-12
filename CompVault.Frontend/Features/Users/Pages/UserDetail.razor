@@ -5,6 +5,7 @@
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject IJSRuntime JsRuntime
 
 @* Detalje visning av en bruker med mulighet for oppdatering *@
 
@@ -32,7 +33,7 @@ else if (_user != null)
                           OnCancelEdit="CancelEdit">
                 @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
                 <Actions>
-                    <AuthorizeView Policy="@Permissions.UsersDelete">
+                    <AuthorizeView Policy="@Permissions.UsersDelete" Context="auth">
                         <Authorized>
                             <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                          IconColor="Color.Error"
@@ -112,6 +113,7 @@ else if (_user != null)
                                                                  d => d.Id == id)?.Name ?? string.Empty)"
                                                IsEditing="_isEditing"
                                                DisplayValue="@_user.DepartmentName"
+                                               ShowLink="_user.DepartmentId.HasValue"
                                                OnNavigate="NavigateToDepartment"
                                                HelperText="Trykk på knappen for å gå til avdelingen">
                         <Items>
@@ -133,6 +135,7 @@ else if (_user != null)
                                                                  u => u.Id == id)?.FullName ?? string.Empty)"
                                                IsEditing="_isEditing"
                                                DisplayValue="@_user.ManagerName"
+                                               ShowLink="_user.ManagerId.HasValue"
                                                OnNavigate="NavigateToManager"
                                                HelperText="Trykk på knappen for å gå til brukeren til nærmeste leder">
                         <Items>
@@ -324,7 +327,7 @@ else if (_user != null)
     private void NavigateToDepartment()
     {
         if (_user?.DepartmentId.HasValue == true)
-            NavigationManager.NavigateTo($"/admin/departments/{_user.DepartmentId}");
+            NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentsDetail(_user.DepartmentId.Value));
     }
     
     private void NavigateToManager()
