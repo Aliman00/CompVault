@@ -1,4 +1,4 @@
-﻿@page "/admin/users/create"
+﻿@page "/users/create"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.UsersWrite)]
 @inject IUserService UserService
@@ -192,6 +192,6 @@ else
             return;
         }
         
-        NavigationManager.NavigateTo(PageRoutes.Admin.UserDetail(createResult.Value!.Id) + "?created=true");
+        NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(createResult.Value!.Id) + "?created=true");
     }
 }

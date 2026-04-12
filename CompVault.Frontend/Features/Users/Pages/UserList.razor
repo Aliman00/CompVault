@@ -1,4 +1,4 @@
-﻿@page "/admin/users"
+﻿@page "/users"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.UsersRead)]
 @inject IUserService UserService
@@ -35,7 +35,7 @@
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Success"
                            StartIcon="@Icons.Material.Filled.PersonAdd"
-                           Href="@PageRoutes.Admin.UserCreate">
+                           Href="@PageRoutes.Users.UserCreate">
                     Opprett bruker
                 </MudButton>
             </Authorized>
@@ -113,6 +113,6 @@
     
     // Navigerer ved å sende UserDto via NavigationManager (ikke via URL-en, men som en string i nettlesere)
     private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
-        NavigationManager.NavigateTo(PageRoutes.Admin.UserDetail(args.Item.Id));
+        NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(args.Item.Id));
     
 }

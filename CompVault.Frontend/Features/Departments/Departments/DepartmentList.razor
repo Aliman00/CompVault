@@ -1,7 +1,6 @@
-﻿@page "/users/{Id:guid}"
+﻿@page "/DepartmentList"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.UsersRead)]
-@inject IUserService UserService
+@attribute [Authorize(Policy = Permissions.DepartmentsRead)]
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService

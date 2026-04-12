@@ -12,14 +12,24 @@ public static class PageRoutes
         public const string LoginOtp = "/login-otp";
     }
 
+    public static class Users
+    {
+        public const string UserList = "/users";
+        public static string UserDetail(Guid id) => $"/users/{id}";
+        public const string UserCreate = "/users/create";
+    }
+    
+    public static class Departments
+    {
+        public const string DepartmentList = "/departments";
+        public static string DepartmentsDetail(Guid id) => $"/departments/{id}";
+        public const string DepartmentsCreate = "/departments/create";
+    }
+
     public static class Admin
     {
         public const string Dashboard = "/admin/dashboard";
         
-        // ================= USERS =================
-        public const string UserList = "/admin/users";
-        public static string UserDetail(Guid id) => $"/admin/users/{id}";
-        public const string UserCreate = "admin/users/create";
     }
 
     public static class Errors
