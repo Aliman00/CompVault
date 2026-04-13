@@ -44,4 +44,7 @@ public sealed class UpdateUserRequest
 
     /// <summary>Sett til true for å fjerne ledertilknytning.</summary>
     public bool ClearManagerId { get; set; }
+    
+    /// <summary>Roller brukeren skal ha (overskriver eksisterende, valgfritt).</summary>
+    public IReadOnlyList<string>? Roles { get; set; }
 }
