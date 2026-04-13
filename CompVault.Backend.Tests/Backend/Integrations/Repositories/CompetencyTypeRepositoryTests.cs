@@ -8,18 +8,18 @@ using CompVault.Shared.Enums;
 using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
-
 namespace CompVault.Backend.Tests.Backend.Integrations.Repositories;
 
+[Collection(nameof(IntegrationTestCollection))]
 public class CompetencyTypeRepositoryTests(
-    BackendWebApplicationFactory factory) : IClassFixture<BackendWebApplicationFactory>, IAsyncLifetime
+    BackendWebApplicationFactory factory) : IAsyncLifetime
 {
     private AppDbContext _context = null!;
     private CompetencyTypeRepository _sut = null!;
 
     public async Task InitializeAsync()
     {
-        await TestDataSeeder.CreateDb(factory.Services);
+        await factory.ResetDatabaseAsync();
         await TestDataSeeder.SeedUserAsync(factory.Services, id: TestConstants.Users.ActiveUserId);
 
         IServiceScope scope = factory.Services.CreateScope();

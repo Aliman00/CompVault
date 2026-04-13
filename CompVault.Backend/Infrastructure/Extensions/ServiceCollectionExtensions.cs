@@ -181,18 +181,22 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Legger til generell infrastruktur
     /// </summary>
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IWebHostEnvironment
+        environment)
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
         services.AddHttpContextAccessor();
-
-        // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
-        services.AddHostedService<TokenCleanupJob>();
-
-        // Beregner status på kompetansebevis én gang i døgnet
-        services.AddHostedService<CompetencyStatusJob>();
-
+        
+        if (!environment.IsEnvironment("Testing")) // Trenger ikke bakgrunns jobber under testing
+        {
+            // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
+            services.AddHostedService<TokenCleanupJob>();
+            
+            // Beregner status på kompetansebevis én gang i døgnet
+            services.AddHostedService<CompetencyStatusJob>();
+        }
+        
         return services;
     }
 

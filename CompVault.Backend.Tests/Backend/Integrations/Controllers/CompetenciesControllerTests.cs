@@ -15,8 +15,9 @@ using Moq;
 
 namespace CompVault.Backend.Tests.Backend.Integrations.Controllers;
 
+[Collection(nameof(IntegrationTestCollection))]
 public class CompetenciesControllerTests(
-    BackendWebApplicationFactory factory) : IClassFixture<BackendWebApplicationFactory>, IAsyncLifetime
+    BackendWebApplicationFactory factory) : IAsyncLifetime
 {
     private readonly HttpClient _client = factory.CreateClient();
     private HttpClient? _authenticatedClient;
@@ -24,9 +25,8 @@ public class CompetenciesControllerTests(
 
     public async Task InitializeAsync()
     {
-        _ = factory.CreateClient();
+        await factory.ResetDatabaseAsync();
         factory.EmailServiceMock.Reset();
-        await TestDataSeeder.CreateDb(factory.Services);
         // Use Admin role to have write/delete permissions for all tests
         await TestDataSeeder.SeedUserAsync(factory.Services, id: TestConstants.Users.ActiveUserId, role: TestConstants.Roles.Admin);
         _authenticatedClient = await TestDataSeeder.CreateAuthenticatedClientAsync(factory);

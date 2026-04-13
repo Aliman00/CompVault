@@ -13,11 +13,11 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-
 namespace CompVault.Backend.Tests.Backend.Integrations.Controllers;
 
+[Collection(nameof(IntegrationTestCollection))]
 public class DepartmentsControllerTests(
-    BackendWebApplicationFactory factory) : IClassFixture<BackendWebApplicationFactory>, IAsyncLifetime
+    BackendWebApplicationFactory factory) : IAsyncLifetime
 {
     private readonly HttpClient _client = factory.CreateClient();
     private HttpClient? _authenticatedClient;
@@ -25,7 +25,7 @@ public class DepartmentsControllerTests(
 
     public async Task InitializeAsync()
     {
-        await TestDataSeeder.CreateDb(factory.Services);
+        await factory.ResetDatabaseAsync();
 
         // Seed admin user with all permissions for happy path tests
         await TestDataSeeder.SeedUserAsync(
@@ -37,12 +37,7 @@ public class DepartmentsControllerTests(
         _authenticatedClient = await TestDataSeeder.CreateAuthenticatedClientAsync(factory, TestConstants.Users.ActiveUserId);
     }
 
-    public Task DisposeAsync()
-    {
-        _authenticatedClient?.Dispose();
-        _client.Dispose();
-        return Task.CompletedTask;
-    }
+    public Task DisposeAsync() => Task.CompletedTask;
 
     /// <summary>
     /// Creates a user with only DepartmentsRead permission (no write/delete).
@@ -178,24 +173,15 @@ public class DepartmentsControllerTests(
         context.Set<Department>().Add(department);
         await context.SaveChangesAsync();
 
-        try
-        {
-            // Act
-            HttpResponseMessage response = await _authenticatedClient!.GetAsync($"{BaseUrl}/{department.Id}");
+        // Act
+        HttpResponseMessage response = await _authenticatedClient!.GetAsync($"{BaseUrl}/{department.Id}");
 
-            // Assert
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            DepartmentDto? dto = await response.Content.ReadFromJsonAsync<DepartmentDto>();
-            dto.Should().NotBeNull();
-            dto!.Name.Should().Be("Test Department");
-        }
-        finally
-        {
-            // Cleanup
-            context.Set<Department>().Remove(department);
-            await context.SaveChangesAsync();
-        }
+        DepartmentDto? dto = await response.Content.ReadFromJsonAsync<DepartmentDto>();
+        dto.Should().NotBeNull();
+        dto!.Name.Should().Be("Test Department");
     }
 
     [Fact]
@@ -215,16 +201,6 @@ public class DepartmentsControllerTests(
         dto.Should().NotBeNull();
         dto!.Name.Should().Be("New Department");
         dto.Id.Should().NotBeEmpty();
-
-        // Cleanup
-        using IServiceScope scope = factory.Services.CreateScope();
-        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        Department? department = await context.Set<Department>().FindAsync(dto.Id);
-        if (department != null)
-        {
-            context.Set<Department>().Remove(department);
-            await context.SaveChangesAsync();
-        }
     }
 
     [Fact]
@@ -238,30 +214,20 @@ public class DepartmentsControllerTests(
         context.Set<Department>().Add(department);
         await context.SaveChangesAsync();
 
-        try
+        var request = new UpdateDepartmentRequest
         {
-            var request = new UpdateDepartmentRequest
-            {
-                Name = "Updated Name",
-                Description = "Updated description"
-            };
+            Name = "Updated Name",
+            Description = "Updated description"
+        };
 
-            // Act
-            HttpResponseMessage response = await _authenticatedClient!.PutAsJsonAsync($"{BaseUrl}/{department.Id}", request);
+        // Act
+        HttpResponseMessage response = await _authenticatedClient!.PutAsJsonAsync($"{BaseUrl}/{department.Id}", request);
 
-            // Assert
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            DepartmentDto? dto = await response.Content.ReadFromJsonAsync<DepartmentDto>();
-            dto.Should().NotBeNull();
-            dto!.Name.Should().Be("Updated Name");
-        }
-        finally
-        {
-            // Cleanup
-            context.Set<Department>().Remove(department);
-            await context.SaveChangesAsync();
-        }
+        DepartmentDto? dto = await response.Content.ReadFromJsonAsync<DepartmentDto>();
+        dto.Should().NotBeNull();
     }
 
     [Fact]
@@ -280,10 +246,6 @@ public class DepartmentsControllerTests(
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        // Cleanup
-        context.Set<Department>().Remove(department);
-        await context.SaveChangesAsync();
     }
 
     [Fact]
@@ -320,28 +282,17 @@ public class DepartmentsControllerTests(
         context.Set<Department>().AddRange(deptA, deptB);
         await context.SaveChangesAsync();
 
-        try
+        // Try to set B as parent of A (circular: A -> B -> A)
+        var request = new UpdateDepartmentRequest
         {
-            // Try to set B as parent of A (circular: A -> B -> A)
-            var request = new UpdateDepartmentRequest
-            {
-                ParentDepartmentId = deptB.Id
-            };
+            ParentDepartmentId = deptB.Id
+        };
 
-            // Act
-            HttpResponseMessage response = await _authenticatedClient!.PutAsJsonAsync($"{BaseUrl}/{deptA.Id}", request);
+        // Act
+        HttpResponseMessage response = await _authenticatedClient!.PutAsJsonAsync($"{BaseUrl}/{deptA.Id}", request);
 
-            // Assert - should return 422 (Validation error), not 409
-            response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        }
-        finally
-        {
-            // Cleanup - clear navigation properties to avoid EF Core issues
-            deptA.ParentDepartmentId = null;
-            deptB.ParentDepartmentId = null;
-            context.Set<Department>().RemoveRange(deptA, deptB);
-            await context.SaveChangesAsync();
-        }
+        // Assert - should return 422 (Validation error), not 409
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Fact]
@@ -355,27 +306,17 @@ public class DepartmentsControllerTests(
         context.Set<Department>().Add(department);
         await context.SaveChangesAsync();
 
-        try
+        // Try to set itself as parent
+        var request = new UpdateDepartmentRequest
         {
-            // Try to set itself as parent
-            var request = new UpdateDepartmentRequest
-            {
-                ParentDepartmentId = department.Id
-            };
+            ParentDepartmentId = department.Id
+        };
 
-            // Act
-            HttpResponseMessage response = await _authenticatedClient!.PutAsJsonAsync($"{BaseUrl}/{department.Id}", request);
+        // Act
+        HttpResponseMessage response = await _authenticatedClient!.PutAsJsonAsync($"{BaseUrl}/{department.Id}", request);
 
-            // Assert - should return 422 (Validation error)
-            response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        }
-        finally
-        {
-            // Cleanup
-            department.ParentDepartmentId = null;
-            context.Set<Department>().Remove(department);
-            await context.SaveChangesAsync();
-        }
+        // Assert - should return 422 (Validation error)
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Fact]
@@ -391,21 +332,11 @@ public class DepartmentsControllerTests(
         context.Set<Department>().AddRange(parent, child);
         await context.SaveChangesAsync();
 
-        try
-        {
-            // Act - try to delete parent
-            HttpResponseMessage response = await _authenticatedClient!.DeleteAsync($"{BaseUrl}/{parent.Id}");
+        // Act - try to delete parent
+        HttpResponseMessage response = await _authenticatedClient!.DeleteAsync($"{BaseUrl}/{parent.Id}");
 
-            // Assert
-            response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        }
-        finally
-        {
-            // Cleanup
-            child.ParentDepartmentId = null;
-            context.Set<Department>().RemoveRange(parent, child);
-            await context.SaveChangesAsync();
-        }
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
@@ -426,20 +357,10 @@ public class DepartmentsControllerTests(
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
-        try
-        {
-            // Act - try to delete department with members
-            HttpResponseMessage response = await _authenticatedClient!.DeleteAsync($"{BaseUrl}/{department.Id}");
+        // Act - try to delete department with members
+        HttpResponseMessage response = await _authenticatedClient!.DeleteAsync($"{BaseUrl}/{department.Id}");
 
-            // Assert
-            response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        }
-        finally
-        {
-            // Cleanup
-            context.Users.Remove(user);
-            context.Set<Department>().Remove(department);
-            await context.SaveChangesAsync();
-        }
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 }

@@ -30,9 +30,7 @@ public static class TestDataSeeder
     {
         using IServiceScope scope = serviceProvider.CreateScope();
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        // Nuker databasen og oppretter en ny database for hver integrasjonstest
-        await context.Database.EnsureDeletedAsync();
+        
         await context.Database.MigrateAsync();
     }
 
@@ -148,7 +146,7 @@ public static class TestDataSeeder
         };
 
         // Get all permissions from DB
-        var allPermissions = await context.Set<Permission>().ToListAsync();
+        List<Permission> allPermissions = await context.Set<Permission>().ToListAsync();
 
         foreach (string permName in permissionNames)
         {
