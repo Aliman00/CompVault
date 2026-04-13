@@ -4,7 +4,7 @@
     <MudTreeViewItem Value="Node"
                      Text="@Node.Department.Name"
                      Icon="@Icons.Material.Filled.CorporateFare"
-                     IconColor="@(Node.Department.IsActive ? Color.Info : Color.Default)"
+                     IconColor="@(Node.Department.IsActive ? Color.Success : Color.Default)"
                      OnClick="() => OnNavigate.InvokeAsync(Node.Department.Id)"
                      Expanded="true">
         @foreach (var child in Node.Children)
@@ -18,7 +18,7 @@ else
     <MudTreeViewItem Value="Node"
                      Text="@Node.Department.Name"
                      Icon="@Icons.Material.Outlined.CorporateFare"
-                     IconColor="@(Node.Department.IsActive ? Color.Info : Color.Default)"
+                     IconColor="@(Node.Department.IsActive ? Color.Success : Color.Default)"
                      OnClick="() => OnNavigate.InvokeAsync(Node.Department.Id)"/>
 }
 
