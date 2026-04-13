@@ -18,7 +18,8 @@ public sealed class DocumentService(
     IDocumentTypeRepository documentTypeRepository,
     IDepartmentRepository departmentRepository,
     IUserRepository userRepository,
-    IDocumentFileService documentFileService) : IDocumentService
+    IDocumentFileService documentFileService,
+    ILogger<DocumentService> logger) : IDocumentService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<DocumentListDto>>> GetAllAsync(
@@ -94,7 +95,7 @@ public sealed class DocumentService(
         if (request.TargetDepartmentId.HasValue)
         {
             bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.TargetDepartmentId.Value, cancellationToken);
+                d => d.Id == request.TargetDepartmentId.Value && d.IsActive, cancellationToken);
 
             if (!departmentExists)
                 return Result<DocumentDto>.Failure(
@@ -156,6 +157,7 @@ public sealed class DocumentService(
         catch (DbUpdateException)
         {
             // Rydd opp fil hvis DB-lagring feiler
+            logger.LogError("DB-feil ved opprettelse av dokument — fil ryddet opp: {FilePath}", savedFilePath);
             if (savedFilePath is not null)
                 await documentFileService.DeleteAsync(savedFilePath, CancellationToken.None);
 
@@ -168,6 +170,9 @@ public sealed class DocumentService(
         if (created is null)
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokument med ID '{document.Id}' ble ikke funnet etter opprettelse."));
+
+        logger.LogInformation("Dokument {DocumentId} opprettet (type: {DocumentTypeSlug}, versjon: 1)",
+            document.Id, documentTypeSlug);
 
         return Result<DocumentDto>.Success(DocumentMapper.ToDto(created));
     }
@@ -207,7 +212,7 @@ public sealed class DocumentService(
         if (request.TargetDepartmentId.HasValue && !request.ClearTargetDepartment)
         {
             bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.TargetDepartmentId.Value, cancellationToken);
+                d => d.Id == request.TargetDepartmentId.Value && d.IsActive, cancellationToken);
 
             if (!departmentExists)
                 return Result<DocumentDto>.Failure(
@@ -222,7 +227,7 @@ public sealed class DocumentService(
                     AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for dokumentets dokumenttype."));
         }
 
-        ApplyUpdate(document, request);
+        ApplyUpdate(document, request, effectiveDepartmentId, effectiveJobTitle);
 
         try
         {
@@ -240,6 +245,8 @@ public sealed class DocumentService(
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokument med ID '{id}' ble ikke funnet etter oppdatering."));
 
+        logger.LogInformation("Dokument {DocumentId} oppdatert", id);
+
         return Result<DocumentDto>.Success(DocumentMapper.ToDto(updated));
     }
 
@@ -254,6 +261,8 @@ public sealed class DocumentService(
 
         await documentRepository.SoftDeleteAsync(document, cancellationToken);
         await documentRepository.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Dokument {DocumentId} slettet (soft delete)", id);
 
         return Result<bool>.Success(true);
     }
@@ -310,9 +319,14 @@ public sealed class DocumentService(
         {
             // Unique constraint på (DocumentId, UserId, SignatureVersion) beskytter mot
             // doble signaturer ved concurrent requests
+            logger.LogWarning("Signering av dokument {DocumentId} av bruker {UserId} feilet — muligens allerede signert",
+                documentId, userId);
             return Result<bool>.Failure(
                 AppError.Create(ErrorCode.Conflict, "Du har allerede signert denne versjonen av dokumentet."));
         }
+
+        logger.LogInformation("Bruker {UserId} signerte dokument {DocumentId} versjon {Version}",
+            userId, documentId, document.Version);
 
         return Result<bool>.Success(true);
     }
@@ -385,8 +399,12 @@ public sealed class DocumentService(
         document.UploadedBy = uploadedById;
         document.UploadedAt = DateTime.UtcNow;
 
-        // Slett signaturer — ny versjon krever re-signering
-        await signatureRepository.DeleteAllForDocumentAsync(documentId, cancellationToken);
+        // Slett signaturer via tracked delete — ny versjon krever re-signering.
+        // Tracked delete sikrer at signaturene kun slettes hvis SaveChanges lykkes,
+        // slik at vi ikke mister data ved DB-feil.
+        IReadOnlyList<DocumentSignature> existingSignatures = await signatureRepository.GetForDocumentAsync(documentId, cancellationToken);
+        foreach (DocumentSignature sig in existingSignatures)
+            signatureRepository.Remove(sig);
 
         try
         {
@@ -395,6 +413,8 @@ public sealed class DocumentService(
         catch (DbUpdateException)
         {
             // DB-feil etter at fil allerede er lagret — rydd opp temp-fil og returner feil
+            logger.LogError("DB-feil ved lagring av dokumentversjon {DocumentId} v{Version} — temp-fil ryddet opp",
+                documentId, newVersion);
             await documentFileService.DeleteAsync(tempFilePath, CancellationToken.None);
             return Result<DocumentDto>.Failure(
                 AppError.Create(ErrorCode.InternalError, "Kunne ikke lagre dokumentversjonen. Prøv på nytt."));
@@ -430,6 +450,9 @@ public sealed class DocumentService(
         if (updated is null)
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokument med ID '{document.Id}' ble ikke funnet etter opplasting."));
+
+        logger.LogInformation("Dokument {DocumentId} versjon {Version} lastet opp av bruker {UserId}",
+            document.Id, newVersion, uploadedById);
 
         return Result<DocumentDto>.Success(DocumentMapper.ToDto(updated));
     }
@@ -543,9 +566,14 @@ public sealed class DocumentService(
     }
 
     /// <summary>
-    /// Applierer oppdateringer fra DTO på dokumententiteten.
+    /// Apllierer oppdateringer fra DTO på dokumententiteten.
+    /// Bruker effective-verdier for target-felt for å sikre konsistens med valideringen.
     /// </summary>
-    private static void ApplyUpdate(Document document, UpdateDocumentRequest request)
+    private static void ApplyUpdate(
+        Document document,
+        UpdateDocumentRequest request,
+        Guid? effectiveDepartmentId,
+        string? effectiveJobTitle)
     {
         if (!string.IsNullOrEmpty(request.Title))
             document.Title = request.Title;
@@ -566,15 +594,9 @@ public sealed class DocumentService(
         else if (request.ExternalUrl is not null)
             document.ExternalUrl = request.ExternalUrl;
 
-        if (request.ClearTargetDepartment)
-            document.TargetDepartmentId = null;
-        else if (request.TargetDepartmentId.HasValue)
-            document.TargetDepartmentId = request.TargetDepartmentId.Value;
-
-        if (request.ClearTargetJobTitle)
-            document.TargetJobTitle = null;
-        else if (request.TargetJobTitle is not null)
-            document.TargetJobTitle = request.TargetJobTitle;
+        // Bruk effective-verdier istedenfor rå request — sikrer konsistens med ValidateTarget
+        document.TargetDepartmentId = effectiveDepartmentId;
+        document.TargetJobTitle = effectiveJobTitle;
     }
 
     /// <summary>

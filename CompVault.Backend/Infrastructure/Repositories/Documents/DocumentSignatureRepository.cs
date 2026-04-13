@@ -46,11 +46,16 @@ public sealed class DocumentSignatureRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task DeleteAllForDocumentAsync(
+    public async Task<IReadOnlyList<DocumentSignature>> GetForDocumentAsync(
         Guid documentId, CancellationToken cancellationToken = default)
     {
-        await DbSet
+        return await DbSet
             .Where(s => s.DocumentId == documentId)
-            .ExecuteDeleteAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
+    }
+
+    public void Remove(DocumentSignature signature)
+    {
+        DbSet.Remove(signature);
     }
 }

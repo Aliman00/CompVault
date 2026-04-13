@@ -11,6 +11,8 @@ using CompVault.Shared.Result;
 
 using FluentAssertions;
 
+using Microsoft.Extensions.Logging;
+
 using Moq;
 
 namespace CompVault.Backend.Tests.Backend.Features.Documents.Services;
@@ -23,6 +25,7 @@ public class DocumentServiceTests
     private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IDocumentFileService> _fileServiceMock;
+    private readonly Mock<ILogger<DocumentService>> _loggerMock;
     private readonly DocumentService _sut;
 
     public DocumentServiceTests()
@@ -33,6 +36,7 @@ public class DocumentServiceTests
         _departmentRepositoryMock = new Mock<IDepartmentRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
         _fileServiceMock = new Mock<IDocumentFileService>();
+        _loggerMock = new Mock<ILogger<DocumentService>>();
 
         _sut = new DocumentService(
             _documentRepositoryMock.Object,
@@ -40,7 +44,8 @@ public class DocumentServiceTests
             _documentTypeRepositoryMock.Object,
             _departmentRepositoryMock.Object,
             _userRepositoryMock.Object,
-            _fileServiceMock.Object);
+            _fileServiceMock.Object,
+            _loggerMock.Object);
     }
 
     // Hjelpemetode for å opprette en gyldig DocumentType
@@ -1199,8 +1204,8 @@ public class DocumentServiceTests
             .Returns(Task.CompletedTask);
 
         _signatureRepositoryMock
-            .Setup(x => x.DeleteAllForDocumentAsync(docId, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .Setup(x => x.GetForDocumentAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<DocumentSignature>());
 
         _documentRepositoryMock
             .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -1239,7 +1244,7 @@ public class DocumentServiceTests
             Times.Once);
 
         _signatureRepositoryMock.Verify(
-            x => x.DeleteAllForDocumentAsync(docId, It.IsAny<CancellationToken>()),
+            x => x.GetForDocumentAsync(docId, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

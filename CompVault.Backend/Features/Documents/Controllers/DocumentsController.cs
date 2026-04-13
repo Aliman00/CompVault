@@ -158,7 +158,7 @@ public sealed class DocumentsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SignAsync(
-        string documentTypeSlug, Guid id, CancellationToken cancellationToken)
+        Guid id, CancellationToken cancellationToken)
     {
         Guid userId = User.TryGetUserId()
             ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");

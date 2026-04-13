@@ -23,6 +23,10 @@ public interface IDocumentSignatureRepository : IRepository<DocumentSignature>
     Task<IReadOnlyList<Guid>> GetSignedDocumentIdsAsync(
         Guid userId, CancellationToken cancellationToken = default);
 
-    /// <summary>Sletter alle signaturer for et dokument.</summary>
-    Task DeleteAllForDocumentAsync(Guid documentId, CancellationToken cancellationToken = default);
+    /// <summary>Henter alle signaturer for et dokument (for tracked delete).</summary>
+    Task<IReadOnlyList<DocumentSignature>> GetForDocumentAsync(
+        Guid documentId, CancellationToken cancellationToken = default);
+
+    /// <summary>Markerer en signatur for sletting i change-trackeren. Kall SaveChangesAsync for å persistere.</summary>
+    void Remove(DocumentSignature signature);
 }
