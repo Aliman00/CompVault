@@ -101,7 +101,6 @@ else
     
     // ===================== PRIVATE METHODS =====================
     
-    // Navigerer ved å sende UserDto via NavigationManager (ikke via URL-en, men som en string i nettlesere)
     private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
         NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(args.Item.Id));
     

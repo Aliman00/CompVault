@@ -327,7 +327,7 @@ else if (_user != null)
     private void NavigateToDepartment()
     {
         if (_user?.DepartmentId.HasValue == true)
-            NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentsDetail(_user.DepartmentId.Value));
+            NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentDetail(_user.DepartmentId.Value));
     }
     
     private void NavigateToManager()

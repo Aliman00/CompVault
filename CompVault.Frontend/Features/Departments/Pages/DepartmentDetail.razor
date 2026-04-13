@@ -1,5 +1,4 @@
 ﻿@page "/departments/{Id:guid}"
-@using CompVault.Frontend.Features.Departments.Models
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.DepartmentsRead)]
 @inject IUserService UserService
@@ -115,7 +114,7 @@ else if (_department != null)
 
                 </MudItem>
                 
-                @* Switch-knapp for å gjøre brukeren aktiv/inaktiv *@
+                @* Switch-knapp for å gjøre avdelingen aktiv/inaktiv *@
                 <MudItem xs="12" sm="6">
                     <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Status</MudText>
                     <MudSwitch @bind-Value="_editModel.IsActive"
@@ -126,33 +125,10 @@ else if (_department != null)
 
                 @* Brukere i avdelingen *@
                 <MudItem xs="12">
-                    <MudText Typo="Typo.subtitle1" Class="mb-2">Ansatte i avdelingen</MudText>
-                    @if (_departmentUsers.Count == 0)
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            Ingen ansatte i denne avdelingen.
-                        </MudText>
-                    }
-                    else
-                    {
-                        <MudDataGrid Items="_departmentUsers"
-                                     Filterable="false"
-                                     Dense="true"
-                                     Hover="true"
-                                     Striped="true"
-                                     Square="true"
-                                     Bordered="true"
-                                     SortMode="SortMode.Single"
-                                     RowClick="@((DataGridRowClickEventArgs<UserDto> args) 
-                                                   => NavigateToUser(args.Item.Id))">
-                            <Columns>
-                                <PropertyColumn Property="x => x.FullName" Title="Navn"
-                                                SortBy="x => x.LastName"/>
-                                <PropertyColumn Property="x => x.JobTitle" Title="Stillingstittel"/>
-                                <PropertyColumn Property="x => x.EmploymentType" Title="Ansettelsestype"/>
-                            </Columns>
-                        </MudDataGrid>
-                    }
+                    <UserTable Title="@($"Ansatte i avdelingen ({_departmentUsers.Count})")"
+                               EmptyText="Ingen ansatte i denne avdelingen."
+                               Users="_departmentUsers"
+                               OnUserClick="NavigateToUser"/>
                 </MudItem>
 
                 @* Underavdelinger *@
@@ -286,7 +262,7 @@ else if (_department != null)
 
     // ===================== PRIVATE METHODS =====================
 
-    // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger og 
+    // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger og resetter modell
     private void StartEdit()
     {
         _errorAlert = null;
@@ -335,11 +311,11 @@ else if (_department != null)
     {
         if (_department?.ParentDepartmentId.HasValue == true)
             NavigationManager.NavigateTo(
-                PageRoutes.Departments.DepartmentsDetail(_department.ParentDepartmentId.Value));
+                PageRoutes.Departments.DepartmentDetail(_department.ParentDepartmentId.Value));
     }
     
     private void NavigateToSubDepartment(Guid departmentId) =>
-        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentsDetail(departmentId));
+        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentDetail(departmentId));
 
     private void NavigateToCreatedByUser()
     {

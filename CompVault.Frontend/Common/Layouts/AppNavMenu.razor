@@ -27,6 +27,14 @@
         </Authorized>
     </AuthorizeView>
 
+    <AuthorizeView Policy="@Permissions.RolesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Roles.RoleList" Icon="@Icons.Material.Filled.Shield">
+                Roller
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
     <AuthorizeView Policy="@Permissions.AdminAccess">
         <Authorized>
             <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">

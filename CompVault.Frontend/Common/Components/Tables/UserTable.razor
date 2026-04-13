@@ -1,0 +1,59 @@
+﻿<MudText Typo="Typo.subtitle1" Class="mb-2">@Title</MudText>
+@if (Users.Count == 0)
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary">
+        @EmptyText
+    </MudText>
+}
+else
+{
+    <MudDataGrid Items="Users"
+                 Filterable="false"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Square="true"
+                 Bordered="true"
+                 SortMode="SortMode.Single"
+                 RowClick="@((DataGridRowClickEventArgs<UserDto> args)
+                               => OnRowClick(args.Item.Id))">
+        <Columns>
+            <PropertyColumn Property="x => x.FullName" Title="Navn" SortBy="x => x.LastName"/>
+            <PropertyColumn Property="x => x.JobTitle" Title="Stillingstittel"/>
+            <PropertyColumn Property="x => x.EmploymentType" Title="Ansettelsestype"/>
+        </Columns>
+    </MudDataGrid>
+}
+@code {
+    // ===================== PARAMETERS =====================
+    /// <summary>
+    /// Tittelen til tabellen
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Tekst som vises hvis tom innsendt liste
+    /// </summary>
+    [Parameter, EditorRequired] public string EmptyText { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Brukerne som vises i tabellen - kalleren gjør filtrering
+    /// </summary>
+    [Parameter, EditorRequired] public IReadOnlyList<UserDto> Users { get; set; } = [];
+    
+    /// <summary>
+    /// Navieringshandling som utføres på klikk på en bruker
+    /// </summary>
+    [Parameter] public EventCallback<Guid> OnUserClick { get; set; }
+    
+    // ===================== PRIVATE METHODS =====================
+    
+    /// <summary>
+    /// Sender callback kun hvis en handling er innsendt
+    /// </summary>
+    private async Task OnRowClick(Guid userId)
+    {
+        if (OnUserClick.HasDelegate)
+            await OnUserClick.InvokeAsync(userId);
+    }
+}

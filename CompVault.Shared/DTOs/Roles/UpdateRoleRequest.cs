@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
+
 namespace CompVault.Shared.DTOs.Roles;
 
 /// <summary>
@@ -9,12 +11,12 @@ namespace CompVault.Shared.DTOs.Roles;
 public sealed class UpdateRoleRequest
 {
     /// <summary>Rollens navn.</summary>
-    [MinLength(2)]
-    [MaxLength(256)]
+    [MinLength(RoleValidations.NameMinLength, ErrorMessage = RoleValidations.Errors.NameMinLength)]
+    [MaxLength(RoleValidations.NameMaxLength, ErrorMessage = RoleValidations.Errors.NameMaxLength)]
     public string? Name { get; set; }
 
     /// <summary>Beskrivelse av hva rollen innebærer.</summary>
-    [MinLength(5)]
-    [MaxLength(250)]
+    [MinLength(RoleValidations.DescriptionMinLength, ErrorMessage = RoleValidations.Errors.DescriptionMinLength)]
+    [MaxLength(RoleValidations.DescriptionMaxLength, ErrorMessage = RoleValidations.Errors.DescriptionMaxLength)]
     public string? Description { get; set; }
 }

@@ -15,8 +15,9 @@
 }
 else
 {
+    @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere avdelinger *@
     <ListHeader Title="Avdelinger"
-            CreateHref="@PageRoutes.Departments.DepartmentsCreate"
+            CreateHref="@PageRoutes.Departments.DepartmentCreate"
             CreateLabel="Opprett avdeling"
             CreateIcon="@Icons.Material.Filled.CorporateFare"
             CreatePolicy="@Permissions.DepartmentsWrite">
@@ -50,8 +51,7 @@ else
                      @bind-SelectedItems="_selectedDepartments"
                      RowClick="@((DataGridRowClickEventArgs<DepartmentDto> args) => OnDepartmentClick(args.Item.Id))">
 
-            @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere avdelinger *@
-            @* For øyeblikket kun Rediger-avdeling knapp som er disabled hvis bruker ikke har department:write tilgang*@
+            
 
             @* Selve kolonnene *@
             <Columns>
@@ -134,9 +134,8 @@ else
     
     // ===================== PRIVATE METHODS =====================
     
-    // Navigerer ved å sende UserDto via NavigationManager (ikke via URL-en, men som en string i nettlesere)
     private void OnDepartmentClick(Guid id) =>
-        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentsDetail(id));
+        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentDetail(id));
     
     private async Task ToggleTreeView(bool value)
     {
