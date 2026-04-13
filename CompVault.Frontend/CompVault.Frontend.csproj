@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Folder Include="Common\Components\Buttons\" />
+    <Folder Include="Common\Helpers\" />
     <Folder Include="Features\Auth\Components\" />
     <Folder Include="Features\Auth\Pages\" />
     <Folder Include="Features\Users\Components\" />

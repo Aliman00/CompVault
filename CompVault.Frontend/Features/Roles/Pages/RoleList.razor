@@ -46,7 +46,7 @@ else
             
             <PropertyColumn Property="roleDto => roleDto.Description"Title="Beskrivelse" Sortable="true">
                 <CellTemplate>
-                    @TextHelper.Truncate(context.Item.Description, 60)
+                    @context.Item.Description.Truncate(60)
                 </CellTemplate>
             </PropertyColumn>
             

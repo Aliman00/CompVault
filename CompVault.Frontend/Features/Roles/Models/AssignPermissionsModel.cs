@@ -13,10 +13,4 @@ public class AssignPermissionsModel
     public IList<string> SelectedPermissionNames { get; set; } = [];
 
     public AssignPermissionsRequest ToRequest() => new() { PermissionNames = SelectedPermissionNames };
-
-    public static AssignPermissionsModel FromDto(RoleDto dto) => new()
-    {
-        SelectedPermissionNames = dto.Permissions.ToList()
-    };
-    
 }

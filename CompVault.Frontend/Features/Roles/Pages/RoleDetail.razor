@@ -30,15 +30,37 @@ else if (_role != null)
                           IsEditing="_isEditing"
                           OnStartEdit="StartEdit"
                           OnCancelEdit="CancelEdit">
+                @* Tilknytt tilattelse knapp *@
+                <ExtraActions>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Security"
+                               OnClick="OpenPermissionsDialog">
+                        Permissions
+                    </MudButton>
+                </ExtraActions>
                 @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
-                <Actions>
+                <DropdownActions>
                     <AuthorizeView Policy="@Permissions.RolesDelete" Context="auth">
                         <Authorized>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                         IconColor="Color.Error"
-                                         OnClick="Delete">
-                                <MudText Color="Color.Error">Slett rolle</MudText>
-                            </MudMenuItem>
+                            @if (_role.IsSystem)
+                            {
+                                <MudTooltip Text="Systemroller kan ikke slettes">
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                                 IconColor="Color.Default"
+                                                 Disabled="true">
+                                        <MudText>Slett rolle</MudText>
+                                    </MudMenuItem>
+                                </MudTooltip>
+                            }
+                            else
+                            {
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                             IconColor="Color.Error"
+                                             OnClick="Delete">
+                                    <MudText Color="Color.Error">Slett rolle</MudText>
+                                </MudMenuItem>
+                            }
                         </Authorized>
                         <NotAuthorized>
                             <MudTooltip Text="Du har ikke tilgang til å slette avdelingen">
@@ -50,7 +72,7 @@ else if (_role != null)
                             </MudTooltip>
                         </NotAuthorized>
                     </AuthorizeView>
-                </Actions>
+                </DropdownActions>
             </DetailHeader>
 
             @* Alle felt med egenskaper fra RoleDto *@
@@ -93,7 +115,7 @@ else if (_role != null)
 
                 </MudItem>
                 
-                @* Brukere med denne rollen TODO: Denne må bli en egen komponent*@
+                @* Brukere med denne rollen *@
                 <MudItem xs="12">
                     <UserTable Title="@($"Brukere tildelt denne rollen ({_role.UserCount})")"
                                EmptyText="Ingen brukere tildelt denne rollen."
@@ -273,6 +295,32 @@ else if (_role != null)
         }
 
         NavigationManager.NavigateTo(PageRoutes.Roles.RoleList + "?deleted=true");
+    }
+    
+    // Viser en dialog som brukeren kan knytte tilattelser til rollen
+    private async Task OpenPermissionsDialog()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(PermissionDialog.RoleId), Id },
+            { nameof(PermissionDialog.CurrentPermissions), _role!.Permissions },
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<PermissionDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        if (dialogResult.Data is not RoleDto updatedRole)
+        {
+            _errorAlert = new AlertInfo("Noe gikk galt ved oppdatering av permissions.", Severity.Error);
+            return;
+        }
+        
+        _role = updatedRole;
+        _successAlert = new AlertInfo("Permissions oppdatert", Severity.Success);
     }
 
 }

@@ -28,6 +28,7 @@
 </MudDialog>
 
 @code {
+    // ===================== PARAMETER =====================
     /// <summary>
     /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
     /// </summary>
@@ -47,6 +48,8 @@
     /// Bekreftelse tekst - default på slett, men kan være f.eks. Slett bruker, Slett avdeling etc
     /// </summary>
     [Parameter] public string ConfirmText { get; set; } = "Slett";
+    
+    // ===================== PRIVATE METHOD =====================
     
     // Handlinger som skjer ved trykk
     private void Confirm() => MudDialog.Close(DialogResult.Ok(true));

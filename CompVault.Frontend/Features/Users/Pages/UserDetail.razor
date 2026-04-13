@@ -32,7 +32,7 @@ else if (_user != null)
                           OnStartEdit="StartEdit"
                           OnCancelEdit="CancelEdit">
                 @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
-                <Actions>
+                <DropdownActions>
                     <AuthorizeView Policy="@Permissions.UsersDelete" Context="auth">
                         <Authorized>
                             <MudMenuItem Icon="@Icons.Material.Filled.Delete"
@@ -51,7 +51,7 @@ else if (_user != null)
                             </MudTooltip>
                         </NotAuthorized>
                     </AuthorizeView>
-                </Actions>
+                </DropdownActions>
             </DetailHeader>
 
             @* Alle felt med egenskaper fra UserDto *@
