@@ -136,6 +136,9 @@ public static class TestDataSeeder
                 Permissions.CompetenciesRead,
                 Permissions.CompetenciesWrite,
                 Permissions.CompetenciesDelete,
+                Permissions.DepartmentsRead,
+                Permissions.DepartmentsWrite,
+                Permissions.DepartmentsDelete,
             },
             TestConstants.Roles.Default => new[]
             {
@@ -145,7 +148,7 @@ public static class TestDataSeeder
         };
 
         // Get all permissions from DB
-        var allPermissions = context.Set<Permission>().ToList();
+        var allPermissions = await context.Set<Permission>().ToListAsync();
 
         foreach (string permName in permissionNames)
         {

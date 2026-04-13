@@ -11,7 +11,6 @@ namespace CompVault.Shared.DTOs.Departments;
 public sealed class UpdateDepartmentRequest
 {
     /// <summary>Nytt navn på avdelingen.</summary>
-    [Required(ErrorMessage = DepValidations.Errors.NameRequired)]
     [MaxLength(DepValidations.NameMaxLength, ErrorMessage = DepValidations.Errors.NameMaxLength)]
     public string? Name { get; set; } = string.Empty;
 

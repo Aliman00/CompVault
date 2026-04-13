@@ -33,9 +33,6 @@ public class DepartmentsControllerTests(
             id: TestConstants.Users.ActiveUserId,
             role: TestConstants.Roles.Admin);
 
-        // Give Admin role Departments permissions BEFORE creating the authenticated client
-        await GrantDepartmentsPermissionsToAdminAsync(factory.Services);
-
         // Create authenticated client AFTER permissions are granted
         _authenticatedClient = await TestDataSeeder.CreateAuthenticatedClientAsync(factory, TestConstants.Users.ActiveUserId);
     }
@@ -45,44 +42,6 @@ public class DepartmentsControllerTests(
         _authenticatedClient?.Dispose();
         _client.Dispose();
         return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Helper to grant Departments permissions to the Admin role for happy path tests.
-    /// </summary>
-    private static async Task GrantDepartmentsPermissionsToAdminAsync(IServiceProvider serviceProvider)
-    {
-        using IServiceScope scope = serviceProvider.CreateScope();
-        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        // Ensure permissions are seeded
-        await TestDataSeeder.SeedPermissionsAsync(serviceProvider);
-
-        ApplicationRole? adminRole = await context.Roles
-            .FirstOrDefaultAsync(r => r.Name == TestConstants.Roles.Admin);
-        if (adminRole == null) return;
-
-        List<Permission> deptPermissions = await context.Permissions
-            .Where(p => p.Name == Permissions.DepartmentsRead ||
-                        p.Name == Permissions.DepartmentsWrite ||
-                        p.Name == Permissions.DepartmentsDelete)
-            .ToListAsync();
-
-        foreach (Permission? permission in deptPermissions)
-        {
-            bool exists = await context.RolePermissions.AnyAsync(
-                rp => rp.RoleId == adminRole.Id && rp.PermissionId == permission.Id);
-            if (exists) continue;
-
-            context.RolePermissions.Add(new CompVault.Backend.Domain.Entities.Identity.RolePermission
-            {
-                RoleId = adminRole.Id,
-                PermissionId = permission.Id,
-                GrantedAt = DateTime.UtcNow
-            });
-        }
-
-        await context.SaveChangesAsync();
     }
 
     /// <summary>
