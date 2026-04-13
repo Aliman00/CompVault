@@ -25,8 +25,8 @@ else
                                  ToggledChanged="ToggleTreeView"
                                  Icon="@Icons.Material.Outlined.AccountTree"
                                  ToggledIcon="@Icons.Material.Filled.TableRows"
-                                 Title="Bytt til hierarki-visning"
-                                 ToggledTitle="Bytt til liste"
+                                 title="@(_showDepartmentTree ? "Bytt til liste" : "Bytt til hierarki-visning")"
+                                 aria-label="@(_showDepartmentTree ? "Bytt til liste" : "Bytt til hierarki-visning")"
                                  Class="mr-2"/>
         </Actions>
     </ListHeader>
