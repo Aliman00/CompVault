@@ -33,7 +33,7 @@
             
             @* Bruker MudGrid for å vise kategoriene ved siden av hverandre*@
             <MudGrid>
-                @foreach (var category in _filteredPermissionsByCategory)
+                @foreach (var category in FilteredPermissionsByCategory)
                 {
                     <MudItem xs="6">
                         <MudText Typo="Typo.subtitle1" Color="Color.Primary">@category.Key.ToNorwegian()</MudText>
@@ -93,7 +93,7 @@
     private Dictionary<string, List<PermissionDto>> _permissionsByCategory = [];
     
     // En ordbok som filtrere bort kategorier som ikke stemmer med søkestringen
-    private Dictionary<string, List<PermissionDto>> _filteredPermissionsByCategory =>
+    private Dictionary<string, List<PermissionDto>> FilteredPermissionsByCategory =>
         string.IsNullOrWhiteSpace(_searchText)
             ? _permissionsByCategory
             : _permissionsByCategory
