@@ -1,8 +1,9 @@
 using CompVault.Backend.Domain.Entities.JobTitles;
-using CompVault.Backend.Features.JobTitles;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Shared.DTOs.JobTitles;
 using CompVault.Shared.Result;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Features.JobTitles.Services;
 
@@ -57,7 +58,18 @@ public sealed class JobTitleService(
         };
 
         await jobTitleRepository.AddAsync(jobTitle, ct);
-        await jobTitleRepository.SaveChangesAsync(ct);
+
+        try
+        {
+            await jobTitleRepository.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Navneunikhet sjekkes før lagring, men concurrent requests kan likevel
+            // opprette samme navn. Unique constraint fanger dette opp.
+            return Result<JobTitleDto>.Failure(
+                AppError.Conflict($"En stillingstittel med navn '{request.Name}' eksisterer allerede."));
+        }
 
         logger.LogInformation("Stillingstittel {Name} opprettet", request.Name);
         return Result<JobTitleDto>.Success(JobTitleMapper.ToDto(jobTitle));
@@ -85,7 +97,17 @@ public sealed class JobTitleService(
         jobTitle.Name = request.Name;
 
         await jobTitleRepository.UpdateAsync(jobTitle, ct);
-        await jobTitleRepository.SaveChangesAsync(ct);
+
+        try
+        {
+            await jobTitleRepository.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Concurrent navneendring kan trigge unique constraint
+            return Result<JobTitleDto>.Failure(
+                AppError.Conflict($"En stillingstittel med navn '{request.Name}' eksisterer allerede."));
+        }
 
         logger.LogInformation("Stillingstittel {Id} oppdatert", id);
         return Result<JobTitleDto>.Success(JobTitleMapper.ToDto(jobTitle));

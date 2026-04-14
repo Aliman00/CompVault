@@ -22,15 +22,13 @@ public interface IDocumentRepository : IRepository<Document>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Henter alle pending dokumenter for en bruker i én spørring.
-    /// Inkluderer dokumenter for brukerens avdeling, jobbtittel, og udirigerte dokumenter.
-    /// Filtrerer bort dokumenter brukeren allerede har signert og dokumenter som ikke krever signatur.
+    /// Henter alle aktive dokumenter rettet mot brukerens avdeling, jobbtittel, eller udirigerte.
+    /// Filtrering av signaturkrav og allerede signerte dokumenter gjøres i service-laget.
     /// </summary>
     Task<IReadOnlyList<Document>> GetPendingForUserAsync(
         Guid userId,
         Guid? departmentId,
         Guid? jobTitleId,
-        IReadOnlyList<Guid> signedDocumentIds,
         CancellationToken cancellationToken = default);
 
     /// <summary>Henter dokumenter basert på en liste med IDer.</summary>

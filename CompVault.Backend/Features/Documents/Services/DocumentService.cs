@@ -546,7 +546,11 @@ public sealed class DocumentService(
         IReadOnlyList<Guid> signedDocumentIds = await signatureRepository.GetSignedDocumentIdsAsync(userId, cancellationToken);
 
         IReadOnlyList<Document> pendingDocuments = await documentRepository.GetPendingForUserAsync(
-            userId, user.DepartmentId, user.JobTitleId, signedDocumentIds, cancellationToken);
+            userId, user.DepartmentId, user.JobTitleId, cancellationToken);
+
+        pendingDocuments = pendingDocuments
+            .Where(d => d.RequiresSignature && !signedDocumentIds.Contains(d.Id))
+            .ToList();
 
         if (pendingDocuments is null || pendingDocuments.Count == 0)
             return Result<IReadOnlyList<DocumentListDto>>.Success(Array.Empty<DocumentListDto>());

@@ -106,7 +106,17 @@ public sealed class DocumentTypeService(
             documentType.MaxFileSizeBytes = request.MaxFileSizeBytes.Value;
 
         await documentTypeRepository.UpdateAsync(documentType, cancellationToken);
-        await documentTypeRepository.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await documentTypeRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Concurrent oppdatering av slug eller annen unique constraint kan trigge dette
+            return Result<DocumentTypeDto>.Failure(
+                AppError.Conflict($"Dokumenttype med slug '{slug}' kunne ikke oppdateres. Prøv på nytt."));
+        }
 
         DocumentType? updated = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken);
         if (updated is null)

@@ -61,28 +61,18 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         Guid userId,
         Guid? departmentId,
         Guid? jobTitleId,
-        IReadOnlyList<Guid> signedDocumentIds,
         CancellationToken cancellationToken = default)
     {
-        // Hent alle aktive, gjeldende dokumenter som:
-        // 1) Er udirigerte (TargetDepartmentId == null AND TargetJobTitleId == null), ELLER
-        // 2) Matcher brukerens avdeling, ELLER
-        // 3) Matcher brukerens jobbtittel
-        IQueryable<Document> query = DbSet
+        return await DbSet
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
             .Where(d => d.IsActive)
             .Where(d =>
                 (d.TargetDepartmentId == null && d.TargetJobTitleId == null) ||
                 (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId) ||
-                (d.TargetJobTitleId != null && d.TargetJobTitleId == jobTitleId));
-
-        List<Document> documents = await query.AsNoTracking().ToListAsync(cancellationToken);
-
-        // Filtrer bort dokumenter som ikke krever signatur og dokumenter brukeren allerede har signert
-        return documents
-            .Where(d => d.RequiresSignature && !signedDocumentIds.Contains(d.Id))
-            .ToList();
+                (d.TargetJobTitleId != null && d.TargetJobTitleId == jobTitleId))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<Document>> GetByIdsAsync(
@@ -109,7 +99,6 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     {
         document.IsActive = false;
         document.DeletedAt = DateTime.UtcNow;
-        // Entity already tracked from GetForUpdateAsync call — no Update() needed
         return Task.CompletedTask;
     }
 }

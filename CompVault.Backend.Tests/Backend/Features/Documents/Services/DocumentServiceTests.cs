@@ -1011,7 +1011,6 @@ public class DocumentServiceTests
         _documentRepositoryMock
             .Setup(x => x.GetPendingForUserAsync(
                 userId, departmentId, It.IsAny<Guid?>(),
-                It.IsAny<IReadOnlyList<Guid>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);
 
@@ -1066,7 +1065,6 @@ public class DocumentServiceTests
         _documentRepositoryMock
             .Setup(x => x.GetPendingForUserAsync(
                 userId, It.IsAny<Guid?>(), jobTitleId,
-                It.IsAny<IReadOnlyList<Guid>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);
 
@@ -1102,10 +1100,15 @@ public class DocumentServiceTests
         var signedDocId = Guid.NewGuid();
         var unsignedDocId = Guid.NewGuid();
 
-        // GetPendingForUserAsync filtrerer bort signerte dokumenter allerede,
-        // så vi setter kun opp retur for usignerte
+        // Repo returnerer begge dokumenter; service filtrerer bort det allerede signerte
         var documents = new List<Document>
         {
+            new()
+            {
+                Id = signedDocId, DocumentTypeId = typeId,
+                DocumentType = type,
+                Title = "Allerede signert", Version = 1, IsActive = true
+            },
             new()
             {
                 Id = unsignedDocId, DocumentTypeId = typeId,
@@ -1125,7 +1128,6 @@ public class DocumentServiceTests
         _documentRepositoryMock
             .Setup(x => x.GetPendingForUserAsync(
                 userId, It.IsAny<Guid?>(), It.IsAny<Guid?>(),
-                It.IsAny<IReadOnlyList<Guid>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);
 
