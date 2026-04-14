@@ -312,6 +312,7 @@ else if (_role != null)
         var parameters = new DialogParameters
         {
             { nameof(PermissionDialog.RoleId), Id },
+            { nameof(PermissionDialog.RoleName), _role!.Name },
             { nameof(PermissionDialog.CurrentPermissions), _role!.Permissions },
         };
 

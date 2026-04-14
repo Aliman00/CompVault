@@ -2,6 +2,8 @@
 @inject IRoleService RoleService
 @inject IUserService UserService
 @inject IBrowserViewportService ViewportService
+@inject IClaimsRefreshService ClaimsRefreshService
+@inject CircuitUserContext CircuitUserContext
 
 @* Dialog for å legge til en rolle på en bruker *@
 <MudDialog>
@@ -44,10 +46,8 @@
                                  Striped="false">
                         <Columns>
                             <SelectColumn T="RoleDto"/>
-                            <PropertyColumn Property="r => r.Name.Truncate(40)"
-                                            Title="Navn"/>
-                            <PropertyColumn Property="r => r.Description.Truncate(40)"
-                                            Title="Beskrivelse"/>
+                            <PropertyColumn Property="r => r.Name.Truncate(40)" Title="Navn"/>
+                            <PropertyColumn Property="r => r.Description.Truncate(40)" Title="Beskrivelse"/>
                             
                             @* Skjuler permissions hvis det er på mobil *@
                             <TemplateColumn Title="Tillatelser" Hidden="@_isMobile">
@@ -199,6 +199,11 @@
                 _errorAlert = new AlertInfo(assignRoleResult.Error!.ToString(), Severity.Error);
                 return;
             }
+            
+            // Oppdaterer claim hvis brukeren har endret seg selv
+            if (CircuitUserContext.UserId == UserId)
+                await ClaimsRefreshService.RefreshTokensAsync();
+            
 
             MudDialog.Close(DialogResult.Ok(assignRoleResult.Value));
         }

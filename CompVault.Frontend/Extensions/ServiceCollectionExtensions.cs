@@ -77,6 +77,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CircuitHandler, CircuitUserContextHandler>();
         services.AddScoped<CircuitUserContext>();
         services.AddScoped<CookieValidationEvents>();
+        services.AddScoped<IClaimsRefreshService, ClaimsRefreshService>();
+        
 
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>

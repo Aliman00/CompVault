@@ -1,21 +1,20 @@
 ﻿@inject IRoleService RoleService
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IClaimsRefreshService ClaimsRefreshService
+@inject CircuitUserContext CircuitUserContext
 
 @* Dialog for å endre og legge til tilattelser til en rolle *@
 <MudDialog>
    
     @* Tittel *@
     <TitleContent>
-        <MudText Typo="Typo.h6">Administrer permissions</MudText>
+        <MudText Typo="Typo.h6">Administrer permissions for rolle @RoleName</MudText>
     </TitleContent>
     
-    
-
     @* Body til dialogen *@
     <DialogContent>
         
         <AppAlert @bind-Alert="_errorAlert"/>
-
         
         @if (_isLoading)
         {
@@ -23,6 +22,7 @@
         }
         else
         {
+            @* Søkefelt *@
             <MudTextField T="string"
                           @bind-Value="_searchText"
                           Placeholder="Søk etter tillatelse..."
@@ -31,15 +31,17 @@
                           Immediate="true"
                           Class="mb-4"/>
             
-            @* Bruker MudGrid for å vise kategoriene ved siden av hverandre*@
+            @* Kategori visning med checkboxes - Bruker MudGrid for å vise kategoriene ved siden av hverandre*@
             <MudGrid>
                 @foreach (var category in FilteredPermissionsByCategory)
                 {
                     <MudItem xs="6">
+                        @* Kategori *@
                         <MudText Typo="Typo.subtitle1" Color="Color.Primary">@category.Key.ToNorwegian()</MudText>
                         <MudDivider Class="mb-2"/>
                         @foreach (var permission in category.Value)
                         {
+                            @* Check box for hver permission i en kategori *@
                             <MudCheckBox T="bool"
                                          Value="_model.SelectedPermissionNames.Contains(permission.Name)"
                                          ValueChanged="(bool v) => TogglePermission(permission.Name, v)"
@@ -80,6 +82,12 @@
     /// </summary>
     [Parameter, EditorRequired]
     public Guid RoleId { get; set; }
+    
+    /// <summary>
+    /// Rollenavn brukes for å 
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string RoleName { get; set; } = string.Empty;
 
     /// <summary>
     /// Permissions allerede satt på rollen
@@ -170,6 +178,10 @@
             _errorAlert = new AlertInfo(assignPermissionResult.Error!.ToString(), Severity.Error);
             return;
         }
+        
+        // Oppdaterer claim hvis brukeren er tilknyttet den endrete rollen
+        if (CircuitUserContext.Roles.Contains(RoleName))
+            await ClaimsRefreshService.RefreshTokensAsync();
 
         MudDialog.Close(DialogResult.Ok(assignPermissionResult.Value));
     }
