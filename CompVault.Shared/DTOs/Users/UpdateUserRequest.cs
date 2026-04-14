@@ -21,7 +21,7 @@ public sealed class UpdateUserRequest
     /// <summary>Bytt epost (valgfritt).</summary>
     [EmailAddress(ErrorMessage = UserValidations.Errors.EmailInvalid)]
     [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
-    public string Email { get; init => field = value.Trim(); } = null!;
+    public string? Email { get; init => field = value?.Trim(); } = null!;
 
     /// <summary>Ny stillingstittel (valgfritt).</summary>
     [MaxLength(UserValidations.JobTitleMaxLength, ErrorMessage = UserValidations.Errors.JobTitleMaxLength)]

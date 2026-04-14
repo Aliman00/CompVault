@@ -1,4 +1,13 @@
-﻿<MudText Typo="Typo.subtitle1" Class="mb-2">@Title</MudText>
+﻿@* En enkel bruker tabell som viser brukere relevant til en spesifikk feature - feks roller, avdelinger *@
+
+@* Header med mulighet for knapper feks navigering eller andre muligheter*@
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+    <MudText Typo="Typo.subtitle1">@Title</MudText>
+    @if (HeaderAction != null)
+    {
+        @HeaderAction
+    }
+</MudStack>
 @if (Users.Count == 0)
 {
     <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -45,6 +54,11 @@ else
     /// Navieringshandling som utføres på klikk på en bruker
     /// </summary>
     [Parameter] public EventCallback<Guid> OnUserClick { get; set; }
+    
+    /// <summary>
+    /// Valgfri handlinger som vises til høyre for tittelen. F.eks: en navigeringsknapp
+    /// </summary>
+    [Parameter] public RenderFragment? HeaderAction { get; set; }
     
     // ===================== PRIVATE METHODS =====================
     

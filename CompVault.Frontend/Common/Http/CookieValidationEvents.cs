@@ -74,7 +74,8 @@ public class CookieValidationEvents(
         identity.AddClaim(new Claim("access_token", refreshRecord.AccessToken));
 
         context.HttpContext.AppendRefreshTokenCookie(refreshRecord.RefreshToken, authSettings, env);
-        context.ShouldRenew = true;
+		context.ShouldRenew = true;
+        ClaimsSynchronizer.RefreshClaimsFromAccessToken(identity, refreshRecord.AccessToken);
     }
 
 

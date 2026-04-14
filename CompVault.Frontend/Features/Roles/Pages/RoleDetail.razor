@@ -113,15 +113,22 @@ else if (_role != null)
 
                 </MudItem>
                 
-                @* Brukere med denne rollen *@
+                @* Brukere med denne rollen TODO: Tildele roller herfra senere, men trenger eget endepunkt *@
                 <MudItem xs="12">
                     <UserTable Title="@($"Brukere tildelt denne rollen ({_role.UserCount})")"
                                EmptyText="Ingen brukere tildelt denne rollen."
                                Users="_usersWithRole"
-                               OnUserClick="NavigateToUser"/>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
-                        Administrer rolletildeling fra brukerprofilen
-                    </MudText>
+                               OnUserClick="NavigateToUser">
+                        <HeaderAction>
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.OpenInNew"
+                                       Size="Size.Small"
+                                       OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.Users.UserList))">
+                                Gå til brukere for å tildelle roller
+                            </MudButton>
+                        </HeaderAction>
+                    </UserTable>
                 </MudItem>
                 
             </MudGrid>
