@@ -1,4 +1,5 @@
 ﻿@page "/users/{Id:guid}"
+@using CompVault.Frontend.Features.Users.Components
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.UsersRead)]
 @inject IUserService UserService
@@ -149,8 +150,17 @@ else if (_user != null)
             
                 @* Roller TODO: Lenke til roller *@
                 <MudItem xs="12" sm="6">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Roller</MudText>
-                    <MudStack Row="true" Spacing="1">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-1">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Roller</MudText>
+                        <AuthorizeView Policy="@Permissions.RolesWrite" Context="assignRolesPermission">
+                            <Authorized>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               OnClick="OpenAssignRolesDialog"/>
+                            </Authorized>
+                        </AuthorizeView>
+                    </MudStack>
+                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
                         @foreach (var role in _user.Roles)
                         {
                             <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
@@ -360,5 +370,30 @@ else if (_user != null)
         }
         
         NavigationManager.NavigateTo(PageRoutes.Users.UserList + "?deleted=true");
+    }
+    
+    private async Task OpenAssignRolesDialog()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(AssignRoleDialog.UserId), Id},
+            { nameof(AssignRoleDialog.CurrentRoles), _user!.Roles}
+        };
+        
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled) 
+            return;
+        
+        if (dialogResult.Data is not UserDto updatedUser)
+        {
+            _errorAlert = new AlertInfo("Noe gikk galt ved oppdatering av roller.", Severity.Error);
+            return;
+        }
+        
+        _user = updatedUser;
+        _successAlert = new AlertInfo("Brukerens roller er oppdatert", Severity.Success);
     }
 }

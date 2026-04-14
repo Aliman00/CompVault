@@ -32,12 +32,10 @@ else if (_role != null)
                           OnCancelEdit="CancelEdit">
                 @* Tilknytt tilattelse knapp *@
                 <ExtraActions>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Security"
-                               OnClick="OpenPermissionsDialog">
-                        Permissions
-                    </MudButton>
+                    <ResponsiveButton Label="Permissions"
+                                      Icon="@Icons.Material.Filled.Security"
+                                      OnClick="OpenPermissionsDialog" />
+                    
                 </ExtraActions>
                 @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
                 <DropdownActions>

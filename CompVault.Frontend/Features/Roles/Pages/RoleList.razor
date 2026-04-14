@@ -42,11 +42,11 @@ else
         <Columns>
             <SelectColumn T="RoleDto"/>
             
-            <PropertyColumn Property="roleDto => roleDto.Name" Title="Rollenavn"/>
+            <PropertyColumn Property="roleDto => roleDto.Name.Truncate(30)" Title="Rollenavn"/>
             
             <PropertyColumn Property="roleDto => roleDto.Description"Title="Beskrivelse" Sortable="true">
                 <CellTemplate>
-                    @context.Item.Description.Truncate(60)
+                    @context.Item.Description.Truncate(30)
                 </CellTemplate>
             </PropertyColumn>
             

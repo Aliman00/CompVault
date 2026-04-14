@@ -1,4 +1,6 @@
-﻿namespace CompVault.Frontend.Common.Extensions;
+﻿using CompVault.Shared.Constants;
+
+namespace CompVault.Frontend.Common.Extensions;
 
 public static class TextHelper
 {
@@ -24,5 +26,29 @@ public static class TextHelper
         "Competencies" => "Kompetanser",
         "Admins" => "Administrator",
         _ => category
+    };
+    
+    /// <summary>
+    /// Mapper en permission til noe forståerlig for å vise permissions til en bruker.
+    /// Eks: User.Read blir "Se brukere"
+    /// </summary>
+    /// <param name="permission">Tilattelsen vi bytter om</param>
+    /// <returns>Leslig permission</returns>
+    public static string ToNorwegianPermission(this string permission) => permission switch
+    {
+        Permissions.UsersRead => "Se brukere",
+        Permissions.UsersWrite => "Opprett/endre brukere",
+        Permissions.UsersDelete => "Slett brukere",
+        Permissions.RolesRead => "Se roller",
+        Permissions.RolesWrite => "Opprett/endre roller",
+        Permissions.RolesDelete => "Slett roller",
+        Permissions.DepartmentsRead => "Se avdelinger",
+        Permissions.DepartmentsWrite => "Opprett/endre avdelinger",
+        Permissions.DepartmentsDelete => "Slett avdelinger",
+        Permissions.CompetenciesRead => "Se kompetanser",
+        Permissions.CompetenciesWrite => "Opprett/endre kompetanser",
+        Permissions.CompetenciesDelete => "Slett kompetanser",
+        Permissions.AdminAccess => "Se administratorpanel",
+        _ => permission
     };
 }
