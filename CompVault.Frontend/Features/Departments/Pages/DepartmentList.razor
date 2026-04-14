@@ -56,8 +56,9 @@ else
             @* Selve kolonnene *@
             <Columns>
                 <SelectColumn T="DepartmentDto"/>
-                <PropertyColumn Property="departmentDto => departmentDto.Name" Title="Navn"/>
-                <PropertyColumn Property="departmentDto => departmentDto.ParentDepartmentName" Title="Overordnet avdeling"/>
+                <PropertyColumn Property="departmentDto => departmentDto.Name.Truncate(40)" Title="Navn"/>
+                <PropertyColumn Property="departmentDto => departmentDto.ParentDepartmentName.Truncate(40)" 
+                                Title="Overordnet avdeling"/>
                 <PropertyColumn Property="departmentDto => departmentDto.SubDepartmentCount" Title="Underavdelinger"/>
                 <TemplateColumn Title="Status" Sortable="true" SortBy="@(departmentDto => departmentDto.IsActive)">
                     <CellTemplate>
@@ -93,7 +94,7 @@ else
     
     private bool _isLoading = true;
     private AlertInfo? _alert;
-    public bool _showDepartmentTree;
+    private bool _showDepartmentTree;
     
     // ===================== LIFECYCLE =====================
     protected override async Task OnInitializedAsync()

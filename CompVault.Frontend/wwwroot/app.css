@@ -61,6 +61,18 @@ h1:focus {
     text-align: start;
 }
 
+/* ============================= COMMON ============================= */
+.cv-divider {
+    opacity: 0.8;
+    margin: 8px 0;
+    border-bottom-width: 2px;
+}
+
+/* Overstyrer MudBlazor sin radius - brukes på MudChips */
+.cv-rounded {
+    border-radius: 4px !important;
+}
+
 
 /* ============================= LOGO ============================= */
 

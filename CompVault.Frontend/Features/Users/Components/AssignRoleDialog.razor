@@ -1,6 +1,7 @@
 ﻿@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @inject IRoleService RoleService
 @inject IUserService UserService
+@inject IBrowserViewportService ViewportService
 
 @* Dialog for å legge til en rolle på en bruker *@
 <MudDialog>
@@ -30,54 +31,50 @@
                           Class="mb-2"/>
             
             @* Roller i en liste *@
-            @* TODO: Vise det dobbelt i en MudGrid hvis det blir en lang liste med roller? *@
-            <MudList T="string" Dense="true">
-                @if (FilteredRoles.Any())
-                {
-                    <MudList T="string" Dense="true">
-                        @foreach (var role in FilteredRoles)
-                        {
-                            <MudListItem T="string" OnClick="() => ToggleRole(role.Name)">
-                                <MudStack Spacing="1">
-                                    <MudText Typo="Typo.body1">@role.Name</MudText>
-                                    @if (!string.IsNullOrWhiteSpace(role.Description))
-                                    {
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@role.Description</MudText>
-                                    }
-                                    @if (role.Permissions.Any())
-                                    {
-                                        <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                                            @foreach (var permission in role.Permissions.Take(4))
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Style="border-radius: 4px;">
-                                                    @permission.ToNorwegianPermission()
-                                                </MudChip>
-                                            }
-                                            @if (role.Permissions.Count > 4)
-                                            {
-                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="align-self: center">
-                                                    +@(role.Permissions.Count - 4) til
-                                                </MudText>
-                                            }
-                                        </MudStack>
-                                    }
-                                </MudStack>
-                                <MudDivider/>
-                            </MudListItem>
-                        }
-                    </MudList>
-                }
-                else
-                {
-                    @* Skal aldri skje, men en fallback hvis noe går galt eller vi fjerner seeding av roller *@
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen roller funnet</MudText>
-                }
-            </MudList>
+            @if (FilteredRoles.Any())
+            {
+                <div>
+                    <MudDataGrid T="RoleDto"
+                                 Items="FilteredRoles"
+                                 MultiSelection="true"
+                                 SelectedItems="SelectedRoles"
+                                 SelectedItemsChanged="OnSelectedRolesChanged!"
+                                 Dense="true"
+                                 Hover="true"
+                                 Striped="false">
+                        <Columns>
+                            <SelectColumn T="RoleDto"/>
+                            <PropertyColumn Property="r => r.Name.Truncate(40)"
+                                            Title="Navn"/>
+                            <PropertyColumn Property="r => r.Description.Truncate(40)"
+                                            Title="Beskrivelse"/>
+                            
+                            @* Skjuler permissions hvis det er på mobil *@
+                            <TemplateColumn Title="Tillatelser" Hidden="@_isMobile">
+                                <CellTemplate>
+                                    <MudText Typo="Typo.body2">
+                                        @string.Join(", ", context.Item.Permissions
+                                            .Take(4)
+                                            .Select(p => p.ToNorwegianPermission())).Truncate(60)
+                                        @if (context.Item.Permissions.Count > 4)
+                                        {
+                                            <text> +@(context.Item.Permissions.Count - 4) til</text>
+                                        }
+                                    </MudText>
+                                </CellTemplate>
+                            </TemplateColumn>
+                        </Columns>
+                    </MudDataGrid>
+                </div>
+            }
+            else
+            {
+                @* Skal aldri skje, men en fallback hvis noe går galt eller vi fjerner seeding av roller *@
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen roller funnet</MudText>
+            }
         }
     </DialogContent>
-
     
-
     @* Knapp for godkjenn handling og avbryt handling *@
     <DialogActions>
         <MudButton Variant="Variant.Outlined"
@@ -117,34 +114,39 @@
     // ===================== PRIVATE FIELDS =====================
     private List<RoleDto> _allRoles = [];
     
-
     // En liste som filtrere bort roller som ikke stemmer med søkestrengen
     private List<RoleDto> FilteredRoles =>
         string.IsNullOrWhiteSpace(_searchText)
             ? _allRoles
             : _allRoles.Where(roleDto => roleDto.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
                 .ToList();
-    
+
     // Søketekst for filtrering
     private string _searchText = string.Empty;
     
-    // Lagrer kun navnene til de valgte listene
-    private List<string> _selectedRoleNames= [];
+    // Lagrer de valgte rollene
+    private HashSet<RoleDto> SelectedRoles { get; set; } = [];
+
+    private void OnSelectedRolesChanged(HashSet<RoleDto> selected)
+    {
+        SelectedRoles = selected;
+    }
     
     private bool _isLoading = true;
     private bool _isSaving;
 
     private AlertInfo? _errorAlert;
-
     
+    private bool _isMobile;
+    
+   
+
     // ===================== LIFECYCLE =====================
     // Henter alle roller fra backend og oppdaterer listen med allerede valgte roller
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _selectedRoleNames = CurrentRoles.ToList();
-
             var roleResult = await RoleService.GetAllAsync(Cts.Token);
             if (roleResult.IsFailure)
             {
@@ -153,6 +155,8 @@
             }
 
             _allRoles = roleResult.Value!;
+            SelectedRoles  = _allRoles.Where(r => CurrentRoles.Contains(r.Name))
+                .ToHashSet();
 
         }
         finally
@@ -160,17 +164,20 @@
             _isLoading = false;
         }
     }
+    
+    // Skjuler permissions i mobilvsining
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var bp = await ViewportService.GetCurrentBreakpointAsync();
+            _isMobile = bp is Breakpoint.Xs or Breakpoint.Sm;
+            StateHasChanged();
+        }
+    }
 
     // ===================== PRIVATE METHODS =====================
-    
-    // Ved toggle så fjernes en rolle eller legges til i listen
-    private void ToggleRole(string roleName)
-    {
-        if (_selectedRoleNames.Contains(roleName))
-            _selectedRoleNames.Remove(roleName);
-        else
-            _selectedRoleNames.Add(roleName);
-    }
+   
 
     // Sender roller til backend og prøver å oppdatere brukeren. Lukkes ved vellyket lagring. Sender UserDto tilbake
     // til Detail-siden
@@ -183,9 +190,9 @@
         {
             var request = new UpdateUserRequest
             {
-                Roles = _selectedRoleNames
+                Roles = SelectedRoles.Select(r => r.Name).ToList()
             };
-            
+
             var assignRoleResult = await UserService.UpdateAsync(UserId, request, Cts.Token);
             if (assignRoleResult.IsFailure)
             {
@@ -199,8 +206,9 @@
         {
             _isSaving = false;
         }
-        
     }
 
     private void Cancel() => MudDialog.Cancel();
+    
+    
 }

@@ -6,7 +6,6 @@
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
-@inject IJSRuntime JsRuntime
 
 @* Detalje visning av en bruker med mulighet for oppdatering *@
 
@@ -154,17 +153,26 @@ else if (_user != null)
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Roller</MudText>
                         <AuthorizeView Policy="@Permissions.RolesWrite" Context="assignRolesPermission">
                             <Authorized>
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Size="Size.Small"
-                                               OnClick="OpenAssignRolesDialog"/>
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.Shield"
+                                           Size="Size.Small"
+                                           OnClick="OpenAssignRolesDialog">
+                                    Endre roller
+                                </MudButton>
                             </Authorized>
                         </AuthorizeView>
                     </MudStack>
-                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                    <MudStack Row="true" Spacing="0" Wrap="Wrap.Wrap">
                         @foreach (var role in _user.Roles)
                         {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
-                                @role
+                            <MudChip T="string" 
+                                     Size="Size.Small" 
+                                     Color="Color.Primary" 
+                                     Variant="Variant.Outlined"
+                                     Class="cv-rounded"
+                                     OnClick="@NavigateToRole(Id)">
+                                @role.Truncate(50)
                             </MudChip>
                         }
                     </MudStack>
@@ -346,6 +354,11 @@ else if (_user != null)
             NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(_user.ManagerId.Value));
     }
     
+    // TODO: Må sende med rolleId for å kunne navigere til en rolle
+    private EventCallback NavigateToRole(Guid roleId) =>
+        EventCallback.Factory.Create(this, () =>
+            NavigationManager.NavigateTo(PageRoutes.Roles.RoleDetail(roleId)));
+    
     // Viser en dialog som brukeren må godkjenne for å kunne slette en bruker. Navigerer til UserList etter sletting
     private async Task DeleteUser()
     {
@@ -382,7 +395,11 @@ else if (_user != null)
         };
         
         // Kaller dialogen
-        var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", parameters);
+        var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", parameters, new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        });
         var dialogResult = await dialog.Result;
         if (dialogResult!.Canceled) 
             return;
