@@ -22,8 +22,11 @@ public sealed class UserDto
     /// <summary>Fullt navn — satt sammen automatisk.</summary>
     public string FullName => $"{FirstName} {LastName}".Trim();
 
-    /// <summary>Stillingstittel.</summary>
-    public string JobTitle { get; set; } = string.Empty;
+    /// <summary>ID til brukerens stillingstittel.</summary>
+    public Guid? JobTitleId { get; set; }
+
+    /// <summary>Navn på stillingstittelen.</summary>
+    public string? JobTitleName { get; set; }
 
     /// <summary>Ansettelsestype.</summary>
     public EmploymentType EmploymentType { get; set; }

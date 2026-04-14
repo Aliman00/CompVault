@@ -77,7 +77,7 @@ public class DocumentServiceTests
 
     // Hjelpemetode for å opprette en bruker
     private static ApplicationUser CreateUser(
-        Guid? id = null, Guid? departmentId = null, string? jobTitle = null)
+        Guid? id = null, Guid? departmentId = null, Guid? jobTitleId = null)
     {
         return new ApplicationUser
         {
@@ -86,7 +86,7 @@ public class DocumentServiceTests
             LastName = "Bruker",
             Email = "test@test.no",
             DepartmentId = departmentId,
-            JobTitle = jobTitle ?? string.Empty
+            JobTitleId = jobTitleId
         };
     }
 
@@ -611,7 +611,7 @@ public class DocumentServiceTests
 
         // Act
         Result<DocumentDto> result = await _sut.UpdateAsync(
-            id, new UpdateDocumentRequest { ClearTargetDepartment = true });
+            id, new UpdateDocumentRequest { ClearTargetDepartmentId = true });
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -1010,7 +1010,7 @@ public class DocumentServiceTests
 
         _documentRepositoryMock
             .Setup(x => x.GetPendingForUserAsync(
-                userId, departmentId, It.IsAny<string?>(),
+                userId, departmentId, It.IsAny<Guid?>(),
                 It.IsAny<IReadOnlyList<Guid>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);
@@ -1038,7 +1038,8 @@ public class DocumentServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        ApplicationUser user = CreateUser(userId, jobTitle: "Leder");
+        var jobTitleId = Guid.NewGuid();
+        ApplicationUser user = CreateUser(userId, jobTitleId: jobTitleId);
 
         var typeId = Guid.NewGuid();
         DocumentType type = CreateDocumentType(DocumentTargetMode.JobTitle, typeId);
@@ -1064,7 +1065,7 @@ public class DocumentServiceTests
 
         _documentRepositoryMock
             .Setup(x => x.GetPendingForUserAsync(
-                userId, It.IsAny<Guid?>(), "Leder",
+                userId, It.IsAny<Guid?>(), jobTitleId,
                 It.IsAny<IReadOnlyList<Guid>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);
@@ -1123,7 +1124,7 @@ public class DocumentServiceTests
 
         _documentRepositoryMock
             .Setup(x => x.GetPendingForUserAsync(
-                userId, It.IsAny<Guid?>(), It.IsAny<string?>(),
+                userId, It.IsAny<Guid?>(), It.IsAny<Guid?>(),
                 It.IsAny<IReadOnlyList<Guid>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(documents);

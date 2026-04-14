@@ -27,9 +27,8 @@ public sealed class CreateDocumentRequest
     /// <summary>ID til målavdelingen. Brukes kun når DocumentType.TargetMode er Department.</summary>
     public Guid? TargetDepartmentId { get; set; }
 
-    /// <summary>Mål-jobbtittel. Brukes kun når DocumentType.TargetMode er JobTitle.</summary>
-    [MaxLength(100)]
-    public string? TargetJobTitle { get; set; }
+    /// <summary>ID til mål-jobbtittelen. Brukes kun når DocumentType.TargetMode er JobTitle.</summary>
+    public Guid? TargetJobTitleId { get; set; }
 
     /// <summary>Om dokumentet krever signering. Standard er true.</summary>
     public bool RequiresSignature { get; set; } = true;

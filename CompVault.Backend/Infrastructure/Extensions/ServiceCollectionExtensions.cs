@@ -23,6 +23,8 @@ using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Features.JobTitles.Services;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
 
@@ -253,6 +255,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IDocumentSignatureRepository, DocumentSignatureRepository>();
 
+        // JobTitles
+        services.AddScoped<IJobTitleRepository, JobTitleRepository>();
+
         return services;
     }
 
@@ -275,6 +280,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentTypeService, DocumentTypeService>();
         services.AddScoped<IDocumentFileService, DocumentFileService>();
         services.AddScoped<IDocumentService, DocumentService>();
+
+        // JobTitles
+        services.AddScoped<IJobTitleService, JobTitleService>();
 
         return services;
     }

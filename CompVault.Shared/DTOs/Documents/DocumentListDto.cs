@@ -32,8 +32,11 @@ public sealed class DocumentListDto
     /// <summary>ID til målavdelingen.</summary>
     public Guid? TargetDepartmentId { get; set; }
 
-    /// <summary>Mål-jobbtittel.</summary>
-    public string? TargetJobTitle { get; set; }
+    /// <summary>ID til mål-jobbtittelen.</summary>
+    public Guid? TargetJobTitleId { get; set; }
+
+    /// <summary>Navn på mål-jobbtittelen.</summary>
+    public string? TargetJobTitleName { get; set; }
 
     /// <summary>Versjonsnummer.</summary>
     public int Version { get; set; }

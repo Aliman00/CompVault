@@ -26,15 +26,14 @@ public sealed class UpdateDocumentRequest
     /// <summary>Ny målavdeling.</summary>
     public Guid? TargetDepartmentId { get; set; }
 
-    /// <summary>Ny mål-jobbtittel.</summary>
-    [MaxLength(100)]
-    public string? TargetJobTitle { get; set; }
+    /// <summary>Ny mål-jobbtittel-ID.</summary>
+    public Guid? TargetJobTitleId { get; set; }
 
     /// <summary>Sett til true for å fjerne TargetDepartmentId.</summary>
-    public bool ClearTargetDepartment { get; set; }
+    public bool ClearTargetDepartmentId { get; set; }
 
-    /// <summary>Sett til true for å fjerne TargetJobTitle.</summary>
-    public bool ClearTargetJobTitle { get; set; }
+    /// <summary>Sett til true for å fjerne TargetJobTitleId.</summary>
+    public bool ClearTargetJobTitleId { get; set; }
 
     /// <summary>Sett til true for å fjerne ExternalUrl.</summary>
     public bool ClearExternalUrl { get; set; }

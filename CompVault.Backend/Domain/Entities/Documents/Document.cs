@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.JobTitles;
 
 namespace CompVault.Backend.Domain.Entities.Documents;
 
@@ -37,9 +38,8 @@ public class Document
     /// <summary>ID til målavdelingen. Brukes når DocumentType.TargetMode er Department.</summary>
     public Guid? TargetDepartmentId { get; set; }
 
-    /// <summary>Mål-jobbtittel. Brukes når DocumentType.TargetMode er JobTitle.</summary>
-    [MaxLength(100)]
-    public string? TargetJobTitle { get; set; }
+    /// <summary>ID til mål-jobbtittelen. Brukes når DocumentType.TargetMode er JobTitle.</summary>
+    public Guid? TargetJobTitleId { get; set; }
 
     // ======================== Signatur ========================
     /// <summary>Om dette dokumentet krever signering.</summary>
@@ -87,6 +87,9 @@ public class Document
 
     /// <summary>Målavdelingen.</summary>
     public Department? TargetDepartment { get; set; }
+
+    /// <summary>Mål-jobbtittelen.</summary>
+    public JobTitle? TargetJobTitle { get; set; }
 
     /// <summary>Brukeren som lastet opp.</summary>
     public ApplicationUser? Uploader { get; set; }

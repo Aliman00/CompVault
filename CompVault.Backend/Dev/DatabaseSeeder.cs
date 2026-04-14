@@ -2,6 +2,7 @@ using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.JobTitles;
 using CompVault.Backend.Features.Competencies;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Shared.Constants;
@@ -21,17 +22,41 @@ public static class DatabaseSeeder
 {
     private const string DefaultPassword = "Test123!";
 
-    private static readonly (string FirstName, string LastName, string Email, string JobTitle, string[] Roles)[] Users =
+    private static readonly (string FirstName, string LastName, string Email, string[] Roles)[] Users =
     [
-        ("Kari",   "Nordmann", "kari.nordmann@compvault.no", "System Administrator", ["Admin"]),
-        ("Ola",    "Nordmann", "ola.nordmann@compvault.no",  "IT-leder",             ["Admin"]),
-        ("Lars",   "Hansen",   "lars.hansen@compvault.no",   "Systemutvikler",       ["Employee"]),
-        ("Ingrid", "Berg",     "ingrid.berg@compvault.no",   "Systemutvikler",       ["Employee"]),
-        ("Tobias", "Lie",      "tobias.lie@compvault.no",    "Rådgiver",             ["Employee"]),
-        ("Sofie",  "Dahl",     "sofie.dahl@compvault.no",    "HR-konsulent",         ["Employee"]),
-        ("Almin",  "Colakovic","almin.dev@pm.me",            "Systemutvikler",       ["Employee"]),
-        ("Majlinda","Lajci",   "gamingnerd824@gmail.com",    "Systemutvikler",       ["Employee"]),
-        ("Fredrik","Magee",    "fredrik@magee.no",           "Systemutvikler",       ["Employee"]),
+        ("Kari",   "Nordmann", "kari.nordmann@compvault.no", ["Admin"]),
+        ("Ola",    "Nordmann", "ola.nordmann@compvault.no",  ["Admin"]),
+        ("Lars",   "Hansen",   "lars.hansen@compvault.no",   ["Employee"]),
+        ("Ingrid", "Berg",     "ingrid.berg@compvault.no",   ["Employee"]),
+        ("Tobias", "Lie",      "tobias.lie@compvault.no",    ["Employee"]),
+        ("Sofie",  "Dahl",     "sofie.dahl@compvault.no",    ["Employee"]),
+        ("Almin",  "Colakovic","almin.dev@pm.me",            ["Employee"]),
+        ("Majlinda","Lajci",   "gamingnerd824@gmail.com",    ["Employee"]),
+        ("Fredrik","Magee",    "fredrik@magee.no",           ["Employee"]),
+    ];
+
+    // JobTitles: stillingstitler som seedes i systemet
+    private static readonly string[] JobTitlesData =
+    [
+        "System Administrator",
+        "IT-leder",
+        "Systemutvikler",
+        "Rådgiver",
+        "HR-konsulent",
+    ];
+
+    // User -> JobTitle mapping: (UserEmail, JobTitleName)
+    private static readonly (string UserEmail, string JobTitleName)[] UserJobTitles =
+    [
+        ("kari.nordmann@compvault.no", "System Administrator"),
+        ("ola.nordmann@compvault.no",  "IT-leder"),
+        ("lars.hansen@compvault.no",   "Systemutvikler"),
+        ("ingrid.berg@compvault.no",   "Systemutvikler"),
+        ("tobias.lie@compvault.no",    "Rådgiver"),
+        ("sofie.dahl@compvault.no",    "HR-konsulent"),
+        ("almin.dev@pm.me",            "Systemutvikler"),
+        ("gamingnerd824@gmail.com",     "Systemutvikler"),
+        ("fredrik@magee.no",           "Systemutvikler"),
     ];
 
     private static readonly (string Name, string Description)[] Roles =
@@ -131,8 +156,8 @@ public static class DatabaseSeeder
         ("position-instructions", "Kompetansekrav", "competency-requirements"),
     ];
 
-    // Documents: (DocumentTypeSlug, CategorySlug, Title, RequiresSignature, TargetDepartmentName, TargetJobTitle)
-    private static readonly (string DocumentTypeSlug, string? CategorySlug, string Title, bool RequiresSignature, string? TargetDepartmentName, string? TargetJobTitle)[] DocumentsData =
+    // Documents: (DocumentTypeSlug, CategorySlug, Title, RequiresSignature, TargetDepartmentName, TargetJobTitleName)
+    private static readonly (string DocumentTypeSlug, string? CategorySlug, string Title, bool RequiresSignature, string? TargetDepartmentName, string? TargetJobTitleName)[] DocumentsData =
     [
         // HMS documents with department targeting
         ("hms-documents", "emergency-procedure", "Brannverninstruks", true, "IT", null),
@@ -170,6 +195,8 @@ public static class DatabaseSeeder
             await SeedUsersAsync(userManager, logger);
             await SeedDepartmentsAsync(dbContext, logger);
             await SeedUserDepartmentsAsync(userManager, dbContext, logger);
+            await SeedJobTitlesAsync(dbContext, logger);
+            await SeedUserJobTitlesAsync(userManager, dbContext, logger);
             await SeedCompetencyTypesAsync(dbContext, logger);
             await SeedCompetenciesAsync(dbContext, logger);
             await SeedDocumentTypesAsync(dbContext, logger);
@@ -213,7 +240,7 @@ public static class DatabaseSeeder
 
     private static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, ILogger logger)
     {
-        foreach ((string firstName, string lastName, string email, string jobTitle, string[] roles) in Users)
+        foreach ((string firstName, string lastName, string email, string[] roles) in Users)
         {
             if (await userManager.FindByEmailAsync(email) is not null)
                 continue;
@@ -225,7 +252,6 @@ public static class DatabaseSeeder
                 EmailConfirmed = true,
                 FirstName = firstName,
                 LastName = lastName,
-                JobTitle = jobTitle,
                 EmploymentType = EmploymentType.Permanent,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
@@ -370,6 +396,61 @@ public static class DatabaseSeeder
         }
     }
 
+    private static async Task SeedJobTitlesAsync(AppDbContext dbContext, ILogger logger)
+    {
+        foreach (string name in JobTitlesData)
+        {
+            bool exists = await dbContext.JobTitles.AnyAsync(jt => jt.Name == name);
+            if (exists)
+                continue;
+
+            JobTitle jobTitle = new()
+            {
+                Name = name,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true,
+            };
+
+            dbContext.JobTitles.Add(jobTitle);
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("[DatabaseSeeder] Stillingstittel opprettet: {Name}", name);
+        }
+    }
+
+    private static async Task SeedUserJobTitlesAsync(
+        UserManager<ApplicationUser> userManager,
+        AppDbContext dbContext,
+        ILogger logger)
+    {
+        foreach ((string email, string jobTitleName) in UserJobTitles)
+        {
+            ApplicationUser? user = await userManager.FindByEmailAsync(email);
+            if (user is null)
+            {
+                logger.LogWarning("[DatabaseSeeder] Bruker ikke funnet for stillingstittel-kobling: {Email}", email);
+                continue;
+            }
+
+            JobTitle? jobTitle = await dbContext.JobTitles.FirstOrDefaultAsync(jt => jt.Name == jobTitleName);
+            if (jobTitle is null)
+            {
+                logger.LogWarning("[DatabaseSeeder] Stillingstittel ikke funnet for kobling: {JobTitleName}", jobTitleName);
+                continue;
+            }
+
+            if (user.JobTitleId == jobTitle.Id)
+                continue; // Allerede koblet
+
+            user.JobTitleId = jobTitle.Id;
+            IdentityResult result = await userManager.UpdateAsync(user);
+            if (result.Succeeded)
+                logger.LogInformation("[DatabaseSeeder] Bruker {Email} koblet til stillingstittel {JobTitleName}", email, jobTitleName);
+            else
+                logger.LogWarning("[DatabaseSeeder] Feil ved kobling av {Email} til {JobTitleName}: {Errors}",
+                    email, jobTitleName, string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
     private static async Task SeedCompetenciesAsync(AppDbContext dbContext, ILogger logger)
     {
         DateTime today = DateTime.UtcNow.Date;
@@ -445,6 +526,9 @@ public static class DatabaseSeeder
             (Permissions.DocumentsWrite, "Opprett/endre dokumenter", "Documents"),
             (Permissions.DocumentsDelete, "Slett dokumenter", "Documents"),
             (Permissions.DocumentsSign, "Signere dokumenter", "Documents"),
+            (Permissions.JobTitlesRead, "Se stillingstitler", "JobTitles"),
+            (Permissions.JobTitlesWrite, "Opprett/endre stillingstitler", "JobTitles"),
+            (Permissions.JobTitlesDelete, "Slett stillingstitler", "JobTitles"),
         ];
 
         int addedCount = 0;
@@ -521,6 +605,7 @@ public static class DatabaseSeeder
             Permissions.DocumentTypesRead,
             Permissions.DocumentsRead,
             Permissions.DocumentsSign,
+            Permissions.JobTitlesRead,
         ];
 
         var employeePermissions = allPermissions
@@ -621,7 +706,7 @@ public static class DatabaseSeeder
 
     private static async Task SeedDocumentsAsync(AppDbContext dbContext, ILogger logger)
     {
-        foreach ((string documentTypeSlug, string? categorySlug, string title, bool requiresSignature, string? targetDeptName, string? targetJobTitle) in DocumentsData)
+        foreach ((string documentTypeSlug, string? categorySlug, string title, bool requiresSignature, string? targetDeptName, string? targetJobTitleName) in DocumentsData)
         {
             DocumentType? documentType = await dbContext.DocumentTypes
                 .FirstOrDefaultAsync(dt => dt.Slug == documentTypeSlug);
@@ -646,12 +731,19 @@ public static class DatabaseSeeder
                 targetDeptId = dept?.Id;
             }
 
+            Guid? targetJobTitleId = null;
+            if (targetJobTitleName is not null)
+            {
+                JobTitle? jobTitle = await dbContext.JobTitles.FirstOrDefaultAsync(jt => jt.Name == targetJobTitleName);
+                targetJobTitleId = jobTitle?.Id;
+            }
+
             // Unngå duplikater ved seeding
             bool documentExists = await dbContext.Documents.AnyAsync(d =>
                 d.Title == title &&
                 d.DocumentTypeId == documentType.Id &&
                 d.TargetDepartmentId == targetDeptId &&
-                d.TargetJobTitle == targetJobTitle);
+                d.TargetJobTitleId == targetJobTitleId);
             if (documentExists)
                 continue;
 
@@ -669,7 +761,7 @@ public static class DatabaseSeeder
                 Title = title,
                 RequiresSignature = requiresSignature,
                 TargetDepartmentId = targetDeptId,
-                TargetJobTitle = targetJobTitle,
+                TargetJobTitleId = targetJobTitleId,
                 Version = 1,
                 IsActive = true,
                 UploadedBy = admin.Id,

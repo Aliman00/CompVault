@@ -60,12 +60,12 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     public async Task<IReadOnlyList<Document>> GetPendingForUserAsync(
         Guid userId,
         Guid? departmentId,
-        string? jobTitle,
+        Guid? jobTitleId,
         IReadOnlyList<Guid> signedDocumentIds,
         CancellationToken cancellationToken = default)
     {
         // Hent alle aktive, gjeldende dokumenter som:
-        // 1) Er udirigerte (TargetDepartmentId == null AND TargetJobTitle == null), ELLER
+        // 1) Er udirigerte (TargetDepartmentId == null AND TargetJobTitleId == null), ELLER
         // 2) Matcher brukerens avdeling, ELLER
         // 3) Matcher brukerens jobbtittel
         IQueryable<Document> query = DbSet
@@ -73,9 +73,9 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.Category)
             .Where(d => d.IsActive)
             .Where(d =>
-                (d.TargetDepartmentId == null && d.TargetJobTitle == null) ||
+                (d.TargetDepartmentId == null && d.TargetJobTitleId == null) ||
                 (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId) ||
-                (d.TargetJobTitle != null && d.TargetJobTitle == jobTitle));
+                (d.TargetJobTitleId != null && d.TargetJobTitleId == jobTitleId));
 
         List<Document> documents = await query.AsNoTracking().ToListAsync(cancellationToken);
 

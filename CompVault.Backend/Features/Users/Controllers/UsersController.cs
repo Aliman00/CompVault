@@ -1,7 +1,8 @@
 using CompVault.Backend.Common.Controller;
+using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Users.Services;
-using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.JobTitles;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -20,7 +21,7 @@ namespace CompVault.Backend.Features.Users.Controllers;
 [Produces("application/json")]
 public sealed class UsersController(
     IUserService userService,
-    IUserRepository userRepository) : BaseController
+    IJobTitleService jobTitleService) : BaseController
 {
     /// <summary>Henter alle aktive brukere.</summary>
     /// <response code="200">Liste med brukere.</response>
@@ -52,14 +53,18 @@ public sealed class UsersController(
         return Ok(result.Value);
     }
 
-    /// <summary>Henter alle unike jobbtitler fra aktive brukere for autocomplete.</summary>
-    /// <response code="200">Liste med jobbtitler sortert alfabetisk.</response>
+    /// <summary>Henter alle aktive stillingstitler for autocomplete.</summary>
+    /// <response code="200">Liste med stillingstitler.</response>
     [HttpGet("job-titles")]
-    [ProducesResponseType(typeof(IReadOnlyList<string>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<string>>> GetJobTitlesAsync(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(IReadOnlyList<JobTitleDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<JobTitleDto>>> GetJobTitlesAsync(CancellationToken cancellationToken)
     {
-        IReadOnlyList<string> jobTitles = await userRepository.GetUniqueJobTitlesAsync(cancellationToken);
-        return Ok(jobTitles);
+        Result<IReadOnlyList<JobTitleDto>> result = await jobTitleService.GetAllAsync(cancellationToken);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
     }
 
     /// <summary>Oppretter en ny brukerkonto.</summary>

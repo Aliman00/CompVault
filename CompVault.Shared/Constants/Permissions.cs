@@ -42,4 +42,9 @@ public static class Permissions
     public const string DocumentsWrite = "documents:write";
     public const string DocumentsDelete = "documents:delete";
     public const string DocumentsSign = "documents:sign";
+
+    // Job Titles
+    public const string JobTitlesRead = "job_titles:read";
+    public const string JobTitlesWrite = "job_titles:write";
+    public const string JobTitlesDelete = "job_titles:delete";
 }

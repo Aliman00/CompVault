@@ -17,7 +17,6 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.Property(d => d.Title).HasMaxLength(200).IsRequired();
         builder.Property(d => d.Description).HasMaxLength(2000);
         builder.Property(d => d.ExternalUrl).HasMaxLength(500);
-        builder.Property(d => d.TargetJobTitle).HasMaxLength(100);
         builder.Property(d => d.FileName).HasMaxLength(255);
         builder.Property(d => d.FilePath).HasMaxLength(500);
         builder.Property(d => d.MimeType).HasMaxLength(100);
@@ -31,7 +30,7 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
 
         // Indeks for targeting-spørringer
         builder.HasIndex(d => d.TargetDepartmentId);
-        builder.HasIndex(d => d.TargetJobTitle);
+        builder.HasIndex(d => d.TargetJobTitleId);
 
         builder.HasIndex(d => d.DeletedAt);
 
@@ -54,6 +53,12 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.HasOne(d => d.TargetDepartment)
             .WithMany()
             .HasForeignKey(d => d.TargetDepartmentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Relasjon: Document → JobTitle (Many-to-One, optional)
+        builder.HasOne(d => d.TargetJobTitle)
+            .WithMany(j => j.Documents)
+            .HasForeignKey(d => d.TargetJobTitleId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Relasjon: Document → ApplicationUser (uploader)

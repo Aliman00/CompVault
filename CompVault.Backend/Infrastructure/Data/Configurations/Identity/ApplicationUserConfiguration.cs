@@ -16,7 +16,6 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
     {
         builder.Property(u => u.FirstName).HasMaxLength(100).IsRequired();
         builder.Property(u => u.LastName).HasMaxLength(100).IsRequired();
-        builder.Property(u => u.JobTitle).HasMaxLength(150);
         // Lagrer enum som streng i DB så det er lesbart uten å slå opp i kode
         builder.Property(u => u.EmploymentType).HasConversion<string>().HasMaxLength(20);
         builder.Property(u => u.CreatedAt).IsRequired();
@@ -33,6 +32,11 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
         builder.HasOne(u => u.Department)
             .WithMany(d => d.Members)
             .HasForeignKey(u => u.DepartmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(u => u.JobTitle)
+            .WithMany(j => j.Users)
+            .HasForeignKey(u => u.JobTitleId)
             .OnDelete(DeleteBehavior.SetNull);
 
         // Selvrefererende relasjon: hvem opprettet denne brukeren

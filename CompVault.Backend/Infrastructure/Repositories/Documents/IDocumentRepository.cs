@@ -29,7 +29,7 @@ public interface IDocumentRepository : IRepository<Document>
     Task<IReadOnlyList<Document>> GetPendingForUserAsync(
         Guid userId,
         Guid? departmentId,
-        string? jobTitle,
+        Guid? jobTitleId,
         IReadOnlyList<Guid> signedDocumentIds,
         CancellationToken cancellationToken = default);
 

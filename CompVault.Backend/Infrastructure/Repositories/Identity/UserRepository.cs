@@ -60,16 +60,4 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
         user.IsActive = false;
         return Task.CompletedTask;
     }
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<string>> GetUniqueJobTitlesAsync(CancellationToken cancellationToken = default)
-    {
-        return await DbSet
-            .AsNoTracking()
-            .Where(u => u.IsActive && u.DeletedAt == null && !string.IsNullOrEmpty(u.JobTitle))
-            .Select(u => u.JobTitle!)
-            .Distinct()
-            .OrderBy(jt => jt)
-            .ToListAsync(cancellationToken);
-    }
 }

@@ -88,7 +88,7 @@ public sealed class DocumentService(
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
 
-        Result targetValidation = ValidateTarget(documentType, request.TargetDepartmentId, request.TargetJobTitle, isCreate: true);
+        Result targetValidation = ValidateTarget(documentType, request.TargetDepartmentId, request.TargetJobTitleId, isCreate: true);
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
@@ -115,7 +115,7 @@ public sealed class DocumentService(
             Description = request.Description,
             ExternalUrl = request.ExternalUrl,
             TargetDepartmentId = request.TargetDepartmentId,
-            TargetJobTitle = request.TargetJobTitle,
+            TargetJobTitleId = request.TargetJobTitleId,
             RequiresSignature = request.RequiresSignature,
             Version = 1,
             UploadedBy = uploadedById,
@@ -200,16 +200,16 @@ public sealed class DocumentService(
         // Beregn verdiene som faktisk skal valideres.
         // ClearFlags betyr "nullstill feltet", ikke "sett feltet" — derfor filtrerer vi
         // ut verdier som bare er sendt for å nullstilles, og sender kun de som faktisk skal settes.
-        bool wantsTargetDepartment = request.TargetDepartmentId.HasValue && !request.ClearTargetDepartment;
-        bool wantsTargetJobTitle = !string.IsNullOrEmpty(request.TargetJobTitle) && !request.ClearTargetJobTitle;
+        bool wantsTargetDepartment = request.TargetDepartmentId.HasValue && !request.ClearTargetDepartmentId;
+        bool wantsTargetJobTitle = request.TargetJobTitleId.HasValue && !request.ClearTargetJobTitleId;
         Guid? effectiveDepartmentId = wantsTargetDepartment ? request.TargetDepartmentId : null;
-        string? effectiveJobTitle = wantsTargetJobTitle ? request.TargetJobTitle : null;
+        Guid? effectiveJobTitleId = wantsTargetJobTitle ? request.TargetJobTitleId : null;
 
-        Result targetValidation = ValidateTarget(documentType, effectiveDepartmentId, effectiveJobTitle, isCreate: false);
+        Result targetValidation = ValidateTarget(documentType, effectiveDepartmentId, effectiveJobTitleId, isCreate: false);
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
-        if (request.TargetDepartmentId.HasValue && !request.ClearTargetDepartment)
+        if (request.TargetDepartmentId.HasValue && !request.ClearTargetDepartmentId)
         {
             bool departmentExists = await departmentRepository.ExistsAsync(
                 d => d.Id == request.TargetDepartmentId.Value && d.IsActive, cancellationToken);
@@ -227,7 +227,7 @@ public sealed class DocumentService(
                     AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for dokumentets dokumenttype."));
         }
 
-        ApplyUpdate(document, request, effectiveDepartmentId, effectiveJobTitle);
+        ApplyUpdate(document, request, effectiveDepartmentId, effectiveJobTitleId);
 
         try
         {
@@ -281,7 +281,7 @@ public sealed class DocumentService(
             return Result<bool>.Failure(
                 AppError.Create(ErrorCode.Validation, "Dette dokumentet krever ikke signering."));
 
-        if (document.TargetDepartmentId.HasValue || !string.IsNullOrEmpty(document.TargetJobTitle))
+        if (document.TargetDepartmentId.HasValue || document.TargetJobTitleId.HasValue)
         {
             ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
             if (user is null)
@@ -289,7 +289,7 @@ public sealed class DocumentService(
 
             bool inTargetGroup =
                 (document.TargetDepartmentId is null || document.TargetDepartmentId == user.DepartmentId) &&
-                (string.IsNullOrEmpty(document.TargetJobTitle) || document.TargetJobTitle == user.JobTitle);
+                (!document.TargetJobTitleId.HasValue || document.TargetJobTitleId == user.JobTitleId);
 
             if (!inTargetGroup)
                 return Result<bool>.Failure(
@@ -546,7 +546,7 @@ public sealed class DocumentService(
         IReadOnlyList<Guid> signedDocumentIds = await signatureRepository.GetSignedDocumentIdsAsync(userId, cancellationToken);
 
         IReadOnlyList<Document> pendingDocuments = await documentRepository.GetPendingForUserAsync(
-            userId, user.DepartmentId, user.JobTitle, signedDocumentIds, cancellationToken);
+            userId, user.DepartmentId, user.JobTitleId, signedDocumentIds, cancellationToken);
 
         if (pendingDocuments is null || pendingDocuments.Count == 0)
             return Result<IReadOnlyList<DocumentListDto>>.Success(Array.Empty<DocumentListDto>());
@@ -573,7 +573,7 @@ public sealed class DocumentService(
         Document document,
         UpdateDocumentRequest request,
         Guid? effectiveDepartmentId,
-        string? effectiveJobTitle)
+        Guid? effectiveJobTitleId)
     {
         if (!string.IsNullOrEmpty(request.Title))
             document.Title = request.Title;
@@ -596,7 +596,7 @@ public sealed class DocumentService(
 
         // Bruk effective-verdier istedenfor rå request — sikrer konsistens med ValidateTarget
         document.TargetDepartmentId = effectiveDepartmentId;
-        document.TargetJobTitle = effectiveJobTitle;
+        document.TargetJobTitleId = effectiveJobTitleId;
     }
 
     /// <summary>
@@ -607,11 +607,11 @@ public sealed class DocumentService(
     private static Result ValidateTarget(
         DocumentType documentType,
         Guid? targetDepartmentId,
-        string? targetJobTitle,
+        Guid? targetJobTitleId,
         bool isCreate)
     {
         bool hasDepartment = targetDepartmentId.HasValue;
-        bool hasJobTitle = !string.IsNullOrEmpty(targetJobTitle);
+        bool hasJobTitle = targetJobTitleId.HasValue;
 
         return documentType.TargetMode switch
         {
@@ -623,10 +623,10 @@ public sealed class DocumentService(
                     $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentId er satt.")),
             DocumentTargetMode.Department when hasJobTitle && !hasDepartment =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
-                    $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentId er satt når TargetJobTitle brukes.")),
+                    $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentId er satt når TargetJobTitleId brukes.")),
             DocumentTargetMode.JobTitle when isCreate && !hasJobTitle =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
-                    $"Dokumenttype '{documentType.Name}' krever at TargetJobTitle er satt.")),
+                    $"Dokumenttype '{documentType.Name}' krever at TargetJobTitleId er satt.")),
             _ => Result.Success()
         };
     }

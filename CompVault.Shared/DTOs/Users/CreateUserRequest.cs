@@ -25,9 +25,8 @@ public sealed class CreateUserRequest
     [MaxLength(100)]
     public string LastName { get; set; } = string.Empty;
 
-    /// <summary>Stillingstittel (valgfritt).</summary>
-    [MaxLength(150)]
-    public string JobTitle { get; set; } = string.Empty;
+    /// <summary>ID til stillingstittelen (valgfritt).</summary>
+    public Guid? JobTitleId { get; set; }
 
     /// <summary>Ansettelsestype.</summary>
     [Required]
