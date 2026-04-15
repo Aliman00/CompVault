@@ -29,7 +29,6 @@ public static class DocumentMapper
             FileName = document.FileName,
             FileSize = document.FileSize,
             MimeType = document.MimeType,
-            IsActive = document.IsActive,
             UploadedBy = document.UploadedBy,
             UploadedByName = document.Uploader is { } uploader
                 ? $"{uploader.FirstName} {uploader.LastName}".Trim()
@@ -60,8 +59,7 @@ public static class DocumentMapper
                 : null,
             UploadedAt = document.UploadedAt,
             TotalSignatures = totalSignatures,
-            SignedByCurrentUser = signedByCurrentUser,
-            IsActive = document.IsActive
+            SignedByCurrentUser = signedByCurrentUser
         };
     }
 

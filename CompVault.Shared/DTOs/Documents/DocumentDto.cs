@@ -56,9 +56,6 @@ public sealed class DocumentDto
     /// <summary>MIME-type.</summary>
     public string? MimeType { get; set; }
 
-    /// <summary>Om dokumentet er aktivt.</summary>
-    public bool IsActive { get; set; }
-
     /// <summary>ID til brukeren som lastet opp.</summary>
     public Guid UploadedBy { get; set; }
 
