@@ -14,10 +14,13 @@ public interface IDocumentService
         string documentTypeSlug,
         Guid? currentUserId,
         Guid? documentTypeCategoryId,
+        bool bypassTargeting = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>Henter ett dokument basert på ID.</summary>
-    Task<Result<DocumentDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Result<DocumentDto>> GetByIdAsync(
+        Guid id, Guid? currentUserId = null, bool bypassTargeting = false,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Oppretter et nytt dokument med valgfri filopplasting.</summary>
     Task<Result<DocumentDto>> CreateAsync(
@@ -52,14 +55,16 @@ public interface IDocumentService
     /// <summary>Henter fil for nedlasting.</summary>
     /// <remarks>Returnerer path slik at controlleren kan åpne streamen direkte.</remarks>
     Task<Result<DocumentDownloadResult>> GetDownloadAsync(
-        Guid documentId, CancellationToken cancellationToken = default);
+        Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Åpner en filstream for lesing. Streamen eies av calleren.</summary>
     Task<Stream> OpenFileStreamAsync(string relativePath, CancellationToken cancellationToken = default);
 
     /// <summary>Henter signaturer for et dokument.</summary>
     Task<Result<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
-        Guid documentId, CancellationToken cancellationToken = default);
+        Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Henter alle dokumenter brukeren har signert (på tvers av typer).</summary>
     Task<Result<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(

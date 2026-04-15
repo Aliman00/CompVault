@@ -29,8 +29,9 @@ public sealed class DocumentsController(
         CancellationToken cancellationToken = default)
     {
         Guid? currentUserId = User.TryGetUserId();
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
         Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetAllAsync(
-            documentTypeSlug, currentUserId, documentTypeCategoryId, cancellationToken);
+            documentTypeSlug, currentUserId, documentTypeCategoryId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -44,7 +45,9 @@ public sealed class DocumentsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DocumentDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        Result<DocumentDto> result = await documentService.GetByIdAsync(id, cancellationToken);
+        Guid? currentUserId = User.TryGetUserId();
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
+        Result<DocumentDto> result = await documentService.GetByIdAsync(id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -178,7 +181,10 @@ public sealed class DocumentsController(
     public async Task<IActionResult> DownloadAsync(
         Guid id, CancellationToken cancellationToken)
     {
-        Result<DocumentDownloadResult> result = await documentService.GetDownloadAsync(id, cancellationToken);
+        Guid? currentUserId = User.TryGetUserId();
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
+        Result<DocumentDownloadResult> result = await documentService.GetDownloadAsync(
+            id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -199,8 +205,10 @@ public sealed class DocumentsController(
     public async Task<ActionResult<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
         Guid id, CancellationToken cancellationToken)
     {
+        Guid? currentUserId = User.TryGetUserId();
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
         Result<IReadOnlyList<DocumentSignatureDto>> result = await documentService.GetSignaturesAsync(
-            id, cancellationToken);
+            id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

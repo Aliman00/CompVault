@@ -52,7 +52,4 @@ public sealed class DocumentListDto
 
     /// <summary>Om gjeldende bruker har signert.</summary>
     public bool SignedByCurrentUser { get; set; }
-
-    /// <summary>Om dokumentet er aktivt (ikke slettet).</summary>
-    public bool IsActive { get; set; }
 }

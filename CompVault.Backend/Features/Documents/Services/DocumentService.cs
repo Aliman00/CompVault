@@ -26,6 +26,7 @@ public sealed class DocumentService(
         string documentTypeSlug,
         Guid? currentUserId,
         Guid? documentTypeCategoryId,
+        bool bypassTargeting = false,
         CancellationToken cancellationToken = default)
     {
         DocumentType? documentType = await documentTypeRepository.GetBySlugAsync(documentTypeSlug, cancellationToken);
@@ -40,6 +41,18 @@ public sealed class DocumentService(
         if (documents.Count == 0)
             return Result<IReadOnlyList<DocumentListDto>>.Success(Array.Empty<DocumentListDto>());
 
+        // Filtrer på målgruppe hvis brukeren ikke har admin-bypass
+        if (!bypassTargeting && currentUserId.HasValue)
+        {
+            ApplicationUser? user = await userRepository.GetByIdAsync(currentUserId.Value, cancellationToken);
+            Guid? userDeptId = user?.DepartmentId;
+            Guid? userJobTitleId = user?.JobTitleId;
+
+            documents = documents
+                .Where(d => CanUserAccessDocument(d, userDeptId, userJobTitleId))
+                .ToList();
+        }
+
         // Batch-hent alle signaturer
         var docIds = documents.Select(d => d.Id).ToList();
         var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(docIds, cancellationToken)).ToList();
@@ -51,13 +64,22 @@ public sealed class DocumentService(
 
     /// <inheritdoc />
     public async Task<Result<DocumentDto>> GetByIdAsync(
-        Guid id, CancellationToken cancellationToken = default)
+        Guid id, Guid? currentUserId = null, bool bypassTargeting = false,
+        CancellationToken cancellationToken = default)
     {
         Document? document = await documentRepository.GetWithDetailsAsync(id, cancellationToken);
 
         if (document is null)
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokument med ID '{id}' ble ikke funnet."));
+
+        if (!bypassTargeting && currentUserId.HasValue)
+        {
+            ApplicationUser? user = await userRepository.GetByIdAsync(currentUserId.Value, cancellationToken);
+            if (!CanUserAccessDocument(document, user?.DepartmentId, user?.JobTitleId))
+                return Result<DocumentDto>.Failure(
+                    AppError.Create(ErrorCode.Forbidden, "Du har ikke tilgang til dette dokumentet."));
+        }
 
         return Result<DocumentDto>.Success(DocumentMapper.ToDto(document));
     }
@@ -476,13 +498,22 @@ public sealed class DocumentService(
 
     /// <inheritdoc />
     public async Task<Result<DocumentDownloadResult>> GetDownloadAsync(
-        Guid documentId, CancellationToken cancellationToken = default)
+        Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
+        CancellationToken cancellationToken = default)
     {
         Document? document = await documentRepository.GetByIdAsync(documentId, cancellationToken);
 
         if (document is null)
             return Result<DocumentDownloadResult>.Failure(
                 AppError.NotFound($"Dokument med ID '{documentId}' ble ikke funnet."));
+
+        if (!bypassTargeting && currentUserId.HasValue)
+        {
+            ApplicationUser? user = await userRepository.GetByIdAsync(currentUserId.Value, cancellationToken);
+            if (!CanUserAccessDocument(document, user?.DepartmentId, user?.JobTitleId))
+                return Result<DocumentDownloadResult>.Failure(
+                    AppError.Create(ErrorCode.Forbidden, "Du har ikke tilgang til dette dokumentet."));
+        }
 
         if (string.IsNullOrEmpty(document.FilePath))
             return Result<DocumentDownloadResult>.Failure(
@@ -511,13 +542,22 @@ public sealed class DocumentService(
 
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
-        Guid documentId, CancellationToken cancellationToken = default)
+        Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
+        CancellationToken cancellationToken = default)
     {
         Document? document = await documentRepository.GetByIdAsync(documentId, cancellationToken);
 
         if (document is null)
             return Result<IReadOnlyList<DocumentSignatureDto>>.Failure(
                 AppError.NotFound($"Dokument med ID '{documentId}' ble ikke funnet."));
+
+        if (!bypassTargeting && currentUserId.HasValue)
+        {
+            ApplicationUser? user = await userRepository.GetByIdAsync(currentUserId.Value, cancellationToken);
+            if (!CanUserAccessDocument(document, user?.DepartmentId, user?.JobTitleId))
+                return Result<IReadOnlyList<DocumentSignatureDto>>.Failure(
+                    AppError.Create(ErrorCode.Forbidden, "Du har ikke tilgang til dette dokumentet."));
+        }
 
         IReadOnlyList<DocumentSignature> signatures = await signatureRepository.GetForDocumentVersionAsync(
             documentId, document.Version, cancellationToken);
@@ -638,6 +678,29 @@ public sealed class DocumentService(
                     $"Dokumenttype '{documentType.Name}' krever at TargetJobTitleId er satt.")),
             _ => Result.Success()
         };
+    }
+
+    /// <summary>
+    /// Sjekker om en bruker har tilgang til et dokument basert på målgruppe.
+    /// TargetMode None = alle kan se. Department/JobTitle = bruker må matche.
+    /// Brukere uten avdeling/stilling kan kun se dokumenter med TargetMode None.
+    /// </summary>
+    private static bool CanUserAccessDocument(
+        Document document, Guid? userDepartmentId, Guid? userJobTitleId)
+    {
+        // TargetMode None = ingen målgruppe, alle kan se
+        if (document.TargetDepartmentId is null && document.TargetJobTitleId is null)
+            return true;
+
+        // TargetMode Department = brukerens avdeling må matche
+        if (document.TargetDepartmentId is not null)
+            return document.TargetDepartmentId == userDepartmentId;
+
+        // TargetMode JobTitle = brukerens jobbtittel må matche
+        if (document.TargetJobTitleId is not null)
+            return document.TargetJobTitleId == userJobTitleId;
+
+        return false;
     }
 
     /// <summary>
