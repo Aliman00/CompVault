@@ -5,11 +5,11 @@ flowchart TB
     end
     subgraph SSR["Fase 1 — HTTP/SSR"]
         B["Browser sender GET-request til server"]
-        C["CookieValidationEvents kjøres (se eget diagram for detaljert flyt)"]
+        C["CookieValidationEvents kjøres — oppdaterer CircuitUserContext.RefreshToken ved vellykket refresh"]
         D["App.razor OnInitialized kjøres under SSR-fasen"]
         E(["Redirect til /login"])
         F{"HttpContext autentisert og refresh token-cookie finnes?"}
-        G["CircuitUserContext.SetUser kalt med User og RefreshToken fra HttpContext"]
+        G["CircuitUserContext.SetUser kalt — bruker CircuitUserContext.RefreshToken hvis allerede satt av CookieValidationEvents, ellers request-cookie"]
         H["CircuitUserContext forblir tom"]
         I["HTML-shell sendes til browser"]
     end
@@ -80,3 +80,4 @@ flowchart TB
     style SSR fill:#616161
     style CIRCUIT fill:#616161
     style AUTH fill:#757575
+  

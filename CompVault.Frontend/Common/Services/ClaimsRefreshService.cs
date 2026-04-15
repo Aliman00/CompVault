@@ -1,17 +1,13 @@
 ﻿using System.Security.Claims;
-
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Http.Models;
 using CompVault.Shared.Result;
-
-using Microsoft.AspNetCore.Components.Authorization;
-
 namespace CompVault.Frontend.Common.Services;
 
 public class ClaimsRefreshService(
     ITokenRefreshService tokenRefreshService,
     CircuitUserContext circuitUserContext,
-    AuthenticationStateProvider authStateProvider,
+    AuthStateProvider authStateProvider,
     ILogger<ClaimsRefreshService> logger) : IClaimsRefreshService
 {
     /// <inheritdoc />
@@ -55,12 +51,12 @@ public class ClaimsRefreshService(
             ClaimsSynchronizer.RefreshClaimsFromAccessToken(identity, result.Value!.AccessToken);
             
             // Fortell Blazor at auth-state er endret — komponenter re-rendrer
-            ((AuthStateProvider)authStateProvider).NotifyStateChanged();
+            authStateProvider.NotifyStateChanged();
 
             logger.LogDebug("Manuell refresh av token vellykket");
-            
-            // Refresher token igjen på neste navigering/refresh slik at CookieValidationEvent får oppdatert cookies
-            tokenRefreshService.InvalidateCooldown(userId);
         }
+        
+        // Refresher token igjen på neste navigering/refresh slik at CookieValidationEvent får oppdatert cookies
+        tokenRefreshService.InvalidateCooldown(userId);
     }
 }

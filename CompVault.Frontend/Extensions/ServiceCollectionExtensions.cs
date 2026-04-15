@@ -77,7 +77,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CircuitHandler, CircuitUserContextHandler>();
         services.AddScoped<CircuitUserContext>();
         services.AddScoped<CookieValidationEvents>();
-        services.AddScoped<IClaimsRefreshService, ClaimsRefreshService>();
+        
         
 
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -97,11 +97,11 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddScoped<AuthStateProvider>();
-        services.AddSingleton<ITokenRefreshService, TokenRefreshService>();
-
         // Forteller Blazor at vår egen AuthStateProvider brukes
-        services.AddScoped<AuthenticationStateProvider>(
-            sp => sp.GetRequiredService<AuthStateProvider>());
+        services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthStateProvider>());
+        
+        services.AddSingleton<ITokenRefreshService, TokenRefreshService>();
+        services.AddScoped<IClaimsRefreshService, ClaimsRefreshService>();
 
         services.AddScoped<IAuthService, AuthService>();
 
