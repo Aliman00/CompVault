@@ -39,6 +39,10 @@ public sealed class DocumentFileService(IFileStorageService fileStorage) : IDocu
     /// <inheritdoc />
     public Result ValidateMimeType(string contentType, string[] allowedMimeTypes)
     {
+        if (allowedMimeTypes.Length == 0)
+            return Result.Failure(AppError.Create(ErrorCode.Validation,
+                "Denne dokumenttypen har ingen tillatte filtyper konfigurert. Kontakt administrator."));
+
         if (!allowedMimeTypes.Contains(contentType))
             return Result.Failure(AppError.Create(ErrorCode.Validation,
                 $"Filtypen '{contentType}' er ikke tillatt for denne dokumenttypen."));

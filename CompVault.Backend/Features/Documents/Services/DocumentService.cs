@@ -365,11 +365,12 @@ public sealed class DocumentService(
         if (sizeResult.IsFailure)
             return Result<DocumentDto>.Failure(sizeResult.Error!);
 
+        // ---- Fase 1: Skriv ny fil til disk (temp-plassering) ----
+        // Disk-operasjoner gjøres først. Hvis noe feiler senere kan temp-filen ryddes.
         string extension = Path.GetExtension(fileName);
         string storageFolder = documentType.StorageFolder;
         string tempPath = $"{storageFolder}/active/{documentId}/file_v{document.Version + 1}_tmp{extension}";
 
-        // Lagre fil og beregn sjekksum før DB-endringer
         (string? tempFilePath, string? newChecksum) = await documentFileService.SaveWithChecksumAsync(stream, tempPath, cancellationToken);
 
         if (document.Checksum is not null && document.Checksum == newChecksum)
@@ -379,6 +380,7 @@ public sealed class DocumentService(
                 AppError.Create(ErrorCode.Validation, "Filinnholdet er identisk med forrige versjon. Ingen ny versjon opprettet."));
         }
 
+        // ---- Fase 2: Forbered alle DB-endringer i minnet ----
         int newVersion = document.Version + 1;
         string newFilePath = $"{storageFolder}/active/{documentId}/file_v{newVersion}{extension}";
 
@@ -389,7 +391,12 @@ public sealed class DocumentService(
         long? oldFileSize = document.FileSize;
         string? oldChecksum = document.Checksum;
 
-        // Oppdater dokumentmetadata i minnet
+        // Beregn arkiv-sti for gamle filen — denne pathen lagres i DB
+        string? archivedPath = !string.IsNullOrEmpty(oldFilePath) && oldFilePath != newFilePath
+            ? $"{storageFolder}/archived/{documentId}/file_v{newVersion - 1}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}{Path.GetExtension(oldFileName ?? fileName)}"
+            : null;
+
+        // Oppdater dokumentmetadata
         document.Version = newVersion;
         document.FileName = fileName;
         document.FilePath = newFilePath;
@@ -399,33 +406,14 @@ public sealed class DocumentService(
         document.UploadedBy = uploadedById;
         document.UploadedAt = DateTime.UtcNow;
 
-        // Slett signaturer via tracked delete — ny versjon krever re-signering.
-        // Tracked delete sikrer at signaturene kun slettes hvis SaveChanges lykkes,
-        // slik at vi ikke mister data ved DB-feil.
+        // Slett signaturer via tracked delete
         IReadOnlyList<DocumentSignature> existingSignatures = await signatureRepository.GetForDocumentAsync(documentId, cancellationToken);
         foreach (DocumentSignature sig in existingSignatures)
             signatureRepository.Remove(sig);
 
-        try
+        // Opprett versjonsrecord i samme context — alt lagres atomisk
+        if (archivedPath is not null)
         {
-            await documentRepository.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            // DB-feil etter at fil allerede er lagret — rydd opp temp-fil og returner feil
-            logger.LogError("DB-feil ved lagring av dokumentversjon {DocumentId} v{Version} — temp-fil ryddet opp",
-                documentId, newVersion);
-            await documentFileService.DeleteAsync(tempFilePath, CancellationToken.None);
-            return Result<DocumentDto>.Failure(
-                AppError.Create(ErrorCode.InternalError, "Kunne ikke lagre dokumentversjonen. Prøv på nytt."));
-        }
-
-        // DB er nå persistent — flytt filer
-        if (!string.IsNullOrEmpty(oldFilePath) && oldFilePath != newFilePath)
-        {
-            string archivedPath = $"{storageFolder}/archived/{documentId}/file_v{newVersion - 1}_{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}{Path.GetExtension(oldFileName ?? fileName)}";
-            await documentFileService.MoveAsync(oldFilePath, archivedPath, cancellationToken);
-
             var versionRecord = new DocumentVersion
             {
                 DocumentId = documentId,
@@ -437,13 +425,52 @@ public sealed class DocumentService(
                 Checksum = oldChecksum,
                 ArchivedAt = DateTime.UtcNow
             };
-
             await documentRepository.AddVersionAsync(versionRecord, cancellationToken);
-            await documentRepository.SaveChangesAsync(cancellationToken);
         }
 
-        // Flytt temp-fil til endelig lokasjon
-        await documentFileService.MoveAsync(tempFilePath, newFilePath, cancellationToken);
+        // ---- Fase 3: Persistér alt i ETT SaveChanges ----
+        try
+        {
+            await documentRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            logger.LogError("DB-feil ved lagring av dokumentversjon {DocumentId} v{Version} — temp-fil ryddet opp",
+                documentId, newVersion);
+            // DB feilet — temp-fil er eneste som ligger på disk, rydd opp
+            await documentFileService.DeleteAsync(tempFilePath, CancellationToken.None);
+            return Result<DocumentDto>.Failure(
+                AppError.Create(ErrorCode.InternalError, "Kunne ikke lagre dokumentversjonen. Prøv på nytt."));
+        }
+
+        // ---- Fase 4: Flytt filer på disk etter vellykket DB-commit ----
+        // Hvis en flytting feiler her, er DB konsistent med nye metadata.
+        // Gammel fil ligger fortsatt på sin opprinnelige path, og temp-fil ligger på temp-path.
+        // Begge er sikre — ingen data er tapt. Kan ryddes opp manuelt eller via cron.
+        if (!string.IsNullOrEmpty(oldFilePath) && oldFilePath != newFilePath)
+        {
+            try
+            {
+                await documentFileService.MoveAsync(oldFilePath, archivedPath!, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Kunne ikke flytte gammel fil til arkiv for dokument {DocumentId}. Fil ligger på: {OldPath}",
+                    documentId, oldFilePath);
+            }
+        }
+
+        try
+        {
+            await documentFileService.MoveAsync(tempFilePath, newFilePath, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Kunne ikke flytte temp-fil til endelig plassering for dokument {DocumentId}. Fil ligger på: {TempPath}",
+                documentId, tempFilePath);
+            // Ikke returner feil — DB er konsistent, filen ligger på temp og kan flyttes manuelt.
+            // Brukeren får dokumentet, men fil-tilgang vil feile inntil filen flyttes.
+        }
 
         Document? updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken);
 
