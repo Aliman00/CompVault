@@ -17,7 +17,6 @@ internal sealed class DocumentSignatureConfiguration : IEntityTypeConfiguration<
 
         builder.Property(s => s.SignedAt).IsRequired();
         builder.Property(s => s.SignatureVersion).IsRequired();
-        builder.Property(s => s.Acknowledgement).HasMaxLength(2000);
 
         // Unik constraint: én signatur per bruker per versjon per dokument
         builder.HasIndex(s => new { s.DocumentId, s.UserId, s.SignatureVersion }).IsUnique();

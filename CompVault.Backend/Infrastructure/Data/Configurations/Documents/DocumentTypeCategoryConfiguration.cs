@@ -25,7 +25,7 @@ internal sealed class DocumentTypeCategoryConfiguration : IEntityTypeConfigurati
         // Kategorien er usynlig hvis den selv er soft-slettet ELLER hvis foreldretypen er soft-slettet
         builder.HasQueryFilter(c => c.DeletedAt == null && (c.DocumentType == null || c.DocumentType.DeletedAt == null));
 
-        builder.HasMany(c => c.Documents)
+        builder.HasMany<Document>()
             .WithOne(d => d.Category)
             .HasForeignKey(d => d.DocumentTypeCategoryId)
             .OnDelete(DeleteBehavior.SetNull);

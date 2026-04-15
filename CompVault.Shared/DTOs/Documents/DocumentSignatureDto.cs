@@ -22,7 +22,4 @@ public sealed class DocumentSignatureDto
 
     /// <summary>Hvilken versjon som ble signert.</summary>
     public int SignatureVersion { get; set; }
-
-    /// <summary>Valgfri bekreftelsestekst.</summary>
-    public string? Acknowledgement { get; set; }
 }

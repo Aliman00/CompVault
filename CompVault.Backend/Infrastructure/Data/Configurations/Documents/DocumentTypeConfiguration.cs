@@ -38,7 +38,7 @@ internal sealed class DocumentTypeConfiguration : IEntityTypeConfiguration<Docum
             .HasForeignKey(c => c.DocumentTypeId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasMany(dt => dt.Documents)
+        builder.HasMany<Document>()
             .WithOne(d => d.DocumentType)
             .HasForeignKey(d => d.DocumentTypeId)
             .OnDelete(DeleteBehavior.Restrict);

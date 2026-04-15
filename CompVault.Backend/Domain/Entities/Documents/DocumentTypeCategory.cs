@@ -30,7 +30,4 @@ public class DocumentTypeCategory
     // ======================== Navigasjonsegenskaper ========================
     /// <summary>Dokumenttypen kategorien tilhører.</summary>
     public DocumentType? DocumentType { get; set; }
-
-    /// <summary>Dokumenter i denne kategorien.</summary>
-    public ICollection<Document> Documents { get; set; } = new List<Document>();
 }

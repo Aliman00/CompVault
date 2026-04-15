@@ -26,9 +26,6 @@ public class DocumentSignature
     /// <summary>Hvilken versjon som ble signert.</summary>
     public int SignatureVersion { get; set; }
 
-    /// <summary>Valgfri bekreftelsetekst fra brukeren.</summary>
-    public string? Acknowledgement { get; set; }
-
     // ======================== Navigasjonsegenskaper ========================
     /// <summary>Dokumentet som ble signert.</summary>
     public Document? Document { get; set; }

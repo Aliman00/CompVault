@@ -70,8 +70,7 @@ public static class DocumentMapper
                 ? $"{user.FirstName} {user.LastName}".Trim()
                 : string.Empty,
             SignedAt = signature.SignedAt,
-            SignatureVersion = signature.SignatureVersion,
-            Acknowledgement = signature.Acknowledgement
+            SignatureVersion = signature.SignatureVersion
         };
     }
 

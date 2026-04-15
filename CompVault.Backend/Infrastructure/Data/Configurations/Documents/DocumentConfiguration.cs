@@ -46,7 +46,7 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         // tilknyttede dokumenter først ble oppdatert. SetNull er valgt for å
         // la kategorier slettes uten å måtte oppdatere dokumenter manuelt.
         builder.HasOne(d => d.Category)
-            .WithMany(c => c.Documents)
+            .WithMany()
             .HasForeignKey(d => d.DocumentTypeCategoryId);
 
         // Relasjon: Document → Department (Many-to-One, optional)
@@ -57,7 +57,7 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
 
         // Relasjon: Document → JobTitle (Many-to-One, optional)
         builder.HasOne(d => d.TargetJobTitle)
-            .WithMany(j => j.Documents)
+            .WithMany()
             .HasForeignKey(d => d.TargetJobTitleId)
             .OnDelete(DeleteBehavior.Restrict);
 
