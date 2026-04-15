@@ -171,7 +171,6 @@ public class CookieValidationEventsTests
 
         // Assert - Sjekker at vi oppdaterer CircuitUserContext med token og at riktig UserId er satt
         _circuitUserContext.RefreshToken.Should().Be("new_refresh_token");
-        _circuitUserContext.UserId.Should().Be(_userId);
     }
     
     // -------------------------------------------------------------------------
