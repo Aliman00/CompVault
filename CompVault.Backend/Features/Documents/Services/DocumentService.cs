@@ -44,17 +44,7 @@ public sealed class DocumentService(
         var docIds = documents.Select(d => d.Id).ToList();
         var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(docIds, cancellationToken)).ToList();
 
-        var dtos = new List<DocumentListDto>();
-        foreach (Document doc in documents)
-        {
-            int signatureCount = allSignatures.Count(s =>
-                s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
-
-            bool signedByCurrentUser = currentUserId.HasValue && allSignatures.Any(s =>
-                s.DocumentId == doc.Id && s.SignatureVersion == doc.Version && s.UserId == currentUserId.Value);
-
-            dtos.Add(DocumentMapper.ToListDto(doc, signatureCount, signedByCurrentUser));
-        }
+        List<DocumentListDto> dtos = MapToListDtos(documents, allSignatures, currentUserId);
 
         return Result<IReadOnlyList<DocumentListDto>>.Success(dtos);
     }
@@ -550,13 +540,7 @@ public sealed class DocumentService(
 
         var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(documents.Select(d => d.Id).ToList(), cancellationToken)).ToList();
 
-        var dtos = new List<DocumentListDto>();
-        foreach (Document doc in documents)
-        {
-            int signatureCount = allSignatures.Count(s => s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
-            // signertByCurrentUser er alltid true her — dette er "mine signerte dokumenter"
-            dtos.Add(DocumentMapper.ToListDto(doc, signatureCount, signedByCurrentUser: true));
-        }
+        List<DocumentListDto> dtos = MapToListDtos(documents, allSignatures, signedByCurrentUserOverride: true);
 
         return Result<IReadOnlyList<DocumentListDto>>.Success(dtos);
     }
@@ -585,13 +569,7 @@ public sealed class DocumentService(
         var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(
             pendingDocuments.Select(d => d.Id).ToList(), cancellationToken)).ToList();
 
-        var dtos = new List<DocumentListDto>();
-        foreach (Document doc in pendingDocuments)
-        {
-            int signatureCount = allSignatures.Count(s => s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
-            // signedByCurrentUser er alltid false her — brukeren har ikke signert disse dokumentene ennå
-            dtos.Add(DocumentMapper.ToListDto(doc, signatureCount, signedByCurrentUser: false));
-        }
+        List<DocumentListDto> dtos = MapToListDtos(pendingDocuments, allSignatures, signedByCurrentUserOverride: false);
 
         return Result<IReadOnlyList<DocumentListDto>>.Success(dtos);
     }
@@ -660,5 +638,34 @@ public sealed class DocumentService(
                     $"Dokumenttype '{documentType.Name}' krever at TargetJobTitleId er satt.")),
             _ => Result.Success()
         };
+    }
+
+    /// <summary>
+    /// Kartlegger en liste dokumenter til DocumentListDto med signaturstatistikk.
+    /// Centraliserer logikken for å telle signaturer og sjekke om brukeren har signert.
+    /// </summary>
+    private static List<DocumentListDto> MapToListDtos(
+        IReadOnlyList<Document> documents,
+        IReadOnlyList<DocumentSignature> allSignatures,
+        Guid? currentUserId = null,
+        bool? signedByCurrentUserOverride = null)
+    {
+        var dtos = new List<DocumentListDto>(documents.Count);
+
+        foreach (Document doc in documents)
+        {
+            int signatureCount = allSignatures.Count(
+                s => s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
+
+            bool signedByCurrentUser = signedByCurrentUserOverride ?? currentUserId.HasValue &&
+                allSignatures.Any(s =>
+                    s.DocumentId == doc.Id &&
+                    s.SignatureVersion == doc.Version &&
+                    s.UserId == currentUserId.Value);
+
+            dtos.Add(DocumentMapper.ToListDto(doc, signatureCount, signedByCurrentUser));
+        }
+
+        return dtos;
     }
 }
