@@ -31,6 +31,9 @@ public static class DocumentMapper
             MimeType = document.MimeType,
             IsActive = document.IsActive,
             UploadedBy = document.UploadedBy,
+            UploadedByName = document.Uploader is { } uploader
+                ? $"{uploader.FirstName} {uploader.LastName}".Trim()
+                : null,
             UploadedAt = document.UploadedAt
         };
     }
@@ -52,6 +55,9 @@ public static class DocumentMapper
             TargetJobTitleId = document.TargetJobTitleId,
             TargetJobTitleName = document.TargetJobTitle?.Name,
             Version = document.Version,
+            UploadedByName = document.Uploader is { } uploader
+                ? $"{uploader.FirstName} {uploader.LastName}".Trim()
+                : null,
             UploadedAt = document.UploadedAt,
             TotalSignatures = totalSignatures,
             SignedByCurrentUser = signedByCurrentUser,

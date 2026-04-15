@@ -16,6 +16,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
             .Include(d => d.TargetDepartment)
+            .Include(d => d.Uploader)
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
@@ -44,6 +45,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         IQueryable<Document> query = DbSet
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
+            .Include(d => d.Uploader)
             .Where(d => d.DocumentTypeId == documentTypeId && d.IsActive);
 
         if (documentTypeCategoryId.HasValue)
@@ -64,6 +66,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         return await DbSet
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
+            .Include(d => d.Uploader)
             .Where(d => d.IsActive)
             .Where(d =>
                 (d.TargetDepartmentId == null && d.TargetJobTitleId == null) ||
@@ -80,6 +83,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         return await DbSet
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
+            .Include(d => d.Uploader)
             .Where(d => idList.Contains(d.Id))
             .AsNoTracking()
             .ToListAsync(cancellationToken);

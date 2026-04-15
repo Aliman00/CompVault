@@ -62,6 +62,9 @@ public sealed class DocumentDto
     /// <summary>ID til brukeren som lastet opp.</summary>
     public Guid UploadedBy { get; set; }
 
+    /// <summary>Navn på brukeren som lastet opp.</summary>
+    public string? UploadedByName { get; set; }
+
     /// <summary>Når dokumentet ble lastet opp (UTC).</summary>
     public DateTime UploadedAt { get; set; }
 }

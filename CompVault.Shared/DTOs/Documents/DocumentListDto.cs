@@ -41,6 +41,9 @@ public sealed class DocumentListDto
     /// <summary>Versjonsnummer.</summary>
     public int Version { get; set; }
 
+    /// <summary>Navn på brukeren som lastet opp.</summary>
+    public string? UploadedByName { get; set; }
+
     /// <summary>Når dokumentet ble lastet opp (UTC).</summary>
     public DateTime UploadedAt { get; set; }
 
