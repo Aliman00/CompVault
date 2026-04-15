@@ -52,7 +52,7 @@ public sealed class JobTitleService(
 
         var jobTitle = new JobTitle
         {
-            Name = request.Name,
+            Name = request.Name.Trim(),
             CreatedAt = DateTime.UtcNow,
             IsActive = true
         };
@@ -94,7 +94,7 @@ public sealed class JobTitleService(
                 AppError.Conflict($"En stillingstittel med navn '{request.Name}' eksisterer allerede."));
         }
 
-        jobTitle.Name = request.Name;
+        jobTitle.Name = request.Name.Trim();
 
         await jobTitleRepository.UpdateAsync(jobTitle, ct);
 

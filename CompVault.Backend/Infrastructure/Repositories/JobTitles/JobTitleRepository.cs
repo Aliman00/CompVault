@@ -12,11 +12,11 @@ public sealed class JobTitleRepository(AppDbContext dbContext) : BaseRepository<
 {
     /// <inheritdoc />
     public async Task<JobTitle?> GetByNameAsync(string name, CancellationToken cancellationToken = default) =>
-        await DbSet.FirstOrDefaultAsync(jt => jt.Name == name, cancellationToken);
+        await DbSet.FirstOrDefaultAsync(jt => jt.Name.ToLower() == name.ToLower(), cancellationToken);
 
     /// <inheritdoc />
     public async Task<bool> NameExistsAsync(string name, CancellationToken cancellationToken = default) =>
-        await DbSet.AnyAsync(jt => jt.Name == name, cancellationToken);
+        await DbSet.AnyAsync(jt => jt.Name.ToLower() == name.ToLower(), cancellationToken);
 
     /// <inheritdoc />
     public Task SoftDeleteAsync(JobTitle jobTitle, CancellationToken cancellationToken = default)
