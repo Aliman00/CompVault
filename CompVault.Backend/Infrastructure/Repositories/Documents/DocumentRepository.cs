@@ -70,8 +70,12 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Where(d => d.IsActive)
             .Where(d =>
                 (d.TargetDepartmentId == null && d.TargetJobTitleId == null) ||
-                (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId) ||
-                (d.TargetJobTitleId != null && d.TargetJobTitleId == jobTitleId))
+                (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId &&
+                 d.TargetJobTitleId == null) ||
+                (d.TargetJobTitleId != null && d.TargetJobTitleId == jobTitleId &&
+                 d.TargetDepartmentId == null) ||
+                (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId &&
+                 d.TargetJobTitleId != null && d.TargetJobTitleId == jobTitleId))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }

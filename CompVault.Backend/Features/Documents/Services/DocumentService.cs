@@ -692,15 +692,14 @@ public sealed class DocumentService(
         if (document.TargetDepartmentId is null && document.TargetJobTitleId is null)
             return true;
 
-        // TargetMode Department = brukerens avdeling må matche
-        if (document.TargetDepartmentId is not null)
-            return document.TargetDepartmentId == userDepartmentId;
+        // AND-logikk: hvis begge target-felt er satt, må brukeren matche begge.
+        // Dette er konsistent med SignAsync sin sjekk.
+        bool departmentMatch = document.TargetDepartmentId is null ||
+            document.TargetDepartmentId == userDepartmentId;
+        bool jobTitleMatch = document.TargetJobTitleId is null ||
+            document.TargetJobTitleId == userJobTitleId;
 
-        // TargetMode JobTitle = brukerens jobbtittel må matche
-        if (document.TargetJobTitleId is not null)
-            return document.TargetJobTitleId == userJobTitleId;
-
-        return false;
+        return departmentMatch && jobTitleMatch;
     }
 
     /// <summary>
