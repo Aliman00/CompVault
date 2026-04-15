@@ -33,6 +33,20 @@ public static class PageRoutes
         public const string RoleCreate = "/roles/create";
     }
 
+    public static class Competencies
+    {
+        public const string CompetencyList = "/competencies";
+        public static string CompetencyDetail(Guid id) => $"/competencies/{id}";
+        public const string CompetencyCreate = "/competencies/create";
+    }
+    
+    public static class CompetencyTypes
+    {
+        public const string CompetencyTypeList = "/competency-types";
+        public static string CompetencyTypeDetail(Guid id) => $"/competency-types/{id}";
+        public const string CompetencyTypeCreate = "/competency-types/create";
+    }
+
     public static class Admin
     {
         public const string Dashboard = "/admin/dashboard";

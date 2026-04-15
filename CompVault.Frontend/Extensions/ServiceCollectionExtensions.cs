@@ -4,6 +4,7 @@ using CompVault.Frontend.Common.Localization;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
+using CompVault.Frontend.Features.Competencies.Services;
 using CompVault.Frontend.Features.Departments.Services;
 using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.Users.Services;
@@ -172,8 +173,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IRoleService, RoleService>();
-
-
+        services.AddScoped<ICompetencyService, CompetencyService>();
+        services.AddScoped<ICompetencyTypeService, CompetencyTypeService>();
+        
         return services;
     }
 }

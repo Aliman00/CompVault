@@ -1,22 +1,22 @@
-﻿@page "/roles/create"
+﻿@page "/competency-types/create"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.RolesWrite)]
-@inject IRoleService RoleService
+@attribute [Authorize(Policy = Permissions.CompetenciesWrite)]
+@inject ICompetencyTypeService CompetencyTypeService
 @inject NavigationManager NavigationManager
 
-@* Side for å opprette en avdeling *@
+@* Side for å opprette en kompetansetype *@
 
 <AppAlert @bind-Alert="_errorAlert"/>
 
 @* SkjemaForm med validering med DataAnnotations *@
-<EditForm EditContext="_editContext" OnValidSubmit="CreateRole">
+<EditForm EditContext="_editContext" OnValidSubmit="CreateCompetencyType">
     <DataAnnotationsValidator/>
 
     @* Kortet *@
     <MudPaper Class="pa-6" Elevation="1" Square="true">
         @* Headeren med side-tittel og Opprett-knapp *@
         <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
-            <MudText Typo="Typo.h5">Opprett rolle</MudText>
+            <MudText Typo="Typo.h5">Opprett kompetansetype</MudText>
             <MudSpacer/>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
@@ -27,22 +27,43 @@
 
         @* Alle felt i en grid *@
         <MudGrid>
-            @* Avdelingsnavn *@
+            @* Navn *@
             <MudItem xs="12" sm="6">
                 <DetailTextField Value="@_editModel.Name"
                                  ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                                 Label="Rollenavn"
+                                 Label="Navn"
                                  IsEditing="true"
                                  For="() => _editModel.Name"/>
             </MudItem>
-            @* Description *@
+            
+            @* Kategori *@
             <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_editModel.Category"
+                                 ValueChanged="(string? v) => _editModel.Category = v ?? string.Empty"
+                                 Label="Kategori (valgfritt)"
+                                 IsEditing="true"
+                                 For="() => _editModel.Category"/>
+            </MudItem>
+
+            @* Beskrivelse *@
+            <MudItem xs="12">
                 <DetailTextField Value="@_editModel.Description"
                                  ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
                                  Label="Beskrivelse (valgfritt)"
                                  IsEditing="true"
                                  For="() => _editModel.Description"
                                  Lines="4"/>
+            </MudItem>
+
+            @* Switch-knapp for å velge om et kompetansebevis skal utgå*@
+            <MudItem xs="12">
+                @* Stack for gi det litt mer mellomrom *@
+                <MudStack Justify="Justify.FlexStart">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Skal kompetansebevisene utgå?</MudText>
+                    <MudSwitch @bind-Value="_editModel.RequiresExpiration"
+                               Label="@(_editModel.RequiresExpiration ? "Krever utløpsdato" : "Ingen utløpsdato")"
+                               Color="Color.Success"/>
+                </MudStack>
             </MudItem>
         </MudGrid>
 
@@ -52,7 +73,7 @@
 
 @code {
     // ===================== PRIVATE FELT =====================
-    private readonly CreateRoleModel _editModel = new();
+    private readonly CreateCompetencyTypeModel _editModel = new();
 
     private AlertInfo? _errorAlert;
 
@@ -64,22 +85,22 @@
         return Task.CompletedTask;
     }
     
-
     // ===================== PRIVATE METHODS =====================
 
     // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
-    // navigerer oss til rollens side med created=true som et parameter
-    private async Task CreateRole()
+    // navigerer oss til kompetansebevistypen
+    private async Task CreateCompetencyType()
     {
         var request = _editModel.ToRequest();
 
-        var createResult = await RoleService.CreateAsync(request, Cts.Token);
+        var createResult = await CompetencyTypeService.CreateAsync(request, Cts.Token);
         if (createResult.IsFailure)
         {
             _errorAlert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
             return;
         }
 
-        NavigationManager.NavigateTo(PageRoutes.Roles.RoleDetail(createResult.Value!.Id) + "?created=true");
+        NavigationManager.NavigateTo(
+            PageRoutes.CompetencyTypes.CompetencyTypeDetail(createResult.Value!.Id) + "?created=true");
     }
 }

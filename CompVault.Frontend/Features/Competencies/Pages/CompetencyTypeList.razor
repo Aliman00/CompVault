@@ -1,0 +1,116 @@
+﻿@page "/competency-types"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.CompetenciesRead)]
+@inject ICompetencyTypeService CompetencyTypeService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle kompetansebevistyper *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else
+{
+    @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere kompetansebevistyper *@
+    <ListHeader Title="Kompetansetyper"
+                CreateHref="@PageRoutes.CompetencyTypes.CompetencyTypeCreate"
+                CreateLabel="Opprett kompetansetype"
+                CreateIcon="@Icons.Material.Filled.Category"
+                CreatePolicy="@Permissions.CompetenciesWrite"/>
+
+    @* Grid med liste over kompetansebevistyper *@
+    <MudDataGrid Items="_competencyTypes"
+                 Filterable="true"
+                 FilterMode="DataGridFilterMode.ColumnFilterRow"
+                 FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Square="true"
+                 Bordered="true"
+                 SortMode="SortMode.Multiple"
+                 FixedHeader="true"
+                 Loading="_isLoading"
+                 MultiSelection="true"
+                 @bind-SelectedItems="_selectedCompetencyTypes"
+                 RowClick="@((DataGridRowClickEventArgs<CompetencyTypeDto> args) => OnRoleClick(args))">
+
+        @* Selve kolonnene *@
+        <Columns>
+            <SelectColumn T="CompetencyTypeDto"/>
+
+            <PropertyColumn Property="competencyTypeDto => competencyTypeDto.Name.Truncate(40)" Title="Navn"/>
+
+            <PropertyColumn Property="competencyTypeDto => competencyTypeDto.Description.Truncate(50)"
+                            Title="Beskrivelse"
+                            Sortable="true"/>
+
+            <PropertyColumn Property="competencyTypeDto => competencyTypeDto.Category.Truncate(40)" Title="Kategori"/>
+            
+            <TemplateColumn Title="Status" Sortable="true" SortBy="@(competencyTypeDto => competencyTypeDto.IsActive)">
+                <CellTemplate>
+                    <MudChip T="string"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                             Size="Size.Small">
+                        @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+}
+
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private List<CompetencyTypeDto> _competencyTypes = [];
+    private HashSet<CompetencyTypeDto> _selectedCompetencyTypes = [];
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getCompetencyTypesResult = await CompetencyTypeService.GetAllAsync(Cts.Token);
+
+            if (getCompetencyTypesResult.IsFailure)
+            {
+                _alert = new AlertInfo(getCompetencyTypesResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _competencyTypes = getCompetencyTypesResult.Value!;
+
+            if (Deleted)
+                _alert = new AlertInfo("Kompetansetypen er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste kompetansetypen. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnRoleClick(DataGridRowClickEventArgs<CompetencyTypeDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.CompetencyTypes.CompetencyTypeDetail(args.Item.Id));
+}

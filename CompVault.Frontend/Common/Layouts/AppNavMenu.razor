@@ -35,6 +35,23 @@
         </Authorized>
     </AuthorizeView>
 
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Competencies.CompetencyList" 
+                        Icon="@Icons.Material.Filled.WorkspacePremium">
+                Kompetansebevis
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.CompetencyTypes.CompetencyTypeList" Icon="@Icons.Material.Filled.Category">
+                Kompetansetyper
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
     <AuthorizeView Policy="@Permissions.AdminAccess">
         <Authorized>
             <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">

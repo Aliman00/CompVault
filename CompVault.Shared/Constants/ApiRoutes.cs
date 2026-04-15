@@ -41,4 +41,17 @@ public static class ApiRoutes
         public const string AllPermissions = $"{Base}/permissions";
         
     }
+    
+    public static class Competencies
+    {
+        public const string Base = "api/competencies";
+        public static string ById(Guid id) => $"{Base}/{id}";
+        public const string Expiring = $"{Base}/expiring";
+    }
+    
+    public static class CompetencyTypes
+    {
+        public const string Base = "api/competencytypes";
+        public static string ById(Guid id) => $"{Base}/{id}";
+    }
 }
