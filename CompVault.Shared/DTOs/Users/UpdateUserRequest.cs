@@ -17,9 +17,11 @@ public sealed class UpdateUserRequest
     [MaxLength(100)]
     public string? LastName { get; set; }
 
-    /// <summary>Ny stillingstittel (valgfritt).</summary>
-    [MaxLength(150)]
-    public string? JobTitle { get; set; }
+    /// <summary>Ny stillingstittel-ID (valgfritt).</summary>
+    public Guid? JobTitleId { get; set; }
+
+    /// <summary>Sett til true for å fjerne stillingstittel.</summary>
+    public bool ClearJobTitleId { get; set; }
 
     /// <summary>Ny ansettelsestype (valgfritt).</summary>
     public EmploymentType? EmploymentType { get; set; }

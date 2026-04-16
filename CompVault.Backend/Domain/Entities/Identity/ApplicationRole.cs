@@ -10,12 +10,6 @@ namespace CompVault.Backend.Domain.Entities.Identity;
 /// </summary>
 public class ApplicationRole : IdentityRole<Guid>
 {
-    // IdentityRole egenskaper:
-    // - Id (Guid)
-    // - Name (string?)
-    // - NormalizedName (string?)
-    // - ConcurrencyStamp (string?)
-
     // ======================== Rolle egenskaper ========================
     /// <summary>Kort forklaring av hva rollen innebærer</summary>
     [StringLength(250)]

@@ -57,7 +57,7 @@
                         </tr>
                         <tr>
                             <td><strong>Stillingstittel</strong></td>
-                            <td>@_currentUser.JobTitle</td>
+                            <td>@(_currentUser.JobTitleName ?? "—")</td>
                         </tr>
                         <tr>
                             <td><strong>Ansettelsestype</strong>
@@ -116,7 +116,7 @@
                        Color="@(testUser.Roles.Contains("Admin") ? Color.Error : Color.Primary)"
                        Disabled="_isLoading"
                        OnClick="() => LoginAsync(testUser)">
-                <MudText>Navn: @testUser.FirstName @testUser.LastName, Tittel: @testUser.JobTitle,
+                <MudText>Navn: @testUser.FirstName @testUser.LastName, Tittel: @(testUser.JobTitleName ?? "—"),
                     Roller: @string.Join(", ", testUser.Roles)</MudText>
             </MudButton>
         }
