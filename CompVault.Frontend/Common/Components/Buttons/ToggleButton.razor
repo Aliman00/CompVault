@@ -1,0 +1,56 @@
+﻿@* Gjenbrukbar toggle knapp for å alltid ha likt utseende *@
+
+@if (!string.IsNullOrEmpty(Label))
+{
+    <MudText Typo="Typo.caption" Color="Color.Secondary">@Label</MudText>
+}
+<MudToggleGroup T="bool?"
+                Value="(bool?)Value"
+                ValueChanged="OnValueChanged"
+                Color="Color.Primary"
+                Size="Size.Small"
+                Class="cv-group-switch"
+                Disabled="!IsEditing">
+    @ChildContent
+</MudToggleGroup>
+
+
+
+@code {
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Beskrivende tekst hva knappene gjør
+    /// </summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Legger til knappene med MudItem i foreldre komponenten
+    /// </summary>
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = null!;
+    
+    /// <summary>
+    /// Bool-egenskapen som skal byttes mellom
+    /// </summary>
+    [Parameter] public bool Value { get; set; }
+    
+    /// <summary>
+    /// Handling som skjer når verdi endres
+    /// </summary>
+    [Parameter] public EventCallback<bool> ValueChanged {get; set; }
+    
+    /// <summary>
+    /// Endrer utseende i UI for å skille mellom redigering og visning
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing {get; set; }
+    
+    // ===================== PRIVATE METHODS =====================
+    /// <summary>
+    /// Trykk på knappen sender verdien tilbake til foreldrekomponenten
+    /// </summary>
+    private async Task OnValueChanged(bool? value)
+    {
+        if (value.HasValue)
+            await ValueChanged.InvokeAsync(value.Value);
+    }
+    
+}

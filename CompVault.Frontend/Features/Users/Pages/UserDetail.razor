@@ -345,19 +345,19 @@ else if (_user != null)
     private void NavigateToDepartment()
     {
         if (_user?.DepartmentId.HasValue == true)
-            NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentDetail(_user.DepartmentId.Value));
+            NavigationManager.NavigateTo(PageRoutes.Departments.Detail(_user.DepartmentId.Value));
     }
     
     private void NavigateToManager()
     {
         if (_user?.ManagerId.HasValue == true)
-            NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(_user.ManagerId.Value));
+            NavigationManager.NavigateTo(PageRoutes.Users.Detail(_user.ManagerId.Value));
     }
     
     // TODO: Må sende med rolleId for å kunne navigere til en rolle
     private EventCallback NavigateToRole(Guid roleId) =>
         EventCallback.Factory.Create(this, () =>
-            NavigationManager.NavigateTo(PageRoutes.Roles.RoleDetail(roleId)));
+            NavigationManager.NavigateTo(PageRoutes.Roles.Detail(roleId)));
     
     // Viser en dialog som brukeren må godkjenne for å kunne slette en bruker. Navigerer til UserList etter sletting
     private async Task DeleteUser()
@@ -382,7 +382,7 @@ else if (_user != null)
             return;
         }
         
-        NavigationManager.NavigateTo(PageRoutes.Users.UserList + "?deleted=true");
+        NavigationManager.NavigateTo(PageRoutes.Users.List + "?deleted=true");
     }
     
     private async Task OpenAssignRolesDialog()

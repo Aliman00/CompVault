@@ -75,6 +75,12 @@ else if (_department != null)
                 
                 @* Overordnet avdeling *@
                 <MudItem xs="12" sm="6">
+                    @if (ParentIsInactive)
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-1">
+                            Overordnet avdeling er inaktiv
+                        </MudAlert>
+                    }
                     <DetailSelectWithLinkField Value="_editModel.ParentDepartmentId"
                                                ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
                                                Label="Overordnet avdeling"
@@ -93,7 +99,9 @@ else if (_department != null)
                             }
                         </Items>
                     </DetailSelectWithLinkField>
+
                 </MudItem>
+                
 
                 @* Opprettelsesdato *@
                 <MudItem xs="12" sm="6">
@@ -116,11 +124,12 @@ else if (_department != null)
                 
                 @* Switch-knapp for å gjøre avdelingen aktiv/inaktiv *@
                 <MudItem xs="12" sm="6">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Status</MudText>
-                    <MudSwitch @bind-Value="_editModel.IsActive"
-                               ReadOnly="!_isEditing"
-                               Label="@(_editModel.IsActive == true ? "Aktiv" : "Inaktiv")"
-                               Color="Color.Success"/>
+                    <ToggleButton Label="Status"
+                                  @bind-Value="_editModel.IsActive"
+                                  IsEditing="_isEditing">
+                        <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
+                        <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
+                    </ToggleButton>
                 </MudItem>
 
                 @* Brukere i avdelingen *@
@@ -193,6 +202,11 @@ else if (_department != null)
     private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
     
     private bool HasCreatedByUser => _department?.CreatedById.HasValue == true;
+    
+    // Sjekker om den overordnete avdeling er inaktiv
+    private bool ParentIsInactive => 
+        _department?.ParentDepartmentId.HasValue == true &&
+        _departments.All(d => d.Id != _department.ParentDepartmentId);
 
     // ===================== LIFECYCLE =====================
     protected override async Task OnParametersSetAsync()
@@ -230,7 +244,8 @@ else if (_department != null)
                 NavigationManager.NavigateTo(PageRoutes.Errors.NotFound);
                 return;
             }
-
+            
+            // Filterer bort inaktive avdelinger 
             _departments = departmentsResult.Value!.Where(d => d.IsActive && d.Id != Id).ToList();
             _subDepartments = departmentsResult.Value!.Where(d => d.ParentDepartmentId == Id).ToList();
 
@@ -292,6 +307,10 @@ else if (_department != null)
         // Fjerner kun parent avdeling his brukeren hadde en avdeling fra tdiligere
         var request = _editModel.ToRequest(_department!.ParentDepartmentId != null 
                                            && _editModel.ParentDepartmentId == null);
+        
+        Console.WriteLine($"Frontend: OriginalParent={_department.ParentDepartmentId}, " +
+                          $"NewParent={_editModel.ParentDepartmentId}, " +
+                          $"ClearParent={request.ClearParentDepartment}");
 
         var updateResult = await DepartmentService.UpdateAsync(Id, request, Cts.Token);
         if (updateResult.IsFailure)
@@ -311,20 +330,20 @@ else if (_department != null)
     {
         if (_department?.ParentDepartmentId.HasValue == true)
             NavigationManager.NavigateTo(
-                PageRoutes.Departments.DepartmentDetail(_department.ParentDepartmentId.Value));
+                PageRoutes.Departments.Detail(_department.ParentDepartmentId.Value));
     }
     
     private void NavigateToSubDepartment(Guid departmentId) =>
-        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentDetail(departmentId));
+        NavigationManager.NavigateTo(PageRoutes.Departments.Detail(departmentId));
 
     private void NavigateToCreatedByUser()
     {
         if (_department?.CreatedById.HasValue == true)
-            NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(_department.CreatedById!.Value));
+            NavigationManager.NavigateTo(PageRoutes.Users.Detail(_department.CreatedById!.Value));
     }
     
     private void NavigateToUser(Guid userId) =>
-        NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(userId));
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(userId));
 
     // Viser en dialog som brukeren må godkjenne for å kunne slette entiteten. Navigerer til List-siden hivs vellykket
     private async Task Delete()
@@ -342,14 +361,14 @@ else if (_department != null)
         if (dialogResult!.Canceled)
             return;
 
-        var updateResult = await DepartmentService.DeleteAsync(Id, Cts.Token);
-        if (updateResult.IsFailure)
+        var deleteResult = await DepartmentService.DeleteAsync(Id, Cts.Token);
+        if (deleteResult.IsFailure)
         {
-            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            _errorAlert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
             return;
         }
 
-        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentList + "?deleted=true");
+        NavigationManager.NavigateTo(PageRoutes.Departments.List + "?deleted=true");
     }
 
 }

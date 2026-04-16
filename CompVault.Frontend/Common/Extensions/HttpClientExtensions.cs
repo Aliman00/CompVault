@@ -1,6 +1,9 @@
 ﻿using System.Text.Json;
 
 using CompVault.Shared.Result;
+
+using Microsoft.AspNetCore.WebUtilities;
+
 namespace CompVault.Frontend.Common.Extensions;
 
 
@@ -66,5 +69,18 @@ public static class HttpClientExtensions
         {
             return AppError.Create(ErrorCode.Unknown, "Ukjent feil fra serveren");
         }
+    }
+    
+    /// <summary>
+    /// Bygger query filter til en URL
+    /// </summary>
+    /// <param name="baseUrl">URL-en til endepunktet</param>
+    /// <param name="queryParams">Ordbok for å bygge filterne</param>
+    /// <returns>Kombinert url med query-filtering satt</returns>
+    public static string AddQueryFilter(this string baseUrl, Dictionary<string, string?> queryParams)
+    {
+        return queryParams.Count == 0
+            ? baseUrl
+            : QueryHelpers.AddQueryString(baseUrl, queryParams);
     }
 }

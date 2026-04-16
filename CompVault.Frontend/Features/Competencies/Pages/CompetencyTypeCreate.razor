@@ -57,13 +57,12 @@
 
             @* Switch-knapp for å velge om et kompetansebevis skal utgå*@
             <MudItem xs="12">
-                @* Stack for gi det litt mer mellomrom *@
-                <MudStack Justify="Justify.FlexStart">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Skal kompetansebevisene utgå?</MudText>
-                    <MudSwitch @bind-Value="_editModel.RequiresExpiration"
-                               Label="@(_editModel.RequiresExpiration ? "Krever utløpsdato" : "Ingen utløpsdato")"
-                               Color="Color.Success"/>
-                </MudStack>
+                <ToggleButton Label="Skal kompetansebevisene utgå?"
+                              @bind-Value="_editModel.RequiresExpiration"
+                              IsEditing="true">
+                    <MudToggleItem Value="(bool?)true" Text="Krever utløpsdato"/>
+                    <MudToggleItem Value="(bool?)false" Text="Ingen utløpsdato"/>
+                </ToggleButton>
             </MudItem>
         </MudGrid>
 
@@ -101,6 +100,6 @@
         }
 
         NavigationManager.NavigateTo(
-            PageRoutes.CompetencyTypes.CompetencyTypeDetail(createResult.Value!.Id) + "?created=true");
+            PageRoutes.CompetencyTypes.Detail(createResult.Value!.Id) + "?created=true");
     }
 }

@@ -2,7 +2,6 @@
 
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.CompetencyTypes;
-
 namespace CompVault.Frontend.Features.Competencies.Models;
 
 public class CompetencyTypeEditModel
@@ -16,9 +15,9 @@ public class CompetencyTypeEditModel
     [MaxLength(CompTypeValidations.CategoryMaxLength, ErrorMessage = CompTypeValidations.Errors.CategoryMaxLength)]
     public string? Category { get; set; }
 
-    public bool? RequiresExpiration { get; set; }
+    public bool RequiresExpiration { get; set; }
 
-    public bool? IsActive { get; set; }
+    public bool IsActive { get; set; }
 
     public static CompetencyTypeEditModel FromDto(CompetencyTypeDto dto) => new()
     {

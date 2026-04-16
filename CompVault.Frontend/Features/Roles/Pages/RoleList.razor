@@ -16,7 +16,7 @@ else
 {
     @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere roller *@
     <ListHeader Title="Roller"
-                CreateHref="@PageRoutes.Roles.RoleCreate"
+                CreateHref="@PageRoutes.Roles.Create"
                 CreateLabel="Opprett rolle"
                 CreateIcon="@Icons.Material.Filled.Shield"
                 CreatePolicy="@Permissions.RolesWrite"/>
@@ -119,5 +119,5 @@ else
 
     // ===================== PRIVATE METHODS =====================
     private void OnRoleClick(DataGridRowClickEventArgs<RoleDto> args) =>
-        NavigationManager.NavigateTo(PageRoutes.Roles.RoleDetail(args.Item.Id));
+        NavigationManager.NavigateTo(PageRoutes.Roles.Detail(args.Item.Id));
 }

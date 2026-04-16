@@ -20,7 +20,7 @@ public class DepartmentEditModel
     
     public bool ClearParentDepartment { get; set; }
     
-    public bool? IsActive { get; set; }
+    public bool IsActive { get; set; }
 
     public static DepartmentEditModel FromDto(DepartmentDto dto) => new()
     {

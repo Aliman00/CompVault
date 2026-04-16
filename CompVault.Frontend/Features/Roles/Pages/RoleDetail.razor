@@ -6,7 +6,7 @@
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 
-@* Detalje visning av en avdeling med mulighet for oppdatering *@
+@* Detalje visning av en rolle med mulighet for oppdatering *@
 
 <AppAlert @bind-Alert="_successAlert"/>
 <AppAlert @bind-Alert="_errorAlert"/>
@@ -124,7 +124,7 @@ else if (_role != null)
                                        Color="Color.Primary"
                                        StartIcon="@Icons.Material.Filled.OpenInNew"
                                        Size="Size.Small"
-                                       OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.Users.UserList))">
+                                       OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.Users.List))">
                                 Gå til brukere for å tildelle roller
                             </MudButton>
                         </HeaderAction>
@@ -196,7 +196,7 @@ else if (_role != null)
             _role = roleResult.Value;
             if (_role == null) // Rollen kan være null ved feil Guid
             {
-                _errorAlert = new AlertInfo("Fant ikke brukeren", Severity.Error);
+                _errorAlert = new AlertInfo("Fant ikke rollen", Severity.Error);
                 return;
             }
 
@@ -273,11 +273,11 @@ else if (_role != null)
     private void NavigateToCreatedByUser()
     {
         if (_role?.CreatedById.HasValue == true)
-            NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(_role.CreatedById!.Value));
+            NavigationManager.NavigateTo(PageRoutes.Users.Detail(_role.CreatedById!.Value));
     }
     
     private void NavigateToUser(Guid userId) =>
-        NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(userId));
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(userId));
 
     // Viser en dialog som brukeren må godkjenne for å kunne slette entiteten. Navigerer til List-siden hivs vellykket
     private async Task Delete()
@@ -295,14 +295,14 @@ else if (_role != null)
         if (dialogResult!.Canceled)
             return;
 
-        var updateResult = await RoleService.DeleteAsync(Id, Cts.Token);
-        if (updateResult.IsFailure)
+        var deleteResult = await RoleService.DeleteAsync(Id, Cts.Token);
+        if (deleteResult.IsFailure)
         {
-            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            _errorAlert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
             return;
         }
 
-        NavigationManager.NavigateTo(PageRoutes.Roles.RoleList + "?deleted=true");
+        NavigationManager.NavigateTo(PageRoutes.Roles.List + "?deleted=true");
     }
     
     // Viser en dialog som brukeren kan knytte tilattelser til rollen

@@ -16,7 +16,7 @@ else
 {
     @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere kompetansebevistyper *@
     <ListHeader Title="Kompetansetyper"
-                CreateHref="@PageRoutes.CompetencyTypes.CompetencyTypeCreate"
+                CreateHref="@PageRoutes.CompetencyTypes.Create"
                 CreateLabel="Opprett kompetansetype"
                 CreateIcon="@Icons.Material.Filled.Category"
                 CreatePolicy="@Permissions.CompetenciesWrite"/>
@@ -112,5 +112,5 @@ else
 
     // ===================== PRIVATE METHODS =====================
     private void OnRoleClick(DataGridRowClickEventArgs<CompetencyTypeDto> args) =>
-        NavigationManager.NavigateTo(PageRoutes.CompetencyTypes.CompetencyTypeDetail(args.Item.Id));
+        NavigationManager.NavigateTo(PageRoutes.CompetencyTypes.Detail(args.Item.Id));
 }

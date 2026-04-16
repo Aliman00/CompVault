@@ -1,0 +1,314 @@
+﻿@page "/competency-types/{Id:guid}"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DepartmentsWrite)]
+@inject ICompetencyService CompetencyService
+@inject ICompetencyTypeService CompetencyTypeService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+@* Detalje visning av en kompetansetype med mulighet for oppdatering *@
+
+<AppAlert @bind-Alert="_successAlert"/>
+<AppAlert @bind-Alert="_errorAlert"/>
+<AppAlert @bind-Alert="_competenciesAlert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_competencyType != null)
+{
+    @* SkjemaForm med validering med DataAnnotations *@
+    <EditForm EditContext="_editContext" OnValidSubmit="SaveEdit">
+        <DataAnnotationsValidator/>
+
+        @* Header med navn og tittel, redigeringsknapper og dropdown meny for flere valg*@
+        <MudPaper Class="pa-6" Elevation="1" Square="true">
+            <DetailHeader Title="@_competencyType.Name"
+                          EditPolicy="@Permissions.CompetenciesWrite"
+                          Subtitle="@_competencyType.Description"
+                          IsEditing="_isEditing"
+                          OnStartEdit="StartEdit"
+                          OnCancelEdit="CancelEdit">
+                
+                @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
+                <DropdownActions>
+                    <AuthorizeView Policy="@Permissions.CompetenciesDelete" Context="auth">
+                        <Authorized>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                         IconColor="Color.Error"
+                                         Disabled="false"
+                                         OnClick="Delete">
+                                <MudText>Slett kompetansetype</MudText>
+                            </MudMenuItem>
+                        </Authorized>
+                        <NotAuthorized>
+                            <MudTooltip Text="Du har ikke tilgang til å slette kompetansetypeen">
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                             IconColor="Color.Default"
+                                             Disabled="true">
+                                    <MudText>Slett kompetansetype</MudText>
+                                </MudMenuItem>
+                            </MudTooltip>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </DropdownActions>
+            </DetailHeader>
+
+            @* Alle felt med egenskaper fra CompetencyTypeDto *@
+            <MudGrid>
+                @* Rollenavn *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_editModel.Name"
+                                     ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                     Label="Rollenavn"
+                                     IsEditing="_isEditing"
+                                     For="() => _editModel.Name"/>
+                </MudItem>
+
+                @* Kategori *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_editModel.Category"
+                                     ValueChanged="(string? v) => _editModel.Category = v ?? string.Empty"
+                                     Label="Kategori (valgfritt)"
+                                     IsEditing="_isEditing"
+                                     For="() => _editModel.Category"/>
+                </MudItem>
+
+                @* Beskrivelse *@
+                <MudItem xs="12">
+                    <DetailTextField Value="@_editModel.Description"
+                                     ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
+                                     Label="Beskrivelse (valgfritt)"
+                                     IsEditing="_isEditing"
+                                     For="() => _editModel.Description"/>
+                </MudItem>
+
+                @* Switch-knapp for å velge om et kompetansebevis skal utgå*@
+                <MudItem xs="12" sm="6">
+                    <ToggleButton Label="Skal kompetansebevisene utgå?"
+                                  @bind-Value="_editModel.RequiresExpiration"
+                                  IsEditing="_isEditing">
+                        <MudToggleItem Value="(bool?)true" Text="Krever utløpsdato"/>
+                        <MudToggleItem Value="(bool?)false" Text="Ingen utløpsdato"/>
+                    </ToggleButton>
+                </MudItem>
+
+
+                @* Opprettelsesdato *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_competencyType.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                                     Label="Opprettet"
+                                     IsEditing="false"/>
+
+                </MudItem>
+
+                @* Kompetansebevis med denne typen *@
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle1">Kompetansebevis av type @_competencyType.Name</MudText>
+                    <MudDataGrid T="CompetencyDto"
+                                 Items="_competenciesWithType"
+                                 Filterable="false"
+                                 Dense="true"
+                                 Hover="true"
+                                 Striped="true"
+                                 Square="true"
+                                 Bordered="true"
+                                 SortMode="SortMode.Single"
+                                 RowClick="@((DataGridRowClickEventArgs<CompetencyDto> args) 
+                                               => NavigateToCompetency(args.Item.Id))">
+                        <Columns>
+                            @* Navnet til brukeren *@
+                            <PropertyColumn Property='x => $"{x.UserFirstName} {x.UserLastName}".Truncate(40)'
+                                            Title="Bruker" SortBy="x => x.UserLastName"/>
+                            
+                            @* Statusen til beviset *@
+                            <TemplateColumn Title="Status" SortBy="x => x.Status">
+                                <CellTemplate Context="cell">
+                                    <MudChip T="string"
+                                             Color="@cell.Item.Status.ToStatusColor()"
+                                             Size="Size.Small">
+                                        @cell.Item.Status
+                                    </MudChip>
+                                </CellTemplate>
+                            </TemplateColumn>
+
+                            <PropertyColumn Property="x => x.IssuedDate.ToShortDateString()" 
+                                            Title="Utstedt"/>
+
+                            @if (_competencyType.RequiresExpiration)
+                            {
+                                <PropertyColumn Property="x => x.ExpiryDate!.Value.ToShortDateString()" 
+                                                Title="Utløper"/>
+                            }
+                        </Columns>
+                    </MudDataGrid>
+                </MudItem>
+
+            </MudGrid>
+        </MudPaper>
+    </EditForm>
+}
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en kompetansetype
+    public bool Created { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private CompetencyTypeDto? _competencyType;
+    private List<CompetencyDto> _competenciesWithType = [];
+
+    private CompetencyTypeEditModel _editModel = new();
+
+    private bool _isLoading = true;
+
+    // Forskjellige feilmeldinger for forkjellige beskjeder
+    private AlertInfo? _errorAlert;
+    private AlertInfo? _competenciesAlert;
+    private AlertInfo? _successAlert;
+
+    private EditContext _editContext = null!;
+
+    private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnParametersSetAsync()
+    {
+        // Resetter alle feltene ved oppdatering/navigering til siden
+        _isLoading = true;
+        _isEditing = false;
+        _competenciesWithType = [];
+        _editModel = new();
+
+        try
+        {
+            _editContext = new EditContext(_editModel);
+            
+            // Filterer slik at vi henter kun kompetansebevis med typen til Detail-siden
+            var competencyFilterRequest = new CompetencyFilterRequest(null, null, Id);
+
+            // Henter kompetansetypen og bevisene til denne typen
+            var competencyTypeTask = CompetencyTypeService.GetByIdAsync(Id, Cts.Token);
+            var competenciesTask = CompetencyService.GetAllAsync(competencyFilterRequest, Cts.Token);
+
+            await Task.WhenAll(competencyTypeTask, competenciesTask);
+
+            var competencyTypeResult = await competencyTypeTask;
+            var competenciesResult = await competenciesTask;
+
+            if (competencyTypeResult.IsFailure)
+            {
+                _errorAlert = new AlertInfo(competencyTypeResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _competencyType = competencyTypeResult.Value;
+            if (_competencyType == null)
+            {
+                _errorAlert = new AlertInfo("Fant ikke kompetansetypen", Severity.Error);
+                return;
+            }
+
+            if (competenciesResult.IsFailure)
+                _competenciesAlert = new AlertInfo(competenciesResult.Error!.ToString(), Severity.Error);
+            else
+                _competenciesWithType = competenciesResult.Value!;
+
+            ResetEditModel();
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _errorAlert = new AlertInfo("Klarte ikke å laste kompetansetypen. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+
+            if (Created)
+                _successAlert = new AlertInfo("Kompetansetypen ble opprettet", Severity.Success);
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger og resetter modell
+    private void StartEdit()
+    {
+        _errorAlert = null;
+        _competenciesAlert = null;
+        _successAlert = null;
+        ResetEditModel();
+        _isEditing = true;
+    }
+
+    // Handling når vi avbryter redigering - Resetter modellene og fjerner redigeringsmodus
+    private void CancelEdit()
+    {
+        ResetEditModel();
+        _isEditing = false;
+    }
+
+    // Resetter redigeringsmodellen og editcontexten
+    private void ResetEditModel()
+    {
+        _editModel = CompetencyTypeEditModel.FromDto(_competencyType!);
+        _editContext = new EditContext(_editModel);
+    }
+
+    // Handling som utføres når vi trykker på lagring - Bygger en request og utfører kall til backend
+    private async Task SaveEdit()
+    {
+        var request = _editModel.ToRequest();
+
+        var updateResult = await CompetencyTypeService.UpdateAsync(Id, request, Cts.Token);
+        if (updateResult.IsFailure)
+        {
+            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        // Resetter feltene kun hvis det var vellykket
+        _competencyType = updateResult.Value;
+        ResetEditModel();
+        _isEditing = false;
+        _successAlert = new AlertInfo("Kompetansetypen ble oppdatert", Severity.Success);
+    }
+
+    private void NavigateToCompetency(Guid userId) =>
+        NavigationManager.NavigateTo(PageRoutes.Competencies.Detail(userId));
+
+    // Viser en dialog som brukeren må godkjenne for å kunne slette entiteten. Navigerer til List-siden hviss vellykket
+    private async Task Delete()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDeleteDialog.Title), "Slett kompetansetypen" },
+            { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette {_competencyType!.Name}?" },
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        var deleteResult = await CompetencyTypeService.DeleteAsync(Id, Cts.Token);
+        if (deleteResult.IsFailure)
+        {
+            _errorAlert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(PageRoutes.CompetencyTypes.List + "?deleted=true");
+    }
+}

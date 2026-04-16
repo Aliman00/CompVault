@@ -13,7 +13,7 @@
 
     <AuthorizeView Policy="@Permissions.UsersRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.Users.UserList" Icon="@Icons.Material.Filled.People">
+            <MudNavLink Href="@PageRoutes.Users.List" Icon="@Icons.Material.Filled.People">
                 Brukere
             </MudNavLink>
         </Authorized>
@@ -21,7 +21,7 @@
 
     <AuthorizeView Policy="@Permissions.DepartmentsRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.Departments.DepartmentList" Icon="@Icons.Material.Filled.Business">
+            <MudNavLink Href="@PageRoutes.Departments.List" Icon="@Icons.Material.Filled.Business">
                 Avdelinger
             </MudNavLink>
         </Authorized>
@@ -29,7 +29,7 @@
 
     <AuthorizeView Policy="@Permissions.RolesRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.Roles.RoleList" Icon="@Icons.Material.Filled.Shield">
+            <MudNavLink Href="@PageRoutes.Roles.List" Icon="@Icons.Material.Filled.Shield">
                 Roller
             </MudNavLink>
         </Authorized>
@@ -37,7 +37,7 @@
 
     <AuthorizeView Policy="@Permissions.CompetenciesRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.Competencies.CompetencyList" 
+            <MudNavLink Href="@PageRoutes.Competencies.List" 
                         Icon="@Icons.Material.Filled.WorkspacePremium">
                 Kompetansebevis
             </MudNavLink>
@@ -46,7 +46,7 @@
 
     <AuthorizeView Policy="@Permissions.CompetenciesRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.CompetencyTypes.CompetencyTypeList" Icon="@Icons.Material.Filled.Category">
+            <MudNavLink Href="@PageRoutes.CompetencyTypes.List" Icon="@Icons.Material.Filled.Category">
                 Kompetansetyper
             </MudNavLink>
         </Authorized>

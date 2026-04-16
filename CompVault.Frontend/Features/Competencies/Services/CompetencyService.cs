@@ -1,5 +1,6 @@
 ﻿using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
+using CompVault.Frontend.Features.Competencies.Models;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Result;
@@ -13,11 +14,12 @@ public class CompetencyService(
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
     
     /// <inheritdoc />
-    public async Task<Result<List<CompetencyDto>>> GetAllAsync(CancellationToken ct)
+    public async Task<Result<List<CompetencyDto>>> GetAllAsync(CompetencyFilterRequest? filter, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.Competencies.Base, ct);
+            string url = BuildFilterUrl(ApiRoutes.Competencies.Base, filter);
+            HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
 
             Result<List<CompetencyDto>> result =
                 await HttpClientExtensions.ParseResponseAsync<List<CompetencyDto>>(response, ct);
@@ -178,5 +180,24 @@ public class CompetencyService(
             return Result<List<ExpiringCompetencyDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
+    }
+    
+    // Bygger base-urlen med query-filtrering
+    private static string BuildFilterUrl(string baseUrl, CompetencyFilterRequest? filter)
+    {
+        if (filter == null) 
+            return baseUrl;
+        
+        // Legger til parameterne i en ordbok
+        var queryParams = new Dictionary<string, string?>();
+
+        if (filter.UserId.HasValue)
+            queryParams["userId"] = filter.UserId.ToString();
+        if (filter.Status.HasValue)
+            queryParams["status"] = filter.Status.ToString();
+        if (filter.CompetencyTypeId.HasValue)
+            queryParams["competencyTypeId"] = filter.CompetencyTypeId.ToString();
+
+        return baseUrl.AddQueryFilter(queryParams);
     }
 }

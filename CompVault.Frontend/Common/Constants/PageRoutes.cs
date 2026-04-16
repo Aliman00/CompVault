@@ -14,37 +14,37 @@ public static class PageRoutes
 
     public static class Users
     {
-        public const string UserList = "/users";
-        public static string UserDetail(Guid id) => $"/users/{id}";
-        public const string UserCreate = "/users/create";
+        public const string List = "/users";
+        public static string Detail(Guid id) => $"/users/{id}";
+        public const string Create = "/users/create";
     }
     
     public static class Departments
     {
-        public const string DepartmentList = "/departments";
-        public static string DepartmentDetail(Guid id) => $"/departments/{id}";
-        public const string DepartmentCreate = "/departments/create";
+        public const string List = "/departments";
+        public static string Detail(Guid id) => $"/departments/{id}";
+        public const string Create = "/departments/create";
     }
     
     public static class Roles
     {
-        public const string RoleList = "/roles";
-        public static string RoleDetail(Guid id) => $"/roles/{id}";
-        public const string RoleCreate = "/roles/create";
+        public const string List = "/roles";
+        public static string Detail(Guid id) => $"/roles/{id}";
+        public const string Create = "/roles/create";
     }
 
     public static class Competencies
     {
-        public const string CompetencyList = "/competencies";
-        public static string CompetencyDetail(Guid id) => $"/competencies/{id}";
-        public const string CompetencyCreate = "/competencies/create";
+        public const string List = "/competencies";
+        public static string Detail(Guid id) => $"/competencies/{id}";
+        public const string Create = "/competencies/create";
     }
     
     public static class CompetencyTypes
     {
-        public const string CompetencyTypeList = "/competency-types";
-        public static string CompetencyTypeDetail(Guid id) => $"/competency-types/{id}";
-        public const string CompetencyTypeCreate = "/competency-types/create";
+        public const string List = "/competency-types";
+        public static string Detail(Guid id) => $"/competency-types/{id}";
+        public const string Create = "/competency-types/create";
     }
 
     public static class Admin

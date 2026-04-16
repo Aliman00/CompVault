@@ -1,13 +1,14 @@
-﻿using CompVault.Shared.DTOs.Competencies;
+﻿using CompVault.Frontend.Features.Competencies.Models;
+using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Result;
 namespace CompVault.Frontend.Features.Competencies.Services;
 
 public interface ICompetencyService
 {
     /// <summary>
-    /// Henter alle kompetansebevis fra backend TODO: Med query parameter. Ikke implementert
+    /// Henter alle kompetansebevis fra backend med valgtfrie query-parametere
     /// </summary>
-    Task<Result<List<CompetencyDto>>> GetAllAsync(CancellationToken ct);
+    Task<Result<List<CompetencyDto>>> GetAllAsync(CompetencyFilterRequest? filter, CancellationToken ct);
     
     /// <summary>
     /// Henter et kompetansebevis fra backend

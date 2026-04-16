@@ -17,7 +17,7 @@ else
     @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere brukere *@
     @* For øyeblikket kun Rediger-bruker knapp som er disabled hvis bruker ikke har user:write tilgang*@
     <ListHeader Title="Brukere"
-                CreateHref="@PageRoutes.Users.UserCreate"
+                CreateHref="@PageRoutes.Users.Create"
                 CreateLabel="Opprett bruker"
                 CreateIcon="@Icons.Material.Filled.PersonAdd"
                 CreatePolicy="@Permissions.UsersWrite"/>
@@ -99,6 +99,6 @@ else
     // ===================== PRIVATE METHODS =====================
     
     private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
-        NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(args.Item.Id));
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(args.Item.Id));
     
 }
