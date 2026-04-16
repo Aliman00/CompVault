@@ -5,56 +5,38 @@
 @inject NavigationManager NavigationManager
 
 @* Side for å opprette en avdeling *@
+<CreateForm Title="Opprett rolle"
+            EditContext="_editContext"
+            OnValidSubmit="CreateRole"
+            @bind-Alert="_alert">
+    <Fields>
+        @* Rollenavn *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Name"
+                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                             Label="Rollenavn"
+                             IsEditing="true"
+                             For="() => _editModel.Name"/>
+        </MudItem>
+        @* Beskrivelse *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Description"
+                             ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
+                             Label="Beskrivelse (valgfritt)"
+                             IsEditing="true"
+                             For="() => _editModel.Description"
+                             Lines="4"/>
+        </MudItem>
+    </Fields>
+</CreateForm>
 
-<AppAlert @bind-Alert="_errorAlert"/>
-
-@* SkjemaForm med validering med DataAnnotations *@
-<EditForm EditContext="_editContext" OnValidSubmit="CreateRole">
-    <DataAnnotationsValidator/>
-
-    @* Kortet *@
-    <MudPaper Class="pa-6" Elevation="1" Square="true">
-        @* Headeren med side-tittel og Opprett-knapp *@
-        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
-            <MudText Typo="Typo.h5">Opprett rolle</MudText>
-            <MudSpacer/>
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       ButtonType="ButtonType.Submit">
-                Opprett
-            </MudButton>
-        </MudStack>
-
-        @* Alle felt i en grid *@
-        <MudGrid>
-            @* Avdelingsnavn *@
-            <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Name"
-                                 ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                                 Label="Rollenavn"
-                                 IsEditing="true"
-                                 For="() => _editModel.Name"/>
-            </MudItem>
-            @* Description *@
-            <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Description"
-                                 ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
-                                 Label="Beskrivelse (valgfritt)"
-                                 IsEditing="true"
-                                 For="() => _editModel.Description"
-                                 Lines="4"/>
-            </MudItem>
-        </MudGrid>
-
-    </MudPaper>
-</EditForm>
 
 
 @code {
     // ===================== PRIVATE FELT =====================
     private readonly CreateRoleModel _editModel = new();
 
-    private AlertInfo? _errorAlert;
+    private AlertInfo? _alert;
 
     private EditContext _editContext = null!;
 
@@ -64,7 +46,6 @@
         return Task.CompletedTask;
     }
     
-
     // ===================== PRIVATE METHODS =====================
 
     // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
@@ -76,7 +57,7 @@
         var createResult = await RoleService.CreateAsync(request, Cts.Token);
         if (createResult.IsFailure)
         {
-            _errorAlert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
             return;
         }
 

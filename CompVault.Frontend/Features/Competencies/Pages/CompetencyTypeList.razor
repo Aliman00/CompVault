@@ -6,62 +6,46 @@
 
 @* Side for liste visning av alle kompetansebevistyper *@
 
-<AppAlert @bind-Alert="_alert"/>
+<ListPage TItem="CompetencyTypeDto"
+          Items="_competencyTypes"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          SelectedItemsChanged="@(s => _selectedCompetencyTypes = s)"
+          RowClick="@(args => OnCompetencyTypeClick(args))">
+    <Header>
+        <ListHeader Title="Kompetansetyper"
+                    CreateHref="@PageRoutes.CompetencyTypes.Create"
+                    CreateLabel="Opprett kompetansetype"
+                    CreateIcon="@Icons.Material.Filled.Category"
+                    CreatePolicy="@Permissions.CompetenciesWrite"/>
+    </Header>
+    <Columns>
+        <PropertyColumn T="CompetencyTypeDto" TProperty="string"
+                        Property="ct => ct.Name.Truncate(40)" Title="Navn"/>
 
-@if (_isLoading)
-{
-    <AppSpinner Class="pa-20"/>
-}
-else
-{
-    @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere kompetansebevistyper *@
-    <ListHeader Title="Kompetansetyper"
-                CreateHref="@PageRoutes.CompetencyTypes.Create"
-                CreateLabel="Opprett kompetansetype"
-                CreateIcon="@Icons.Material.Filled.Category"
-                CreatePolicy="@Permissions.CompetenciesWrite"/>
+        <PropertyColumn T="CompetencyTypeDto" TProperty="string"
+                        Property="ct => ct.Description.Truncate(50)"
+                        Title="Beskrivelse"
+                        Sortable="true"/>
 
-    @* Grid med liste over kompetansebevistyper *@
-    <MudDataGrid Items="_competencyTypes"
-                 Filterable="true"
-                 FilterMode="DataGridFilterMode.ColumnFilterRow"
-                 FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
-                 Dense="true"
-                 Hover="true"
-                 Striped="true"
-                 Square="true"
-                 Bordered="true"
-                 SortMode="SortMode.Multiple"
-                 FixedHeader="true"
-                 Loading="_isLoading"
-                 MultiSelection="true"
-                 @bind-SelectedItems="_selectedCompetencyTypes"
-                 RowClick="@((DataGridRowClickEventArgs<CompetencyTypeDto> args) => OnRoleClick(args))">
+        <PropertyColumn T="CompetencyTypeDto" TProperty="string"
+                        Property="ct => ct.Category.Truncate(40)" Title="Kategori"/>
 
-        @* Selve kolonnene *@
-        <Columns>
-            <SelectColumn T="CompetencyTypeDto"/>
-
-            <PropertyColumn Property="competencyTypeDto => competencyTypeDto.Name.Truncate(40)" Title="Navn"/>
-
-            <PropertyColumn Property="competencyTypeDto => competencyTypeDto.Description.Truncate(50)"
-                            Title="Beskrivelse"
-                            Sortable="true"/>
-
-            <PropertyColumn Property="competencyTypeDto => competencyTypeDto.Category.Truncate(40)" Title="Kategori"/>
-            
-            <TemplateColumn Title="Status" Sortable="true" SortBy="@(competencyTypeDto => competencyTypeDto.IsActive)">
-                <CellTemplate>
-                    <MudChip T="string"
-                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
-                             Size="Size.Small">
-                        @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
-                    </MudChip>
-                </CellTemplate>
-            </TemplateColumn>
-        </Columns>
-    </MudDataGrid>
-}
+        <TemplateColumn T="CompetencyTypeDto"
+                        Title="Status"
+                        Sortable="true"
+                        SortBy="@(ct => ct.IsActive)">
+            <CellTemplate>
+                <MudChip T="string"
+                         Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                         Size="Size.Small"
+                         Class="cv-rounded">
+                    @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                </MudChip>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</ListPage>
 
 
 @code {
@@ -111,6 +95,6 @@ else
     }
 
     // ===================== PRIVATE METHODS =====================
-    private void OnRoleClick(DataGridRowClickEventArgs<CompetencyTypeDto> args) =>
+    private void OnCompetencyTypeClick(DataGridRowClickEventArgs<CompetencyTypeDto> args) =>
         NavigationManager.NavigateTo(PageRoutes.CompetencyTypes.Detail(args.Item.Id));
 }

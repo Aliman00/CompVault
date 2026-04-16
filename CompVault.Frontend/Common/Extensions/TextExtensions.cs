@@ -11,8 +11,8 @@ public static class TextHelper
     /// <param name="text">Teksten som skal trimmes</param>
     /// <param name="maxLength">Ønsket makslengde</param>
     /// <returns>Ferdig trimmet string med ...-på slutten hvis den er for lang</returns>
-    public static string? Truncate(this string? text, int maxLength) =>
-        text is null ? null : text.Length > maxLength
+    public static string Truncate(this string? text, int maxLength) =>
+        text is null ? string.Empty : text.Length > maxLength
             ? text[..maxLength] + "…"
             : text;
     

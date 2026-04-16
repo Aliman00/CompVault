@@ -1,0 +1,119 @@
+﻿@* Gjenbrukbar form-komponentent for alle Detail-sider *@
+
+<AppAlert @bind-Alert="Alert"/>
+
+@if (IsLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else
+{
+    @* Skjemaet *@
+    <EditForm EditContext="EditContext" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator/>
+        <MudPaper Class="pa-6" Elevation="1" Square="true">
+            
+            @* Header med redigeringsknapper, dropdown meny for sletting/andre valg og valgrie knapper*@
+            <DetailHeader Title="@Title"
+                          Subtitle="@Subtitle"
+                          EditPolicy="@EditPolicy"
+                          IsEditing="IsEditing"
+                          OnStartEdit="OnStartEdit"
+                          OnCancelEdit="OnCancelEdit">
+                <ExtraActions>@ExtraActions</ExtraActions>
+                <DropdownActions>@DropdownActions</DropdownActions>
+            </DetailHeader>
+            
+            @* Unike felter for hver feature *@
+            <MudGrid>
+                @Fields
+            </MudGrid>
+
+        </MudPaper>
+    </EditForm>
+}
+
+@code {
+
+    // ===================== INNHOLD =====================
+
+    /// <summary>
+    /// Tittelen som vises øverst i headeren. Eks: "Brukeren sitt fullenavn"
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Undertittel i headeren. Eks: Stillingstittel eller beskrivelse
+    /// </summary>
+    [Parameter] public string? Subtitle { get; set; }
+
+    /// <summary>
+    /// Feltene til hver feature
+    /// </summary>
+    [Parameter, EditorRequired] public RenderFragment? Fields { get; set; }
+
+    // ===================== TILSTAND =====================
+
+    /// <summary>
+    /// Viser spinner mens vi venter på API-kall
+    /// </summary>
+    [Parameter] public bool IsLoading { get; set; }
+
+    /// <summary>
+    /// Om vi er i redigering-modus eller lese-modus
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing { get; set; }
+
+    // ===================== FORM =====================
+
+    /// <summary>
+    /// EditContext som må opprettes i foreldrekomponenten
+    /// </summary>
+    [Parameter, EditorRequired] public EditContext EditContext { get; set; } = null!;
+
+    /// <summary>
+    /// Handling som utføres ved innsending av skjemaet
+    /// </summary>
+    [Parameter, EditorRequired] public EventCallback OnValidSubmit { get; set; }
+
+    // ===================== REDIGERING =====================
+
+    /// <summary>
+    /// Policy som kreves for å aktivere redigeringsmodus. Eks : User:Write
+    /// </summary>
+    [Parameter, EditorRequired] public string EditPolicy { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Handling ved trykk på Rediger-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnStartEdit { get; set; }
+
+    /// <summary>
+    /// Handling ved trykk på Avbryt-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnCancelEdit { get; set; }
+
+    // ===================== ALERTS =====================
+
+    /// <summary>
+    /// Viser en suksessmelding eller feilmelding. Eks: "Brukeren ble oppdatert" / "Feil ved API-kall"
+    /// </summary>
+    [Parameter] public AlertInfo? Alert { get; set; }
+
+    /// <summary>
+    /// Ved handlinger i Alert-en (Trykk på bort-knapp)
+    /// </summary>
+    [Parameter] public EventCallback<AlertInfo?> AlertChanged { get; set; }
+
+    // ===================== HANDLINGER =====================
+
+    /// <summary>
+    /// Ekstra knapper som vises tydelig i headeren og ikke gjemt i dropdown. Eks: Permissions-knappen i RoleDetail
+    /// </summary>
+    [Parameter] public RenderFragment? ExtraActions { get; set; }
+
+    /// <summary>
+    /// Handlinger i dropdown-menyen. Slett er alltid her
+    /// </summary>
+    [Parameter] public RenderFragment? DropdownActions { get; set; }
+}

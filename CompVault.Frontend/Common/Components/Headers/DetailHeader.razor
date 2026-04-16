@@ -22,38 +22,26 @@
                     @DropdownActions
                 </MudMenu>
             }
-            @if (EditPolicy != null)
-            {
-                <AuthorizeView Policy="@EditPolicy">
-                    <Authorized>
+            <AuthorizeView Policy="@EditPolicy">
+                <Authorized>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="OnStartEdit">
+                        Rediger
+                    </MudButton>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å redigere">
                         <MudButton Variant="Variant.Outlined"
                                    Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Edit"
-                                   OnClick="OnStartEdit">
+                                   Disabled="true">
                             Rediger
                         </MudButton>
-                    </Authorized>
-                    <NotAuthorized>
-                        <MudTooltip Text="Du har ikke tilgang til å redigere">
-                            <MudButton Variant="Variant.Outlined"
-                                       Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.Edit"
-                                       Disabled="true">
-                                Rediger
-                            </MudButton>
-                        </MudTooltip>
-                    </NotAuthorized>
-                </AuthorizeView>
-            }
-            else
-            {
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Edit"
-                           OnClick="OnStartEdit">
-                    Rediger
-                </MudButton>
-            }
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
         }
         else
         {
@@ -113,5 +101,5 @@
     /// <summary>
     /// Policy som kreves for å aktivere redigeringsmodus. Hvis null vises knappen alltid
     /// </summary>
-    [Parameter] public string? EditPolicy { get; set; }
+    [Parameter, EditorRequired] public string EditPolicy { get; set; } = string.Empty;
 }

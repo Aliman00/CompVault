@@ -5,7 +5,7 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
 
-@* Side for liste visning av alle avdelinger *@
+@* Side for liste visning av alle avdelinger som et hierarki tre eller vanlig tabell *@
 
 <AppAlert @bind-Alert="_alert"/>
 
@@ -13,72 +13,75 @@
 {
     <AppSpinner Class="pa-20"/>
 }
-else
+else if (_showDepartmentTree) @* Skjuler tabellen i hierarki-visning *@
 {
-    @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere avdelinger *@
+    
     <ListHeader Title="Avdelinger"
-            CreateHref="@PageRoutes.Departments.Create"
-            CreateLabel="Opprett avdeling"
-            CreateIcon="@Icons.Material.Filled.CorporateFare"
-            CreatePolicy="@Permissions.DepartmentsWrite">
+                CreateHref="@PageRoutes.Departments.Create"
+                CreateLabel="Opprett avdeling"
+                CreateIcon="@Icons.Material.Filled.CorporateFare"
+                CreatePolicy="@Permissions.DepartmentsWrite">
         <Actions>
             <MudToggleIconButton Toggled="_showDepartmentTree"
                                  ToggledChanged="ToggleTreeView"
                                  Icon="@Icons.Material.Outlined.AccountTree"
                                  ToggledIcon="@Icons.Material.Filled.TableRows"
-                                 title="@(_showDepartmentTree ? "Bytt til liste" : "Bytt til hierarki-visning")"
-                                 aria-label="@(_showDepartmentTree ? "Bytt til liste" : "Bytt til hierarki-visning")"
+                                 title="Bytt til liste"
+                                 aria-label="Bytt til liste"
                                  Class="mr-2"/>
         </Actions>
     </ListHeader>
 
-    @if (!_showDepartmentTree)
-    {
-        @* Grid med liste over avdelinger *@
-        <MudDataGrid Items="_department"
-                     Filterable="true"
-                     FilterMode="DataGridFilterMode.ColumnFilterRow"
-                     FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
-                     Dense="true"
-                     Hover="true"
-                     Striped="true"
-                     Square="true"
-                     Bordered="true"
-                     SortMode="SortMode.Multiple"
-                     FixedHeader="true"
-                     Loading="_isLoading"
-                     MultiSelection="true"
-                     @bind-SelectedItems="_selectedDepartments"
-                     RowClick="@((DataGridRowClickEventArgs<DepartmentDto> args) => OnDepartmentClick(args.Item.Id))">
-
-            
-
-            @* Selve kolonnene *@
-            <Columns>
-                <SelectColumn T="DepartmentDto"/>
-                <PropertyColumn Property="departmentDto => departmentDto.Name.Truncate(40)" Title="Navn"/>
-                <PropertyColumn Property="departmentDto => departmentDto.ParentDepartmentName.Truncate(40)" 
-                                Title="Overordnet avdeling"/>
-                <PropertyColumn Property="departmentDto => departmentDto.SubDepartmentCount" Title="Underavdelinger"/>
-                <TemplateColumn Title="Status" Sortable="true" SortBy="@(departmentDto => departmentDto.IsActive)">
-                    <CellTemplate>
-                        <MudChip T="string"
-                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
-                                 Size="Size.Small">
-                            @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
-                        </MudChip>
-                    </CellTemplate>
-                </TemplateColumn>
-            </Columns>
-        </MudDataGrid>
-    }
-    else
-    {
-        @* Hierarkisk trevisning av avdelinger *@
-        <MudPaper Elevation="1" Square="true" Class="pa-4">
-            <DepartmentTree Departments="_department" OnNavigate="OnDepartmentClick"/>
-        </MudPaper>
-    }
+    <MudPaper Elevation="1" Square="true" Class="pa-4">
+        <DepartmentTree Departments="_department" OnNavigate="OnDepartmentClick"/>
+    </MudPaper>
+}
+else
+{
+    <ListPage TItem="DepartmentDto"
+              Items="_department"
+              IsLoading="_isLoading"
+              @bind-Alert="_alert"
+              SelectedItemsChanged="@(s => _selectedDepartments = s)"
+              RowClick="@(args => OnDepartmentClick(args.Item.Id))">
+        <Header>
+            <ListHeader Title="Avdelinger"
+                        CreateHref="@PageRoutes.Departments.Create"
+                        CreateLabel="Opprett avdeling"
+                        CreateIcon="@Icons.Material.Filled.CorporateFare"
+                        CreatePolicy="@Permissions.DepartmentsWrite">
+                <Actions>
+                    <MudToggleIconButton Toggled="_showDepartmentTree"
+                                         ToggledChanged="ToggleTreeView"
+                                         Icon="@Icons.Material.Outlined.AccountTree"
+                                         ToggledIcon="@Icons.Material.Filled.TableRows"
+                                         title="Bytt til hierarki-visning"
+                                         aria-label="Bytt til hierarki-visning"
+                                         Class="mr-2"/>
+                </Actions>
+            </ListHeader>
+        </Header>
+        <Columns>
+            <PropertyColumn T="DepartmentDto" TProperty="string"
+                            Property="d => d.Name.Truncate(40)" Title="Navn"/>
+            <PropertyColumn T="DepartmentDto" TProperty="string"
+                            Property="d => d.ParentDepartmentName.Truncate(40)"
+                            Title="Overordnet avdeling"/>
+            <PropertyColumn T="DepartmentDto" TProperty="int"
+                            Property="d => d.SubDepartmentCount" Title="Underavdelinger"/>
+            <TemplateColumn T="DepartmentDto" Title="Status" Sortable="true"
+                            SortBy="@(d => d.IsActive)">
+                <CellTemplate>
+                    <MudChip T="string"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                             Size="Size.Small"
+                             Class="cv-rounded">
+                        @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </ListPage>
 }
 
 

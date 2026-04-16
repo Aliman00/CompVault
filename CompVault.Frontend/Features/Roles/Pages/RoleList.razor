@@ -6,69 +6,49 @@
 
 @* Side for liste visning av alle roller *@
 
-<AppAlert @bind-Alert="_alert"/>
+<ListPage TItem="RoleDto"
+          Items="_roles"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          SelectedItemsChanged="@(s => _selectedRoles = s)"
+          RowClick="@(args => OnRoleClick(args))">
+    <Header>
+        <ListHeader Title="Roller"
+                    CreateHref="@PageRoutes.Roles.Create"
+                    CreateLabel="Opprett rolle"
+                    CreateIcon="@Icons.Material.Filled.Shield"
+                    CreatePolicy="@Permissions.RolesWrite"/>
+    </Header>
+    <Columns>
+        <PropertyColumn T="RoleDto" TProperty="string"
+                        Property="r => r.Name.Truncate(40)" Title="Rollenavn"/>
 
-@if (_isLoading)
-{
-    <AppSpinner Class="pa-20"/>
-}
-else
-{
-    @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere roller *@
-    <ListHeader Title="Roller"
-                CreateHref="@PageRoutes.Roles.Create"
-                CreateLabel="Opprett rolle"
-                CreateIcon="@Icons.Material.Filled.Shield"
-                CreatePolicy="@Permissions.RolesWrite"/>
+        <PropertyColumn T="RoleDto" TProperty="string"
+                        Property="r => r.Description.Truncate(50)"
+                        Title="Beskrivelse"
+                        Sortable="true"/>
 
-    @* Grid med liste over roller *@
+        <PropertyColumn T="RoleDto" TProperty="int"
+                        Property="r => r.UserCount"
+                        Title="Tildelte brukere"
+                        Filterable="false"
+                        HeaderStyle="width: 60px;"/>
 
-        <MudDataGrid Items="_roles"
-                     Filterable="true"
-                     FilterMode="DataGridFilterMode.ColumnFilterRow"
-                     FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
-                     Dense="true"
-                     Hover="true"
-                     Striped="true"
-                     Square="true"
-                     Bordered="true"
-                     SortMode="SortMode.Multiple"
-                     FixedHeader="true"
-                     Loading="_isLoading"
-                     MultiSelection="true"
-                     @bind-SelectedItems="_selectedRoles"
-                     RowClick="@((DataGridRowClickEventArgs<RoleDto> args) => OnRoleClick(args))">
-
-            @* Selve kolonnene *@
-            <Columns>
-                <SelectColumn T="RoleDto"/>
-
-                <PropertyColumn Property="roleDto => roleDto.Name.Truncate(40)" Title="Rollenavn"/>
-
-                <PropertyColumn Property="roleDto => roleDto.Description.Truncate(50)" 
-                                Title="Beskrivelse" 
-                                Sortable="true"/>
-
-                <PropertyColumn Property="roleDto => roleDto.UserCount"
-                                Title="Tildelte brukere"
-                                Filterable="false"
-                                HeaderStyle="width: 60px;"/>
-
-                <TemplateColumn Title="Låst"
-                                Sortable="true"
-                                SortBy="@(roleDto => roleDto.IsSystem)"
-                                HeaderStyle="width: 120px;">
-                    <CellTemplate>
-                        @if (context.Item.IsSystem)
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Warning" Size="Size.Small"
-                                     Title="Systemrolle"/>
-                        }
-                    </CellTemplate>
-                </TemplateColumn>
-            </Columns>
-        </MudDataGrid>
-}
+        <TemplateColumn T="RoleDto"
+                        Title="Låst"
+                        Sortable="true"
+                        SortBy="@(r => r.IsSystem)"
+                        HeaderStyle="width: 120px;">
+            <CellTemplate>
+                @if (context.Item.IsSystem)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Warning" Size="Size.Small"
+                             Title="Systemrolle"/>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</ListPage>
 
 
 @code {

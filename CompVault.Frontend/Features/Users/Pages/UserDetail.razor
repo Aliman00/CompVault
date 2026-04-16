@@ -1,5 +1,4 @@
 ﻿@page "/users/{Id:guid}"
-@using CompVault.Frontend.Features.Users.Components
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.UsersRead)]
 @inject IUserService UserService
@@ -9,179 +8,160 @@
 
 @* Detalje visning av en bruker med mulighet for oppdatering *@
 
-<AppAlert @bind-Alert="_successAlert"/>
-<AppAlert @bind-Alert="_errorAlert"/>
-<AppAlert @bind-Alert="_departmentAlert"/>
-
-@if (_isLoading)
-{
-    <AppSpinner Class="pa-20"/>
-}
-else if (_user != null)
-{
-    @* SkjemaForm med validering med DataAnnotations *@
-    <EditForm EditContext="_editContext" OnValidSubmit="SaveEdit">
-        <DataAnnotationsValidator/>
-
-        @* Header med navn og tittel, redigeringsknapper og dropdown meny for flere valg*@
-        <MudPaper Class="pa-6" Elevation="1" Square="true">
-            <DetailHeader Title="@_user.FullName"
-                          EditPolicy="@Permissions.UsersWrite"
-                          Subtitle="@_user.JobTitle"
-                          IsEditing="_isEditing"
-                          OnStartEdit="StartEdit"
-                          OnCancelEdit="CancelEdit">
-                @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
-                <DropdownActions>
-                    <AuthorizeView Policy="@Permissions.UsersDelete" Context="auth">
-                        <Authorized>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                         IconColor="Color.Error"
-                                         OnClick="DeleteUser">
-                                <MudText Color="Color.Error">Slett bruker</MudText>
-                            </MudMenuItem>
-                        </Authorized>
-                        <NotAuthorized>
-                            <MudTooltip Text="Du har ikke tilgang til å slette brukere">
-                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                             IconColor="Color.Default"
-                                             Disabled="true">
-                                    <MudText>Slett bruker</MudText>
-                                </MudMenuItem>
-                            </MudTooltip>
-                        </NotAuthorized>
-                    </AuthorizeView>
-                </DropdownActions>
-            </DetailHeader>
-
-            @* Alle felt med egenskaper fra UserDto *@
-            <MudGrid>
-                @* Fornavn *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.FirstName"
-                                     ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
-                                     Label="Fornavn"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.FirstName"/> 
-                </MudItem>
-                @* Etternavn *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.LastName"
-                                     ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
-                                     Label="Etternavn"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.LastName"/>
-                </MudItem>
-                @* Email *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.Email"
-                                     ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
-                                     Label="Email"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.Email"/>
-                </MudItem>
-                @* Stillingstittel *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.JobTitle"
-                                     ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
-                                     Label="Stillingstittel"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.JobTitle"/>
-                </MudItem>
-
-                @* EmploymentType *@
-                <MudItem xs="12" sm="6">
-                    <DetailEnumField Value="@_editModel.EmploymentType"
-                                     ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
-                                     Label="Ansettelsestype"
-                                     IsEditing="_isEditing"/>
-                </MudItem>
-
-                @* Opprettelsesdato *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_user.CreatedAt.ToString(CultureInfo.InvariantCulture)"
-                                     Label="Opprettet"
-                                     IsEditing="false"/>
-                </MudItem>
-
-                @* Avdeling TODO: Lenke til avdeling etter avdeling er satt opp *@
-                <MudItem xs="12" sm="6">
-                    <DetailSelectWithLinkField Value="_editModel.DepartmentId"
-                                               ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
-                                               Label="Avdeling"
-                                               ToStringFunc="@(id => _departments.FirstOrDefault(
-                                                                 d => d.Id == id)?.Name ?? string.Empty)"
-                                               IsEditing="_isEditing"
-                                               DisplayValue="@_user.DepartmentName"
-                                               ShowLink="_user.DepartmentId.HasValue"
-                                               OnNavigate="NavigateToDepartment"
-                                               HelperText="Trykk på knappen for å gå til avdelingen">
-                        <Items>
-                            @foreach (var department in _departments)
-                            {
-                                <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
-                            }
-                        </Items>
-                    </DetailSelectWithLinkField>
-                </MudItem>
-                
-                @* Manager TODO: Filtrerering av brukere som kan være managere for 
-                denne brukeren/avdelingen til brukeren*@
-                <MudItem xs="12" sm="6">
-                    <DetailSelectWithLinkField Value="_editModel.ManagerId"
-                                               ValueChanged="(Guid? v) => _editModel.ManagerId = v"
-                                               Label="Nærmeste leder"
-                                               ToStringFunc="@(id => _allUsers.FirstOrDefault(
-                                                                 u => u.Id == id)?.FullName ?? string.Empty)"
-                                               IsEditing="_isEditing"
-                                               DisplayValue="@_user.ManagerName"
-                                               ShowLink="_user.ManagerId.HasValue"
-                                               OnNavigate="NavigateToManager"
-                                               HelperText="Trykk på knappen for å gå til brukeren til nærmeste leder">
-                        <Items>
-                            @foreach (var user in _allUsers.Where(u => u.Id != Id))
-                            {
-                                <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
-                            }
-                        </Items>
-                    </DetailSelectWithLinkField>
-                </MudItem>
-            
-                @* Roller TODO: Lenke til roller - Metoden er klar men mangler ID *@
-                <MudItem xs="12" sm="6">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-1">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Roller</MudText>
-                        <AuthorizeView Policy="@Permissions.RolesWrite" Context="assignRolesPermission">
-                            <Authorized>
-                                <MudButton Variant="Variant.Outlined"
-                                           Color="Color.Primary"
-                                           StartIcon="@Icons.Material.Filled.Shield"
-                                           Size="Size.Small"
-                                           OnClick="OpenAssignRolesDialog">
-                                    Endre roller
-                                </MudButton>
-                            </Authorized>
-                        </AuthorizeView>
-                    </MudStack>
-                    <MudStack Row="true" Spacing="0" Wrap="Wrap.Wrap">
-                        @foreach (var role in _user.Roles)
-                        {
-                            <MudChip T="string" 
-                                     Size="Size.Small" 
-                                     Color="Color.Primary" 
-                                     Variant="Variant.Outlined"
-                                     Class="cv-rounded"
-                                     OnClick="@NavigateToRole(Id)">
-                                @role.Truncate(50)
-                            </MudChip>
-                        }
-                    </MudStack>
-                </MudItem>
-            </MudGrid>
-        
-        </MudPaper>
-    </EditForm>
-}
+<DetailForm Title="@_user?.FullName"
+            Subtitle="@_user?.JobTitle"
+            EditPolicy="@Permissions.UsersWrite"
+            EditContext="_editContext"
+            OnValidSubmit="SaveEdit"
+            IsEditing="_isEditing"
+            IsLoading="_isLoading"
+            OnStartEdit="StartEdit"
+            OnCancelEdit="CancelEdit"
+            @bind-Alert="_alert">
+    <DropdownActions>
+        <AuthorizeView Policy="@Permissions.UsersDelete">
+            <Authorized>
+                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                             IconColor="Color.Error"
+                             OnClick="DeleteUser">
+                    <MudText Color="Color.Error">Slett bruker</MudText>
+                </MudMenuItem>
+            </Authorized>
+            <NotAuthorized>
+                <MudTooltip Text="Du har ikke tilgang til å slette brukere">
+                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                 IconColor="Color.Default"
+                                 Disabled="true">
+                        <MudText>Slett bruker</MudText>
+                    </MudMenuItem>
+                </MudTooltip>
+            </NotAuthorized>
+        </AuthorizeView>
+    </DropdownActions>
+    <Fields>
+        @* Fornavn *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.FirstName"
+                             ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
+                             Label="Fornavn"
+                             IsEditing="_isEditing"
+                             For="() => _editModel.FirstName"/>
+        </MudItem>
+        @* Etternavn *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.LastName"
+                             ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
+                             Label="Etternavn"
+                             IsEditing="_isEditing"
+                             For="() => _editModel.LastName"/>
+        </MudItem>
+        @* Email *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Email"
+                             ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
+                             Label="Email"
+                             IsEditing="_isEditing"
+                             For="() => _editModel.Email"/>
+        </MudItem>
+        @* Stillingstittel *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.JobTitle"
+                             ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
+                             Label="Stillingstittel"
+                             IsEditing="_isEditing"
+                             For="() => _editModel.JobTitle"/>
+        </MudItem>
+        @* EmploymentType *@
+        <MudItem xs="12" sm="6">
+            <DetailEnumField Value="@_editModel.EmploymentType"
+                             ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
+                             Label="Ansettelsestype"
+                             IsEditing="_isEditing"/>
+        </MudItem>
+        @* Opprettelsesdato *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_user!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                             Label="Opprettet"
+                             IsEditing="false"/>
+        </MudItem>
+        @* Avdeling *@
+        <MudItem xs="12" sm="6">
+            @if (ParentIsInactive)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-1">
+                    Avdeling er inaktiv. Vennligst endre avdeling.
+                </MudAlert>
+            }
+            <DetailSelectWithLinkField Value="_editModel.DepartmentId"
+                                       ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
+                                       Label="Avdeling"
+                                       ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                         d => d.Id == id)?.Name ?? string.Empty)"
+                                       IsEditing="_isEditing"
+                                       DisplayValue="@_user!.DepartmentName"
+                                       ShowLink="_user!.DepartmentId.HasValue"
+                                       OnNavigate="NavigateToDepartment"
+                                       HelperText="Trykk på knappen for å gå til avdelingen">
+                <Items>
+                    @foreach (var department in _departments)
+                    {
+                        <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                    }
+                </Items>
+            </DetailSelectWithLinkField>
+        </MudItem>
+        @* Nærmeste leder *@
+        <MudItem xs="12" sm="6">
+            <DetailSelectWithLinkField Value="_editModel.ManagerId"
+                                       ValueChanged="(Guid? v) => _editModel.ManagerId = v"
+                                       Label="Nærmeste leder"
+                                       ToStringFunc="@(id => _allUsers.FirstOrDefault(
+                                                         u => u.Id == id)?.FullName ?? string.Empty)"
+                                       IsEditing="_isEditing"
+                                       DisplayValue="@_user!.ManagerName"
+                                       ShowLink="_user!.ManagerId.HasValue"
+                                       OnNavigate="NavigateToManager"
+                                       HelperText="Trykk på knappen for å gå til brukeren til nærmeste leder">
+                <Items>
+                    @foreach (var user in _allUsers.Where(u => u.Id != Id))
+                    {
+                        <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
+                    }
+                </Items>
+            </DetailSelectWithLinkField>
+        </MudItem>
+        @* Roller *@
+        <MudItem xs="12" sm="6">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-1">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Roller</MudText>
+                <AuthorizeView Policy="@Permissions.RolesWrite" Context="assignRolesPermission">
+                    <Authorized>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Shield"
+                                   Size="Size.Small"
+                                   OnClick="OpenAssignRolesDialog">
+                            Endre roller
+                        </MudButton>
+                    </Authorized>
+                </AuthorizeView>
+            </MudStack>
+            <MudStack Row="true" Spacing="0" Wrap="Wrap.Wrap">
+                @foreach (var role in _user!.Roles)
+                {
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Color="Color.Primary"
+                             Variant="Variant.Outlined"
+                             Class="cv-rounded"
+                             OnClick="@NavigateToRole(Id)">
+                        @role.Truncate(50)
+                    </MudChip>
+                }
+            </MudStack>
+        </MudItem>
+    </Fields>
+</DetailForm>
 
 @code {
     
@@ -202,13 +182,14 @@ else if (_user != null)
     private bool _isLoading = true;
     
     // Forskjellige feilmeldinger for forkjellige beskjeder
-    private AlertInfo? _errorAlert;
-    private AlertInfo? _departmentAlert;
-    private AlertInfo? _successAlert;
+    private AlertInfo? _alert;
     
     private EditContext _editContext = null!;
 
     private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
+    
+    // Sjekker om den overordnete avdeling er inaktiv
+    private bool ParentIsInactive => _user?.DepartmentId.HasValue == true && _user.DepartmentIsActive == false;
     
     // ===================== LIFECYCLE =====================
     protected override async Task OnParametersSetAsync()
@@ -228,7 +209,7 @@ else if (_user != null)
             var userResult = await UserService.GetByIdAsync(Id, Cts.Token);
             if (userResult.IsFailure)
             {
-                _errorAlert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
+                _alert = new AlertInfo(userResult.Error!.ToString(), Severity.Error);
                 return;
             }
                 
@@ -236,7 +217,7 @@ else if (_user != null)
 
             if (_user == null) // Brukeren kan være null ved feil Guid
             {
-                _errorAlert = new AlertInfo("Fant ikke brukeren", Severity.Error);
+                _alert = new AlertInfo("Fant ikke brukeren", Severity.Error);
                 return;
             }
             
@@ -249,7 +230,7 @@ else if (_user != null)
         }
         catch
         {
-            _errorAlert = new AlertInfo("Klarte ikke å laste brukeren. Oppdater siden for å prøve igjen",
+            _alert = new AlertInfo("Klarte ikke å laste brukeren. Oppdater siden for å prøve igjen",
                 Severity.Error);
         }
         finally
@@ -257,7 +238,7 @@ else if (_user != null)
             _isLoading = false;
             
             if (Created)
-                _successAlert = new AlertInfo("Brukeren ble opprettet", Severity.Success);
+                _alert = new AlertInfo("Brukeren ble opprettet", Severity.Success);
         }
     }
     
@@ -267,10 +248,8 @@ else if (_user != null)
     // alle brukere for å så sette oss i redigerings-modus
     private async Task StartEdit()
     {
-        _errorAlert = null;
-        _departmentAlert = null;
-        _successAlert = null; 
-        
+        _alert = null;
+
         // Utfører begge API-kall samtidig
         var tasks = new List<Task>();
 
@@ -283,7 +262,7 @@ else if (_user != null)
         await Task.WhenAll(tasks);
         
         // Tilatter kun redigeringsmodus hvis API-kall er vellykket
-        bool loadedSuccessfully = _departmentAlert == null && _errorAlert == null;
+        bool loadedSuccessfully = _alert == null && _alert == null;
         if (loadedSuccessfully)
         {
             ResetEditModel();
@@ -295,16 +274,16 @@ else if (_user != null)
     {
         var departmentResults = await DepartmentService.GetAllAsync(Cts.Token);
         if (departmentResults.IsFailure)
-            _departmentAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
         else
-            _departments = departmentResults.Value!;
+            _departments = departmentResults.Value!.Where(d => d.IsActive).ToList();
     }
     
     private async Task LoadUsersAsync()
     {
         var result = await UserService.GetAllAsync(Cts.Token);
         if (result.IsFailure)
-            _errorAlert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
             _allUsers = result.Value!;
     }
@@ -331,7 +310,7 @@ else if (_user != null)
         var updateResult = await UserService.UpdateAsync(Id, request, Cts.Token);
         if (updateResult.IsFailure)
         {
-            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
             return;
         }
         
@@ -339,7 +318,7 @@ else if (_user != null)
         _user = updateResult.Value;
         ResetEditModel();
         _isEditing = false;
-        _successAlert = new AlertInfo("Brukeren ble oppdatert", Severity.Success);
+        _alert = new AlertInfo("Brukeren ble oppdatert", Severity.Success);
     }
     
     private void NavigateToDepartment()
@@ -378,7 +357,7 @@ else if (_user != null)
         var updateResult = await UserService.DeleteAsync(Id, Cts.Token);
         if (updateResult.IsFailure)
         {
-            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
             return;
         }
         
@@ -406,11 +385,11 @@ else if (_user != null)
         
         if (dialogResult.Data is not UserDto updatedUser)
         {
-            _errorAlert = new AlertInfo("Noe gikk galt ved oppdatering av roller.", Severity.Error);
+            _alert = new AlertInfo("Noe gikk galt ved oppdatering av roller.", Severity.Error);
             return;
         }
         
         _user = updatedUser;
-        _successAlert = new AlertInfo("Brukerens roller er oppdatert", Severity.Success);
+        _alert = new AlertInfo("Brukerens roller er oppdatert", Severity.Success);
     }
 }

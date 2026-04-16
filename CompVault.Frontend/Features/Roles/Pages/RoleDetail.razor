@@ -8,133 +8,105 @@
 
 @* Detalje visning av en rolle med mulighet for oppdatering *@
 
-<AppAlert @bind-Alert="_successAlert"/>
-<AppAlert @bind-Alert="_errorAlert"/>
-<AppAlert @bind-Alert="_usersAlert"/>
-
-@if (_isLoading)
-{
-    <AppSpinner Class="pa-20"/>
-}
-else if (_role != null)
-{
-    @* SkjemaForm med validering med DataAnnotations *@
-    <EditForm EditContext="_editContext" OnValidSubmit="SaveEdit">
-        <DataAnnotationsValidator/>
-
-        @* Header med navn og tittel, redigeringsknapper og dropdown meny for flere valg*@
-        <MudPaper Class="pa-6" Elevation="1" Square="true">
-            <DetailHeader Title="@_role.Name"
-                          EditPolicy="@Permissions.RolesWrite"
-                          Subtitle="@_role.Description"
-                          IsEditing="_isEditing"
-                          OnStartEdit="StartEdit"
-                          OnCancelEdit="CancelEdit">
-                @* Tilknytt tilattelse knapp *@
-                <ExtraActions>
-                    <ResponsiveButton Label="Permissions"
-                                      Icon="@Icons.Material.Filled.Security"
-                                      OnClick="OpenPermissionsDialog" />
-                    
-                </ExtraActions>
-                @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
-                <DropdownActions>
-                    <AuthorizeView Policy="@Permissions.RolesDelete" Context="auth">
-                        <Authorized>
-                            @if (_role.IsSystem)
-                            {
-                                <MudTooltip Text="Systemroller kan ikke slettes">
-                                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                                 IconColor="Color.Default"
-                                                 Disabled="true">
-                                        <MudText>Slett rolle</MudText>
-                                    </MudMenuItem>
-                                </MudTooltip>
-                            }
-                            else
-                            {
-                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                             IconColor="Color.Error"
-                                             OnClick="Delete">
-                                    <MudText Color="Color.Error">Slett rolle</MudText>
-                                </MudMenuItem>
-                            }
-                        </Authorized>
-                        <NotAuthorized>
-                            <MudTooltip Text="Du har ikke tilgang til å slette avdelingen">
-                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                             IconColor="Color.Default"
-                                             Disabled="true">
-                                    <MudText>Slett rolle</MudText>
-                                </MudMenuItem>
-                            </MudTooltip>
-                        </NotAuthorized>
-                    </AuthorizeView>
-                </DropdownActions>
-            </DetailHeader>
-
-            @* Alle felt med egenskaper fra RoleDto *@
-            <MudGrid>
-                @* Rollenavn *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.Name"
-                                     ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                                     Label="Rollenavn"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.Name"/>
-                </MudItem>
-                
-                @* Beskrivelse *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.Description"
-                                     ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
-                                     Label="Beskrivelse (valgfritt)"
-                                     IsEditing="_isEditing"
-                                     For="() => _editModel.Description"/>
-                </MudItem>
-              
-
-                @* Opprettelsesdato *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_role.CreatedAt.ToString(CultureInfo.InvariantCulture)"
-                                     Label="Opprettet"
-                                     IsEditing="false"/>
-
-                </MudItem>
-
-                @* Brukeren som opprettet *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_role.CreatedByName"
-                                     Label="Opprettet av bruker"
-                                     IsEditing="false"
-                                     ShowLink="_role.CreatedById.HasValue"
-                                     OnAdornmentClick="NavigateToCreatedByUser"
-                                     HelperText="@(HasCreatedByUser ? "Trykk for å gå til brukeren" : null)"/>
-
-                </MudItem>
-                
-                @* Brukere med denne rollen TODO: Tildele roller herfra senere, men trenger eget endepunkt *@
-                <MudItem xs="12">
-                    <UserTable Title="@($"Brukere tildelt denne rollen ({_role.UserCount})")"
-                               EmptyText="Ingen brukere tildelt denne rollen."
-                               Users="_usersWithRole"
-                               OnUserClick="NavigateToUser">
-                        <HeaderAction>
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.OpenInNew"
-                                       Size="Size.Small"
-                                       OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.Users.List))">
-                                Gå til brukere for å tildelle roller
-                            </MudButton>
-                        </HeaderAction>
-                    </UserTable>
-                </MudItem>
-                
-            </MudGrid>
-        </MudPaper>
-    </EditForm>
-}
+<DetailForm Title="@_role?.Name"
+            Subtitle="@_role?.Description"
+            EditPolicy="@Permissions.RolesWrite"
+            EditContext="_editContext"
+            OnValidSubmit="SaveEdit"
+            IsEditing="_isEditing"
+            IsLoading="_isLoading"
+            OnStartEdit="StartEdit"
+            OnCancelEdit="CancelEdit"
+            @bind-Alert="_alert">
+    <ExtraActions>
+        <ResponsiveButton Label="Permissions"
+                          Icon="@Icons.Material.Filled.Security"
+                          OnClick="OpenPermissionsDialog"/>
+    </ExtraActions>
+    <DropdownActions>
+        <AuthorizeView Policy="@Permissions.RolesDelete">
+            <Authorized>
+                @if (_role!.IsSystem)
+                {
+                    <MudTooltip Text="Systemroller kan ikke slettes">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     IconColor="Color.Default"
+                                     Disabled="true">
+                            <MudText>Slett rolle</MudText>
+                        </MudMenuItem>
+                    </MudTooltip>
+                }
+                else
+                {
+                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                 IconColor="Color.Error"
+                                 OnClick="Delete">
+                        <MudText Color="Color.Error">Slett rolle</MudText>
+                    </MudMenuItem>
+                }
+            </Authorized>
+            <NotAuthorized>
+                <MudTooltip Text="Du har ikke tilgang til å slette avdelingen">
+                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                 IconColor="Color.Default"
+                                 Disabled="true">
+                        <MudText>Slett rolle</MudText>
+                    </MudMenuItem>
+                </MudTooltip>
+            </NotAuthorized>
+        </AuthorizeView>
+    </DropdownActions>
+    <Fields>
+        @* Rollenavn *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Name"
+                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                             Label="Rollenavn"
+                             IsEditing="_isEditing"
+                             For="() => _editModel.Name"/>
+        </MudItem>
+        @* Beskrivelse *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Description"
+                             ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
+                             Label="Beskrivelse (valgfritt)"
+                             IsEditing="_isEditing"
+                             For="() => _editModel.Description"/>
+        </MudItem>
+        @* Opprettelsesdato *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_role!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                             Label="Opprettet"
+                             IsEditing="false"/>
+        </MudItem>
+        @* Opprettet av *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_role!.CreatedByName"
+                             Label="Opprettet av bruker"
+                             IsEditing="false"
+                             ShowLink="_role!.CreatedById.HasValue"
+                             OnAdornmentClick="NavigateToCreatedByUser"
+                             HelperText="@(HasCreatedByUser ? "Trykk for å gå til brukeren" : null)"/>
+        </MudItem>
+        @* Brukere med denne rollen *@
+        <MudItem xs="12">
+            <UserTable Title="@($"Brukere tildelt denne rollen ({_role!.UserCount})")"
+                       EmptyText="Ingen brukere tildelt denne rollen."
+                       Users="_usersWithRole"
+                       OnUserClick="NavigateToUser">
+                <HeaderAction>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.OpenInNew"
+                               Size="Size.Small"
+                               OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.Users.List))">
+                        Gå til brukere for å tildelle roller
+                    </MudButton>
+                </HeaderAction>
+            </UserTable>
+        </MudItem>
+    </Fields>
+</DetailForm>
 
 @code {
 
@@ -152,11 +124,9 @@ else if (_role != null)
 
     private bool _isLoading = true;
 
-    // Forskjellige feilmeldinger for forkjellige beskjeder
-    private AlertInfo? _errorAlert;
-    private AlertInfo? _usersAlert;
-    private AlertInfo? _successAlert;
-
+    // Forskjellige meldinger for forkjellige beskjeder
+    private AlertInfo? _alert;
+    
     private EditContext _editContext = null!;
 
     private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
@@ -189,19 +159,19 @@ else if (_role != null)
 
             if (roleResult.IsFailure)
             {
-                _errorAlert = new AlertInfo(roleResult.Error!.ToString(), Severity.Error);
+                _alert = new AlertInfo(roleResult.Error!.ToString(), Severity.Error);
                 return;
             }
 
             _role = roleResult.Value;
             if (_role == null) // Rollen kan være null ved feil Guid
             {
-                _errorAlert = new AlertInfo("Fant ikke rollen", Severity.Error);
+                _alert = new AlertInfo("Fant ikke rollen", Severity.Error);
                 return;
             }
 
             if (usersResult.IsFailure)
-                _usersAlert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
+                _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
             else
                 _usersWithRole = usersResult.Value!.Where(u => u.Roles.Contains(_role.Name)).ToList();
 
@@ -213,7 +183,7 @@ else if (_role != null)
         }
         catch
         {
-            _errorAlert = new AlertInfo("Klarte ikke å laste rollen. Oppdater siden for å prøve igjen",
+            _alert = new AlertInfo("Klarte ikke å laste rollen. Oppdater siden for å prøve igjen",
                 Severity.Error);
         }
         finally
@@ -221,7 +191,7 @@ else if (_role != null)
             _isLoading = false;
 
             if (Created)
-                _successAlert = new AlertInfo("Rollen ble opprettet", Severity.Success);
+                _alert = new AlertInfo("Rollen ble opprettet", Severity.Success);
         }
     }
 
@@ -230,9 +200,7 @@ else if (_role != null)
     // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger og resetter modell
     private void StartEdit()
     {
-        _errorAlert = null;
-        _usersAlert = null;
-        _successAlert = null;
+        _alert = null;
         ResetEditModel();
         _isEditing = true;
     }
@@ -259,7 +227,7 @@ else if (_role != null)
         var updateResult = await RoleService.UpdateAsync(Id, request, Cts.Token);
         if (updateResult.IsFailure)
         {
-            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
             return;
         }
 
@@ -267,7 +235,7 @@ else if (_role != null)
         _role = updateResult.Value;
         ResetEditModel();
         _isEditing = false;
-        _successAlert = new AlertInfo("Rollen ble oppdatert", Severity.Success);
+        _alert = new AlertInfo("Rollen ble oppdatert", Severity.Success);
     }
     
     private void NavigateToCreatedByUser()
@@ -298,7 +266,7 @@ else if (_role != null)
         var deleteResult = await RoleService.DeleteAsync(Id, Cts.Token);
         if (deleteResult.IsFailure)
         {
-            _errorAlert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
             return;
         }
 
@@ -324,12 +292,12 @@ else if (_role != null)
 
         if (dialogResult.Data is not RoleDto updatedRole)
         {
-            _errorAlert = new AlertInfo("Noe gikk galt ved oppdatering av permissions.", Severity.Error);
+            _alert = new AlertInfo("Noe gikk galt ved oppdatering av permissions.", Severity.Error);
             return;
         }
         
         _role = updatedRole;
-        _successAlert = new AlertInfo("Permissions oppdatert", Severity.Success);
+        _alert = new AlertInfo("Permissions oppdatert", Severity.Success);
     }
 
 }
