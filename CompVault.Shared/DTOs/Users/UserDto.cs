@@ -37,6 +37,9 @@ public sealed class UserDto
     /// <summary>Avdelingsnavn (hvis satt).</summary>
     public string? DepartmentName { get; set; }
 
+    /// <summary>Er avdeling aktiv (standard som true hvis satt).</summary>
+    public bool? DepartmentIsActive { get; set; } = true;
+
     /// <summary>Leder-ID (hvis satt).</summary>
     public Guid? ManagerId { get; set; }
     

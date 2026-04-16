@@ -16,6 +16,7 @@ public static class UserMapper
         IsActive = user.IsActive,
         DepartmentId = user.DepartmentId,
         DepartmentName = user.Department?.Name,
+        DepartmentIsActive = user.Department?.IsActive,
         ManagerId = user.ManagerId,
         ManagerName = user.Manager != null
             ? $"{user.Manager.FirstName} {user.Manager.LastName}".Trim()
