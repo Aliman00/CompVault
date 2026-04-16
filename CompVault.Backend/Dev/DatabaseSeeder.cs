@@ -738,12 +738,10 @@ public static class DatabaseSeeder
                 targetJobTitleId = jobTitle?.Id;
             }
 
-            // Unngå duplikater ved seeding
+            // Unngå duplikater ved seeding — sjekk tittel og dokumenttype
             bool documentExists = await dbContext.Documents.AnyAsync(d =>
                 d.Title == title &&
-                d.DocumentTypeId == documentType.Id &&
-                d.TargetDepartmentId == targetDeptId &&
-                d.TargetJobTitleId == targetJobTitleId);
+                d.DocumentTypeId == documentType.Id);
             if (documentExists)
                 continue;
 
@@ -754,14 +752,26 @@ public static class DatabaseSeeder
                 continue;
             }
 
+            var documentDepartments = new List<DocumentDepartment>();
+            if (targetDeptId.HasValue)
+            {
+                documentDepartments.Add(new DocumentDepartment { DepartmentId = targetDeptId.Value });
+            }
+
+            var documentJobTitles = new List<DocumentJobTitle>();
+            if (targetJobTitleId.HasValue)
+            {
+                documentJobTitles.Add(new DocumentJobTitle { JobTitleId = targetJobTitleId.Value });
+            }
+
             var document = new Document
             {
                 DocumentTypeId = documentType.Id,
                 DocumentTypeCategoryId = categoryId,
                 Title = title,
                 RequiresSignature = requiresSignature,
-                TargetDepartmentId = targetDeptId,
-                TargetJobTitleId = targetJobTitleId,
+                DocumentDepartments = documentDepartments,
+                DocumentJobTitles = documentJobTitles,
                 Version = 1,
                 IsActive = true,
                 UploadedBy = admin.Id,

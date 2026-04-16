@@ -23,17 +23,11 @@ public sealed class UpdateDocumentRequest
     [Url]
     public string? ExternalUrl { get; set; }
 
-    /// <summary>Ny målavdeling.</summary>
-    public Guid? TargetDepartmentId { get; set; }
+    /// <summary>Ny liste med mål-avdelinger. Null = ikke endret. Tom liste = fjern alle.</summary>
+    public List<Guid>? TargetDepartmentIds { get; set; }
 
-    /// <summary>Ny mål-jobbtittel-ID.</summary>
-    public Guid? TargetJobTitleId { get; set; }
-
-    /// <summary>Sett til true for å fjerne TargetDepartmentId.</summary>
-    public bool ClearTargetDepartmentId { get; set; }
-
-    /// <summary>Sett til true for å fjerne TargetJobTitleId.</summary>
-    public bool ClearTargetJobTitleId { get; set; }
+    /// <summary>Ny liste med mål-jobbtitler. Null = ikke endret. Tom liste = fjern alle.</summary>
+    public List<Guid>? TargetJobTitleIds { get; set; }
 
     /// <summary>Sett til true for å fjerne ExternalUrl.</summary>
     public bool ClearExternalUrl { get; set; }

@@ -32,6 +32,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
     public DbSet<DocumentSignature> DocumentSignatures => Set<DocumentSignature>();
+    public DbSet<DocumentDepartment> DocumentDepartments => Set<DocumentDepartment>();
+    public DbSet<DocumentJobTitle> DocumentJobTitles => Set<DocumentJobTitle>();
 
     // ============= AUTH ==============
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();

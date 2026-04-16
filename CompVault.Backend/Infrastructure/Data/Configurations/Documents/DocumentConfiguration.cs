@@ -28,10 +28,6 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         // Indeks for filtrering på dokumenttype og aktiv status
         builder.HasIndex(d => new { d.DocumentTypeId, d.IsActive });
 
-        // Indeks for targeting-spørringer
-        builder.HasIndex(d => d.TargetDepartmentId);
-        builder.HasIndex(d => d.TargetJobTitleId);
-
         builder.HasIndex(d => d.DeletedAt);
 
         // Indeks for DocumentTypeCategoryId
@@ -40,26 +36,9 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.HasQueryFilter(d => d.DeletedAt == null);
 
         // Relasjon: Document → DocumentTypeCategory (Many-to-One, optional)
-        // OnDelete er definert fra DocumentTypeCategory-siden (SetNull) i
-        // DocumentTypeCategoryConfiguration. EF Core bruker den atferden.
-        // Merk: Restrict ville forhindre sletting av kategorier med mindre alle
-        // tilknyttede dokumenter først ble oppdatert. SetNull er valgt for å
-        // la kategorier slettes uten å måtte oppdatere dokumenter manuelt.
         builder.HasOne(d => d.Category)
             .WithMany()
             .HasForeignKey(d => d.DocumentTypeCategoryId);
-
-        // Relasjon: Document → Department (Many-to-One, optional)
-        builder.HasOne(d => d.TargetDepartment)
-            .WithMany()
-            .HasForeignKey(d => d.TargetDepartmentId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // Relasjon: Document → JobTitle (Many-to-One, optional)
-        builder.HasOne(d => d.TargetJobTitle)
-            .WithMany()
-            .HasForeignKey(d => d.TargetJobTitleId)
-            .OnDelete(DeleteBehavior.Restrict);
 
         // Relasjon: Document → ApplicationUser (uploader)
         builder.HasOne(d => d.Uploader)
@@ -78,5 +57,8 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
             .WithOne(s => s.Document)
             .HasForeignKey(s => s.DocumentId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Målgruppe (many-to-many via koblingstabeller) konfigureres i
+        // DocumentDepartmentConfiguration og DocumentJobTitleConfiguration.
     }
 }

@@ -3,6 +3,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -17,6 +18,7 @@ public sealed class DocumentService(
     IDocumentSignatureRepository signatureRepository,
     IDocumentTypeRepository documentTypeRepository,
     IDepartmentRepository departmentRepository,
+    IJobTitleRepository jobTitleRepository,
     IUserRepository userRepository,
     IDocumentFileService documentFileService,
     ILogger<DocumentService> logger) : IDocumentService
@@ -100,18 +102,35 @@ public sealed class DocumentService(
             return Result<DocumentDto>.Failure(
                 AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
 
-        Result targetValidation = ValidateTarget(documentType, request.TargetDepartmentId, request.TargetJobTitleId, isCreate: true);
+        Result targetValidation = ValidateTarget(
+            documentType, request.TargetDepartmentIds, request.TargetJobTitleIds, isCreate: true);
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
-        if (request.TargetDepartmentId.HasValue)
+        // Sjekk at alle oppgitte avdelinger finnes
+        if (request.TargetDepartmentIds.Count > 0)
         {
-            bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.TargetDepartmentId.Value && d.IsActive, cancellationToken);
+            foreach (Guid deptId in request.TargetDepartmentIds)
+            {
+                bool exists = await departmentRepository.ExistsAsync(
+                    d => d.Id == deptId && d.IsActive, cancellationToken);
+                if (!exists)
+                    return Result<DocumentDto>.Failure(
+                        AppError.NotFound($"Avdeling med ID '{deptId}' ble ikke funnet."));
+            }
+        }
 
-            if (!departmentExists)
-                return Result<DocumentDto>.Failure(
-                    AppError.NotFound($"Avdeling med ID '{request.TargetDepartmentId.Value}' ble ikke funnet."));
+        // Sjekk at alle oppgitte jobbtitler finnes
+        if (request.TargetJobTitleIds.Count > 0)
+        {
+            foreach (Guid jtId in request.TargetJobTitleIds)
+            {
+                bool exists = await jobTitleRepository.ExistsAsync(
+                    j => j.Id == jtId && j.IsActive, cancellationToken);
+                if (!exists)
+                    return Result<DocumentDto>.Failure(
+                        AppError.NotFound($"Jobbtittel med ID '{jtId}' ble ikke funnet."));
+            }
         }
 
         // Categories er alltid lastet via GetWithCategoriesBySlugAsync
@@ -126,12 +145,14 @@ public sealed class DocumentService(
             Title = request.Title,
             Description = request.Description,
             ExternalUrl = request.ExternalUrl,
-            TargetDepartmentId = request.TargetDepartmentId,
-            TargetJobTitleId = request.TargetJobTitleId,
             RequiresSignature = request.RequiresSignature,
             Version = 1,
             UploadedBy = uploadedById,
-            IsActive = true
+            IsActive = true,
+            DocumentDepartments = request.TargetDepartmentIds
+                .Select(id => new DocumentDepartment { DepartmentId = id }).ToList(),
+            DocumentJobTitles = request.TargetJobTitleIds
+                .Select(id => new DocumentJobTitle { JobTitleId = id }).ToList()
         };
 
         // Håndter filopplasting med opprydding ved DB-feil
@@ -209,26 +230,39 @@ public sealed class DocumentService(
             documentType = fetched;
         }
 
-        // Beregn verdiene som faktisk skal valideres.
-        // ClearFlags betyr "nullstill feltet", ikke "sett feltet" — derfor filtrerer vi
-        // ut verdier som bare er sendt for å nullstilles, og sender kun de som faktisk skal settes.
-        bool wantsTargetDepartment = request.TargetDepartmentId.HasValue && !request.ClearTargetDepartmentId;
-        bool wantsTargetJobTitle = request.TargetJobTitleId.HasValue && !request.ClearTargetJobTitleId;
-        Guid? effectiveDepartmentId = wantsTargetDepartment ? request.TargetDepartmentId : null;
-        Guid? effectiveJobTitleId = wantsTargetJobTitle ? request.TargetJobTitleId : null;
+        // Finn effektive mål-lister for validering.
+        // Null på request betyr "ikke endre", tom liste betyr "fjern alle".
+        List<Guid> effectiveDepartmentIds = request.TargetDepartmentIds ?? document.DocumentDepartments.Select(dd => dd.DepartmentId).ToList();
+        List<Guid> effectiveJobTitleIds = request.TargetJobTitleIds ?? document.DocumentJobTitles.Select(dj => dj.JobTitleId).ToList();
 
-        Result targetValidation = ValidateTarget(documentType, effectiveDepartmentId, effectiveJobTitleId, isCreate: false);
+        Result targetValidation = ValidateTarget(documentType, effectiveDepartmentIds, effectiveJobTitleIds, isCreate: false);
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
-        if (request.TargetDepartmentId.HasValue && !request.ClearTargetDepartmentId)
+        // Valider nye avdelinger hvis oppgitt
+        if (request.TargetDepartmentIds is not null)
         {
-            bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.TargetDepartmentId.Value && d.IsActive, cancellationToken);
+            foreach (Guid deptId in request.TargetDepartmentIds)
+            {
+                bool exists = await departmentRepository.ExistsAsync(
+                    d => d.Id == deptId && d.IsActive, cancellationToken);
+                if (!exists)
+                    return Result<DocumentDto>.Failure(
+                        AppError.NotFound($"Avdeling med ID '{deptId}' ble ikke funnet."));
+            }
+        }
 
-            if (!departmentExists)
-                return Result<DocumentDto>.Failure(
-                    AppError.NotFound($"Avdeling med ID '{request.TargetDepartmentId.Value}' ble ikke funnet."));
+        // Valider nye jobbtitler hvis oppgitt
+        if (request.TargetJobTitleIds is not null)
+        {
+            foreach (Guid jtId in request.TargetJobTitleIds)
+            {
+                bool exists = await jobTitleRepository.ExistsAsync(
+                    j => j.Id == jtId && j.IsActive, cancellationToken);
+                if (!exists)
+                    return Result<DocumentDto>.Failure(
+                        AppError.NotFound($"Jobbtittel med ID '{jtId}' ble ikke funnet."));
+            }
         }
 
         if (request.DocumentTypeCategoryId.HasValue && !request.ClearDocumentTypeCategoryId)
@@ -239,7 +273,7 @@ public sealed class DocumentService(
                     AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for dokumentets dokumenttype."));
         }
 
-        ApplyUpdate(document, request, effectiveDepartmentId, effectiveJobTitleId);
+        ApplyUpdate(document, request);
 
         try
         {
@@ -293,17 +327,21 @@ public sealed class DocumentService(
             return Result<bool>.Failure(
                 AppError.Create(ErrorCode.Validation, "Dette dokumentet krever ikke signering."));
 
-        if (document.TargetDepartmentId.HasValue || document.TargetJobTitleId.HasValue)
+        // Målgruppe-sjekk: bruker må være i minst én av de valgte avdelingene
+        // OG minst én av de valgte jobbtittlene (hvis begge er satt).
+        if (document.DocumentDepartments.Count > 0 || document.DocumentJobTitles.Count > 0)
         {
             ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
             if (user is null)
                 return Result<bool>.Failure(AppError.NotFound("Bruker ble ikke funnet."));
 
-            bool inTargetGroup =
-                (document.TargetDepartmentId is null || document.TargetDepartmentId == user.DepartmentId) &&
-                (!document.TargetJobTitleId.HasValue || document.TargetJobTitleId == user.JobTitleId);
+            bool departmentMatch = document.DocumentDepartments.Count == 0 ||
+                document.DocumentDepartments.Any(dd => dd.DepartmentId == user.DepartmentId);
 
-            if (!inTargetGroup)
+            bool jobTitleMatch = document.DocumentJobTitles.Count == 0 ||
+                document.DocumentJobTitles.Any(dj => dj.JobTitleId == user.JobTitleId);
+
+            if (!departmentMatch || !jobTitleMatch)
                 return Result<bool>.Failure(
                     AppError.Create(ErrorCode.Forbidden, "Du tilhører ikke målgruppen for dette dokumentet."));
         }
@@ -378,7 +416,6 @@ public sealed class DocumentService(
             return Result<DocumentDto>.Failure(sizeResult.Error!);
 
         // ---- Fase 1: Skriv ny fil til disk (temp-plassering) ----
-        // Disk-operasjoner gjøres først. Hvis noe feiler senere kan temp-filen ryddes.
         string extension = Path.GetExtension(fileName);
         string storageFolder = documentType.StorageFolder;
         string tempPath = $"{storageFolder}/active/{documentId}/file_v{document.Version + 1}_tmp{extension}";
@@ -456,9 +493,6 @@ public sealed class DocumentService(
         }
 
         // ---- Fase 4: Flytt filer på disk etter vellykket DB-commit ----
-        // Hvis en flytting feiler her, er DB konsistent med nye metadata.
-        // Gammel fil ligger fortsatt på sin opprinnelige path, og temp-fil ligger på temp-path.
-        // Begge er sikre — ingen data er tapt. Kan ryddes opp manuelt eller via cron.
         if (!string.IsNullOrEmpty(oldFilePath) && oldFilePath != newFilePath)
         {
             try
@@ -480,8 +514,6 @@ public sealed class DocumentService(
         {
             logger.LogError(ex, "Kunne ikke flytte temp-fil til endelig plassering for dokument {DocumentId}. Fil ligger på: {TempPath}",
                 documentId, tempFilePath);
-            // Ikke returner feil — DB er konsistent, filen ligger på temp og kan flyttes manuelt.
-            // Brukeren får dokumentet, men fil-tilgang vil feile inntil filen flyttes.
         }
 
         Document? updated = await documentRepository.GetWithDetailsAsync(document.Id, cancellationToken);
@@ -501,7 +533,7 @@ public sealed class DocumentService(
         Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default)
     {
-        Document? document = await documentRepository.GetByIdAsync(documentId, cancellationToken);
+        Document? document = await documentRepository.GetWithDetailsAsync(documentId, cancellationToken);
 
         if (document is null)
             return Result<DocumentDownloadResult>.Failure(
@@ -545,7 +577,7 @@ public sealed class DocumentService(
         Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default)
     {
-        Document? document = await documentRepository.GetByIdAsync(documentId, cancellationToken);
+        Document? document = await documentRepository.GetWithDetailsAsync(documentId, cancellationToken);
 
         if (document is null)
             return Result<IReadOnlyList<DocumentSignatureDto>>.Failure(
@@ -559,8 +591,10 @@ public sealed class DocumentService(
                     AppError.Create(ErrorCode.Forbidden, "Du har ikke tilgang til dette dokumentet."));
         }
 
+        // Hent signaturer for dokumentets gjeldende versjon
+        int currentVersion = document.Version;
         IReadOnlyList<DocumentSignature> signatures = await signatureRepository.GetForDocumentVersionAsync(
-            documentId, document.Version, cancellationToken);
+            documentId, currentVersion, cancellationToken);
 
         var dtos = signatures.Select(DocumentMapper.ToSignatureDto).ToList();
         return Result<IReadOnlyList<DocumentSignatureDto>>.Success(dtos);
@@ -616,13 +650,8 @@ public sealed class DocumentService(
 
     /// <summary>
     /// Apllierer oppdateringer fra DTO på dokumententiteten.
-    /// Bruker effective-verdier for target-felt for å sikre konsistens med valideringen.
     /// </summary>
-    private static void ApplyUpdate(
-        Document document,
-        UpdateDocumentRequest request,
-        Guid? effectiveDepartmentId,
-        Guid? effectiveJobTitleId)
+    private static void ApplyUpdate(Document document, UpdateDocumentRequest request)
     {
         if (!string.IsNullOrEmpty(request.Title))
             document.Title = request.Title;
@@ -643,62 +672,79 @@ public sealed class DocumentService(
         else if (request.ExternalUrl is not null)
             document.ExternalUrl = request.ExternalUrl;
 
-        // Bruk effective-verdier istedenfor rå request — sikrer konsistens med ValidateTarget
-        document.TargetDepartmentId = effectiveDepartmentId;
-        document.TargetJobTitleId = effectiveJobTitleId;
+        // Oppdater mål-avdelinger: null = ikke endret, liste = erstatt
+        if (request.TargetDepartmentIds is not null)
+        {
+            document.DocumentDepartments = request.TargetDepartmentIds
+                .Select(id => new DocumentDepartment { DocumentId = document.Id, DepartmentId = id })
+                .ToList();
+        }
+
+        // Oppdater mål-jobbtitler: null = ikke endret, liste = erstatt
+        if (request.TargetJobTitleIds is not null)
+        {
+            document.DocumentJobTitles = request.TargetJobTitleIds
+                .Select(id => new DocumentJobTitle { DocumentId = document.Id, JobTitleId = id })
+                .ToList();
+        }
     }
 
     /// <summary>
-    /// Validerer at target-feltene er konsistente med dokumenttypens TargetMode.
-    /// Ved opprettelse (isCreate=true) kreves at påkrevde felt er satt.
+    /// Validerer at target-listene er konsistente med dokumenttypens TargetMode.
+    /// Ved opprettelse (isCreate=true) kreves at påkrevde lister har minst ett element.
     /// Ved oppdatering (isCreate=false) sjekkes kun at regler ikke brytes.
     /// </summary>
     private static Result ValidateTarget(
         DocumentType documentType,
-        Guid? targetDepartmentId,
-        Guid? targetJobTitleId,
+        List<Guid> targetDepartmentIds,
+        List<Guid> targetJobTitleIds,
         bool isCreate)
     {
-        bool hasDepartment = targetDepartmentId.HasValue;
-        bool hasJobTitle = targetJobTitleId.HasValue;
+        bool hasDepartments = targetDepartmentIds.Count > 0;
+        bool hasJobTitles = targetJobTitleIds.Count > 0;
 
         return documentType.TargetMode switch
         {
-            DocumentTargetMode.None when hasDepartment || hasJobTitle =>
+            DocumentTargetMode.None when hasDepartments || hasJobTitles =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
-                    $"Dokumenttype '{documentType.Name}' har TargetMode=None. Target-felt kan ikke settes.")),
-            DocumentTargetMode.Department when isCreate && !hasDepartment =>
+                    $"Dokumenttype '{documentType.Name}' har TargetMode=None. Target-lister kan ikke settes.")),
+            DocumentTargetMode.Department when isCreate && !hasDepartments =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
-                    $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentId er satt.")),
-            DocumentTargetMode.Department when hasJobTitle && !hasDepartment =>
+                    $"Dokumenttype '{documentType.Name}' krever minst én målavdeling (TargetDepartmentIds).")),
+            DocumentTargetMode.Department when hasJobTitles && !hasDepartments =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
-                    $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentId er satt når TargetJobTitleId brukes.")),
-            DocumentTargetMode.JobTitle when isCreate && !hasJobTitle =>
+                    $"Dokumenttype '{documentType.Name}' krever at TargetDepartmentIds er satt når TargetJobTitleIds brukes.")),
+            DocumentTargetMode.JobTitle when isCreate && !hasJobTitles =>
                 Result.Failure(AppError.Create(ErrorCode.Validation,
-                    $"Dokumenttype '{documentType.Name}' krever at TargetJobTitleId er satt.")),
+                    $"Dokumenttype '{documentType.Name}' krever minst én mål-jobbtittel (TargetJobTitleIds).")),
+            DocumentTargetMode.JobTitle when hasDepartments && !hasJobTitles =>
+                Result.Failure(AppError.Create(ErrorCode.Validation,
+                    $"Dokumenttype '{documentType.Name}' krever at TargetJobTitleIds er satt når TargetDepartmentIds brukes.")),
             _ => Result.Success()
         };
     }
 
     /// <summary>
     /// Sjekker om en bruker har tilgang til et dokument basert på målgruppe.
-    /// TargetMode None = alle kan se. Department/JobTitle = bruker må matche.
-    /// Brukere uten avdeling/stilling kan kun se dokumenter med TargetMode None.
+    /// TargetMode None = alle kan se. Department/JobTitle = bruker må matche minst én i listen.
+    /// Hvis begge lister er satt, må brukeren matche minst én i HVER liste (AND-logikk mellom kategorier).
     /// </summary>
     private static bool CanUserAccessDocument(
         Document document, Guid? userDepartmentId, Guid? userJobTitleId)
     {
-        // TargetMode None = ingen målgruppe, alle kan se
-        if (document.TargetDepartmentId is null && document.TargetJobTitleId is null)
+        // Ingen målgruppe = alle kan se
+        if (document.DocumentDepartments.Count == 0 && document.DocumentJobTitles.Count == 0)
             return true;
 
-        // AND-logikk: hvis begge target-felt er satt, må brukeren matche begge.
-        // Dette er konsistent med SignAsync sin sjekk.
-        bool departmentMatch = document.TargetDepartmentId is null ||
-            document.TargetDepartmentId == userDepartmentId;
-        bool jobTitleMatch = document.TargetJobTitleId is null ||
-            document.TargetJobTitleId == userJobTitleId;
+        // Hvis avdelingsmålgruppe er satt, må brukeren matche minst én avdeling
+        bool departmentMatch = document.DocumentDepartments.Count == 0 ||
+            (userDepartmentId.HasValue && document.DocumentDepartments.Any(dd => dd.DepartmentId == userDepartmentId.Value));
 
+        // Hvis jobbtittel-målgruppe er satt, må brukeren matche minst én jobbtittel
+        bool jobTitleMatch = document.DocumentJobTitles.Count == 0 ||
+            (userJobTitleId.HasValue && document.DocumentJobTitles.Any(dj => dj.JobTitleId == userJobTitleId.Value));
+
+        // AND-logikk mellom kategoriene: hvis begge er satt, må begge matche
         return departmentMatch && jobTitleMatch;
     }
 

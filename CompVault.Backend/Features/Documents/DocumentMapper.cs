@@ -20,9 +20,16 @@ public static class DocumentMapper
             Title = document.Title,
             Description = document.Description,
             ExternalUrl = document.ExternalUrl,
-            TargetDepartmentId = document.TargetDepartmentId,
-            TargetJobTitleId = document.TargetJobTitleId,
-            TargetJobTitleName = document.TargetJobTitle?.Name,
+            TargetDepartmentIds = document.DocumentDepartments.Select(dd => dd.DepartmentId).ToList(),
+            TargetDepartmentNames = document.DocumentDepartments
+                .Where(dd => dd.Department != null)
+                .Select(dd => dd.Department!.Name)
+                .ToList(),
+            TargetJobTitleIds = document.DocumentJobTitles.Select(dj => dj.JobTitleId).ToList(),
+            TargetJobTitleNames = document.DocumentJobTitles
+                .Where(dj => dj.JobTitle != null)
+                .Select(dj => dj.JobTitle!.Name)
+                .ToList(),
             RequiresSignature = document.RequiresSignature,
             HasFile = !string.IsNullOrEmpty(document.FilePath),
             Version = document.Version,
@@ -50,9 +57,16 @@ public static class DocumentMapper
             ExternalUrl = document.ExternalUrl,
             HasFile = !string.IsNullOrEmpty(document.FilePath),
             FileName = document.FileName,
-            TargetDepartmentId = document.TargetDepartmentId,
-            TargetJobTitleId = document.TargetJobTitleId,
-            TargetJobTitleName = document.TargetJobTitle?.Name,
+            TargetDepartmentIds = document.DocumentDepartments.Select(dd => dd.DepartmentId).ToList(),
+            TargetDepartmentNames = document.DocumentDepartments
+                .Where(dd => dd.Department != null)
+                .Select(dd => dd.Department!.Name)
+                .ToList(),
+            TargetJobTitleIds = document.DocumentJobTitles.Select(dj => dj.JobTitleId).ToList(),
+            TargetJobTitleNames = document.DocumentJobTitles
+                .Where(dj => dj.JobTitle != null)
+                .Select(dj => dj.JobTitle!.Name)
+                .ToList(),
             Version = document.Version,
             UploadedByName = document.Uploader is { } uploader
                 ? $"{uploader.FirstName} {uploader.LastName}".Trim()

@@ -5,6 +5,7 @@ using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -23,6 +24,7 @@ public class DocumentServiceTests
     private readonly Mock<IDocumentSignatureRepository> _signatureRepositoryMock;
     private readonly Mock<IDocumentTypeRepository> _documentTypeRepositoryMock;
     private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
+    private readonly Mock<IJobTitleRepository> _jobTitleRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IDocumentFileService> _fileServiceMock;
     private readonly Mock<ILogger<DocumentService>> _loggerMock;
@@ -34,6 +36,7 @@ public class DocumentServiceTests
         _signatureRepositoryMock = new Mock<IDocumentSignatureRepository>();
         _documentTypeRepositoryMock = new Mock<IDocumentTypeRepository>();
         _departmentRepositoryMock = new Mock<IDepartmentRepository>();
+        _jobTitleRepositoryMock = new Mock<IJobTitleRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
         _fileServiceMock = new Mock<IDocumentFileService>();
         _loggerMock = new Mock<ILogger<DocumentService>>();
@@ -43,6 +46,7 @@ public class DocumentServiceTests
             _signatureRepositoryMock.Object,
             _documentTypeRepositoryMock.Object,
             _departmentRepositoryMock.Object,
+            _jobTitleRepositoryMock.Object,
             _userRepositoryMock.Object,
             _fileServiceMock.Object,
             _loggerMock.Object);
@@ -277,7 +281,7 @@ public class DocumentServiceTests
 
     /// <summary>
     /// Tester at CreateAsync returnerer failure når TargetMode er Department
-    /// men TargetDepartmentId mangler.
+    /// men TargetDepartmentIds mangler.
     /// </summary>
     [Fact]
     public async Task CreateAsync_DepartmentModeWithoutTarget_ReturnsValidationFailure()
@@ -287,7 +291,7 @@ public class DocumentServiceTests
         var request = new CreateDocumentRequest
         {
             Title = "Test",
-            TargetDepartmentId = null // Mangler for Department-modus
+            TargetDepartmentIds = [] // Tom liste for Department-modus
         };
 
         _documentTypeRepositoryMock
@@ -305,7 +309,7 @@ public class DocumentServiceTests
 
     /// <summary>
     /// Tester at CreateAsync returnerer failure når TargetMode er None
-    /// men target-felt er satt.
+    /// men target-lister er satt.
     /// </summary>
     [Fact]
     public async Task CreateAsync_NoneModeWithTarget_ReturnsValidationFailure()
@@ -315,7 +319,7 @@ public class DocumentServiceTests
         var request = new CreateDocumentRequest
         {
             Title = "Test",
-            TargetDepartmentId = Guid.NewGuid() // Ikke tillatt for None
+            TargetDepartmentIds = [Guid.NewGuid()] // Ikke tillatt for None
         };
 
         _documentTypeRepositoryMock
@@ -343,7 +347,7 @@ public class DocumentServiceTests
         var request = new CreateDocumentRequest
         {
             Title = "Test",
-            TargetDepartmentId = departmentId
+            TargetDepartmentIds = [departmentId]
         };
 
         _documentTypeRepositoryMock
@@ -578,10 +582,10 @@ public class DocumentServiceTests
     }
 
     /// <summary>
-    /// Tester at UpdateAsync kan fjerne felt med clear-flagg.
+    /// Tester at UpdateAsync kan fjerne mål-avdelinger med tom liste.
     /// </summary>
     [Fact]
-    public async Task UpdateAsync_ClearsTargetDepartment_ReturnsSuccess()
+    public async Task UpdateAsync_ClearsTargetDepartments_ReturnsSuccess()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -594,7 +598,7 @@ public class DocumentServiceTests
             DocumentType = type,
             Title = "Test",
             Version = 1,
-            TargetDepartmentId = departmentId
+            DocumentDepartments = [new DocumentDepartment { DocumentId = id, DepartmentId = departmentId }]
         };
 
         _documentRepositoryMock
@@ -609,13 +613,13 @@ public class DocumentServiceTests
             .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
-        // Act
+        // Act — tom liste fjerner alle mål-avdelinger
         Result<DocumentDto> result = await _sut.UpdateAsync(
-            id, new UpdateDocumentRequest { ClearTargetDepartmentId = true });
+            id, new UpdateDocumentRequest { TargetDepartmentIds = [] });
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        document.TargetDepartmentId.Should().BeNull();
+        document.DocumentDepartments.Should().BeEmpty();
     }
 
     // -------------------------------------------------------------------------
@@ -820,7 +824,7 @@ public class DocumentServiceTests
         };
 
         _documentRepositoryMock
-            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
         // Act
@@ -847,7 +851,7 @@ public class DocumentServiceTests
         };
 
         _documentRepositoryMock
-            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
         _fileServiceMock
@@ -880,7 +884,7 @@ public class DocumentServiceTests
         };
 
         _documentRepositoryMock
-            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
 
         _fileServiceMock
@@ -910,7 +914,7 @@ public class DocumentServiceTests
         // Arrange
         var id = Guid.NewGuid();
         _documentRepositoryMock
-            .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Document?)null);
 
         // Act

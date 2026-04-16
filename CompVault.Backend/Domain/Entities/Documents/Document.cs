@@ -1,22 +1,22 @@
 using System.ComponentModel.DataAnnotations;
 
-using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Domain.Entities.JobTitles;
 
 namespace CompVault.Backend.Domain.Entities.Documents;
 
 /// <summary>
 /// Et dokument i systemet. Tilhører en <see cref="DocumentType"/> og kan ha filvedlegg
 /// eller ekstern lenke. Støtter versjonering og signering.
+/// Målgruppe settes via <see cref="DocumentDepartment"/> og <see cref="DocumentJobTitle"/>
+/// koblingstabeller basert på dokumenttypens TargetMode.
 /// </summary>
 public class Document
 {
-    // ======================== Primary Key ========================
+    // ======================== Primærnøkkel ========================
     /// <summary>Unik ID.</summary>
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    // ======================== Foreign Keys ========================
+    // ======================== Fremmednøkler ========================
     /// <summary>ID til dokumenttypen.</summary>
     public Guid DocumentTypeId { get; set; }
 
@@ -33,13 +33,6 @@ public class Document
     /// <summary>Ekstern URL hvis dokumentet lenker til en ekstern ressurs.</summary>
     [MaxLength(500)]
     public string? ExternalUrl { get; set; }
-
-    // ======================== Targeting ========================
-    /// <summary>ID til målavdelingen. Brukes når DocumentType.TargetMode er Department.</summary>
-    public Guid? TargetDepartmentId { get; set; }
-
-    /// <summary>ID til mål-jobbtittelen. Brukes når DocumentType.TargetMode er JobTitle.</summary>
-    public Guid? TargetJobTitleId { get; set; }
 
     // ======================== Signatur ========================
     /// <summary>Om dette dokumentet krever signering.</summary>
@@ -85,12 +78,6 @@ public class Document
     /// <summary>Kategorien.</summary>
     public DocumentTypeCategory? Category { get; set; }
 
-    /// <summary>Målavdelingen.</summary>
-    public Department? TargetDepartment { get; set; }
-
-    /// <summary>Mål-jobbtittelen.</summary>
-    public JobTitle? TargetJobTitle { get; set; }
-
     /// <summary>Brukeren som lastet opp.</summary>
     public ApplicationUser? Uploader { get; set; }
 
@@ -99,4 +86,10 @@ public class Document
 
     /// <summary>Alle signaturer på dette dokumentet.</summary>
     public ICollection<DocumentSignature> Signatures { get; set; } = new List<DocumentSignature>();
+
+    /// <summary>Mål-avdelinger for dette dokumentet (mange-til-mange).</summary>
+    public ICollection<DocumentDepartment> DocumentDepartments { get; set; } = new List<DocumentDepartment>();
+
+    /// <summary>Mål-jobbtitler for dette dokumentet (mange-til-mange).</summary>
+    public ICollection<DocumentJobTitle> DocumentJobTitles { get; set; } = new List<DocumentJobTitle>();
 }

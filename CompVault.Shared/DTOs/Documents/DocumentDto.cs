@@ -29,14 +29,17 @@ public sealed class DocumentDto
     /// <summary>Ekstern URL.</summary>
     public string? ExternalUrl { get; set; }
 
-    /// <summary>ID til målavdelingen.</summary>
-    public Guid? TargetDepartmentId { get; set; }
+    /// <summary>ID-er til mål-avdelinger.</summary>
+    public List<Guid> TargetDepartmentIds { get; set; } = [];
 
-    /// <summary>ID til mål-jobbtittelen.</summary>
-    public Guid? TargetJobTitleId { get; set; }
+    /// <summary>Navn på mål-avdelinger.</summary>
+    public List<string> TargetDepartmentNames { get; set; } = [];
 
-    /// <summary>Navn på mål-jobbtittelen.</summary>
-    public string? TargetJobTitleName { get; set; }
+    /// <summary>ID-er til mål-jobbtitler.</summary>
+    public List<Guid> TargetJobTitleIds { get; set; } = [];
+
+    /// <summary>Navn på mål-jobbtitler.</summary>
+    public List<string> TargetJobTitleNames { get; set; } = [];
 
     /// <summary>Om dokumentet krever signering.</summary>
     public bool RequiresSignature { get; set; }

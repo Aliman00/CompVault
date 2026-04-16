@@ -24,11 +24,11 @@ public sealed class CreateDocumentRequest
     [Url]
     public string? ExternalUrl { get; set; }
 
-    /// <summary>ID til målavdelingen. Brukes kun når DocumentType.TargetMode er Department.</summary>
-    public Guid? TargetDepartmentId { get; set; }
+    /// <summary>ID-er til målavdelinger. Brukes når DocumentType.TargetMode er Department.</summary>
+    public List<Guid> TargetDepartmentIds { get; set; } = [];
 
-    /// <summary>ID til mål-jobbtittelen. Brukes kun når DocumentType.TargetMode er JobTitle.</summary>
-    public Guid? TargetJobTitleId { get; set; }
+    /// <summary>ID-er til mål-jobbtitler. Brukes når DocumentType.TargetMode er JobTitle.</summary>
+    public List<Guid> TargetJobTitleIds { get; set; } = [];
 
     /// <summary>Om dokumentet krever signering. Standard er true.</summary>
     public bool RequiresSignature { get; set; } = true;

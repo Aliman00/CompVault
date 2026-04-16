@@ -15,7 +15,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         return await DbSet
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
-            .Include(d => d.TargetDepartment)
+            .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
+            .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
@@ -26,6 +27,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     {
         return await DbSet
             .Include(d => d.DocumentType)
+            .Include(d => d.DocumentDepartments)
+            .Include(d => d.DocumentJobTitles)
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
@@ -34,6 +37,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     {
         return await DbSet
             .Include(d => d.Signatures)
+            .Include(d => d.DocumentDepartments)
+            .Include(d => d.DocumentJobTitles)
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
@@ -45,6 +50,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         IQueryable<Document> query = DbSet
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
+            .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
+            .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
             .Where(d => d.DocumentTypeId == documentTypeId && d.IsActive);
 
@@ -66,16 +73,19 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         return await DbSet
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
+            .Include(d => d.DocumentDepartments)
+            .Include(d => d.DocumentJobTitles)
             .Include(d => d.Uploader)
             .Where(d => d.IsActive)
             .Where(d =>
-                (d.TargetDepartmentId == null && d.TargetJobTitleId == null) ||
-                (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId &&
-                 d.TargetJobTitleId == null) ||
-                (d.TargetJobTitleId != null && d.TargetJobTitleId == jobTitleId &&
-                 d.TargetDepartmentId == null) ||
-                (d.TargetDepartmentId != null && d.TargetDepartmentId == departmentId &&
-                 d.TargetJobTitleId != null && d.TargetJobTitleId == jobTitleId))
+                (!d.DocumentDepartments.Any() && !d.DocumentJobTitles.Any()) ||
+                (d.DocumentDepartments.Any() && !d.DocumentJobTitles.Any() &&
+                 d.DocumentDepartments.Any(dd => dd.DepartmentId == departmentId)) ||
+                (!d.DocumentDepartments.Any() && d.DocumentJobTitles.Any() &&
+                 d.DocumentJobTitles.Any(dj => dj.JobTitleId == jobTitleId)) ||
+                (d.DocumentDepartments.Any() && d.DocumentJobTitles.Any() &&
+                 d.DocumentDepartments.Any(dd => dd.DepartmentId == departmentId) &&
+                 d.DocumentJobTitles.Any(dj => dj.JobTitleId == jobTitleId)))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
@@ -87,6 +97,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         return await DbSet
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
+            .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
+            .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
             .Where(d => idList.Contains(d.Id))
             .AsNoTracking()
