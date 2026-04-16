@@ -17,7 +17,7 @@ internal sealed class JobTitleConfiguration : IEntityTypeConfiguration<JobTitle>
         builder.Property(j => j.CreatedAt).IsRequired();
 
         // Unikt navn — forhindrer duplikate jobbtitler
-        builder.HasIndex(j => j.Name).IsUnique();
+        builder.HasIndex(j => j.Name).IsUnique().HasFilter("\"DeletedAt\" IS NULL");
 
         builder.HasIndex(j => j.DeletedAt);
 
