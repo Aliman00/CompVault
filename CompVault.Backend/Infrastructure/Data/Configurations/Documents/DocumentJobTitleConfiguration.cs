@@ -23,7 +23,7 @@ internal sealed class DocumentJobTitleConfiguration : IEntityTypeConfiguration<D
 
         // Relasjon: DocumentJobTitle → JobTitle
         builder.HasOne(dj => dj.JobTitle)
-            .WithMany()
+            .WithMany(j => j.DocumentJobTitles)
             .HasForeignKey(dj => dj.JobTitleId)
             .OnDelete(DeleteBehavior.Restrict);
 
