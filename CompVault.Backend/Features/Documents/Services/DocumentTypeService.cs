@@ -187,7 +187,18 @@ public sealed class DocumentTypeService(
         };
 
         await categoryRepository.AddAsync(category, cancellationToken);
-        await categoryRepository.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await categoryRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Slug-unikhet sjekkes før lagring, men concurrent requests kan likevel
+            // opprette samme slug. Unique constraint fanger dette opp.
+            return Result<DocumentTypeCategoryDto>.Failure(
+                AppError.Conflict($"Kategori-slug '{request.Slug}' kunne ikke opprettes. Prøv på nytt."));
+        }
 
         return Result<DocumentTypeCategoryDto>.Success(DocumentMapper.ToCategoryDto(category));
     }
@@ -209,18 +220,38 @@ public sealed class DocumentTypeService(
             return Result<DocumentTypeCategoryDto>.Failure(
                 AppError.NotFound($"Kategori med ID '{categoryId}' ble ikke funnet for dokumenttype '{documentTypeSlug}'."));
 
-        bool slugExists = await categoryRepository.SlugExistsAsync(
-            documentType.Id, request.Slug, excludeId: categoryId, cancellationToken: cancellationToken);
+        // Oppdater navn hvis oppgitt
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            category.Name = request.Name.Trim();
 
-        if (slugExists)
-            return Result<DocumentTypeCategoryDto>.Failure(
-                AppError.Conflict($"Kategori-slug '{request.Slug}' finnes allerede for denne dokumenttypen."));
+        // Oppdater slug hvis oppgitt og forskjellig fra eksisterende
+        if (!string.IsNullOrWhiteSpace(request.Slug) &&
+            !string.Equals(category.Slug, request.Slug, StringComparison.OrdinalIgnoreCase))
+        {
+            bool slugExists = await categoryRepository.SlugExistsAsync(
+                documentType.Id, request.Slug.Trim(), excludeId: categoryId, cancellationToken: cancellationToken);
 
-        category.Name = request.Name;
-        category.Slug = request.Slug;
+            if (slugExists)
+                return Result<DocumentTypeCategoryDto>.Failure(
+                    AppError.Conflict($"Kategori-slug '{request.Slug}' finnes allerede for denne dokumenttypen."));
+
+            category.Slug = request.Slug.Trim();
+        }
+
+        if (request.IsActive.HasValue)
+            category.IsActive = request.IsActive.Value;
 
         await categoryRepository.UpdateAsync(category, cancellationToken);
-        await categoryRepository.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await categoryRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return Result<DocumentTypeCategoryDto>.Failure(
+                AppError.Conflict($"Kategori kunne ikke oppdateres. Prøv på nytt."));
+        }
 
         return Result<DocumentTypeCategoryDto>.Success(DocumentMapper.ToCategoryDto(category));
     }

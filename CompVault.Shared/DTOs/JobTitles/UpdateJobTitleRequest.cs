@@ -8,7 +8,9 @@ namespace CompVault.Shared.DTOs.JobTitles;
 public sealed class UpdateJobTitleRequest
 {
     /// <summary>Nytt navn.</summary>
-    [Required]
     [MaxLength(100)]
-    public string Name { get; set; } = string.Empty;
+    public string? Name { get; set; }
+
+    /// <summary>Om stillingstittelen skal være aktiv. Null = ikke endret.</summary>
+    public bool? IsActive { get; set; }
 }

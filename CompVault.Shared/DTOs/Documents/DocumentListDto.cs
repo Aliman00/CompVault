@@ -41,6 +41,9 @@ public sealed class DocumentListDto
     /// <summary>Navn på mål-jobbtitler.</summary>
     public List<string> TargetJobTitleNames { get; set; } = [];
 
+    /// <summary>Om dokumentet krever signering.</summary>
+    public bool RequiresSignature { get; set; }
+
     /// <summary>Versjonsnummer.</summary>
     public int Version { get; set; }
 

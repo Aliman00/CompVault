@@ -355,10 +355,10 @@ public class DocumentServiceTests
             .ReturnsAsync(type);
 
         _departmentRepositoryMock
-            .Setup(x => x.ExistsAsync(
+            .Setup(x => x.FindAsync(
                 It.IsAny<System.Linq.Expressions.Expression<Func<Department, bool>>>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+            .ReturnsAsync(new List<Department>().AsReadOnly());
 
         // Act
         Result<DocumentDto> result = await _sut.CreateAsync(

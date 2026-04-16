@@ -107,30 +107,28 @@ public sealed class DocumentService(
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
-        // Sjekk at alle oppgitte avdelinger finnes
+        // Sjekk at alle oppgitte avdelinger finnes (batch-spørring)
         if (request.TargetDepartmentIds.Count > 0)
         {
-            foreach (Guid deptId in request.TargetDepartmentIds)
-            {
-                bool exists = await departmentRepository.ExistsAsync(
-                    d => d.Id == deptId && d.IsActive, cancellationToken);
-                if (!exists)
-                    return Result<DocumentDto>.Failure(
-                        AppError.NotFound($"Avdeling med ID '{deptId}' ble ikke funnet."));
-            }
+            var existingDeptIds = (await departmentRepository.FindAsync(
+                d => request.TargetDepartmentIds.Contains(d.Id) && d.IsActive, cancellationToken))
+                .Select(d => d.Id).ToHashSet();
+            var missing = request.TargetDepartmentIds.Except(existingDeptIds).ToList();
+            if (missing.Count > 0)
+                return Result<DocumentDto>.Failure(
+                    AppError.NotFound($"Avdeling med ID '{missing.First()}' ble ikke funnet."));
         }
 
-        // Sjekk at alle oppgitte jobbtitler finnes
+        // Sjekk at alle oppgitte jobbtitler finnes (batch-spørring)
         if (request.TargetJobTitleIds.Count > 0)
         {
-            foreach (Guid jtId in request.TargetJobTitleIds)
-            {
-                bool exists = await jobTitleRepository.ExistsAsync(
-                    j => j.Id == jtId && j.IsActive, cancellationToken);
-                if (!exists)
-                    return Result<DocumentDto>.Failure(
-                        AppError.NotFound($"Jobbtittel med ID '{jtId}' ble ikke funnet."));
-            }
+            var existingJtIds = (await jobTitleRepository.FindAsync(
+                j => request.TargetJobTitleIds.Contains(j.Id) && j.IsActive, cancellationToken))
+                .Select(j => j.Id).ToHashSet();
+            var missing = request.TargetJobTitleIds.Except(existingJtIds).ToList();
+            if (missing.Count > 0)
+                return Result<DocumentDto>.Failure(
+                    AppError.NotFound($"Jobbtittel med ID '{missing.First()}' ble ikke funnet."));
         }
 
         // Categories er alltid lastet via GetWithCategoriesBySlugAsync
@@ -239,30 +237,28 @@ public sealed class DocumentService(
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
-        // Valider nye avdelinger hvis oppgitt
-        if (request.TargetDepartmentIds is not null)
+        // Valider nye avdelinger hvis oppgitt (batch-spørring)
+        if (request.TargetDepartmentIds is not null && request.TargetDepartmentIds.Count > 0)
         {
-            foreach (Guid deptId in request.TargetDepartmentIds)
-            {
-                bool exists = await departmentRepository.ExistsAsync(
-                    d => d.Id == deptId && d.IsActive, cancellationToken);
-                if (!exists)
-                    return Result<DocumentDto>.Failure(
-                        AppError.NotFound($"Avdeling med ID '{deptId}' ble ikke funnet."));
-            }
+            var existingDeptIds = (await departmentRepository.FindAsync(
+                d => request.TargetDepartmentIds.Contains(d.Id) && d.IsActive, cancellationToken))
+                .Select(d => d.Id).ToHashSet();
+            var missing = request.TargetDepartmentIds.Except(existingDeptIds).ToList();
+            if (missing.Count > 0)
+                return Result<DocumentDto>.Failure(
+                    AppError.NotFound($"Avdeling med ID '{missing.First()}' ble ikke funnet."));
         }
 
-        // Valider nye jobbtitler hvis oppgitt
-        if (request.TargetJobTitleIds is not null)
+        // Valider nye jobbtitler hvis oppgitt (batch-spørring)
+        if (request.TargetJobTitleIds is not null && request.TargetJobTitleIds.Count > 0)
         {
-            foreach (Guid jtId in request.TargetJobTitleIds)
-            {
-                bool exists = await jobTitleRepository.ExistsAsync(
-                    j => j.Id == jtId && j.IsActive, cancellationToken);
-                if (!exists)
-                    return Result<DocumentDto>.Failure(
-                        AppError.NotFound($"Jobbtittel med ID '{jtId}' ble ikke funnet."));
-            }
+            var existingJtIds = (await jobTitleRepository.FindAsync(
+                j => request.TargetJobTitleIds.Contains(j.Id) && j.IsActive, cancellationToken))
+                .Select(j => j.Id).ToHashSet();
+            var missing = request.TargetJobTitleIds.Except(existingJtIds).ToList();
+            if (missing.Count > 0)
+                return Result<DocumentDto>.Failure(
+                    AppError.NotFound($"Jobbtittel med ID '{missing.First()}' ble ikke funnet."));
         }
 
         if (request.DocumentTypeCategoryId.HasValue && !request.ClearDocumentTypeCategoryId)
@@ -653,7 +649,7 @@ public sealed class DocumentService(
     /// </summary>
     private static void ApplyUpdate(Document document, UpdateDocumentRequest request)
     {
-        if (!string.IsNullOrEmpty(request.Title))
+        if (!string.IsNullOrWhiteSpace(request.Title))
             document.Title = request.Title;
 
         if (request.Description is not null)

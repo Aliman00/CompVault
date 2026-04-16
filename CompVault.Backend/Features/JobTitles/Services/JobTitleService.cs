@@ -84,17 +84,24 @@ public sealed class JobTitleService(
             return Result<JobTitleDto>.Failure(
                 AppError.NotFound($"Stillingstittel med ID '{id}' ble ikke funnet."));
 
-        bool nameConflict = await jobTitleRepository.NameExistsAsync(request.Name, ct)
-            && !string.Equals(jobTitle.Name, request.Name, StringComparison.OrdinalIgnoreCase);
-
-        if (nameConflict)
+        // Oppdater navn hvis oppgitt og forskjellig fra eksisterende
+        if (!string.IsNullOrWhiteSpace(request.Name) &&
+            !string.Equals(jobTitle.Name, request.Name, StringComparison.OrdinalIgnoreCase))
         {
-            logger.LogWarning("Kunne ikke oppdatere stillingstittel {Id}: navn {Name} finnes allerede", id, request.Name);
-            return Result<JobTitleDto>.Failure(
-                AppError.Conflict($"En stillingstittel med navn '{request.Name}' eksisterer allerede."));
+            bool nameConflict = await jobTitleRepository.NameExistsAsync(request.Name.Trim(), ct);
+
+            if (nameConflict)
+            {
+                logger.LogWarning("Kunne ikke oppdatere stillingstittel {Id}: navn {Name} finnes allerede", id, request.Name);
+                return Result<JobTitleDto>.Failure(
+                    AppError.Conflict($"En stillingstittel med navn '{request.Name}' eksisterer allerede."));
+            }
+
+            jobTitle.Name = request.Name.Trim();
         }
 
-        jobTitle.Name = request.Name.Trim();
+        if (request.IsActive.HasValue)
+            jobTitle.IsActive = request.IsActive.Value;
 
         await jobTitleRepository.UpdateAsync(jobTitle, ct);
 
@@ -106,7 +113,7 @@ public sealed class JobTitleService(
         {
             // Concurrent navneendring kan trigge unique constraint
             return Result<JobTitleDto>.Failure(
-                AppError.Conflict($"En stillingstittel med navn '{request.Name}' eksisterer allerede."));
+                AppError.Conflict($"Kunne ikke oppdatere stillingstittelen. Prøv på nytt."));
         }
 
         logger.LogInformation("Stillingstittel {Id} oppdatert", id);

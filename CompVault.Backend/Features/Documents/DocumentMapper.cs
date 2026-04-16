@@ -67,6 +67,7 @@ public static class DocumentMapper
                 .Where(dj => dj.JobTitle != null)
                 .Select(dj => dj.JobTitle!.Name)
                 .ToList(),
+            RequiresSignature = document.RequiresSignature,
             Version = document.Version,
             UploadedByName = document.Uploader is { } uploader
                 ? $"{uploader.FirstName} {uploader.LastName}".Trim()
