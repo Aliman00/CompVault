@@ -154,6 +154,10 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(department);
+        
+        _departmentRepositoryMock
             .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
@@ -175,7 +179,7 @@ public class DepartmentServiceTests
         var request = new UpdateDepartmentRequest { Name = "New Name" };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(nonExistentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(nonExistentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Department?)null);
 
         // Act
@@ -199,7 +203,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
         // Act
@@ -227,7 +231,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentAId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentAId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(departmentA);
 
         _departmentRepositoryMock
@@ -261,7 +265,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
         _departmentRepositoryMock
@@ -292,6 +296,10 @@ public class DepartmentServiceTests
             ClearParentDepartment = true
         };
 
+        _departmentRepositoryMock
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(department);
+        
         _departmentRepositoryMock
             .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
