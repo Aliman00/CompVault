@@ -141,10 +141,10 @@ public sealed class RolesController(IRoleService roleService) : BaseController
     /// <response code="200">Liste med permissions.</response>
     [HttpGet("permissions")]
     [Authorize(Policy = Permissions.RolesWrite)]
-    [ProducesResponseType(typeof(IReadOnlyList<ExpiringCompetencyDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ExpiringCompetencyDto>>> GetAllPermissionsAsync(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(IReadOnlyList<PermissionDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<PermissionDto>>> GetAllPermissionsAsync(CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<ExpiringCompetencyDto>> result = await roleService.GetAllPermissionsAsync(cancellationToken);
+        Result<IReadOnlyList<PermissionDto>> result = await roleService.GetAllPermissionsAsync(cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
