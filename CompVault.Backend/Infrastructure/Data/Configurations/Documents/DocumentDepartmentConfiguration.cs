@@ -16,10 +16,10 @@ internal sealed class DocumentDepartmentConfiguration : IEntityTypeConfiguration
         builder.HasKey(dd => new { dd.DocumentId, dd.DepartmentId });
 
         // Relasjon: DocumentDepartment → Document
-        builder.HasOne(dd => dd.Document)
+        builder.HasOne(dd => dd.Department)
             .WithMany(d => d.DocumentDepartments)
-            .HasForeignKey(dd => dd.DocumentId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey(dd => dd.DepartmentId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Relasjon: DocumentDepartment → Department
         builder.HasOne(dd => dd.Department)

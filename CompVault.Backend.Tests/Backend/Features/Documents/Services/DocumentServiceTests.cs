@@ -272,7 +272,7 @@ public class DocumentServiceTests
 
         // Act
         Result<DocumentDto> result = await _sut.CreateAsync(
-            "nonexistent", request, Guid.NewGuid());
+            "nonexistent", request, Guid.NewGuid(), bypassTarget: true);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -300,7 +300,7 @@ public class DocumentServiceTests
 
         // Act
         Result<DocumentDto> result = await _sut.CreateAsync(
-            "test-type", request, Guid.NewGuid());
+            "test-type", request, Guid.NewGuid(), bypassTarget: true);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -328,7 +328,7 @@ public class DocumentServiceTests
 
         // Act
         Result<DocumentDto> result = await _sut.CreateAsync(
-            "test-type", request, Guid.NewGuid());
+            "test-type", request, Guid.NewGuid(), bypassTarget: true);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -353,16 +353,20 @@ public class DocumentServiceTests
         _documentTypeRepositoryMock
             .Setup(x => x.GetWithCategoriesBySlugAsync("test-type", It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
-
+        
+        // Mocker at vi henter riktig bruker
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser(departmentId: Guid.NewGuid()));
+        
+        // Mocker en tom liste - avdelingen finnes ikke
         _departmentRepositoryMock
-            .Setup(x => x.FindAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<Department, bool>>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Department>().AsReadOnly());
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Department>());
 
         // Act
         Result<DocumentDto> result = await _sut.CreateAsync(
-            "test-type", request, Guid.NewGuid());
+            "test-type", request, Guid.NewGuid(), bypassTarget: false);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -397,7 +401,7 @@ public class DocumentServiceTests
 
         // Act
         Result<DocumentDto> result = await _sut.CreateAsync(
-            "test-type", request, Guid.NewGuid());
+            "test-type", request, Guid.NewGuid(), bypassTarget: true);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -441,7 +445,7 @@ public class DocumentServiceTests
 
         // Act
         Result<DocumentDto> result = await _sut.CreateAsync(
-            "test-type", request, uploadedById);
+            "test-type", request, uploadedById, bypassTarget: true);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -506,7 +510,7 @@ public class DocumentServiceTests
         // Act
         Result<DocumentDto> result = await _sut.CreateAsync(
             "test-type", request, uploadedById,
-            "test.pdf", "application/pdf", stream);
+            true, "test.pdf", "application/pdf", stream);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -516,6 +520,232 @@ public class DocumentServiceTests
                 It.Is<string>(p => p.Contains("active")),
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+    
+    /// <summary>
+    /// Tester at en bruker som ikke har noen avdeling får ikke lov til å legge til målgruppe for avdelinger
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_UserHasNoDepartment_ReturnsForbidden()
+    {
+        // Arrange
+        var departmentId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        string slug = "hms";
+        var request = new CreateDocumentRequest
+        {
+            Title = "Test",
+            TargetDepartmentIds = [departmentId]
+        };
+
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetWithCategoriesBySlugAsync(slug, 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+        
+        // Mocker at vi returnerer en avdeling
+        _departmentRepositoryMock
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Department>
+            {
+                new() { Id = departmentId, ParentDepartmentId = null }
+            });
+        
+        // Mocker at brukeren ikke har noen avdeling
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser(departmentId: null)); 
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            slug, request, Guid.NewGuid(), bypassTarget: false);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Forbidden);
+    }
+    
+    /// <summary>
+    /// Tester at målgruppen er en avdeling som ikke eksisterer returner ForbiddenDepartment
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_ForbiddenDepartment_ReturnsForbiddenDepartment()
+    {
+        // Arrange
+        var userDepartmentId  = Guid.NewGuid();
+        var forbiddenDepartmentId = Guid.NewGuid();
+        
+        // Ingen av avdelingene er under eller over hverandre
+        var allDepartments = new List<Department>
+        {
+            new() { Id = userDepartmentId, ParentDepartmentId = null },
+            new() { Id = forbiddenDepartmentId, ParentDepartmentId = null }
+        };
+        
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        string slug = "hms";
+        var request = new CreateDocumentRequest
+        {
+            Title = "Test",
+            TargetDepartmentIds = [forbiddenDepartmentId ]
+        };
+        
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetWithCategoriesBySlugAsync(slug, 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+        
+        // Mocker at vi henter alle avdelingene
+        _departmentRepositoryMock
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allDepartments);
+        
+        // Mocker at brukeren har en avdeling
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser(departmentId: userDepartmentId)); 
+        
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            slug, request, Guid.NewGuid(), bypassTarget: false);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.ForbiddenDepartment);
+    }
+    
+    /// <summary>
+    /// Tester en happy path som gjør at en bruker får lov til å legge til en avdeling som er lik eller under sin egen
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_AllowedDepartment_ReturnsSuccess()
+    {
+        // Arrange
+        var userDepartmentId  = Guid.NewGuid();
+        var childDepartmentId = Guid.NewGuid();
+        
+        // Mocker at brukerens avdeling har en underavdeling
+        var allDepartments = new List<Department>
+        {
+            new() { Id = userDepartmentId, ParentDepartmentId = null },
+            new() { Id = childDepartmentId, ParentDepartmentId = userDepartmentId }
+        };
+        
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        string slug = "hms";
+        var request = new CreateDocumentRequest
+        {
+            Title = "Test",
+            TargetDepartmentIds = [childDepartmentId ]
+        };
+        
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetWithCategoriesBySlugAsync(slug, 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+        
+        // Mocker at vi henter alle avdelingene
+        _departmentRepositoryMock
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allDepartments);
+        
+        // Mocker at brukeren har en avdeling
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser(departmentId: userDepartmentId)); 
+        
+        _documentRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document d, CancellationToken _) => d);
+
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, CancellationToken _) => new Document
+            {
+                Id = id,
+                DocumentTypeId = type.Id,
+                DocumentType = type,
+                Title = request.Title,
+                Version = 1
+            });
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            slug, request, Guid.NewGuid(), bypassTarget: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value?.Title.Should().Be("Test");
+    }
+    
+    /// <summary>
+    /// Tester at med tilattelsen DocumentsAllDepartments så skipper man avdelingsjekken. Brukeren kan
+    /// ha alle avdelinger som målgruppe
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_BypassTarget_SkipsDepartmentAccessCheck()
+    {
+        // Arrange - Oppretter en department som er høyere enn brukerens sin avdeling
+        var userDepartmentId  = Guid.NewGuid();
+        var otherDepartmentId = Guid.NewGuid();
+        
+        // Mocker at brukerens avdeling har en underavdeling
+        var allDepartments = new List<Department>
+        {
+            new() { Id = userDepartmentId, ParentDepartmentId = otherDepartmentId },
+            new() { Id = otherDepartmentId, ParentDepartmentId = null }
+        };
+        
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        string slug = "hms";
+        var request = new CreateDocumentRequest
+        {
+            Title = "Test",
+            TargetDepartmentIds = [otherDepartmentId ]
+        };
+        
+        _documentTypeRepositoryMock
+            .Setup(x => x.GetWithCategoriesBySlugAsync(slug, 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(type);
+        
+        // Mocker at vi henter alle avdelingene
+        _departmentRepositoryMock
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allDepartments);
+        
+        _documentRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Document d, CancellationToken _) => d);
+
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, CancellationToken _) => new Document
+            {
+                Id = id,
+                DocumentTypeId = type.Id,
+                DocumentType = type,
+                Title = request.Title,
+                Version = 1
+            });
+
+        // Act
+        Result<DocumentDto> result = await _sut.CreateAsync(
+            slug, request, Guid.NewGuid(), bypassTarget: true);
+
+        // Assert - Sjekker at vi hoppet over bruker henting og verifisering
+        result.IsSuccess.Should().BeTrue();
+        _userRepositoryMock.Verify(
+            x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     // -------------------------------------------------------------------------
@@ -535,7 +765,8 @@ public class DocumentServiceTests
             .ReturnsAsync((Document?)null);
 
         // Act
-        Result<DocumentDto> result = await _sut.UpdateAsync(id, new UpdateDocumentRequest());
+        Result<DocumentDto> result = await _sut.UpdateAsync(id, Guid.NewGuid(), new UpdateDocumentRequest(), 
+            true);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -574,7 +805,7 @@ public class DocumentServiceTests
 
         // Act
         Result<DocumentDto> result = await _sut.UpdateAsync(
-            id, new UpdateDocumentRequest { Title = "Ny tittel" });
+            id, Guid.NewGuid(), new UpdateDocumentRequest { Title = "Ny tittel" }, true);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -612,14 +843,184 @@ public class DocumentServiceTests
         _documentRepositoryMock
             .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
+        
+        _departmentRepositoryMock
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Department>());
 
         // Act — tom liste fjerner alle mål-avdelinger
         Result<DocumentDto> result = await _sut.UpdateAsync(
-            id, new UpdateDocumentRequest { TargetDepartmentIds = [] });
+            id, Guid.NewGuid(), new UpdateDocumentRequest { TargetDepartmentIds = [] }, true);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
         document.DocumentDepartments.Should().BeEmpty();
+    }
+    
+    /// <summary>
+    /// Tester at en bruker ikke kan legge til en avdeling som er høyere enn sin egen
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_ForbiddenDepartmentAdded_ReturnsForbiddenDepartment()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var userDepartmentId = Guid.NewGuid();
+        var forbiddenDepartmentId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        var document = new Document
+        {
+            Id = id,
+            DocumentTypeId = type.Id,
+            DocumentType = type,
+            Title = "Test",
+            Version = 1,
+            DocumentDepartments = []
+        };
+        var request = new UpdateDocumentRequest { TargetDepartmentIds = [forbiddenDepartmentId] };
+
+        // Ingen av avdelingene er under eller over hverandre i hierarkiet
+        var allDepartments = new List<Department>
+        {
+            new() { Id = userDepartmentId, ParentDepartmentId = null },
+            new() { Id = forbiddenDepartmentId, ParentDepartmentId = null }
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _departmentRepositoryMock
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allDepartments);
+        
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser(departmentId: userDepartmentId));
+
+        // Act
+        Result<DocumentDto> result = await _sut.UpdateAsync(id, Guid.NewGuid(), request, bypassTarget: false);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.ForbiddenDepartment);
+    }
+    
+    /// <summary>
+    /// Tester at en bruker ikke kan fjerne en avdeling høyere enn sin egen
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_ForbiddenDepartmentRemoved_ReturnsForbiddenDepartment()
+    {
+        // Arrange - Sender inn en tom liste i requesten for å fjerne avdelingen
+        var id = Guid.NewGuid();
+        var userDepartmentId = Guid.NewGuid();
+        var forbiddenDepartmentId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        var document = new Document
+        {
+            Id = id,
+            DocumentTypeId = type.Id,
+            DocumentType = type,
+            Title = "Test",
+            Version = 1,
+            DocumentDepartments =
+            [
+                new DocumentDepartment { DocumentId = id, DepartmentId = forbiddenDepartmentId }
+            ]
+        };
+        var request = new UpdateDocumentRequest
+        {
+            TargetDepartmentIds = []
+        };
+
+        // Ingen av avdelingene er under eller over hverandre i hierarkiet
+        var allDepartments = new List<Department>
+        {
+            new() { Id = userDepartmentId, ParentDepartmentId = null },
+            new() { Id = forbiddenDepartmentId, ParentDepartmentId = null }
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _departmentRepositoryMock
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allDepartments);
+        
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser(departmentId: userDepartmentId));
+
+        // Act
+        Result<DocumentDto> result = await _sut.UpdateAsync(id, Guid.NewGuid(), request, bypassTarget: false);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.ForbiddenDepartment);
+    }
+    
+    /// <summary>
+    /// Tester at vi skipper avdelingsverifiseringen hvis vi har riktig permission
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_BypassTarget_SkipsDepartmentAccessCheck()
+    {
+        // Arrange - Sender inn en tom liste i requesten for å fjerne avdelingen
+        var id = Guid.NewGuid();
+        var userDepartmentId = Guid.NewGuid();
+        var otherDepartmentId = Guid.NewGuid();
+        DocumentType type = CreateDocumentType(DocumentTargetMode.Department);
+        var document = new Document
+        {
+            Id = id,
+            DocumentTypeId = type.Id,
+            DocumentType = type,
+            Title = "Test",
+            Version = 1,
+            DocumentDepartments = []
+        };
+        var request = new UpdateDocumentRequest
+        {
+            TargetDepartmentIds = []
+        };
+
+        // Avdelingene finnes, men ingen er over eller under hverandre
+        var allDepartments = new List<Department>
+        {
+            new() { Id = userDepartmentId, ParentDepartmentId = null },
+            new() { Id = otherDepartmentId, ParentDepartmentId = null }
+        };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetForUpdateAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        _departmentRepositoryMock
+            .Setup(x => x.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(allDepartments);
+        
+        _userRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUser(departmentId: userDepartmentId));
+        
+        _documentRepositoryMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        // Act
+        Result<DocumentDto> result = await _sut.UpdateAsync(id, Guid.NewGuid(), request, bypassTarget: true);
+
+        // Assert - Verifiserer at henting av brukeren ble hoppet over
+        result.IsSuccess.Should().BeTrue();
+        _userRepositoryMock.Verify(
+            x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     // -------------------------------------------------------------------------

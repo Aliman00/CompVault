@@ -27,6 +27,7 @@ public interface IDocumentService
         string documentTypeSlug,
         CreateDocumentRequest request,
         Guid uploadedById,
+        bool bypassTarget,
         string? fileName = null,
         string? contentType = null,
         Stream? fileStream = null,
@@ -34,7 +35,7 @@ public interface IDocumentService
 
     /// <summary>Oppdaterer metadata på et dokument.</summary>
     Task<Result<DocumentDto>> UpdateAsync(
-        Guid id, UpdateDocumentRequest request, CancellationToken cancellationToken = default);
+        Guid id, Guid userId, UpdateDocumentRequest request, bool bypassTarget, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter et dokument.</summary>
     Task<Result<bool>> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
