@@ -16,7 +16,11 @@ public static class UserMapper
         EmploymentType = user.EmploymentType,
         IsActive = user.IsActive,
         DepartmentId = user.DepartmentId,
+        DepartmentName = user.Department?.Name,
         ManagerId = user.ManagerId,
+        ManagerName = user.Manager != null
+            ? $"{user.Manager.FirstName} {user.Manager.LastName}".Trim()
+            : null,
         CreatedAt = user.CreatedAt,
         Roles = roles.ToList()
     };

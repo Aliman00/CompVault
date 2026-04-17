@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.Enums;
 
 namespace CompVault.Shared.DTOs.Users;
@@ -10,12 +11,17 @@ namespace CompVault.Shared.DTOs.Users;
 public sealed class UpdateUserRequest
 {
     /// <summary>Nytt fornavn (valgfritt).</summary>
-    [MaxLength(100)]
+    [MaxLength(UserValidations.FirstNameMaxLength, ErrorMessage = UserValidations.Errors.FirstNameMaxLength)]
     public string? FirstName { get; set; }
 
     /// <summary>Nytt etternavn (valgfritt).</summary>
-    [MaxLength(100)]
+    [MaxLength(UserValidations.LastNameMaxLength, ErrorMessage = UserValidations.Errors.LastNameMaxLength)]
     public string? LastName { get; set; }
+    
+    /// <summary>Bytt epost (valgfritt).</summary>
+    [EmailAddress(ErrorMessage = UserValidations.Errors.EmailInvalid)]
+    [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
+    public string? Email { get; init => field = value?.Trim(); } = null!;
 
     /// <summary>Ny stillingstittel-ID (valgfritt).</summary>
     public Guid? JobTitleId { get; set; }

@@ -15,7 +15,11 @@ public static class PageRoutes
     public static class Admin
     {
         public const string Dashboard = "/admin/dashboard";
-        public const string Users = "/admin/users";
+        
+        // ================= USERS =================
+        public const string UserList = "/admin/users";
+        public static string UserDetail(Guid id) => $"/admin/users/{id}";
+        public const string UserCreate = "admin/users/create";
     }
 
     public static class Errors
@@ -23,7 +27,7 @@ public static class PageRoutes
         public const string NotFound = "/not-found";
         public const string NotAuthorized = "/not-authorized";
     }
-
+    
     public static class Dev
     {
         public const string Panel = "/dev";

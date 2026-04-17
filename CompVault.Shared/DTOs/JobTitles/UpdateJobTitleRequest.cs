@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
+
 namespace CompVault.Shared.DTOs.JobTitles;
 
 /// <summary>
@@ -8,7 +10,7 @@ namespace CompVault.Shared.DTOs.JobTitles;
 public sealed class UpdateJobTitleRequest
 {
     /// <summary>Nytt navn.</summary>
-    [MaxLength(100)]
+    [MaxLength(JobTitleValidations.NameMaxLength, ErrorMessage = JobTitleValidations.Errors.NameMaxLength)]
     public string? Name { get; set; }
 
     /// <summary>Om stillingstittelen skal være aktiv. Null = ikke endret.</summary>

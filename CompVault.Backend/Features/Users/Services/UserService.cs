@@ -24,7 +24,8 @@ public sealed class UserService(
     public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles = await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
+        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles = 
+            await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
 
         var dtos = usersWithRoles
             .Select(uwr => UserMapper.ToDto(uwr.User, uwr.Roles))
@@ -38,7 +39,7 @@ public sealed class UserService(
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        ApplicationUser? user = await userRepository.GetByIdWithDetailsAsync(userId, cancellationToken);
 
         if (user is null || user.DeletedAt is not null || !user.IsActive)
             return Result<UserDto>.Failure(
@@ -165,13 +166,22 @@ public sealed class UserService(
     public async Task<Result<UserDto>> UpdateUserAsync(
         Guid userId,
         UpdateUserRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken ct = default)
     {
-        ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        ApplicationUser? user = await userRepository.GetByIdWithDetailsAsync(userId, ct);
 
         if (user is null || user.DeletedAt is not null || (!user.IsActive && request.IsActive != true))
             return Result<UserDto>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            bool emailExist = await userRepository.ExistsAsync(
+                u => u.Email == request.Email && u.Id != user.Id, ct);
+            if (emailExist)
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Conflict, "E-posten er allerede i bruk."));
+        }
 
         if (request.ManagerId.HasValue && request.ManagerId.Value == userId)
             return Result<UserDto>.Failure(
@@ -180,7 +190,7 @@ public sealed class UserService(
         if (request.DepartmentId.HasValue)
         {
             bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
+                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, ct);
             if (!departmentExists)
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Avdeling med ID '{request.DepartmentId.Value}' ble ikke funnet."));
@@ -189,7 +199,7 @@ public sealed class UserService(
         if (request.ManagerId.HasValue)
         {
             bool managerExists = await userRepository.ExistsAsync(
-                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
+                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, ct);
             if (!managerExists)
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
@@ -199,7 +209,7 @@ public sealed class UserService(
         if (request.JobTitleId.HasValue)
         {
             bool jobTitleExists = await jobTitleRepository.ExistsAsync(
-                jt => jt.Id == request.JobTitleId.Value && jt.IsActive, cancellationToken);
+                jt => jt.Id == request.JobTitleId.Value && jt.IsActive, ct);
             if (!jobTitleExists)
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Stillingstittel med ID '{request.JobTitleId.Value}' ble ikke funnet."));
@@ -209,7 +219,16 @@ public sealed class UserService(
         if (request.LastName is not null) user.LastName = request.LastName;
         if (request.EmploymentType.HasValue) user.EmploymentType = request.EmploymentType.Value;
         if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
-
+        
+        // Normaliserer og oppdater brukernavn da det endres ved epost bytte
+        if (request.Email is not null)
+        {
+            user.Email = request.Email;
+            user.NormalizedEmail = request.Email.ToUpperInvariant();
+            user.UserName = request.Email;
+            user.NormalizedUserName = request.Email.ToUpperInvariant();
+        }
+        
         if (request.JobTitleId.HasValue)
             user.JobTitleId = request.JobTitleId;
         else if (request.ClearJobTitleId)
@@ -225,12 +244,14 @@ public sealed class UserService(
         else if (request.ClearManagerId)
             user.ManagerId = null;
 
-        await userRepository.UpdateAsync(user, cancellationToken);
-        await userRepository.SaveChangesAsync(cancellationToken);
-
+        await userRepository.UpdateAsync(user, ct);
+        await userRepository.SaveChangesAsync(ct);
+        
+        ApplicationUser? updatedUser = (await userRepository.GetByIdWithDetailsAsync(userId, ct))!;
+        
         logger.LogInformation("Bruker {UserId} oppdatert", userId);
-        IList<string> roles = await userManager.GetRolesAsync(user);
-        return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
+        IList<string> roles = await userManager.GetRolesAsync(updatedUser);
+        return Result<UserDto>.Success(UserMapper.ToDto(updatedUser, roles));
     }
 
     /// <inheritdoc />

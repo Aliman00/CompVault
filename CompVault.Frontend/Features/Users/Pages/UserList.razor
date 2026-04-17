@@ -1,9 +1,9 @@
 ﻿@page "/admin/users"
-@layout AdminLayout
-@using CompVault.Frontend.Features.Users.Services
-@using CompVault.Shared.DTOs.Users
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @inject IUserService UserService
-@implements IDisposable
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle brukere *@
 
 <AppAlert @bind-Alert="_alert"/>
 
@@ -21,7 +21,8 @@
              FixedHeader="true"
              Loading="_isLoading"
              MultiSelection="true"
-             @bind-SelectedItems="_selectedUsers">
+             @bind-SelectedItems="_selectedUsers"
+             RowClick="@((DataGridRowClickEventArgs<UserDto> args) => OnUserClick(args))">
 
     @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere brukere *@
     <ToolBarContent>
@@ -29,38 +30,42 @@
         <MudSpacer/>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Success"
-                   StartIcon="@Icons.Material.Filled.PersonAdd">
+                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                   Href="@PageRoutes.Admin.UserCreate">
             Opprett bruker
         </MudButton>
     </ToolBarContent>
 
-    @* Selve kolonnen *@
+    @* Selve kolonnene *@
     <Columns>
         <SelectColumn T="UserDto"/>
-        <PropertyColumn Property="user => user.FirstName" Title="First Name"/>
-        <PropertyColumn Property="user => user.LastName" Title="Last Name"/>
-        <PropertyColumn Property="user => user.Email" Title="Email"/>
-        <PropertyColumn Property="user => user.JobTitleName" Title="Tittel"/>
+        <PropertyColumn Property="x => x.FullName" Title="Navn"
+                        SortBy="x => x.LastName" />
+        <PropertyColumn Property="user => user.JobTitleName" Title="Stillingstittel"/>
+        <PropertyColumn Property="user => user.DepartmentName" Title="Avdeling"/>
+        <PropertyColumn Property="user => user.ManagerName" Title="Nærmeste leder"/>
     </Columns>
 </MudDataGrid>
 
 
 @code {
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")] // Ved sletting av en bruker
+    public bool Deleted { get; set; }
+    
     // ===================== PRIVATE FELT =====================
-    private List<UserDto>? _users = [];
+    private List<UserDto> _users = [];
     private HashSet<UserDto> _selectedUsers = [];
     
     private bool _isLoading = true;
     private AlertInfo? _alert;
-
-    private readonly CancellationTokenSource _cts = new();
     
     // ===================== LIFECYCLE =====================
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var getUsersResult = await UserService.GetAllUsersAsync(_cts.Token);
+            var getUsersResult = await UserService.GetAllAsync(Cts.Token);
 
             if (getUsersResult.IsFailure)
             {
@@ -68,7 +73,10 @@
                 return;
             }
 
-            _users = getUsersResult.Value;
+            _users = getUsersResult.Value!;
+            
+            if (Deleted)
+                _alert = new AlertInfo("Brukeren er slettet", Severity.Info);
         }
         catch (OperationCanceledException)
         {
@@ -84,11 +92,11 @@
             _isLoading = false;
         }
     }
-
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-    }
+    
+    // ===================== PRIVATE METHODS =====================
+    
+    // Navigerer ved å sende UserDto via NavigationManager (ikke via URL-en, men som en string i nettlesere)
+    private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.Admin.UserDetail(args.Item.Id));
+    
 }

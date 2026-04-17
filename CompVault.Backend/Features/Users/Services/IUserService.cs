@@ -18,7 +18,7 @@ public interface IUserService
     Task<Result<UserDto>> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>Oppdaterer profilfelter på en eksisterende bruker.</summary>
-    Task<Result<UserDto>> UpdateUserAsync(Guid userId, UpdateUserRequest request, CancellationToken cancellationToken = default);
+    Task<Result<UserDto>> UpdateUserAsync(Guid userId, UpdateUserRequest request, CancellationToken ct = default);
 
     /// <summary>Soft-sletter brukeren ved å sette DeletedAt-tidsstempelet.</summary>
     Task<Result<bool>> DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default);

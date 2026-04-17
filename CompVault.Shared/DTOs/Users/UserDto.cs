@@ -36,10 +36,16 @@ public sealed class UserDto
 
     /// <summary>Avdelings-ID (hvis satt).</summary>
     public Guid? DepartmentId { get; set; }
+    
+    /// <summary>Avdelingsnavn (hvis satt).</summary>
+    public string? DepartmentName { get; set; }
 
     /// <summary>Leder-ID (hvis satt).</summary>
     public Guid? ManagerId { get; set; }
-
+    
+    /// <summary>Ledernavn (hvis satt).</summary>
+    public string? ManagerName { get; set; } = string.Empty;
+    
     /// <summary>Når brukeren ble opprettet (UTC).</summary>
     public DateTime CreatedAt { get; set; }
 

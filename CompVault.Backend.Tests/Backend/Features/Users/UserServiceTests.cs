@@ -1,5 +1,5 @@
 using System.Linq.Expressions;
-
+using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Domain.Entities.JobTitles;
 using CompVault.Backend.Features.Users.Services;
@@ -81,7 +81,7 @@ public class UserServiceTests
     {
         // Arrange
         _userRepositoryMock
-            .Setup(r => r.GetByIdAsync(_testUser.Id, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(_testUser);
 
         _userManagerMock
@@ -104,7 +104,7 @@ public class UserServiceTests
     {
         // Arrange
         _userRepositoryMock
-            .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdWithDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
@@ -313,12 +313,18 @@ public class UserServiceTests
         {
             FirstName = "Nytt",
             LastName = "Navn",
-            JobTitleId = Guid.NewGuid()
+            JobTitleId = Guid.NewGuid(),
+            Email = "ny@example.com"
         };
 
         _userRepositoryMock
-            .Setup(r => r.GetByIdAsync(_testUser.Id, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(_testUser);
+        
+        _userRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false); 
 
         _jobTitleRepositoryMock
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<JobTitle, bool>>>(),
@@ -332,7 +338,7 @@ public class UserServiceTests
         _userRepositoryMock
             .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-
+        
         _userManagerMock
             .Setup(m => m.GetRolesAsync(_testUser))
             .ReturnsAsync(new List<string> { "Employee" });
@@ -345,6 +351,7 @@ public class UserServiceTests
         result.Value!.FirstName.Should().Be("Nytt");
         result.Value!.LastName.Should().Be("Navn");
         result.Value!.JobTitleId.Should().NotBeNull();
+        result.Value!.Email.Should().Be("ny@example.com");
 
         _userRepositoryMock.Verify(r => r.UpdateAsync(_testUser, It.IsAny<CancellationToken>()), Times.Once);
         _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -360,7 +367,7 @@ public class UserServiceTests
         var request = new UpdateUserRequest { FirstName = "Nytt" };
 
         _userRepositoryMock
-            .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdWithDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((ApplicationUser?)null);
 
         // Act
@@ -373,5 +380,154 @@ public class UserServiceTests
         _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
             It.IsAny<CancellationToken>()), Times.Never);
         _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+    
+    /// <summary>
+    /// Tester at eposten allerede er i bruk hos en annen bruker
+    /// </summary>
+    [Fact]
+    public async Task UpdateUserAsync_WhenEmailIsTaken_ReturnsConflict()
+    {
+        // Arrange
+        var request = new UpdateUserRequest
+        {
+            FirstName = "Nytt",
+            LastName = "Navn",
+            JobTitleId = Guid.NewGuid(),
+            Email = "ny@example.com"
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_testUser);
+        
+        _userRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true); 
+        
+        // Act
+        Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Conflict);
+
+        _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Never);
+    }
+    
+    /// <summary>
+    /// Tester at manager ikke kan være brukeren
+    /// </summary>
+    [Fact]
+    public async Task UpdateUserAsync_ManagerIdIsUserId_ReturnsConflict()
+    {
+        // Arrange
+        var request = new UpdateUserRequest
+        {
+            FirstName = "Nytt",
+            LastName = "Navn",
+            JobTitleId = Guid.NewGuid(),
+            Email = "ny@example.com",
+            ManagerId = _testUser.Id
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_testUser);
+        
+        _userRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false); 
+        
+        // Act
+        Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Validation);
+
+        _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Never);
+    }
+    
+    /// <summary>
+    /// Tester at avdeling ikke eksisterer
+    /// </summary>
+    [Fact]
+    public async Task UpdateUserAsync_WhenDepartmentDoesNotExist_ReturnsNotFound()
+    {
+        // Arrange
+        var request = new UpdateUserRequest
+        {
+            FirstName = "Nytt",
+            LastName = "Navn",
+            JobTitleId = Guid.NewGuid(),
+            DepartmentId = Guid.NewGuid()
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_testUser);
+        
+        _departmentRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<Department, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        
+        // Act
+        Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+
+        _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Never);
+    }
+    
+    /// <summary>
+    /// Tester at manager ikke eksisterer
+    /// </summary>
+    [Fact]
+    public async Task UpdateUserAsync_WhenManagerDoesNotExist_ReturnsValidationError()
+    {
+        // Arrange
+        var request = new UpdateUserRequest
+        {
+            FirstName = "Nytt",
+            LastName = "Navn",
+            JobTitleId = Guid.NewGuid(),
+            ManagerId = Guid.NewGuid()
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_testUser);
+        
+        _userRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false); 
+        
+        // Act
+        Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+
+        _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+            Times.Never);
     }
 }

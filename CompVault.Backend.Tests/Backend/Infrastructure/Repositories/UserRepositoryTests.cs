@@ -147,7 +147,7 @@ public class UserRepositoryTests : IDisposable
     /// Tester at AddAsync lagrer en ny bruker i databasen
     /// </summary>
     [Fact]
-    public async Task AddAsync_AddsUserToDatabase()
+    public async Task AddAsync_AddsUserToDatabase() 
     {
         // Arrange
         var newUser = new ApplicationUser

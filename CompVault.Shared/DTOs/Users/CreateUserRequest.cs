@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.Enums;
 
 namespace CompVault.Shared.DTOs.Users;
@@ -10,19 +11,19 @@ namespace CompVault.Shared.DTOs.Users;
 public sealed class CreateUserRequest
 {
     /// <summary>E-postadressen (brukes som brukernavn).</summary>
-    [Required]
-    [EmailAddress]
-    [MaxLength(256)]
+    [Required(ErrorMessage = UserValidations.Errors.EmailRequired)]
+    [EmailAddress(ErrorMessage = UserValidations.Errors.EmailInvalid)]
+    [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
     public string Email { get; set; } = string.Empty;
 
     /// <summary>Fornavn.</summary>
-    [Required]
-    [MaxLength(100)]
+    [Required(ErrorMessage = UserValidations.Errors.FirstNameRequired)]
+    [MaxLength(UserValidations.FirstNameMaxLength, ErrorMessage = UserValidations.Errors.FirstNameMaxLength)]
     public string FirstName { get; set; } = string.Empty;
 
     /// <summary>Etternavn.</summary>
-    [Required]
-    [MaxLength(100)]
+    [Required(ErrorMessage = UserValidations.Errors.LastNameRequired)]
+    [MaxLength(UserValidations.LastNameMaxLength, ErrorMessage = UserValidations.Errors.LastNameMaxLength)]
     public string LastName { get; set; } = string.Empty;
 
     /// <summary>ID til stillingstittelen (valgfritt).</summary>
