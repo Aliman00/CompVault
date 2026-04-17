@@ -31,4 +31,10 @@ public static class ApiRoutes
     {
         public const string Base = "api/departments";
     }
+    
+    public static class JobTitle
+    {
+        public const string Base = "api/jobtitles";
+        public static string ById(Guid id) => $"{Base}/{id}";
+    }
 }

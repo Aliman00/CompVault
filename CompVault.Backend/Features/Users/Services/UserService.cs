@@ -1,6 +1,7 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -14,6 +15,7 @@ namespace CompVault.Backend.Features.Users.Services;
 public sealed class UserService(
     IUserRepository userRepository,
     IDepartmentRepository departmentRepository,
+    IJobTitleRepository jobTitleRepository,
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
     ILogger<UserService> logger) : IUserService
@@ -90,6 +92,20 @@ public sealed class UserService(
             }
         }
 
+        // Valider at stillingstittelen eksisterer hvis JobTitleId er angitt
+        if (request.JobTitleId.HasValue)
+        {
+            bool jobTitleExists = await jobTitleRepository.ExistsAsync(
+                jt => jt.Id == request.JobTitleId.Value && jt.IsActive, cancellationToken);
+
+            if (!jobTitleExists)
+            {
+                logger.LogWarning("Kunne ikke opprette bruker: stillingstittel {JobTitleId} ble ikke funnet", request.JobTitleId.Value);
+                return Result<UserDto>.Failure(
+                    AppError.NotFound($"Stillingstittel med ID '{request.JobTitleId.Value}' ble ikke funnet."));
+            }
+        }
+
         // Valider roller FØR bruker opprettes for å unngå foreldreløse brukere
         List<string> validRoles = new();
         if (request.Roles.Count > 0)
@@ -113,7 +129,7 @@ public sealed class UserService(
             Email = request.Email.ToLowerInvariant(),
             FirstName = request.FirstName,
             LastName = request.LastName,
-            JobTitle = request.JobTitle,
+            JobTitleId = request.JobTitleId,
             EmploymentType = request.EmploymentType,
             DepartmentId = request.DepartmentId,
             ManagerId = request.ManagerId,
@@ -189,8 +205,20 @@ public sealed class UserService(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
         }
 
+        // Valider at stillingstittelen eksisterer hvis JobTitleId er angitt
+        if (request.JobTitleId.HasValue)
+        {
+            bool jobTitleExists = await jobTitleRepository.ExistsAsync(
+                jt => jt.Id == request.JobTitleId.Value && jt.IsActive, ct);
+            if (!jobTitleExists)
+                return Result<UserDto>.Failure(
+                    AppError.NotFound($"Stillingstittel med ID '{request.JobTitleId.Value}' ble ikke funnet."));
+        }
+
         if (request.FirstName is not null) user.FirstName = request.FirstName;
         if (request.LastName is not null) user.LastName = request.LastName;
+        if (request.EmploymentType.HasValue) user.EmploymentType = request.EmploymentType.Value;
+        if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
         
         // Normaliserer og oppdater brukernavn da det endres ved epost bytte
         if (request.Email is not null)
@@ -201,9 +229,10 @@ public sealed class UserService(
             user.NormalizedUserName = request.Email.ToUpperInvariant();
         }
         
-        if (request.JobTitle is not null) user.JobTitle = request.JobTitle;
-        if (request.EmploymentType.HasValue) user.EmploymentType = request.EmploymentType.Value;
-        if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
+        if (request.JobTitleId.HasValue)
+            user.JobTitleId = request.JobTitleId;
+        else if (request.ClearJobTitleId)
+            user.JobTitleId = null;
 
         if (request.DepartmentId.HasValue)
             user.DepartmentId = request.DepartmentId;

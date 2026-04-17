@@ -39,7 +39,6 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 app.UseAntiforgery();
 
-// ============ Autentisering ============
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
