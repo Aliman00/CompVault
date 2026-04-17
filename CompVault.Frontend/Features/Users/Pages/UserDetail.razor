@@ -72,8 +72,8 @@
                                        ToStringFunc="@(id => _jobTitles.FirstOrDefault(
                                                          d => d.Id == id)?.Name ?? string.Empty)"
                                        IsEditing="_isEditing"
-                                       DisplayValue="@_user.JobTitleName"
-                                       ShowLink="_user.JobTitleId.HasValue"
+                                       DisplayValue="@_user!.JobTitleName"
+                                       ShowLink="_user!.JobTitleId.HasValue"
                                        OnNavigate="NavigateToJobTitle"
                                        HelperText="Trykk på knappen for å gå til stillingstittelen">
                 <Items>
