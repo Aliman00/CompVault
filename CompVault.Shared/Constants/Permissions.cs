@@ -31,6 +31,9 @@ public static class Permissions
     public const string CompetenciesRead = "competencies:read";
     public const string CompetenciesWrite = "competencies:write";
     public const string CompetenciesDelete = "competencies:delete";
+    
+    // AdminAccess
+    public const string AdminAccess = "admin:access";
 
     // Document Types (admin — opprette og administrere dokumenttyper)
     public const string DocumentTypesRead = "document_types:read";

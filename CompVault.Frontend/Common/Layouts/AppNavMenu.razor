@@ -11,7 +11,23 @@
         OTP
     </MudNavLink>
 
-    <AuthorizeView Policy="@Policies.AdminAccess">
+    <AuthorizeView Policy="@Permissions.UsersRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Users.UserList" Icon="@Icons.Material.Filled.People">
+                Brukere
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.DepartmentsRead">
+        <Authorized>
+            <MudNavLink Href="/admin/departments" Icon="@Icons.Material.Filled.Business">
+                Avdelinger
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.AdminAccess">
         <Authorized>
             <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">
                 Admin-panel

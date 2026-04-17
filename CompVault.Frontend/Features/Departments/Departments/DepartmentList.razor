@@ -1,11 +1,9 @@
-﻿@page "/admin/users/{Id:guid}"
+﻿@page "/DepartmentList"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.UsersRead)]
-@inject IUserService UserService
+@attribute [Authorize(Policy = Permissions.DepartmentsRead)]
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
-@inject IJobTitleService JobTitleService
 
 @* Detalje visning av en bruker med mulighet for oppdatering *@
 
@@ -27,7 +25,7 @@ else if (_user != null)
         <MudPaper Class="pa-6" Elevation="1" Square="true">
             <DetailHeader Title="@_user.FullName"
                           EditPolicy="@Permissions.UsersWrite"
-                          Subtitle="@_user.JobTitleName"
+                          Subtitle="@_user.DepartmentName"
                           IsEditing="_isEditing"
                           OnStartEdit="StartEdit"
                           OnCancelEdit="CancelEdit">
@@ -82,22 +80,11 @@ else if (_user != null)
                 </MudItem>
                 @* Stillingstittel *@
                 <MudItem xs="12" sm="6">
-                    <DetailSelectWithLinkField Value="_editModel.JobTitleId"
-                                               ValueChanged="(Guid? v) => _editModel.JobTitleId = v"
-                                               Label="Stillingstittel"
-                                               ToStringFunc="@(id => _jobTitles.FirstOrDefault(
-                                                                 d => d.Id == id)?.Name ?? string.Empty)"
-                                               IsEditing="_isEditing"
-                                               DisplayValue="@_user.JobTitleName"
-                                               OnNavigate="NavigateToJobTitle"
-                                               HelperText="Trykk på knappen for å gå til stillingstittelen">
-                        <Items>
-                            @foreach (var jobTitle in _jobTitles)
-                            {
-                                <MudSelectItem Value="(Guid?)jobTitle.Id">@jobTitle.Name</MudSelectItem>
-                            }
-                        </Items>
-                    </DetailSelectWithLinkField>
+                    <DetailTextField Value="@_editModel.JobTitle"
+                                     ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
+                                     Label="Stillingstittel"
+                                     IsEditing="_isEditing"
+                                     For="() => _editModel.JobTitle"/>
                 </MudItem>
 
                 @* EmploymentType *@
@@ -187,7 +174,6 @@ else if (_user != null)
     private UserDto? _user;
     private List<UserDto> _allUsers = [];
     private List<DepartmentDto> _departments = [];
-    private List<JobTitleDto> _jobTitles = [];
     
     private UserEditModel _editModel = new();
     
@@ -210,7 +196,6 @@ else if (_user != null)
         _isEditing = false;
         _allUsers = [];
         _departments = [];
-        _jobTitles = [];
         _editModel = new();
         
         try
@@ -269,9 +254,6 @@ else if (_user != null)
 
         if (_departments.Count == 0)
             tasks.Add(LoadDepartmentsAsync());
-        
-        if (_jobTitles.Count == 0)
-            tasks.Add(LoadJobTitlesAsync());
 
         if (_allUsers.Count == 0)
             tasks.Add(LoadUsersAsync());
@@ -294,15 +276,6 @@ else if (_user != null)
             _departmentAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
         else
             _departments = departmentResults.Value!;
-    }
-    
-    private async Task LoadJobTitlesAsync()
-    {
-        var jobTitleResult = await JobTitleService.GetAllAsync(Cts.Token);
-        if (jobTitleResult.IsFailure)
-            _departmentAlert = new AlertInfo(jobTitleResult.Error!.ToString(), Severity.Error);
-        else
-            _jobTitles = jobTitleResult.Value!;
     }
     
     private async Task LoadUsersAsync()
@@ -352,13 +325,6 @@ else if (_user != null)
         if (_user?.DepartmentId.HasValue == true)
             NavigationManager.NavigateTo($"/admin/departments/{_user.DepartmentId}");
     }
-    
-    private void NavigateToJobTitle()
-    {
-        if (_user?.DepartmentId.HasValue == true)
-            NavigationManager.NavigateTo($"/jobtitle/{_user.JobTitleId}");
-    }
-
     
     private void NavigateToManager()
     {

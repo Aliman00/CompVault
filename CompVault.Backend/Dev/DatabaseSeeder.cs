@@ -531,6 +531,7 @@ public static class DatabaseSeeder
             (Permissions.JobTitlesRead, "Se stillingstitler", "JobTitles"),
             (Permissions.JobTitlesWrite, "Opprett/endre stillingstitler", "JobTitles"),
             (Permissions.JobTitlesDelete, "Slett stillingstitler", "JobTitles"),
+            (Permissions.AdminAccess, "Se administratorpanel", "Admins"),
         ];
 
         int addedCount = 0;
