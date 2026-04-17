@@ -42,17 +42,14 @@ else
         @* Selve kolonnene *@
         <Columns>
             <SelectColumn T="UserDto"/>
-            <PropertyColumn Property="x => x.FullName" Title="Navn"
-                            SortBy="x => x.LastName" />
-            <PropertyColumn Property="user => user.JobTitleName" Title="Stillingstittel"/>
-            <PropertyColumn Property="user => user.DepartmentName" Title="Avdeling"/>
-            <PropertyColumn Property="user => user.ManagerName" Title="Nærmeste leder"/>
+            <PropertyColumn Property="x => x.FullName.Truncate(40)" Title="Navn"
+                            SortBy="x => x.LastName.Truncate(40)" />
+            <PropertyColumn Property="user => user.JobTitleName.Truncate(40)" Title="Stillingstittel"/>
+            <PropertyColumn Property="user => user.DepartmentName.Truncate(40)" Title="Avdeling"/>
+            <PropertyColumn Property="user => user.ManagerName.Truncate(40)" Title="Nærmeste leder"/>
         </Columns>
     </MudDataGrid>
 }
-
-
-
 
 @code {
     // ===================== PARAMETER =====================
@@ -101,7 +98,6 @@ else
     
     // ===================== PRIVATE METHODS =====================
     
-    // Navigerer ved å sende UserDto via NavigationManager (ikke via URL-en, men som en string i nettlesere)
     private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
         NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(args.Item.Id));
     

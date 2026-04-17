@@ -22,14 +22,20 @@ public static class PageRoutes
     public static class Departments
     {
         public const string DepartmentList = "/departments";
-        public static string DepartmentsDetail(Guid id) => $"/departments/{id}";
-        public const string DepartmentsCreate = "/departments/create";
+        public static string DepartmentDetail(Guid id) => $"/departments/{id}";
+        public const string DepartmentCreate = "/departments/create";
+    }
+    
+    public static class Roles
+    {
+        public const string RoleList = "/roles";
+        public static string RoleDetail(Guid id) => $"/roles/{id}";
+        public const string RoleCreate = "/roles/create";
     }
 
     public static class Admin
     {
         public const string Dashboard = "/admin/dashboard";
-        
     }
 
     public static class Errors

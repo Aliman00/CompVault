@@ -15,11 +15,14 @@ public static class RoleMapper
     {
         Id = role.Id,
         Name = role.Name ?? string.Empty,
-        Description = role.Description ?? string.Empty,
+        Description = role.Description,
         UserCount = userCount,
         CreatedAt = role.CreatedAt,
         CreatedById = role.CreatedById,
         IsSystem = role.IsSystem,
+        CreatedByName = role.CreatedBy != null 
+            ? $"{role.CreatedBy.FirstName} {role.CreatedBy.LastName}" 
+            : null,
         Permissions = permissionNames
     };
 

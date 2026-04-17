@@ -18,6 +18,13 @@ public sealed class RoleRepository(AppDbContext dbContext) : BaseRepository<Appl
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Name == name, cancellationToken);
     }
+    
+    /// <inheritdoc />
+    public async Task<ApplicationRole?> GetByIdWithCreatedByAsync(Guid id, CancellationToken ct = default) =>
+        await DbSet
+            .AsNoTracking()
+            .Include(r => r.CreatedBy)
+            .FirstOrDefaultAsync(r => r.Id == id, ct);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<ApplicationRole>> GetAllWithPermissionsAsync(CancellationToken cancellationToken = default) =>

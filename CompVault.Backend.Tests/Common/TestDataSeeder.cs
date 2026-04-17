@@ -62,7 +62,7 @@ public static class TestDataSeeder
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
 
-        ApplicationUser user = TestDataFactory.CreateApplicationUser(id, email, deletedAt);
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(id: id, email: email, deletedAt: deletedAt);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
 

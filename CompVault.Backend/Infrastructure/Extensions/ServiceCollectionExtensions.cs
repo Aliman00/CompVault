@@ -194,7 +194,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Legger til generell infrastruktur
     /// </summary>
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration,
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration, 
         IWebHostEnvironment environment)
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();

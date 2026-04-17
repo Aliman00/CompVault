@@ -1,19 +1,18 @@
 ﻿using CompVault.Frontend.Common.Configuration;
-using CompVault.Frontend.Common.Constants;
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Localization;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Departments.Services;
+using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.JobTitle.Services;
 using CompVault.Frontend.Features.Users.Services;
 using CompVault.Shared.Constants;
-
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+
 
 using MudBlazor;
 
@@ -79,6 +78,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CircuitHandler, CircuitUserContextHandler>();
         services.AddScoped<CircuitUserContext>();
         services.AddScoped<CookieValidationEvents>();
+        
+        
 
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
@@ -97,11 +98,11 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddScoped<AuthStateProvider>();
-        services.AddSingleton<ITokenRefreshService, TokenRefreshService>();
-
         // Forteller Blazor at vår egen AuthStateProvider brukes
-        services.AddScoped<AuthenticationStateProvider>(
-            sp => sp.GetRequiredService<AuthStateProvider>());
+        services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthStateProvider>());
+        
+        services.AddSingleton<ITokenRefreshService, TokenRefreshService>();
+        services.AddScoped<IClaimsRefreshService, ClaimsRefreshService>();
 
         services.AddScoped<IAuthService, AuthService>();
 
@@ -171,6 +172,7 @@ public static class ServiceCollectionExtensions
         // ================================ Admin forretningslogikk ================================
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
+        services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IJobTitleService, JobTitleService>();
 
 

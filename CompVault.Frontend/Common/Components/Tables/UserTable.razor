@@ -1,0 +1,74 @@
+﻿@* En enkel bruker tabell som viser brukere relevant til en spesifikk feature - feks roller, avdelinger *@
+
+@* Header med mulighet for knapper feks navigering eller andre muligheter*@
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+    <MudText Typo="Typo.subtitle1">@Title</MudText>
+    @if (HeaderAction != null)
+    {
+        @HeaderAction
+    }
+</MudStack>
+@if (Users.Count == 0)
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary">
+        @EmptyText
+    </MudText>
+}
+else
+{
+    <MudDataGrid Items="Users"
+                 Filterable="false"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Square="true"
+                 Bordered="true"
+                 SortMode="SortMode.Single"
+                 RowClick="@((DataGridRowClickEventArgs<UserDto> args)
+                               => OnRowClick(args.Item.Id))">
+        <Columns>
+            <PropertyColumn Property="x => x.FullName.Truncate(40)" Title="Navn" 
+                            SortBy="x => x.LastName"/>
+            <PropertyColumn Property="x => x.JobTitleName.Truncate(40)" Title="Stillingstittel"/>
+            <PropertyColumn Property="x => x.EmploymentType" Title="Ansettelsestype"/>
+        </Columns>
+    </MudDataGrid>
+}
+@code {
+    // ===================== PARAMETERS =====================
+    /// <summary>
+    /// Tittelen til tabellen
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Tekst som vises hvis tom innsendt liste
+    /// </summary>
+    [Parameter, EditorRequired] public string EmptyText { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Brukerne som vises i tabellen - kalleren gjør filtrering
+    /// </summary>
+    [Parameter, EditorRequired] public IReadOnlyList<UserDto> Users { get; set; } = [];
+    
+    /// <summary>
+    /// Navieringshandling som utføres på klikk på en bruker
+    /// </summary>
+    [Parameter] public EventCallback<Guid> OnUserClick { get; set; }
+    
+    /// <summary>
+    /// Valgfri handlinger som vises til høyre for tittelen. F.eks: en navigeringsknapp
+    /// </summary>
+    [Parameter] public RenderFragment? HeaderAction { get; set; }
+    
+    // ===================== PRIVATE METHODS =====================
+    
+    /// <summary>
+    /// Sender callback kun hvis en handling er innsendt
+    /// </summary>
+    private async Task OnRowClick(Guid userId)
+    {
+        if (OnUserClick.HasDelegate)
+            await OnUserClick.InvokeAsync(userId);
+    }
+}

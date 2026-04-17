@@ -1,0 +1,219 @@
+﻿@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IRoleService RoleService
+@inject IUserService UserService
+@inject IBrowserViewportService ViewportService
+@inject IClaimsRefreshService ClaimsRefreshService
+@inject CircuitUserContext CircuitUserContext
+
+@* Dialog for å legge til en rolle på en bruker *@
+<MudDialog>
+
+    @* Tittel *@
+    <TitleContent>
+        <MudText Typo="Typo.h6">Administrer roller</MudText>
+    </TitleContent>
+
+    @* Body til dialogen *@
+    <DialogContent>
+        <AppAlert @bind-Alert="_errorAlert"/>
+        
+        @if (_isLoading)
+        {
+            <AppSpinner Class="pa-20"/>
+        }
+        else
+        {
+            @* Søkefelt *@
+            <MudTextField T="string"
+                          @bind-Value="_searchText"
+                          Placeholder="Søk etter roller..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true"
+                          Class="mb-2"/>
+            
+            @* Roller i en liste *@
+            @if (FilteredRoles.Any())
+            {
+                <div>
+                    <MudDataGrid T="RoleDto"
+                                 Items="FilteredRoles"
+                                 MultiSelection="true"
+                                 SelectedItems="SelectedRoles"
+                                 SelectedItemsChanged="OnSelectedRolesChanged!"
+                                 Dense="true"
+                                 Hover="true"
+                                 Striped="false">
+                        <Columns>
+                            <SelectColumn T="RoleDto"/>
+                            <PropertyColumn Property="r => r.Name.Truncate(40)" Title="Navn"/>
+                            <PropertyColumn Property="r => r.Description.Truncate(40)" Title="Beskrivelse"/>
+                            
+                            @* Skjuler permissions hvis det er på mobil *@
+                            <TemplateColumn Title="Tillatelser" Hidden="@_isMobile">
+                                <CellTemplate>
+                                    <MudText Typo="Typo.body2">
+                                        @string.Join(", ", context.Item.Permissions
+                                            .Take(4)
+                                            .Select(p => p.ToNorwegianPermission())).Truncate(60)
+                                        @if (context.Item.Permissions.Count > 4)
+                                        {
+                                            <text> +@(context.Item.Permissions.Count - 4) til</text>
+                                        }
+                                    </MudText>
+                                </CellTemplate>
+                            </TemplateColumn>
+                        </Columns>
+                    </MudDataGrid>
+                </div>
+            }
+            else
+            {
+                @* Skal aldri skje, men en fallback hvis noe går galt eller vi fjerner seeding av roller *@
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen roller funnet</MudText>
+            }
+        }
+    </DialogContent>
+    
+    @* Knapp for godkjenn handling og avbryt handling *@
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Save"
+                   Disabled="_isLoading || _isSaving">
+            Lagre
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
+    /// </summary>
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Brukeren som vi administerer roller til
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Guid UserId { get; set; }
+
+    /// <summary>
+    /// Brukerens allerede eksisterende roller
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<string> CurrentRoles { get; set; } = [];
+
+    // ===================== PRIVATE FIELDS =====================
+    private List<RoleDto> _allRoles = [];
+    
+    // En liste som filtrere bort roller som ikke stemmer med søkestrengen
+    private List<RoleDto> FilteredRoles =>
+        string.IsNullOrWhiteSpace(_searchText)
+            ? _allRoles
+            : _allRoles.Where(roleDto => roleDto.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+    // Søketekst for filtrering
+    private string _searchText = string.Empty;
+    
+    // Lagrer de valgte rollene
+    private HashSet<RoleDto> SelectedRoles { get; set; } = [];
+
+    private void OnSelectedRolesChanged(HashSet<RoleDto> selected)
+    {
+        SelectedRoles = selected;
+    }
+    
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    private AlertInfo? _errorAlert;
+    
+    private bool _isMobile;
+    
+   
+
+    // ===================== LIFECYCLE =====================
+    // Henter alle roller fra backend og oppdaterer listen med allerede valgte roller
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var roleResult = await RoleService.GetAllAsync(Cts.Token);
+            if (roleResult.IsFailure)
+            {
+                _errorAlert = new AlertInfo(roleResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _allRoles = roleResult.Value!;
+            SelectedRoles  = _allRoles.Where(r => CurrentRoles.Contains(r.Name))
+                .ToHashSet();
+
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    
+    // Skjuler permissions i mobilvsining
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var bp = await ViewportService.GetCurrentBreakpointAsync();
+            _isMobile = bp is Breakpoint.Xs or Breakpoint.Sm;
+            StateHasChanged();
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+   
+
+    // Sender roller til backend og prøver å oppdatere brukeren. Lukkes ved vellyket lagring. Sender UserDto tilbake
+    // til Detail-siden
+    // TODO: Denne logikken kan ekstraheres ut i egent endepunkt slik at UpdateUser får mindre ansvar.
+    // TODO: Derfor utfører vi bare UpdateUserRequest med kun Roles og ikke flere felter
+    private async Task Save()
+    {
+        _isSaving = true;
+        try
+        {
+            var request = new UpdateUserRequest
+            {
+                Roles = SelectedRoles.Select(r => r.Name).ToList()
+            };
+
+            var assignRoleResult = await UserService.UpdateAsync(UserId, request, Cts.Token);
+            if (assignRoleResult.IsFailure)
+            {
+                _errorAlert = new AlertInfo(assignRoleResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+            
+            // Oppdaterer claim hvis brukeren har endret seg selv
+            if (CircuitUserContext.UserId == UserId)
+                await ClaimsRefreshService.RefreshTokensAsync();
+            
+
+            MudDialog.Close(DialogResult.Ok(assignRoleResult.Value));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+    
+    
+}

@@ -5,16 +5,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.17.0" />
     <PackageReference Include="MudBlazor" Version="9.2.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Expressions" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Common\Components\Buttons\" />
+    <Folder Include="Common\Helpers\" />
     <Folder Include="Features\Auth\Components\" />
     <Folder Include="Features\Auth\Pages\" />
-    <Folder Include="Features\Users\Components\" />
     <Folder Include="Pages\" />
   </ItemGroup>
 

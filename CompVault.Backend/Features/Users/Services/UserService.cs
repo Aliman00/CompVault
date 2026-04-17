@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
@@ -18,7 +19,8 @@ public sealed class UserService(
     IJobTitleRepository jobTitleRepository,
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
-    ILogger<UserService> logger) : IUserService
+    ILogger<UserService> logger,
+    IUnitOfWork unitOfWork) : IUserService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
@@ -243,15 +245,36 @@ public sealed class UserService(
             user.ManagerId = request.ManagerId;
         else if (request.ClearManagerId)
             user.ManagerId = null;
+        
+        return await unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            if (request.Roles is not null)
+            {
+                IList<string> currentRoles = await userManager.GetRolesAsync(user);
+        
+                IdentityResult removeResult = await userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded)
+                    return Result<UserDto>.Failure(
+                        AppError.Create(ErrorCode.InternalError, "Kunne ikke fjerne eksisterende roller."));
+        
+                if (request.Roles.Count > 0)
+                {
+                    IdentityResult addResult = await userManager.AddToRolesAsync(user, request.Roles);
+                    if (!addResult.Succeeded)
+                        return Result<UserDto>.Failure(
+                            AppError.Create(ErrorCode.InternalError, "Kunne ikke tildele roller."));
+                }
+            }
 
-        await userRepository.UpdateAsync(user, ct);
-        await userRepository.SaveChangesAsync(ct);
-        
-        ApplicationUser? updatedUser = (await userRepository.GetByIdWithDetailsAsync(userId, ct))!;
-        
-        logger.LogInformation("Bruker {UserId} oppdatert", userId);
-        IList<string> roles = await userManager.GetRolesAsync(updatedUser);
-        return Result<UserDto>.Success(UserMapper.ToDto(updatedUser, roles));
+            await userRepository.UpdateAsync(user, ct);
+            await userRepository.SaveChangesAsync(ct);
+            
+            ApplicationUser updatedUser = (await userRepository.GetByIdWithDetailsAsync(userId, ct))!;
+            
+            logger.LogInformation("Bruker {UserId} oppdatert", userId);
+            IList<string> roles = await userManager.GetRolesAsync(updatedUser);
+            return Result<UserDto>.Success(UserMapper.ToDto(updatedUser, roles));
+        }, ct);
     }
 
     /// <inheritdoc />

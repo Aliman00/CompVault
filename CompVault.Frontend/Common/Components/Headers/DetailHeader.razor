@@ -1,74 +1,76 @@
 ﻿@* Header for detail-sider med tittel/undertittel og redigerings-knapper. Lagre-knappen er Submit, brukes i FormEdit *@
-<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
+<section class="detail-header">
     @* Navn og tittel *@
-    <MudStack>
-        <MudText Typo="Typo.h5">@Title</MudText>
+    <header class="detail-header-text">
+        <MudText Typo="Typo.h5">@Title.Truncate(45)</MudText>
         @if (!string.IsNullOrWhiteSpace(Subtitle))
         {
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@Subtitle</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Subtitle.Truncate(60)</MudText>
         }
-    </MudStack>
-    @* Redigeringsknapper og meny-knapp - En rediger knapp, og en avbryt og lagre knapp hvis IsEditing = true *@
-    @* Redigeringsknappen vises som disabled hvis bruker ikke har korrekt tilattelse (Feks user:write )*@
-    <MudSpacer/>
-    @if (!IsEditing)
-    {
-        @if (Actions != null)
+    </header>
+    @* Redigeringsknapper og meny-knapp *@
+    <div class="detail-header-actions">
+        @if (!IsEditing)
         {
-            <MudMenu Icon="@Icons.Material.Filled.MoreVert"
-                     Variant="Variant.Outlined"
-                     AnchorOrigin="Origin.BottomRight">
-                @Actions
-            </MudMenu>
-        }
-        @if (EditPolicy != null)
-        {
-            <AuthorizeView Policy="@EditPolicy">
-                <Authorized>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Edit"
-                               OnClick="OnStartEdit">
-                        Rediger
-                    </MudButton>
-                </Authorized>
-                <NotAuthorized>
-                    <MudTooltip Text="Du har ikke tilgang til å redigere">
+            @ExtraActions
+
+            @if (DropdownActions != null)
+            {
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                         Variant="Variant.Outlined"
+                         AnchorOrigin="Origin.BottomRight">
+                    @DropdownActions
+                </MudMenu>
+            }
+            @if (EditPolicy != null)
+            {
+                <AuthorizeView Policy="@EditPolicy">
+                    <Authorized>
                         <MudButton Variant="Variant.Outlined"
                                    Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Edit"
-                                   Disabled="true">
+                                   OnClick="OnStartEdit">
                             Rediger
                         </MudButton>
-                    </MudTooltip>
-                </NotAuthorized>
-            </AuthorizeView>
+                    </Authorized>
+                    <NotAuthorized>
+                        <MudTooltip Text="Du har ikke tilgang til å redigere">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Edit"
+                                       Disabled="true">
+                                Rediger
+                            </MudButton>
+                        </MudTooltip>
+                    </NotAuthorized>
+                </AuthorizeView>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           OnClick="OnStartEdit">
+                    Rediger
+                </MudButton>
+            }
         }
         else
         {
-            <MudButton Variant="Variant.Outlined"
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       OnClick="OnCancelEdit">
+                Avbryt
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Edit"
-                       OnClick="OnStartEdit">
-                Rediger
+                       ButtonType="ButtonType.Submit">
+                Lagre
             </MudButton>
         }
-    }
-    else
-    {
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Error"
-                   Class="mr-2"
-                   OnClick="OnCancelEdit">
-            Avbryt
-        </MudButton>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   ButtonType="ButtonType.Submit">
-            Lagre
-        </MudButton>
-    }
-</MudStack>
+    </div>
+</section>
+
 
 @code {
     
@@ -99,9 +101,14 @@
     [Parameter] public EventCallback OnCancelEdit { get; set; }
     
     /// <summary>
+    /// Ekstra handlinger som må tydelig fram og ikke gjemmes bak en dropdown meny
+    /// </summary>
+    [Parameter] public RenderFragment? ExtraActions { get; set; }
+    
+    /// <summary>
     /// Ekstra handlinger som feks sletting
     /// </summary>
-    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? DropdownActions { get; set; }
     
     /// <summary>
     /// Policy som kreves for å aktivere redigeringsmodus. Hvis null vises knappen alltid

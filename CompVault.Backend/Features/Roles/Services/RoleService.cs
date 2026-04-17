@@ -13,6 +13,7 @@ namespace CompVault.Backend.Features.Roles.Services;
 /// </summary>
 public sealed class RoleService(
     RoleManager<ApplicationRole> roleManager,
+    UserManager<ApplicationUser> userManager,
     IRoleRepository roleRepository,
     IUnitOfWork unitOfWork,
     ILogger<RoleService> logger) : IRoleService
@@ -43,7 +44,7 @@ public sealed class RoleService(
     /// <inheritdoc />
     public async Task<Result<RoleDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        ApplicationRole? role = await roleManager.FindByIdAsync(id.ToString());
+        ApplicationRole? role = await roleRepository.GetByIdWithCreatedByAsync(id, cancellationToken);
         if (role is null)
             return Result<RoleDto>.Failure(
                 AppError.NotFound($"Rolle med ID '{id}' ble ikke funnet."));
@@ -66,13 +67,22 @@ public sealed class RoleService(
         if (exists)
             return Result<RoleDto>.Failure(
                 AppError.Conflict($"En rolle med navn '{request.Name}' eksisterer allerede."));
-
+        
+        ApplicationUser? createdBy  = await userManager.FindByIdAsync(createdById.ToString());
+        if (createdBy is null)
+        {
+            logger.LogError("Bruker med ID {UserId} eksisterer ikke", createdById);
+            return Result<RoleDto>.Failure(
+                AppError.Create(ErrorCode.UserNotFound, $"Bruker med ID '{createdById}' ble ikke funnet."));
+        }
+        
         var role = new ApplicationRole
         {
             Name = request.Name,
             Description = request.Description,
             CreatedAt = DateTime.UtcNow,
-            CreatedById = createdById
+            CreatedById = createdById,
+            CreatedBy = createdBy
         };
 
         IdentityResult result = await roleManager.CreateAsync(role);
@@ -125,12 +135,13 @@ public sealed class RoleService(
             return Result<RoleDto>.Failure(
                 AppError.Create(ErrorCode.InternalError, "Kunne ikke oppdatere rollen."));
         }
-
+        
+        ApplicationRole? savedRole = (await roleRepository.GetByIdWithCreatedByAsync(role.Id, cancellationToken));
         int userCount = (await roleRepository.GetUserCountsForRolesAsync([role.Id], cancellationToken))
             .GetValueOrDefault(role.Id, 0);
         IReadOnlyList<string> permissions = await roleRepository.GetPermissionNamesForRoleAsync(role.Id, cancellationToken);
 
-        return Result<RoleDto>.Success(RoleMapper.ToDto(role, userCount, permissions.ToList()));
+        return Result<RoleDto>.Success(RoleMapper.ToDto(savedRole!, userCount, permissions.ToList()));
     }
 
     /// <inheritdoc />

@@ -1,11 +1,11 @@
 ﻿@page "/users/{Id:guid}"
+@using CompVault.Frontend.Features.Users.Components
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.UsersRead)]
 @inject IUserService UserService
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
-@inject IJSRuntime JsRuntime
 @inject IJobTitleService JobTitleService
 
 @* Detalje visning av en bruker med mulighet for oppdatering *@
@@ -33,7 +33,7 @@ else if (_user != null)
                           OnStartEdit="StartEdit"
                           OnCancelEdit="CancelEdit">
                 @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
-                <Actions>
+                <DropdownActions>
                     <AuthorizeView Policy="@Permissions.UsersDelete" Context="auth">
                         <Authorized>
                             <MudMenuItem Icon="@Icons.Material.Filled.Delete"
@@ -52,7 +52,7 @@ else if (_user != null)
                             </MudTooltip>
                         </NotAuthorized>
                     </AuthorizeView>
-                </Actions>
+                </DropdownActions>
             </DetailHeader>
 
             @* Alle felt med egenskaper fra UserDto *@
@@ -160,14 +160,32 @@ else if (_user != null)
                     </DetailSelectWithLinkField>
                 </MudItem>
             
-                @* Roller TODO: Lenke til roller *@
+                @* Roller TODO: Lenke til roller - Metoden er klar men mangler ID *@
                 <MudItem xs="12" sm="6">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Roller</MudText>
-                    <MudStack Row="true" Spacing="1">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-1">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Roller</MudText>
+                        <AuthorizeView Policy="@Permissions.RolesWrite" Context="assignRolesPermission">
+                            <Authorized>
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.Shield"
+                                           Size="Size.Small"
+                                           OnClick="OpenAssignRolesDialog">
+                                    Endre roller
+                                </MudButton>
+                            </Authorized>
+                        </AuthorizeView>
+                    </MudStack>
+                    <MudStack Row="true" Spacing="0" Wrap="Wrap.Wrap">
                         @foreach (var role in _user.Roles)
                         {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
-                                @role
+                            <MudChip T="string" 
+                                     Size="Size.Small" 
+                                     Color="Color.Primary" 
+                                     Variant="Variant.Outlined"
+                                     Class="cv-rounded"
+                                     OnClick="@NavigateToRole(Id)">
+                                @role.Truncate(50)
                             </MudChip>
                         }
                     </MudStack>
@@ -354,7 +372,7 @@ else if (_user != null)
     private void NavigateToDepartment()
     {
         if (_user?.DepartmentId.HasValue == true)
-            NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentsDetail(_user.DepartmentId.Value));
+            NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentDetail(_user.DepartmentId.Value));
     }
     
     private void NavigateToJobTitle()
@@ -369,6 +387,11 @@ else if (_user != null)
         if (_user?.ManagerId.HasValue == true)
             NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(_user.ManagerId.Value));
     }
+    
+    // TODO: Må sende med rolleId for å kunne navigere til en rolle
+    private EventCallback NavigateToRole(Guid roleId) =>
+        EventCallback.Factory.Create(this, () =>
+            NavigationManager.NavigateTo(PageRoutes.Roles.RoleDetail(roleId)));
     
     // Viser en dialog som brukeren må godkjenne for å kunne slette en bruker. Navigerer til UserList etter sletting
     private async Task DeleteUser()
@@ -394,5 +417,34 @@ else if (_user != null)
         }
         
         NavigationManager.NavigateTo(PageRoutes.Users.UserList + "?deleted=true");
+    }
+    
+    private async Task OpenAssignRolesDialog()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(AssignRoleDialog.UserId), Id},
+            { nameof(AssignRoleDialog.CurrentRoles), _user!.Roles}
+        };
+        
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", parameters, new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        });
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled) 
+            return;
+        
+        if (dialogResult.Data is not UserDto updatedUser)
+        {
+            _errorAlert = new AlertInfo("Noe gikk galt ved oppdatering av roller.", Severity.Error);
+            return;
+        }
+        
+        _user = updatedUser;
+        _successAlert = new AlertInfo("Brukerens roller er oppdatert", Severity.Success);
     }
 }
