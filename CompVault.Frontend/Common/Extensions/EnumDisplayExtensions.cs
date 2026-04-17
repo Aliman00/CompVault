@@ -18,6 +18,18 @@ public static class EnumDisplayExtensions
     };
     
     /// <summary>
+    /// Oversetter fra engelsk til norsk
+    /// </summary>
+    public static string ToDisplayString(this CompetencyStatus status) => status switch
+    {
+        CompetencyStatus.Valid => "Gyldig",
+        CompetencyStatus.ExpiringSoon => "Utløper snart",
+        CompetencyStatus.Expired => "Utgått",
+        CompetencyStatus.Revoked => "Tilbakekalt",
+        _ => status.ToString()
+    };
+    
+    /// <summary>
     /// Generisk metode for å oversette enums til norsk når EnumType kan variere
     /// </summary>
     /// <param name="value">Den valgte verdien til en enum. (feks EmploymentType.Permanent)</param>
@@ -26,6 +38,7 @@ public static class EnumDisplayExtensions
     public static string ToDisplayString<T>(this T value) where T : struct, Enum => value switch
     {
         EmploymentType e => e.ToDisplayString(),
+        CompetencyStatus s => s.ToDisplayString(),
         _ => value.ToString()
     };
 }
