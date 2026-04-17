@@ -28,7 +28,7 @@ public sealed class DocumentsController(
         [FromQuery] Guid? documentTypeCategoryId,
         CancellationToken cancellationToken = default)
     {
-        Guid? currentUserId = User.TryGetUserId();
+        Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
         Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetAllAsync(
             documentTypeSlug, currentUserId, documentTypeCategoryId, bypassTargeting, cancellationToken);
@@ -45,7 +45,7 @@ public sealed class DocumentsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DocumentDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        Guid? currentUserId = User.TryGetUserId();
+        Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
         Result<DocumentDto> result = await documentService.GetByIdAsync(id, currentUserId, bypassTargeting, cancellationToken);
 
@@ -68,18 +68,21 @@ public sealed class DocumentsController(
         IFormFile? file,
         CancellationToken cancellationToken)
     {
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAllDepartments);
+        
         if (file is not null && file.Length == 0)
             return BadRequest("Filen er tom.");
 
-        Guid uploadedById = User.TryGetUserId()
-            ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
+        Guid uploadedById = User.GetUserId();
 
         await using Stream? fileStream = file is not null ? file.OpenReadStream() : null;
-
+        
+        
         Result<DocumentDto> result = await documentService.CreateAsync(
             documentTypeSlug,
             request,
             uploadedById,
+            bypassTargeting,
             file?.FileName,
             file?.ContentType,
             fileStream,
@@ -102,7 +105,10 @@ public sealed class DocumentsController(
         [FromBody] UpdateDocumentRequest request,
         CancellationToken cancellationToken)
     {
-        Result<DocumentDto> result = await documentService.UpdateAsync(id, request, cancellationToken);
+        Guid userId = User.GetUserId();
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAllDepartments);
+        Result<DocumentDto> result = await documentService.UpdateAsync(id, userId, request, bypassTargeting, 
+            cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -140,8 +146,7 @@ public sealed class DocumentsController(
         if (file is null || file.Length == 0)
             return BadRequest("Ingen fil lastet opp.");
 
-        Guid uploadedById = User.TryGetUserId()
-            ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
+        Guid uploadedById = User.GetUserId();
 
         await using Stream stream = file.OpenReadStream();
         Result<DocumentDto> result = await documentService.UploadVersionAsync(
@@ -163,8 +168,7 @@ public sealed class DocumentsController(
     public async Task<IActionResult> SignAsync(
         Guid id, CancellationToken cancellationToken)
     {
-        Guid userId = User.TryGetUserId()
-            ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
+        Guid userId = User.GetUserId();
 
         Result<bool> result = await documentService.SignAsync(id, userId, cancellationToken);
 
@@ -181,7 +185,7 @@ public sealed class DocumentsController(
     public async Task<IActionResult> DownloadAsync(
         Guid id, CancellationToken cancellationToken)
     {
-        Guid? currentUserId = User.TryGetUserId();
+        Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
         Result<DocumentDownloadResult> result = await documentService.GetDownloadAsync(
             id, currentUserId, bypassTargeting, cancellationToken);
@@ -205,7 +209,7 @@ public sealed class DocumentsController(
     public async Task<ActionResult<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
         Guid id, CancellationToken cancellationToken)
     {
-        Guid? currentUserId = User.TryGetUserId();
+        Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
         Result<IReadOnlyList<DocumentSignatureDto>> result = await documentService.GetSignaturesAsync(
             id, currentUserId, bypassTargeting, cancellationToken);

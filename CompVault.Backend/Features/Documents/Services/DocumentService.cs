@@ -1,3 +1,4 @@
+using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
@@ -91,6 +92,7 @@ public sealed class DocumentService(
         string documentTypeSlug,
         CreateDocumentRequest request,
         Guid uploadedById,
+        bool bypassTarget,
         string? fileName = null,
         string? contentType = null,
         Stream? fileStream = null,
@@ -107,16 +109,40 @@ public sealed class DocumentService(
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
-        // Sjekk at alle oppgitte avdelinger finnes (batch-spørring)
+        // Sjekk at alle oppgitte avdelinger finnes og at brukere har tilattelse til å legge de til
         if (request.TargetDepartmentIds.Count > 0)
         {
-            var existingDeptIds = (await departmentRepository.FindAsync(
-                d => request.TargetDepartmentIds.Contains(d.Id) && d.IsActive, cancellationToken))
-                .Select(d => d.Id).ToHashSet();
-            var missing = request.TargetDepartmentIds.Except(existingDeptIds).ToList();
-            if (missing.Count > 0)
-                return Result<DocumentDto>.Failure(
-                    AppError.NotFound($"Avdeling med ID '{missing.First()}' ble ikke funnet."));
+            Result<IReadOnlyList<Department>> deptResult = await GetAndValidateDepartmentsExistAsync(
+                uploadedById, request.TargetDepartmentIds, cancellationToken);
+            if (deptResult.IsFailure)
+                return Result<DocumentDto>.Failure(deptResult.Error!);
+            IReadOnlyList<Department> allDepartments = deptResult.Value!;
+            
+            // Hopper over tilattelse sjekken hvis brukeren har riktig permission
+            if (!bypassTarget)
+            {
+                ApplicationUser? user = await userRepository.GetByIdAsync(uploadedById, cancellationToken);
+                if (user?.DepartmentId is null)
+                {
+                    logger.LogWarning("Bruker {UserId} har ingen tilknyttet avdeling", uploadedById);
+                    return Result<DocumentDto>.Failure(
+                        AppError.Create(ErrorCode.Forbidden, "Bruker har ingen tilknyttet avdeling"));
+                }
+                
+                IReadOnlySet<Guid> allowedIds = GetDepartmentAndDescendantIds(allDepartments, user.DepartmentId.Value);
+            
+                var forbiddenIds = request.TargetDepartmentIds
+                    .Where(id => !allowedIds.Contains(id))
+                    .ToList();
+                if (forbiddenIds.Count > 0)
+                {
+                    logger.LogWarning("Bruker {BrukerId} prøvde å legge til avdelinger uten tilattelse: {ForbiddenIds}", 
+                        uploadedById, string.Join(", ", forbiddenIds));
+                    return Result<DocumentDto>.Failure(
+                        AppError.Create(ErrorCode.ForbiddenDepartment,
+                            $"Du har ikke tilgang til følgende avdelinger: {string.Join(", ", forbiddenIds)}"));
+                }
+            }
         }
 
         // Sjekk at alle oppgitte jobbtitler finnes (batch-spørring)
@@ -209,8 +235,8 @@ public sealed class DocumentService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<DocumentDto>> UpdateAsync(
-        Guid id, UpdateDocumentRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<DocumentDto>> UpdateAsync(Guid id, Guid userId, UpdateDocumentRequest request,
+        bool bypassTarget, CancellationToken cancellationToken = default)
     {
         Document? document = await documentRepository.GetForUpdateAsync(id, cancellationToken);
 
@@ -237,16 +263,49 @@ public sealed class DocumentService(
         if (targetValidation.IsFailure)
             return Result<DocumentDto>.Failure(targetValidation.Error!);
 
-        // Valider nye avdelinger hvis oppgitt (batch-spørring)
-        if (request.TargetDepartmentIds is not null && request.TargetDepartmentIds.Count > 0)
+        // Valider nye og fjernede avdelinger - sikrer at de finnes og at bruker endrer kun det de har tilattelse til
+        if (request.TargetDepartmentIds is not null)
         {
-            var existingDeptIds = (await departmentRepository.FindAsync(
-                d => request.TargetDepartmentIds.Contains(d.Id) && d.IsActive, cancellationToken))
-                .Select(d => d.Id).ToHashSet();
-            var missing = request.TargetDepartmentIds.Except(existingDeptIds).ToList();
-            if (missing.Count > 0)
-                return Result<DocumentDto>.Failure(
-                    AppError.NotFound($"Avdeling med ID '{missing.First()}' ble ikke funnet."));
+            var currentDepartmentIds = document.DocumentDepartments
+                .Select(d => d.DepartmentId).ToHashSet();
+            var addedDepartmentIds = request.TargetDepartmentIds
+                .Where(d => !currentDepartmentIds.Contains(d)).ToList();
+            
+            Result<IReadOnlyList<Department>> deptResult = await GetAndValidateDepartmentsExistAsync(
+                userId, addedDepartmentIds, cancellationToken);
+            if (deptResult.IsFailure)
+                return Result<DocumentDto>.Failure(deptResult.Error!);
+            IReadOnlyList<Department> allDepartments = deptResult.Value!;
+            
+            // Hopper over tilgangssjekken med riktig permission
+            if (!bypassTarget)
+            {
+                ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
+                if (user?.DepartmentId is null)
+                {
+                    logger.LogWarning("Bruker {UserId} har ingen tilknyttet avdeling", userId);
+                    return Result<DocumentDto>.Failure(
+                        AppError.Create(ErrorCode.Forbidden, "Bruker har ingen tilknyttet avdeling"));
+                }
+                
+                IReadOnlySet<Guid> allowedIds = GetDepartmentAndDescendantIds(allDepartments, user.DepartmentId.Value);
+                
+                // Lister for alle avdelinger som fjernes og er forbudte for brukeren
+                var removedDepartmentIds = currentDepartmentIds
+                    .Where(d => !request.TargetDepartmentIds.Contains(d)).ToList();
+                var forbiddenIds = addedDepartmentIds.Concat(removedDepartmentIds)
+                    .Where(guid => !allowedIds.Contains(guid))
+                    .ToList();
+            
+                if (forbiddenIds.Count > 0)
+                {
+                    logger.LogWarning("Bruker {UserId} prøvde å endre avdelinger uten tilattelse: {ForbiddenIds}",
+                        userId, string.Join(", ", forbiddenIds));
+                    return Result<DocumentDto>.Failure(
+                        AppError.Create(ErrorCode.ForbiddenDepartment,
+                            $"Du har ikke tilgang til følgende avdelinger: {string.Join(", ", forbiddenIds)}"));
+                }
+            }
         }
 
         // Valider nye jobbtitler hvis oppgitt (batch-spørring)
@@ -771,5 +830,52 @@ public sealed class DocumentService(
         }
 
         return dtos;
+    }
+    
+    // Hjelpemetode for å sjekke at en avdeling eksisterer
+    private async Task<Result<IReadOnlyList<Department>>> GetAndValidateDepartmentsExistAsync(
+        Guid userId, List<Guid> departmentIdsToValidate, CancellationToken ct)
+    {
+        IReadOnlyList<Department> allDepartments =
+            await departmentRepository.GetAllWithHierarchyAsync(ct);
+
+        var existingDepartmentIds = allDepartments.Select(d => d.Id).ToHashSet();
+        var missingIds = departmentIdsToValidate
+            .Where(id => !existingDepartmentIds.Contains(id))
+            .ToList();
+
+        if (missingIds.Count > 0)
+        {
+            logger.LogWarning("Bruker {UserId} prøvde å legge til avdeling {DepartmetnId} som ikke finnes", userId,
+                missingIds.First());
+            return Result<IReadOnlyList<Department>>.Failure(
+                AppError.NotFound($"Avdeling med ID '{missingIds.First()}' ble ikke funnet."));
+        }
+        
+        return Result<IReadOnlyList<Department>>.Success(allDepartments);
+    }
+    
+    // Hjelpemetode for å finne alle underavdelingene under innsendt avdeling
+    private static IReadOnlySet<Guid> GetDepartmentAndDescendantIds(IReadOnlyList<Department> allDepartments,
+        Guid departmentId)
+    {
+        var allowedDepartments = new HashSet<Guid>();
+        var queue = new Queue<Guid>();
+        queue.Enqueue(departmentId);
+        
+        // Går igjennom alle avdelinger nedover hierarkiet rekursivt og legger alle avdelingene under
+        // innsendt avdeling til i HashSet
+        while (queue.Count > 0)
+        {
+            Guid current = queue.Dequeue();
+            allowedDepartments.Add(current);
+
+            foreach (Department childDepartment in allDepartments.Where(d => d.ParentDepartmentId == current))
+            {
+                queue.Enqueue(childDepartment.Id);
+            }
+        }
+
+        return allowedDepartments;
     }
 }

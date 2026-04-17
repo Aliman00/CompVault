@@ -21,19 +21,6 @@ public static class ClaimsPrincipalExtensions
     }
 
     /// <summary>
-    /// Forsøker å hente brukerens ID fra JWT-token. Returnerer null hvis token er ugyldig.
-    /// </summary>
-    public static Guid? TryGetUserId(this ClaimsPrincipal user)
-    {
-        string? userIdStr = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-        if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
-            return null;
-
-        return userId;
-    }
-
-    /// <summary>
     /// Sjekker om brukeren har en spesifikk permission.
     /// </summary>
     public static bool HasPermission(this ClaimsPrincipal user, string permission)
