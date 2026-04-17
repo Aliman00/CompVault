@@ -526,6 +526,8 @@ public static class DatabaseSeeder
             (Permissions.DocumentsWrite, "Opprett/endre dokumenter", "Documents"),
             (Permissions.DocumentsDelete, "Slett dokumenter", "Documents"),
             (Permissions.DocumentsSign, "Signere dokumenter", "Documents"),
+            (Permissions.DocumentsAllDepartments, "Overstyrer avdelingvalidering i " +
+                                                    "oppretting og oppdatering av dokumenter", "Documents"),
             (Permissions.JobTitlesRead, "Se stillingstitler", "JobTitles"),
             (Permissions.JobTitlesWrite, "Opprett/endre stillingstitler", "JobTitles"),
             (Permissions.JobTitlesDelete, "Slett stillingstitler", "JobTitles"),

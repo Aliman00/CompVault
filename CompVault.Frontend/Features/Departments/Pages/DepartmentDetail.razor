@@ -1,5 +1,4 @@
 ﻿@page "/departments/{Id:guid}"
-@using CompVault.Frontend.Features.Departments.Models
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.DepartmentsRead)]
 @inject IUserService UserService

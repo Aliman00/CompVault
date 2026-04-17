@@ -6,6 +6,7 @@ using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Competencies.Services;
 using CompVault.Frontend.Features.Departments.Services;
+using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.JobTitle.Services;
 using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.Users.Services;

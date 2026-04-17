@@ -1,3 +1,4 @@
+using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 
 namespace CompVault.Backend.Domain.Entities.JobTitles;
@@ -25,4 +26,7 @@ public class JobTitle
 
     /// <summary>Brukere med denne stillingstittelen.</summary>
     public ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
+    
+    /// <summary>Navigasjonsegenskap for dokumenter rettet mot stillinger.</summary>
+    public ICollection<DocumentJobTitle> DocumentJobTitles { get; set; } = new List<DocumentJobTitle>();
 }

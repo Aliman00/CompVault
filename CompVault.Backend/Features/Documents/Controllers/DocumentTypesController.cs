@@ -56,8 +56,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
     public async Task<ActionResult<DocumentTypeDto>> CreateAsync(
         [FromBody] CreateDocumentTypeRequest request, CancellationToken cancellationToken)
     {
-        Guid createdById = User.TryGetUserId()
-            ?? throw new InvalidOperationException("Kunne ikke hente bruker-ID fra token.");
+        Guid createdById = User.GetUserId();
 
         Result<DocumentTypeDto> result = await documentTypeService.CreateAsync(
             request, createdById, cancellationToken);
