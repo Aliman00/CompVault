@@ -1,9 +1,11 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.Constants;
+using CompVault.Shared.Enums;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -95,6 +97,13 @@ public static class TestDataSeeder
             (Permissions.CompetenciesRead, "Se kompetanser", "Competencies"),
             (Permissions.CompetenciesWrite, "Opprett/endre kompetanser", "Competencies"),
             (Permissions.CompetenciesDelete, "Slett kompetanser", "Competencies"),
+            (Permissions.DocumentTypesRead, "Se dokumenttyper", "DocumentTypes"),
+            (Permissions.DocumentTypesWrite, "Opprett/endre dokumenttyper", "DocumentTypes"),
+            (Permissions.DocumentTypesDelete, "Slett dokumenttyper", "DocumentTypes"),
+            (Permissions.DocumentsRead, "Se dokumenter", "Documents"),
+            (Permissions.DocumentsWrite, "Opprett/endre dokumenter", "Documents"),
+            (Permissions.DocumentsDelete, "Slett dokumenter", "Documents"),
+            (Permissions.DocumentsSign, "Signere dokumenter", "Documents"),
         ];
 
         foreach ((string name, string description, string category) in permissions)
@@ -139,6 +148,13 @@ public static class TestDataSeeder
                 Permissions.DepartmentsRead,
                 Permissions.DepartmentsWrite,
                 Permissions.DepartmentsDelete,
+                Permissions.DocumentTypesRead,
+                Permissions.DocumentTypesWrite,
+                Permissions.DocumentTypesDelete,
+                Permissions.DocumentsRead,
+                Permissions.DocumentsWrite,
+                Permissions.DocumentsDelete,
+                Permissions.DocumentsSign,
             },
             TestConstants.Roles.Default => new[]
             {
@@ -268,5 +284,125 @@ public static class TestDataSeeder
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         return client;
+    }
+
+    // -------------------------------------------------------------------------
+    // Document Types, Categories and Documents
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Seeds document types, categories and documents into the test database.
+    /// </summary>
+    public static async Task SeedDocumentDataAsync(IServiceProvider serviceProvider)
+    {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // Seed document types
+        DocumentType[] documentTypes = new[]
+        {
+            new DocumentType
+            {
+                Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                Name = "HMS Dokumenter",
+                Slug = "hms-documents",
+                Description = "Helse-, miljø- og sikkerhetsdokumenter",
+                TargetMode = DocumentTargetMode.Department,
+                StorageFolder = "hms-documents",
+                AllowedMimeTypes = ["application/pdf"],
+                MaxFileSizeBytes = 20 * 1024 * 1024,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new DocumentType
+            {
+                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                Name = "Kursmateriell",
+                Slug = "course-materials",
+                Description = "Kursmateriell og opplæringsdokumenter",
+                TargetMode = DocumentTargetMode.None,
+                StorageFolder = "course-materials",
+                AllowedMimeTypes = ["application/pdf"],
+                MaxFileSizeBytes = 20 * 1024 * 1024,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+        };
+
+        foreach (DocumentType? dt in documentTypes)
+        {
+            if (!await context.DocumentTypes.AnyAsync(d => d.Slug == dt.Slug))
+            {
+                context.DocumentTypes.Add(dt);
+            }
+        }
+        await context.SaveChangesAsync();
+
+        // Seed document type categories
+        DocumentTypeCategory[] categories = new[]
+        {
+            new DocumentTypeCategory
+            {
+                Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                DocumentTypeId = documentTypes[0].Id,
+                Name = "Nødsprosedyrer",
+                Slug = "emergency-procedure",
+                IsActive = true
+            },
+            new DocumentTypeCategory
+            {
+                Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                DocumentTypeId = documentTypes[0].Id,
+                Name = "Sikkerhetsinstrukser",
+                Slug = "safety-instruction",
+                IsActive = true
+            },
+        };
+
+        foreach (DocumentTypeCategory? cat in categories)
+        {
+            if (!await context.DocumentTypeCategories.AnyAsync(c => c.Slug == cat.Slug))
+            {
+                context.DocumentTypeCategories.Add(cat);
+            }
+        }
+        await context.SaveChangesAsync();
+
+        // Seed documents (UploadedBy set to a placeholder GUID - will be linked when users are seeded)
+        Document[] documents = new[]
+        {
+            new Document
+            {
+                Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                DocumentTypeId = documentTypes[0].Id,
+                DocumentTypeCategoryId = categories[0].Id,
+                Title = "Brannverninstruks",
+                RequiresSignature = true,
+                Version = 1,
+                IsActive = true,
+                UploadedBy = Guid.Empty,
+                UploadedAt = DateTime.UtcNow
+            },
+            new Document
+            {
+                Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                DocumentTypeId = documentTypes[1].Id,
+                Title = "Onboarding-guide",
+                RequiresSignature = false,
+                Version = 1,
+                IsActive = true,
+                UploadedBy = Guid.Empty,
+                UploadedAt = DateTime.UtcNow
+            },
+        };
+
+        foreach (Document? doc in documents)
+        {
+            if (!await context.Documents.AnyAsync(d => d.Title == doc.Title))
+            {
+                context.Documents.Add(doc);
+            }
+        }
+        await context.SaveChangesAsync();
     }
 }

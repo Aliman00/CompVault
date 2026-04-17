@@ -4,6 +4,7 @@
 @inject IUserService UserService
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
+@inject IJobTitleService JobTitleService
 
 @* Side for å opprette en bruker *@
 
@@ -61,11 +62,19 @@ else
                 </MudItem>
                 @* Stillingstittel *@
                 <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.JobTitle"
-                                     ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
-                                     Label="Stillingstittel"
-                                     IsEditing="true"
-                                     For="() => _editModel.JobTitle"/>
+                    <DetailSelectWithLinkField Value="_editModel.JobTitleId"
+                                               ValueChanged="(Guid? v) => _editModel.JobTitleId = v"
+                                               Label="Stillingstittel"
+                                               ToStringFunc="@(id => _jobTitles.FirstOrDefault(
+                                                                 d => d.Id == id)?.Name ?? string.Empty)"
+                                               IsEditing="true">
+                        <Items>
+                            @foreach (var jobTitle in _jobTitles)
+                            {
+                                <MudSelectItem Value="(Guid?)jobTitle.Id">@jobTitle.Name</MudSelectItem>
+                            }
+                        </Items>
+                    </DetailSelectWithLinkField>
                 </MudItem>
 
                 @* EmploymentType *@
@@ -123,6 +132,7 @@ else
     private readonly CreateUserModel _editModel = new();
     private List<UserDto> _allUsers = [];
     private List<DepartmentDto> _departments = [];
+    private List<JobTitleDto> _jobTitles = [];
     
     private bool _isLoading = true;
     
@@ -143,6 +153,9 @@ else
 
             if (_departments.Count == 0)
                 tasks.Add(LoadDepartmentsAsync());
+            
+            if (_jobTitles.Count == 0)
+                tasks.Add(LoadJobTitlesAsync());
 
             if (_allUsers.Count == 0)
                 tasks.Add(LoadUsersAsync());
@@ -168,6 +181,15 @@ else
             _departmentAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
         else
             _departments = departmentResults.Value!;
+    }
+    
+    private async Task LoadJobTitlesAsync()
+    {
+        var jobTitleResult = await JobTitleService.GetAllAsync(Cts.Token);
+        if (jobTitleResult.IsFailure)
+            _departmentAlert = new AlertInfo(jobTitleResult.Error!.ToString(), Severity.Error);
+        else
+            _jobTitles = jobTitleResult.Value!;
     }
     
     private async Task LoadUsersAsync()
