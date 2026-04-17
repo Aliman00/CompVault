@@ -6,6 +6,7 @@ using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Departments.Services;
+using CompVault.Frontend.Features.JobTitle.Services;
 using CompVault.Frontend.Features.Users.Services;
 using CompVault.Shared.Constants;
 
@@ -170,6 +171,7 @@ public static class ServiceCollectionExtensions
         // ================================ Admin forretningslogikk ================================
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
+        services.AddScoped<IJobTitleService, JobTitleService>();
 
 
         return services;

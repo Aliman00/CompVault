@@ -1,10 +1,11 @@
 using System.Linq.Expressions;
-
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.JobTitles;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -22,6 +23,7 @@ public class UserServiceTests
     // Mocker avhengighetene UserService trenger
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
+    private readonly Mock<IJobTitleRepository> _jobTitleRepositoryMock;
     private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
     private readonly Mock<RoleManager<ApplicationRole>> _roleManagerMock;
     private readonly Mock<ILogger<UserService>> _loggerMock;
@@ -45,6 +47,7 @@ public class UserServiceTests
     {
         _userRepositoryMock = new Mock<IUserRepository>();
         _departmentRepositoryMock = new Mock<IDepartmentRepository>();
+        _jobTitleRepositoryMock = new Mock<IJobTitleRepository>();
 
         // UserManager krever en IUserStore-mock for å kunne instansieres
         var storeMock = new Mock<IUserStore<ApplicationUser>>();
@@ -64,6 +67,7 @@ public class UserServiceTests
         _sut = new UserService(
             _userRepositoryMock.Object,
             _departmentRepositoryMock.Object,
+            _jobTitleRepositoryMock.Object,
             _userManagerMock.Object,
             _roleManagerMock.Object,
             _loggerMock.Object);
@@ -309,7 +313,7 @@ public class UserServiceTests
         {
             FirstName = "Nytt",
             LastName = "Navn",
-            JobTitle = "Senior Developer",
+            JobTitleId = Guid.NewGuid(),
             Email = "ny@example.com"
         };
 
@@ -321,6 +325,11 @@ public class UserServiceTests
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(false); 
+
+        _jobTitleRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<JobTitle, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         _userRepositoryMock
             .Setup(r => r.UpdateAsync(_testUser, It.IsAny<CancellationToken>()))
@@ -341,7 +350,7 @@ public class UserServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.FirstName.Should().Be("Nytt");
         result.Value!.LastName.Should().Be("Navn");
-        result.Value!.JobTitle.Should().Be("Senior Developer");
+        result.Value!.JobTitleId.Should().NotBeNull();
         result.Value!.Email.Should().Be("ny@example.com");
 
         _userRepositoryMock.Verify(r => r.UpdateAsync(_testUser, It.IsAny<CancellationToken>()), Times.Once);
@@ -384,7 +393,7 @@ public class UserServiceTests
         {
             FirstName = "Nytt",
             LastName = "Navn",
-            JobTitle = "Senior Developer",
+            JobTitleId = Guid.NewGuid(),
             Email = "ny@example.com"
         };
 
@@ -421,7 +430,7 @@ public class UserServiceTests
         {
             FirstName = "Nytt",
             LastName = "Navn",
-            JobTitle = "Senior Developer",
+            JobTitleId = Guid.NewGuid(),
             Email = "ny@example.com",
             ManagerId = _testUser.Id
         };
@@ -459,7 +468,7 @@ public class UserServiceTests
         {
             FirstName = "Nytt",
             LastName = "Navn",
-            JobTitle = "Senior Developer",
+            JobTitleId = Guid.NewGuid(),
             DepartmentId = Guid.NewGuid()
         };
 
@@ -496,7 +505,7 @@ public class UserServiceTests
         {
             FirstName = "Nytt",
             LastName = "Navn",
-            JobTitle = "Senior Developer",
+            JobTitleId = Guid.NewGuid(),
             ManagerId = Guid.NewGuid()
         };
 

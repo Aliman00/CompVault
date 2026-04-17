@@ -23,9 +23,8 @@ public class UserEditModel
     [EmailAddress(ErrorMessage = UserValidations.Errors.EmailInvalid)]
     [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
     public string Email { get; set; } = string.Empty;
-
-    [MaxLength(UserValidations.JobTitleMaxLength, ErrorMessage = UserValidations.Errors.JobTitleMaxLength)]
-    public string JobTitle { get; set; } = string.Empty;
+    
+    public Guid? JobTitleId { get; set; }
     
     public EmploymentType EmploymentType { get; set; }
     public bool IsActive { get; set; }
@@ -39,7 +38,7 @@ public class UserEditModel
         FirstName = dto.FirstName,
         LastName = dto.LastName,
         Email = dto.Email,
-        JobTitle = dto.JobTitle,
+        JobTitleId = dto.JobTitleId,
         EmploymentType = dto.EmploymentType,
         IsActive = dto.IsActive,
         ManagerId = dto.ManagerId,
@@ -51,7 +50,7 @@ public class UserEditModel
         FirstName = FirstName,
         LastName = LastName,
         Email = Email,
-        JobTitle = JobTitle,
+        JobTitleId = JobTitleId,
         EmploymentType = EmploymentType,
         DepartmentId = DepartmentId,
         ClearDepartmentId = DepartmentId == null,

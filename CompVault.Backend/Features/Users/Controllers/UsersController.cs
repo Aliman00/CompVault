@@ -1,6 +1,8 @@
 using CompVault.Backend.Common.Controller;
+using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.JobTitles;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -17,7 +19,9 @@ namespace CompVault.Backend.Features.Users.Controllers;
 [Route("api/[controller]")]
 [Authorize(Policy = Permissions.UsersRead)]
 [Produces("application/json")]
-public sealed class UsersController(IUserService userService) : BaseController
+public sealed class UsersController(
+    IUserService userService,
+    IJobTitleService jobTitleService) : BaseController
 {
     /// <summary>Henter alle aktive brukere.</summary>
     /// <response code="200">Liste med brukere.</response>
@@ -42,6 +46,20 @@ public sealed class UsersController(IUserService userService) : BaseController
     public async Task<ActionResult<UserDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         Result<UserDto> result = await userService.GetUserByIdAsync(id, cancellationToken);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>Henter alle aktive stillingstitler for autocomplete.</summary>
+    /// <response code="200">Liste med stillingstitler.</response>
+    [HttpGet("job-titles")]
+    [ProducesResponseType(typeof(IReadOnlyList<JobTitleDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<JobTitleDto>>> GetJobTitlesAsync(CancellationToken cancellationToken)
+    {
+        Result<IReadOnlyList<JobTitleDto>> result = await jobTitleService.GetAllAsync(cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

@@ -25,7 +25,7 @@ else if (_user != null)
         <MudPaper Class="pa-6" Elevation="1" Square="true">
             <DetailHeader Title="@_user.FullName"
                           EditPolicy="@Permissions.UsersWrite"
-                          Subtitle="@_user.JobTitle"
+                          Subtitle="@_user.DepartmentName"
                           IsEditing="_isEditing"
                           OnStartEdit="StartEdit"
                           OnCancelEdit="CancelEdit">

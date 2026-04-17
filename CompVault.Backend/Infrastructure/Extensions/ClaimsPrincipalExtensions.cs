@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 using CompVault.Shared.Constants;
@@ -16,6 +16,19 @@ public static class ClaimsPrincipalExtensions
 
         if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
             throw new UnauthorizedAccessException("Bruker-ID mangler eller er ugyldig i tokenet.");
+
+        return userId;
+    }
+
+    /// <summary>
+    /// Forsøker å hente brukerens ID fra JWT-token. Returnerer null hvis token er ugyldig.
+    /// </summary>
+    public static Guid? TryGetUserId(this ClaimsPrincipal user)
+    {
+        string? userIdStr = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
+            return null;
 
         return userId;
     }
