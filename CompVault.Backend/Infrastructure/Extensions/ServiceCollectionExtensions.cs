@@ -7,6 +7,8 @@ using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
+using CompVault.Backend.Features.Documents.Services;
+using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
@@ -14,11 +16,15 @@ using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
+using CompVault.Backend.Infrastructure.FileStorage;
+using CompVault.Backend.Infrastructure.FileStorage.Configuration;
 using CompVault.Backend.Infrastructure.Jobs;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
+using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
 
@@ -91,7 +97,6 @@ public static class ServiceCollectionExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer();
 
-
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
         .Configure<IOptions<JwtSettings>>((jwtOpts, settings) =>
         {
@@ -130,7 +135,15 @@ public static class ServiceCollectionExtensions
                     context.Response.ContentType = "application/problem+json";
                     return context.Response.WriteAsJsonAsync(problem);
                 },
-                OnAuthenticationFailed = _ => Task.CompletedTask
+                OnAuthenticationFailed = context =>
+                {
+                    ILogger? logger = context.HttpContext.RequestServices.GetService<ILogger>();
+                    logger?.LogWarning(
+                        context.Exception,
+                        "JWT authentication failed: {Error}",
+                        context.Exception?.Message ?? "Unknown error");
+                    return Task.CompletedTask;
+                }
             };
         });
 
@@ -181,8 +194,8 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Legger til generell infrastruktur
     /// </summary>
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IWebHostEnvironment
-        environment)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration, 
+        IWebHostEnvironment environment)
     {
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
@@ -196,6 +209,10 @@ public static class ServiceCollectionExtensions
             // Beregner status på kompetansebevis én gang i døgnet
             services.AddHostedService<CompetencyStatusJob>();
         }
+        
+        // Fillagring
+        services.Configure<FileStorageSettings>(configuration.GetSection(nameof(FileStorageSettings)));
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
         
         return services;
     }
@@ -236,6 +253,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
+        // Documents
+        services.AddScoped<IDocumentTypeRepository, DocumentTypeRepository>();
+        services.AddScoped<IDocumentTypeCategoryRepository, DocumentTypeCategoryRepository>();
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<IDocumentSignatureRepository, DocumentSignatureRepository>();
+
+        // JobTitles
+        services.AddScoped<IJobTitleRepository, JobTitleRepository>();
+
         return services;
     }
 
@@ -253,6 +279,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IRoleService, RoleService>();
+
+        // Documents
+        services.AddScoped<IDocumentTypeService, DocumentTypeService>();
+        services.AddScoped<IDocumentFileService, DocumentFileService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+
+        // JobTitles
+        services.AddScoped<IJobTitleService, JobTitleService>();
 
         return services;
     }

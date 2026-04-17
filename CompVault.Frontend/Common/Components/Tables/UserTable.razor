@@ -27,8 +27,9 @@ else
                  RowClick="@((DataGridRowClickEventArgs<UserDto> args)
                                => OnRowClick(args.Item.Id))">
         <Columns>
-            <PropertyColumn Property="x => x.FullName.Truncate(40)" Title="Navn" SortBy="x => x.LastName"/>
-            <PropertyColumn Property="x => x.JobTitle.Truncate(40)" Title="Stillingstittel"/>
+            <PropertyColumn Property="x => x.FullName.Truncate(40)" Title="Navn" 
+                            SortBy="x => x.LastName"/>
+            <PropertyColumn Property="x => x.JobTitleName.Truncate(40)" Title="Stillingstittel"/>
             <PropertyColumn Property="x => x.EmploymentType" Title="Ansettelsestype"/>
         </Columns>
     </MudDataGrid>

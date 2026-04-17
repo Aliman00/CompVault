@@ -44,7 +44,7 @@ else
             <SelectColumn T="UserDto"/>
             <PropertyColumn Property="x => x.FullName.Truncate(40)" Title="Navn"
                             SortBy="x => x.LastName.Truncate(40)" />
-            <PropertyColumn Property="user => user.JobTitle.Truncate(40)" Title="Stillingstittel"/>
+            <PropertyColumn Property="user => user.JobTitleName.Truncate(40)" Title="Stillingstittel"/>
             <PropertyColumn Property="user => user.DepartmentName.Truncate(40)" Title="Avdeling"/>
             <PropertyColumn Property="user => user.ManagerName.Truncate(40)" Title="Nærmeste leder"/>
         </Columns>

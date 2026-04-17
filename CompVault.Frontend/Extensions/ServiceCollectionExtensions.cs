@@ -6,6 +6,7 @@ using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Departments.Services;
 using CompVault.Frontend.Features.Roles.Services;
+using CompVault.Frontend.Features.JobTitle.Services;
 using CompVault.Frontend.Features.Users.Services;
 using CompVault.Shared.Constants;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -172,6 +173,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IJobTitleService, JobTitleService>();
 
 
         return services;

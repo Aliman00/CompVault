@@ -26,9 +26,8 @@ public sealed class CreateUserRequest
     [MaxLength(UserValidations.LastNameMaxLength, ErrorMessage = UserValidations.Errors.LastNameMaxLength)]
     public string LastName { get; set; } = string.Empty;
 
-    /// <summary>Stillingstittel (valgfritt).</summary>
-    [MaxLength(UserValidations.JobTitleMaxLength, ErrorMessage = UserValidations.Errors.JobTitleMaxLength)]
-    public string JobTitle { get; set; } = string.Empty;
+    /// <summary>ID til stillingstittelen (valgfritt).</summary>
+    public Guid? JobTitleId { get; set; }
 
     /// <summary>Ansettelsestype.</summary>
     [Required]

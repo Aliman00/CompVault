@@ -244,6 +244,284 @@ namespace CompVault.Backend.Migrations
                     b.ToTable("Departments");
                 });
 
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.Document", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Checksum")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid?>("DocumentTypeCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DocumentTypeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ExternalUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("FilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<long?>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("MimeType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("RequiresSignature")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UploadedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAt");
+
+                    b.HasIndex("DocumentTypeCategoryId");
+
+                    b.HasIndex("UploadedBy");
+
+                    b.HasIndex("DocumentTypeId", "IsActive");
+
+                    b.ToTable("Documents");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentDepartment", b =>
+                {
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("DocumentId", "DepartmentId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.ToTable("DocumentDepartments");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentJobTitle", b =>
+                {
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("JobTitleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("DocumentId", "JobTitleId");
+
+                    b.HasIndex("JobTitleId");
+
+                    b.ToTable("DocumentJobTitles");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentSignature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SignatureVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("DocumentId", "UserId", "SignatureVersion")
+                        .IsUnique();
+
+                    b.ToTable("DocumentSignatures");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<string[]>("AllowedMimeTypes")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<long>("MaxFileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("StorageFolder")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TargetMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DeletedAt");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("DocumentTypes");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentTypeCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DocumentTypeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentTypeId", "Slug")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.ToTable("DocumentTypeCategories");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Checksum")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("FilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<long?>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("MimeType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("DocumentVersions");
+                });
+
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.ApplicationRole", b =>
                 {
                     b.Property<Guid>("Id")
@@ -332,10 +610,8 @@ namespace CompVault.Backend.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("JobTitle")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
+                    b.Property<Guid?>("JobTitleId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -385,6 +661,8 @@ namespace CompVault.Backend.Migrations
                     b.HasIndex("DeletedAt");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("JobTitleId");
 
                     b.HasIndex("ManagerId");
 
@@ -448,6 +726,39 @@ namespace CompVault.Backend.Migrations
                     b.HasIndex("PermissionId");
 
                     b.ToTable("RolePermissions");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.JobTitles.JobTitle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAt");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.ToTable("JobTitles");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -611,6 +922,121 @@ namespace CompVault.Backend.Migrations
                     b.Navigation("ParentDepartment");
                 });
 
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.Document", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Documents.DocumentTypeCategory", "Category")
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeCategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CompVault.Backend.Domain.Entities.Documents.DocumentType", "DocumentType")
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "Uploader")
+                        .WithMany()
+                        .HasForeignKey("UploadedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("DocumentType");
+
+                    b.Navigation("Uploader");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentDepartment", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Departments.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CompVault.Backend.Domain.Entities.Documents.Document", "Document")
+                        .WithMany("DocumentDepartments")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Document");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentJobTitle", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Documents.Document", "Document")
+                        .WithMany("DocumentJobTitles")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CompVault.Backend.Domain.Entities.JobTitles.JobTitle", "JobTitle")
+                        .WithMany()
+                        .HasForeignKey("JobTitleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("JobTitle");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentSignature", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Documents.Document", "Document")
+                        .WithMany("Signatures")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentType", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentTypeCategory", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Documents.DocumentType", "DocumentType")
+                        .WithMany("Categories")
+                        .HasForeignKey("DocumentTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DocumentType");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentVersion", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Documents.Document", "Document")
+                        .WithMany("Versions")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+                });
+
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.ApplicationRole", b =>
                 {
                     b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "CreatedBy")
@@ -633,6 +1059,11 @@ namespace CompVault.Backend.Migrations
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("CompVault.Backend.Domain.Entities.JobTitles.JobTitle", "JobTitle")
+                        .WithMany("Users")
+                        .HasForeignKey("JobTitleId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "Manager")
                         .WithMany("DirectReports")
                         .HasForeignKey("ManagerId")
@@ -641,6 +1072,8 @@ namespace CompVault.Backend.Migrations
                     b.Navigation("CreatedBy");
 
                     b.Navigation("Department");
+
+                    b.Navigation("JobTitle");
 
                     b.Navigation("Manager");
                 });
@@ -734,6 +1167,22 @@ namespace CompVault.Backend.Migrations
                     b.Navigation("SubDepartments");
                 });
 
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.Document", b =>
+                {
+                    b.Navigation("DocumentDepartments");
+
+                    b.Navigation("DocumentJobTitles");
+
+                    b.Navigation("Signatures");
+
+                    b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentType", b =>
+                {
+                    b.Navigation("Categories");
+                });
+
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.ApplicationRole", b =>
                 {
                     b.Navigation("RolePermissions");
@@ -751,6 +1200,11 @@ namespace CompVault.Backend.Migrations
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.JobTitles.JobTitle", b =>
+                {
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }
