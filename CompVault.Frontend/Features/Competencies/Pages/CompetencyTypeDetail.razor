@@ -1,6 +1,6 @@
 ﻿@page "/competency-types/{Id:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.DepartmentsWrite)]
+@attribute [Authorize(Policy = Permissions.CompetenciesRead)]
 @inject ICompetencyService CompetencyService
 @inject ICompetencyTypeService CompetencyTypeService
 @inject NavigationManager NavigationManager
@@ -8,124 +8,131 @@
 
 @* Detalje visning av en kompetansetype med mulighet for oppdatering *@
 
-<DetailForm Title="@_competencyType?.Name"
-            Subtitle="@_competencyType?.Description"
-            EditPolicy="@Permissions.CompetenciesWrite"
-            EditContext="_editContext"
-            OnValidSubmit="SaveEdit"
-            IsEditing="_isEditing"
-            IsLoading="_isLoading"
-            OnStartEdit="StartEdit"
-            OnCancelEdit="CancelEdit"
-            @bind-Alert="_alert">
-    <DropdownActions>
-        <AuthorizeView Policy="@Permissions.CompetenciesDelete" Context="auth">
-            <Authorized>
-                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                             IconColor="Color.Error"
-                             OnClick="Delete">
-                    <MudText Color="Color.Error">Slett kompetansetype</MudText>
-                </MudMenuItem>
-            </Authorized>
-            <NotAuthorized>
-                <MudTooltip Text="Du har ikke tilgang til å slette kompetansetypen">
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_competencyType != null)
+{
+    <DetailForm Title="@_competencyType?.Name"
+                Subtitle="@_competencyType?.Description"
+                EditPolicy="@Permissions.CompetenciesWrite"
+                EditContext="_editContext"
+                OnValidSubmit="SaveEdit"
+                IsEditing="_isEditing"
+                OnStartEdit="StartEdit"
+                OnCancelEdit="CancelEdit">
+        <DropdownActions>
+            <AuthorizeView Policy="@Permissions.CompetenciesDelete">
+                <Authorized>
                     <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                 IconColor="Color.Default"
-                                 Disabled="true">
-                        <MudText>Slett kompetansetype</MudText>
+                                 IconColor="Color.Error"
+                                 OnClick="Delete">
+                        <MudText Color="Color.Error">Slett kompetansetype</MudText>
                     </MudMenuItem>
-                </MudTooltip>
-            </NotAuthorized>
-        </AuthorizeView>
-    </DropdownActions>
-    <Fields>
-        @* Navn *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Name"
-                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                             Label="Navn"
-                             IsEditing="_isEditing"
-                             For="() => _editModel.Name"/>
-        </MudItem>
-        @* Kategori *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Category"
-                             ValueChanged="(string? v) => _editModel.Category = v ?? string.Empty"
-                             Label="Kategori (valgfritt)"
-                             IsEditing="_isEditing"
-                             For="() => _editModel.Category"/>
-        </MudItem>
-        @* Beskrivelse *@
-        <MudItem xs="12">
-            <DetailTextField Value="@_editModel.Description"
-                             ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
-                             Label="Beskrivelse (valgfritt)"
-                             IsEditing="_isEditing"
-                             For="() => _editModel.Description"/>
-        </MudItem>
-        @* Krever utløpsdato *@
-        <MudItem xs="12" sm="6">
-            <ToggleButton Label="Skal kompetansebevisene utgå?"
-                          @bind-Value="_editModel.RequiresExpiration"
-                          IsEditing="_isEditing">
-                <MudToggleItem Value="(bool?)true" Text="Krever utløpsdato"/>
-                <MudToggleItem Value="(bool?)false" Text="Ingen utløpsdato"/>
-            </ToggleButton>
-        </MudItem>
-        @* Status *@
-        <MudItem xs="12" sm="6">
-            <ToggleButton Label="Status"
-                          @bind-Value="_editModel.IsActive"
-                          IsEditing="_isEditing">
-                <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
-                <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
-            </ToggleButton>
-        </MudItem>
-        @* Opprettelsesdato *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_competencyType!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
-                             Label="Opprettet"
-                             IsEditing="false"/>
-        </MudItem>
-        @* Kompetansebevis med denne typen *@
-        <MudItem xs="12">
-            <MudText Typo="Typo.subtitle1">Kompetansebevis av type @_competencyType!.Name</MudText>
-            <MudDataGrid T="CompetencyDto"
-                         Items="_competenciesWithType"
-                         Filterable="false"
-                         Dense="true"
-                         Hover="true"
-                         Striped="true"
-                         Square="true"
-                         Bordered="true"
-                         SortMode="SortMode.Single"
-                         RowClick="@((DataGridRowClickEventArgs<CompetencyDto> args)
-                                       => NavigateToCompetency(args.Item.Id))">
-                <Columns>
-                    <PropertyColumn Property='x => $"{x.UserFirstName} {x.UserLastName}".Truncate(40)'
-                                    Title="Bruker" SortBy="x => x.UserLastName"/>
-                    <TemplateColumn Title="Status" SortBy="x => x.Status">
-                        <CellTemplate Context="cell">
-                            <MudChip T="string"
-                                     Color="@cell.Item.Status.ToStatusColor()"
-                                     Size="Size.Small"
-                                     Class="cv-rounded">
-                                @cell.Item.Status
-                            </MudChip>
-                        </CellTemplate>
-                    </TemplateColumn>
-                    <PropertyColumn Property="x => x.IssuedDate.ToShortDateString()"
-                                    Title="Utstedt"/>
-                    @if (_competencyType!.RequiresExpiration)
-                    {
-                        <PropertyColumn Property="x => x.ExpiryDate!.Value.ToShortDateString()"
-                                        Title="Utløper"/>
-                    }
-                </Columns>
-            </MudDataGrid>
-        </MudItem>
-    </Fields>
-</DetailForm>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å slette kompetansetypen">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     IconColor="Color.Default"
+                                     Disabled="true">
+                            <MudText>Slett kompetansetype</MudText>
+                        </MudMenuItem>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
+        </DropdownActions>
+        <Fields>
+            @* Navn *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_editModel.Name"
+                                 ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                 Label="Navn"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Name"/>
+            </MudItem>
+            @* Kategori *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_editModel.Category"
+                                 ValueChanged="(string? v) => _editModel.Category = v ?? string.Empty"
+                                 Label="Kategori (valgfritt)"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Category"/>
+            </MudItem>
+            @* Beskrivelse *@
+            <MudItem xs="12">
+                <DetailTextField Value="@_editModel.Description"
+                                 ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
+                                 Label="Beskrivelse (valgfritt)"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Description"/>
+            </MudItem>
+            @* Krever utløpsdato *@
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Skal kompetansebevisene utgå?"
+                              @bind-Value="_editModel.RequiresExpiration"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Krever utløpsdato"/>
+                    <MudToggleItem Value="(bool?)false" Text="Ingen utløpsdato"/>
+                </ToggleButton>
+            </MudItem>
+            @* Status *@
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Status"
+                              @bind-Value="_editModel.IsActive"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
+                    <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
+                </ToggleButton>
+            </MudItem>
+            @* Opprettelsesdato *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_competencyType!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                                 Label="Opprettet"
+                                 IsEditing="false"/>
+            </MudItem>
+            @* Kompetansebevis med denne typen *@
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle1">Kompetansebevis av type @_competencyType!.Name</MudText>
+                <MudDataGrid T="CompetencyDto"
+                             Items="_competenciesWithType"
+                             Filterable="false"
+                             Dense="true"
+                             Hover="true"
+                             Striped="true"
+                             Square="true"
+                             Bordered="true"
+                             SortMode="SortMode.Single"
+                             RowClick="@((DataGridRowClickEventArgs<CompetencyDto> args)
+                                           => NavigateToCompetency(args.Item.Id))">
+                    <Columns>
+                        <PropertyColumn Property='x => $"{x.UserFirstName} {x.UserLastName}".Truncate(40)'
+                                        Title="Bruker" SortBy="x => x.UserLastName"/>
+                        <TemplateColumn Title="Status" SortBy="x => x.Status">
+                            <CellTemplate Context="cell">
+                                <MudChip T="string"
+                                         Color="@cell.Item.Status.ToStatusColor()"
+                                         Size="Size.Small"
+                                         Class="cv-rounded">
+                                    @cell.Item.Status
+                                </MudChip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <PropertyColumn Property="x => x.IssuedDate.ToShortDateString()"
+                                        Title="Utstedt"/>
+                        @if (_competencyType!.RequiresExpiration)
+                        {
+                            <PropertyColumn Property="x => x.ExpiryDate!.Value.ToShortDateString()"
+                                            Title="Utløper"/>
+                        }
+                    </Columns>
+                </MudDataGrid>
+            </MudItem>
+        </Fields>
+    </DetailForm>
+}
 
 @code {
 
@@ -182,11 +189,6 @@
             }
 
             _competencyType = competencyTypeResult.Value;
-            if (_competencyType == null)
-            {
-                _alert = new AlertInfo("Fant ikke kompetansetypen", Severity.Error);
-                return;
-            }
 
             if (competenciesResult.IsFailure)
                 _alert = new AlertInfo(competenciesResult.Error!.ToString(), Severity.Error);

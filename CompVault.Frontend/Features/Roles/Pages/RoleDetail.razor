@@ -8,105 +8,112 @@
 
 @* Detalje visning av en rolle med mulighet for oppdatering *@
 
-<DetailForm Title="@_role?.Name"
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_role != null)
+{
+    <DetailForm Title="@_role?.Name"
             Subtitle="@_role?.Description"
             EditPolicy="@Permissions.RolesWrite"
             EditContext="_editContext"
             OnValidSubmit="SaveEdit"
             IsEditing="_isEditing"
-            IsLoading="_isLoading"
             OnStartEdit="StartEdit"
-            OnCancelEdit="CancelEdit"
-            @bind-Alert="_alert">
-    <ExtraActions>
-        <ResponsiveButton Label="Permissions"
-                          Icon="@Icons.Material.Filled.Security"
-                          OnClick="OpenPermissionsDialog"/>
-    </ExtraActions>
-    <DropdownActions>
-        <AuthorizeView Policy="@Permissions.RolesDelete">
-            <Authorized>
-                @if (_role!.IsSystem)
-                {
-                    <MudTooltip Text="Systemroller kan ikke slettes">
+            OnCancelEdit="CancelEdit">
+        <ExtraActions>
+            <ResponsiveButton Label="Permissions"
+                              Icon="@Icons.Material.Filled.Security"
+                              OnClick="OpenPermissionsDialog"/>
+        </ExtraActions>
+        <DropdownActions>
+            <AuthorizeView Policy="@Permissions.RolesDelete">
+                <Authorized>
+                    @if (_role!.IsSystem)
+                    {
+                        <MudTooltip Text="Systemroller kan ikke slettes">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                         IconColor="Color.Default"
+                                         Disabled="true">
+                                <MudText>Slett rolle</MudText>
+                            </MudMenuItem>
+                        </MudTooltip>
+                    }
+                    else
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     IconColor="Color.Error"
+                                     OnClick="Delete">
+                            <MudText Color="Color.Error">Slett rolle</MudText>
+                        </MudMenuItem>
+                    }
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å slette avdelingen">
                         <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                      IconColor="Color.Default"
                                      Disabled="true">
                             <MudText>Slett rolle</MudText>
                         </MudMenuItem>
                     </MudTooltip>
-                }
-                else
-                {
-                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                 IconColor="Color.Error"
-                                 OnClick="Delete">
-                        <MudText Color="Color.Error">Slett rolle</MudText>
-                    </MudMenuItem>
-                }
-            </Authorized>
-            <NotAuthorized>
-                <MudTooltip Text="Du har ikke tilgang til å slette avdelingen">
-                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                 IconColor="Color.Default"
-                                 Disabled="true">
-                        <MudText>Slett rolle</MudText>
-                    </MudMenuItem>
-                </MudTooltip>
-            </NotAuthorized>
-        </AuthorizeView>
-    </DropdownActions>
-    <Fields>
-        @* Rollenavn *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Name"
-                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                             Label="Rollenavn"
-                             IsEditing="_isEditing"
-                             For="() => _editModel.Name"/>
-        </MudItem>
-        @* Beskrivelse *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Description"
-                             ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
-                             Label="Beskrivelse (valgfritt)"
-                             IsEditing="_isEditing"
-                             For="() => _editModel.Description"/>
-        </MudItem>
-        @* Opprettelsesdato *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_role!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
-                             Label="Opprettet"
-                             IsEditing="false"/>
-        </MudItem>
-        @* Opprettet av *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_role!.CreatedByName"
-                             Label="Opprettet av bruker"
-                             IsEditing="false"
-                             ShowLink="_role!.CreatedById.HasValue"
-                             OnAdornmentClick="NavigateToCreatedByUser"
-                             HelperText="@(HasCreatedByUser ? "Trykk for å gå til brukeren" : null)"/>
-        </MudItem>
-        @* Brukere med denne rollen *@
-        <MudItem xs="12">
-            <UserTable Title="@($"Brukere tildelt denne rollen ({_role!.UserCount})")"
-                       EmptyText="Ingen brukere tildelt denne rollen."
-                       Users="_usersWithRole"
-                       OnUserClick="NavigateToUser">
-                <HeaderAction>
-                    <MudButton Variant="Variant.Text"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.OpenInNew"
-                               Size="Size.Small"
-                               OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.Users.List))">
-                        Gå til brukere for å tildelle roller
-                    </MudButton>
-                </HeaderAction>
-            </UserTable>
-        </MudItem>
-    </Fields>
-</DetailForm>
+                </NotAuthorized>
+            </AuthorizeView>
+        </DropdownActions>
+        <Fields>
+            @* Rollenavn *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_editModel.Name"
+                                 ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                 Label="Rollenavn"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Name"/>
+            </MudItem>
+            @* Beskrivelse *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_editModel.Description"
+                                 ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
+                                 Label="Beskrivelse (valgfritt)"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Description"/>
+            </MudItem>
+            @* Opprettelsesdato *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_role!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                                 Label="Opprettet"
+                                 IsEditing="false"/>
+            </MudItem>
+            @* Opprettet av *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_role!.CreatedByName"
+                                 Label="Opprettet av bruker"
+                                 IsEditing="false"
+                                 ShowLink="_role!.CreatedById.HasValue"
+                                 OnAdornmentClick="NavigateToCreatedByUser"
+                                 HelperText="@(HasCreatedByUser ? "Trykk for å gå til brukeren" : null)"/>
+            </MudItem>
+            @* Brukere med denne rollen *@
+            <MudItem xs="12">
+                <UserTable Title="@($"Brukere tildelt denne rollen ({_role!.UserCount})")"
+                           EmptyText="Ingen brukere tildelt denne rollen."
+                           Users="_usersWithRole"
+                           OnUserClick="NavigateToUser">
+                    <HeaderAction>
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.OpenInNew"
+                                   Size="Size.Small"
+                                   OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.Users.List))">
+                            Gå til brukere for å tildelle roller
+                        </MudButton>
+                    </HeaderAction>
+                </UserTable>
+            </MudItem>
+        </Fields>
+    </DetailForm>
+}
 
 @code {
 

@@ -1,0 +1,127 @@
+﻿@page "/competencies"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.CompetenciesRead)]
+@inject ICompetencyService CompetenciesService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle kompetansebevi *@
+
+<ListPage TItem="CompetencyDto"
+          Items="_competencies"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          SelectedItemsChanged="@(s => _selectedCompetencies = s)"
+          RowClick="@(args => OnCompetenciesClick(args))">
+    <Header>
+        <ListHeader Title="Kompetansebevis"
+                    CreateHref="@PageRoutes.Competencies.Create"
+                    CreateLabel="Opprett kompetansebevis"
+                    CreateIcon="@Icons.Material.Filled.WorkspacePremium"
+                    CreatePolicy="@Permissions.CompetenciesWrite"/>
+    </Header>
+    <Columns>
+        @* Brukerens fullenavn *@
+        <PropertyColumn T="CompetencyDto" TProperty="string" 
+                        Property='x => x.FullName.Truncate(40)'
+                        Title="Bruker" SortBy="x => x.UserLastName"/>
+        
+        @* Kompetansetype *@
+        <PropertyColumn T="CompetencyDto" TProperty="string"
+                        Property='x => x.CompetencyTypeName.Truncate(40)'
+                        Title="Type"/>
+        
+        @* Status *@
+        <TemplateColumn  T="CompetencyDto" Title="Status" SortBy="x => x.Status" Sortable="true">
+            <CellTemplate Context="cell">
+                <MudChip T="string"
+                         Color="@cell.Item.Status.ToStatusColor()"
+                         Size="Size.Small"
+                         Class="cv-rounded">
+                    @cell.Item.Status
+                </MudChip>
+            </CellTemplate>
+        </TemplateColumn>
+
+        @* Utløpsdato *@
+        <TemplateColumn T="CompetencyDto" Title="Utløpsdato" SortBy="x => x.ExpiryDate" Sortable="true">
+            <CellTemplate Context="cell">
+                @if (cell.Item.ExpiryDate is null)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Default">—</MudText>
+                }
+                else
+                {
+                    <div>
+                        <MudText Typo="Typo.body2">
+                            @cell.Item.ExpiryDate.Value.ToString("dd.MM.yyyy")
+                        </MudText>
+                        <MudText Typo="Typo.caption"
+                                 Color="@cell.Item.DaysUntilExpiry.ToExpiryColor(cell.Item.Status)">
+                            @cell.Item.DaysUntilExpiry.ToExpiryText(cell.Item.Status)
+                        </MudText>
+                    </div>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+
+        @* Utstedelsesdato *@
+        <PropertyColumn T="CompetencyDto" TProperty="DateOnly"
+                        Property="x => DateOnly.FromDateTime(x.IssuedDate)"
+                        Title="Utstedt"
+                        Format="dd.MM.yyyy" />
+    </Columns>
+</ListPage>
+
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private List<CompetencyDto> _competencies = [];
+    private HashSet<CompetencyDto> _selectedCompetencies = [];
+
+    private CompetencyFilterRequest _request = new();
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getCompetenciesResult = await CompetenciesService.GetAllAsync(_request, Cts.Token);
+
+            if (getCompetenciesResult.IsFailure)
+            {
+                _alert = new AlertInfo(getCompetenciesResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _competencies = getCompetenciesResult.Value!.OrderByStatus();
+
+            if (Deleted)
+                _alert = new AlertInfo("Kompetansetypen er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste kompetansetypen. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnCompetenciesClick(DataGridRowClickEventArgs<CompetencyDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.Competencies.Detail(args.Item.Id));
+}

@@ -7,7 +7,7 @@ namespace CompVault.Frontend.Features.Competencies.Models;
 /// <param name="UserId">Valgfritt filtering på en bruker</param>
 /// <param name="Status">Valgfritt filtering på status til kompetansebevis</param>
 /// <param name="CompetencyTypeId">Valgfritt filtering på kompetansetype</param>
-public record CompetencyFilterRequest(
-    Guid? UserId,
-    CompetencyStatus? Status,
-    Guid? CompetencyTypeId);
+public sealed record CompetencyFilterRequest(
+    Guid? UserId = null,
+    CompetencyStatus? Status = null,
+    Guid? CompetencyTypeId = null);
