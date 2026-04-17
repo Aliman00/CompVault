@@ -11,6 +11,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Moq;
 
+using Npgsql;
+
+using Respawn;
+
 using Testcontainers.PostgreSql;
 
 namespace CompVault.Backend.Tests.Backend.Integrations;
@@ -26,6 +30,8 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         .WithUsername("test")
         .WithPassword("test")
         .Build();
+    
+    private Respawner _respawner = null!;
 
     // Vi mocker EmailService for å mocke email kall
     public Mock<IEmailService> EmailServiceMock { get; } = new();
@@ -66,8 +72,31 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 
     // Starter containeren før testene kjører
     public async Task InitializeAsync()
-        => await _postgres.StartAsync();
-
+    {
+        await _postgres.StartAsync();
+        
+        // Seeder og migrerer databasen
+        await TestDataSeeder.CreateDb(Services);
+        
+        // Hent og åpme tilkobling
+        await using NpgsqlConnection npgsqlConnection = new(_postgres.GetConnectionString());
+        await npgsqlConnection.OpenAsync();
+        
+        // Konfiguerer respawn slik at vi kan resette databasen til tilstanden etter seeding
+        _respawner = await Respawner.CreateAsync(npgsqlConnection,
+            new RespawnerOptions { DbAdapter = DbAdapter.Postgres, SchemasToInclude = ["public"] });
+    }
+    
+    /// <summary>
+    /// Resetter databasen til tilstanden etter initial seeding
+    /// </summary>
+    public async Task ResetDatabaseAsync()
+    {
+        await using NpgsqlConnection npgsqlConnection = new(_postgres.GetConnectionString());
+        await npgsqlConnection.OpenAsync();
+        await _respawner.ResetAsync(npgsqlConnection);
+    }
+    
     // Stopper containeren etter testene er ferdig
     public new async Task DisposeAsync()
         => await _postgres.DisposeAsync();

@@ -25,8 +25,8 @@ namespace CompVault.Backend.Tests.Backend.Integrations.Controllers;
 /// Siden xUnit-konstruktøren kan ikke være async så oppretter vi to hooks per test:
 /// En InitializeAsync som kjører for hver test, og en DisposeAsync for å rydde opp
 /// </summary>
-public class AuthControllerTests(BackendWebApplicationFactory factory)
-    : IClassFixture<BackendWebApplicationFactory>, IAsyncLifetime
+[Collection(nameof(IntegrationTestCollection))]
+public class AuthControllerTests(BackendWebApplicationFactory factory) : IAsyncLifetime
 {
     // Oppretter en Httpclient for å sende forespørsler mot endepunktene våre
     private readonly HttpClient _client = factory.CreateClient();
@@ -34,9 +34,8 @@ public class AuthControllerTests(BackendWebApplicationFactory factory)
     // Initialiserer InMemory-databsen og rydder opp databasen før AuthController kjører
     public async Task InitializeAsync()
     {
-        _ = factory.CreateClient();
+        await factory.ResetDatabaseAsync();
         factory.EmailServiceMock.Reset(); // Resetter mocken for å sikre at EmailService resettes mellom kjøringer
-        await TestDataSeeder.CreateDb(factory.Services);
         await TestDataSeeder.SeedUserAsync(factory.Services, // Seeder en aktiv bruker
             id: TestConstants.Users.ActiveUserId);
         await TestDataSeeder.SeedUserAsync(factory.Services, // Seeder en inaktiv bruker
