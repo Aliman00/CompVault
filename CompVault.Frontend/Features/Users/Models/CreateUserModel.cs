@@ -20,9 +20,8 @@ public class CreateUserModel
     [EmailAddress(ErrorMessage = UserValidations.Errors.EmailInvalid)]
     [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
     public string Email { get; set; } = string.Empty;
-
-    [MaxLength(UserValidations.JobTitleMaxLength, ErrorMessage = UserValidations.Errors.JobTitleMaxLength)]
-    public string JobTitle { get; set; } = string.Empty;
+    
+    public Guid? JobTitleId { get; set; } 
 
     public EmploymentType EmploymentType { get; set; }
     public Guid? DepartmentId { get; set; }
@@ -34,7 +33,7 @@ public class CreateUserModel
         FirstName = FirstName,
         LastName = LastName,
         Email = Email,
-        JobTitle = JobTitle,
+        JobTitleId = JobTitleId,
         EmploymentType = EmploymentType,
         DepartmentId = DepartmentId,
         ManagerId = ManagerId,

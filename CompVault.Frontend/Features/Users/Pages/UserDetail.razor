@@ -5,11 +5,12 @@
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject IJobTitleService JobTitleService
 
 @* Detalje visning av en bruker med mulighet for oppdatering *@
 
 <DetailForm Title="@_user?.FullName"
-            Subtitle="@_user?.JobTitle"
+            Subtitle="@_user?.JobTitleName"
             EditPolicy="@Permissions.UsersWrite"
             EditContext="_editContext"
             OnValidSubmit="SaveEdit"
@@ -65,12 +66,25 @@
         </MudItem>
         @* Stillingstittel *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.JobTitle"
-                             ValueChanged="(string? v) => _editModel.JobTitle = v ?? string.Empty"
-                             Label="Stillingstittel"
-                             IsEditing="_isEditing"
-                             For="() => _editModel.JobTitle"/>
+            <DetailSelectWithLinkField Value="_editModel.JobTitleId"
+                                       ValueChanged="(Guid? v) => _editModel.JobTitleId = v"
+                                       Label="Stillingstittel"
+                                       ToStringFunc="@(id => _jobTitles.FirstOrDefault(
+                                                         d => d.Id == id)?.Name ?? string.Empty)"
+                                       IsEditing="_isEditing"
+                                       DisplayValue="@_user.JobTitleName"
+                                       ShowLink="_user.JobTitleId.HasValue"
+                                       OnNavigate="NavigateToJobTitle"
+                                       HelperText="Trykk på knappen for å gå til stillingstittelen">
+                <Items>
+                    @foreach (var jobTitle in _jobTitles)
+                    {
+                        <MudSelectItem Value="(Guid?)jobTitle.Id">@jobTitle.Name</MudSelectItem>
+                    }
+                </Items>
+            </DetailSelectWithLinkField>
         </MudItem>
+        
         @* EmploymentType *@
         <MudItem xs="12" sm="6">
             <DetailEnumField Value="@_editModel.EmploymentType"
@@ -176,6 +190,7 @@
     private UserDto? _user;
     private List<UserDto> _allUsers = [];
     private List<DepartmentDto> _departments = [];
+    private List<JobTitleDto> _jobTitles = [];
     
     private UserEditModel _editModel = new();
     
@@ -199,6 +214,7 @@
         _isEditing = false;
         _allUsers = [];
         _departments = [];
+        _jobTitles = [];
         _editModel = new();
         
         try
@@ -255,6 +271,9 @@
 
         if (_departments.Count == 0)
             tasks.Add(LoadDepartmentsAsync());
+        
+        if (_jobTitles.Count == 0)
+            tasks.Add(LoadJobTitlesAsync());
 
         if (_allUsers.Count == 0)
             tasks.Add(LoadUsersAsync());
@@ -277,6 +296,15 @@
             _alert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
         else
             _departments = departmentResults.Value!.Where(d => d.IsActive).ToList();
+    }
+    
+    private async Task LoadJobTitlesAsync()
+    {
+        var jobTitleResult = await JobTitleService.GetAllAsync(Cts.Token);
+        if (jobTitleResult.IsFailure)
+            _alert = new AlertInfo(jobTitleResult.Error!.ToString(), Severity.Error);
+        else
+            _jobTitles = jobTitleResult.Value!;
     }
     
     private async Task LoadUsersAsync()
@@ -326,6 +354,13 @@
         if (_user?.DepartmentId.HasValue == true)
             NavigationManager.NavigateTo(PageRoutes.Departments.Detail(_user.DepartmentId.Value));
     }
+    
+    private void NavigateToJobTitle()
+    {
+        if (_user?.DepartmentId.HasValue == true)
+            NavigationManager.NavigateTo($"/jobtitle/{_user.JobTitleId}");
+    }
+
     
     private void NavigateToManager()
     {

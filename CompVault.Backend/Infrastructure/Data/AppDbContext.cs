@@ -1,7 +1,9 @@
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
+using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.JobTitles;
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -16,12 +18,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
 {
     // ============= IDENTITY ==============
     public DbSet<Department> Departments => Set<Department>();
+    public DbSet<JobTitle> JobTitles => Set<JobTitle>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     // ============= COMPETENCIES ==============
     public DbSet<CompetencyType> CompetencyTypes => Set<CompetencyType>();
     public DbSet<Competency> Competencies => Set<Competency>();
+
+    // ============= DOCUMENTS ==============
+    public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
+    public DbSet<DocumentTypeCategory> DocumentTypeCategories => Set<DocumentTypeCategory>();
+    public DbSet<Document> Documents => Set<Document>();
+    public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
+    public DbSet<DocumentSignature> DocumentSignatures => Set<DocumentSignature>();
+    public DbSet<DocumentDepartment> DocumentDepartments => Set<DocumentDepartment>();
+    public DbSet<DocumentJobTitle> DocumentJobTitles => Set<DocumentJobTitle>();
 
     // ============= AUTH ==============
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();

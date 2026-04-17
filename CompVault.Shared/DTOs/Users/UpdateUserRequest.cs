@@ -23,9 +23,11 @@ public sealed class UpdateUserRequest
     [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
     public string? Email { get; init => field = value?.Trim(); } = null!;
 
-    /// <summary>Ny stillingstittel (valgfritt).</summary>
-    [MaxLength(UserValidations.JobTitleMaxLength, ErrorMessage = UserValidations.Errors.JobTitleMaxLength)]
-    public string? JobTitle { get; set; }
+    /// <summary>Ny stillingstittel-ID (valgfritt).</summary>
+    public Guid? JobTitleId { get; set; }
+
+    /// <summary>Sett til true for å fjerne stillingstittel.</summary>
+    public bool ClearJobTitleId { get; set; }
 
     /// <summary>Ny ansettelsestype (valgfritt).</summary>
     public EmploymentType? EmploymentType { get; set; }
