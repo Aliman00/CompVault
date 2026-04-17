@@ -98,10 +98,10 @@
     // ===================== PRIVATE FIELDS =====================
 
     // En ordbok for å skille tilattelser utifra kategori
-    private Dictionary<string, List<ExpiringCompetencyDto>> _permissionsByCategory = [];
+    private Dictionary<string, List<PermissionDto>> _permissionsByCategory = [];
     
     // En ordbok som filtrere bort kategorier som ikke stemmer med søkestringen
-    private Dictionary<string, List<ExpiringCompetencyDto>> FilteredPermissionsByCategory =>
+    private Dictionary<string, List<PermissionDto>> FilteredPermissionsByCategory =>
         string.IsNullOrWhiteSpace(_searchText)
             ? _permissionsByCategory
             : _permissionsByCategory

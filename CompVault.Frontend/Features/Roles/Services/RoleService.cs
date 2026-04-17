@@ -185,30 +185,30 @@ public class RoleService(
     }
     
     /// <inheritdoc />
-    public async Task<Result<List<ExpiringCompetencyDto>>> GetAllPermissionsAsync(CancellationToken ct)
+    public async Task<Result<List<PermissionDto>>> GetAllPermissionsAsync(CancellationToken ct)
     {
         try
         {
             HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.Role.AllPermissions, ct);
 
-            Result<List<ExpiringCompetencyDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<ExpiringCompetencyDto>>(response, ct);
+            Result<List<PermissionDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<List<PermissionDto>>(response, ct);
 
             if (result.IsFailure)
-                return Result<List<ExpiringCompetencyDto>>.Failure(result.Error!);
+                return Result<List<PermissionDto>>.Failure(result.Error!);
 
-            return Result<List<ExpiringCompetencyDto>>.Success(result.Value!);
+            return Result<List<PermissionDto>>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av alle permissions");
-            return Result<List<ExpiringCompetencyDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+            return Result<List<PermissionDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av permissions");
-            return Result<List<ExpiringCompetencyDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+            return Result<List<PermissionDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }

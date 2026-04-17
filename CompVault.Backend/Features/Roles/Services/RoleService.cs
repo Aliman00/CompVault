@@ -228,7 +228,7 @@ public sealed class RoleService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<ExpiringCompetencyDto>>> GetAllPermissionsAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<IReadOnlyList<PermissionDto>>> GetAllPermissionsAsync(CancellationToken cancellationToken = default)
     {
         IReadOnlyList<Permission> permissions = await roleRepository.GetAllPermissionsAsync(cancellationToken);
 
@@ -236,6 +236,6 @@ public sealed class RoleService(
             .Select(RoleMapper.ToPermissionDto)
             .ToList();
 
-        return Result<IReadOnlyList<ExpiringCompetencyDto>>.Success(dtos);
+        return Result<IReadOnlyList<PermissionDto>>.Success(dtos);
     }
 }

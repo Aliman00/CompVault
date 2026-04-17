@@ -37,5 +37,5 @@ public interface IRoleService
     /// <summary>
     /// Henter alle tilgjengelige permissions
     /// </summary>
-    Task<Result<List<ExpiringCompetencyDto>>> GetAllPermissionsAsync(CancellationToken ct);
+    Task<Result<List<PermissionDto>>> GetAllPermissionsAsync(CancellationToken ct);
 }

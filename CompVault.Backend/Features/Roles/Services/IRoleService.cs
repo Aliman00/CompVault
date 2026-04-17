@@ -38,5 +38,5 @@ public interface IRoleService
     Task<Result<RoleDto>> AssignPermissionsAsync(Guid roleId, AssignPermissionsRequest request, Guid grantedById, CancellationToken cancellationToken = default);
 
     /// <summary>Henter alle tilgjengelige permissions.</summary>
-    Task<Result<IReadOnlyList<ExpiringCompetencyDto>>> GetAllPermissionsAsync(CancellationToken cancellationToken = default);
+    Task<Result<IReadOnlyList<PermissionDto>>> GetAllPermissionsAsync(CancellationToken cancellationToken = default);
 }
