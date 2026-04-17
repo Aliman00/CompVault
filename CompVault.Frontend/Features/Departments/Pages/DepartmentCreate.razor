@@ -1,0 +1,131 @@
+﻿@page "/departments/create"
+
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DepartmentsWrite)]
+@inject IDepartmentService DepartmentService
+@inject NavigationManager NavigationManager
+
+@* Side for å opprette en avdeling *@
+
+<AppAlert @bind-Alert="_errorAlert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else
+{
+    @* SkjemaForm med validering med DataAnnotations *@
+    <EditForm EditContext="_editContext" OnValidSubmit="CreateDepartment">
+        <DataAnnotationsValidator/>
+
+        @* Kortet *@
+        <MudPaper Class="pa-6" Elevation="1" Square="true">
+            @* Headeren med side-tittel og Opprett-knapp *@
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
+                <MudText Typo="Typo.h5">Opprett avdeling</MudText>
+                <MudSpacer/>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           ButtonType="ButtonType.Submit">
+                    Opprett
+                </MudButton>
+            </MudStack>
+
+            @* Alle felt i en grid *@
+            <MudGrid>
+                @* Avdelingsnavn *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_editModel.Name"
+                                     ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                     Label="Avdelingsnavn"
+                                     IsEditing="true"
+                                     For="() => _editModel.Name"/>
+                </MudItem>
+                @* Description *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_editModel.Description"
+                                     ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
+                                     Label="Beskrivelse (valgfritt)"
+                                     IsEditing="true"
+                                     For="() => _editModel.Description"
+                                     Lines="4"/>
+                </MudItem>
+                @* Avdeling  *@
+                <MudItem xs="12" sm="6">
+                    <DetailSelectWithLinkField Value="_editModel.ParentDepartmentId"
+                                               ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
+                                               Label="Overordnet avdeling"
+                                               ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                                 d => d.Id == id)?.Name ?? string.Empty)"
+                                               IsEditing="true">
+                        <Items>
+                            <MudSelectItem Value="(Guid?)null">Ingen (toppnivå)</MudSelectItem>
+                            @foreach (var department in _departments)
+                            {
+                                <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                            }
+                        </Items>
+                    </DetailSelectWithLinkField>
+                </MudItem>
+            </MudGrid>
+
+        </MudPaper>
+    </EditForm>
+}
+
+
+
+@code {
+    // ===================== PRIVATE FELT =====================
+    private readonly CreateDepartmentModel _editModel = new();
+    private List<DepartmentDto> _departments = [];
+
+    private bool _isLoading = true;
+
+    private AlertInfo? _errorAlert;
+
+    private EditContext _editContext = null!;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _editContext = new EditContext(_editModel);
+
+            var departmentResults = await DepartmentService.GetAllAsync(Cts.Token);
+            if (departmentResults.IsFailure)
+                _errorAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
+            else
+                _departments = departmentResults.Value!.Where(d => d.IsActive).ToList();
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
+    // navigerer oss til brukeren side med created=true som et parameter
+    private async Task CreateDepartment()
+    {
+        var request = _editModel.ToRequest();
+
+        var createResult = await DepartmentService.CreateAsync(request, Cts.Token);
+        if (createResult.IsFailure)
+        {
+            _errorAlert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentsDetail(createResult.Value!.Id) 
+                                     + "?created=true");
+    }
+}

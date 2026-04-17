@@ -15,7 +15,7 @@ public interface IDepartmentService
     Task<Result<DepartmentDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>Oppretter en ny avdeling.</summary>
-    Task<Result<DepartmentDto>> CreateAsync(CreateDepartmentRequest request, CancellationToken cancellationToken = default);
+    Task<Result<DepartmentDto>> CreateAsync(Guid userId, CreateDepartmentRequest request, CancellationToken ct = default);
 
     /// <summary>Oppdaterer en eksisterende avdeling.</summary>
     Task<Result<DepartmentDto>> UpdateAsync(Guid id, UpdateDepartmentRequest request, CancellationToken cancellationToken = default);

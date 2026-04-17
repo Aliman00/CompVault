@@ -1,0 +1,60 @@
+﻿@* Hierarkisk visning av avdelinger for å få en visuell oversikt *@
+
+@if (_rootNodes.Count == 0)
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen avdelinger å vise.</MudText>
+}
+else
+{
+    <MudTreeView T="DepartmentTreeNode" Dense="false" Hover="true">
+        @foreach (var node in _rootNodes)
+        {
+            <DepartmentTreeItem Node="node" OnNavigate="OnNavigate"/>
+        }
+    </MudTreeView>
+}
+
+@code {
+    
+    // ===================== PARAMETERE =====================
+    /// <summary>
+    /// En liste med avdelinger for å bygge treet
+    /// </summary>
+    [Parameter, EditorRequired] public List<DepartmentDto> Departments { get; set; } = [];
+    
+    /// <summary>
+    /// Handling som utføres ved navigering
+    /// </summary>
+    [Parameter, EditorRequired] public EventCallback<Guid> OnNavigate { get; set; }
+    
+    // ===================== PRIVATE FIELDS =====================
+    private List<DepartmentTreeNode> _rootNodes = [];
+    
+    // ===================== LIFECYCLES =====================
+    protected override void OnParametersSet() =>
+        _rootNodes = BuildTree(Departments);
+    
+    // ===================== PRIVATE METHODS =====================
+
+    // Bygger et hierarkisk tre fra innsendt avdelingsliste
+    private static List<DepartmentTreeNode> BuildTree(List<DepartmentDto> departments)
+    {
+        var departmentTreeNodes = departments.ToDictionary(
+            d => d.Id,
+            d => new DepartmentTreeNode { Department = d });
+
+        var roots = new List<DepartmentTreeNode>();
+        
+        // Iterer igjennom alle nodene og legger det i riktig rekkefølge
+        foreach (var node in departmentTreeNodes.Values)
+        {
+            if (node.Department.ParentDepartmentId is { } parentId
+                && departmentTreeNodes.TryGetValue(parentId, out var parent))
+                parent.Children.Add(node);
+            else
+                roots.Add(node);
+        }
+
+        return roots;
+    }
+}

@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
+
 namespace CompVault.Shared.DTOs.Departments;
 
 /// <summary>
@@ -9,11 +11,11 @@ namespace CompVault.Shared.DTOs.Departments;
 public sealed class UpdateDepartmentRequest
 {
     /// <summary>Nytt navn på avdelingen.</summary>
-    [MaxLength(200)]
-    public string? Name { get; set; }
+    [MaxLength(DepValidations.NameMaxLength, ErrorMessage = DepValidations.Errors.NameMaxLength)]
+    public string? Name { get; set; } = string.Empty;
 
     /// <summary>Ny beskrivelse.</summary>
-    [MaxLength(500)]
+    [MaxLength(DepValidations.DescriptionMaxLength, ErrorMessage = DepValidations.Errors.DescriptionMaxLength)]
     public string? Description { get; set; }
 
     /// <summary>Ny overordnet avdeling.</summary>

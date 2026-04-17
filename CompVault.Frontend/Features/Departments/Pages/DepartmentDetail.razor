@@ -1,0 +1,379 @@
+﻿@page "/departments/{Id:guid}"
+@using CompVault.Frontend.Features.Departments.Models
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DepartmentsRead)]
+@inject IUserService UserService
+@inject IDepartmentService DepartmentService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+@* Detalje visning av en avdeling med mulighet for oppdatering *@
+
+<AppAlert @bind-Alert="_successAlert"/>
+<AppAlert @bind-Alert="_errorAlert"/>
+<AppAlert @bind-Alert="_usersAlert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_department != null)
+{
+    @* SkjemaForm med validering med DataAnnotations *@
+    <EditForm EditContext="_editContext" OnValidSubmit="SaveEdit">
+        <DataAnnotationsValidator/>
+
+        @* Header med navn og tittel, redigeringsknapper og dropdown meny for flere valg*@
+        <MudPaper Class="pa-6" Elevation="1" Square="true">
+            <DetailHeader Title="@_department.Name"
+                          EditPolicy="@Permissions.DepartmentsWrite"
+                          Subtitle="@_department.Description"
+                          IsEditing="_isEditing"
+                          OnStartEdit="StartEdit"
+                          OnCancelEdit="CancelEdit">
+                @* Dropdown meny er disabled hvis brukeren ikke har korrekt tilattelse *@
+                <Actions>
+                    <AuthorizeView Policy="@Permissions.DepartmentsDelete" Context="auth">
+                        <Authorized>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                         IconColor="Color.Error"
+                                         OnClick="Delete">
+                                <MudText Color="Color.Error">Slett avdeling</MudText>
+                            </MudMenuItem>
+                        </Authorized>
+                        <NotAuthorized>
+                            <MudTooltip Text="Du har ikke tilgang til å slette avdelingen">
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                             IconColor="Color.Default"
+                                             Disabled="true">
+                                    <MudText>Slett avdeling</MudText>
+                                </MudMenuItem>
+                            </MudTooltip>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </Actions>
+            </DetailHeader>
+
+            @* Alle felt med egenskaper fra UserDto *@
+            <MudGrid>
+                @* Avdelingsnavn *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_editModel.Name"
+                                     ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                     Label="Avdelingsnavn"
+                                     IsEditing="_isEditing"
+                                     For="() => _editModel.Name"/>
+                </MudItem>
+                
+                @* Beskrivelse *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_editModel.Description"
+                                     ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
+                                     Label="Beskrivelse (valgfritt)"
+                                     IsEditing="_isEditing"
+                                     For="() => _editModel.Description"/>
+                </MudItem>
+                
+                @* Overordnet avdeling *@
+                <MudItem xs="12" sm="6">
+                    <DetailSelectWithLinkField Value="_editModel.ParentDepartmentId"
+                                               ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
+                                               Label="Overordnet avdeling"
+                                               ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                                 d => d.Id == id)?.Name ?? string.Empty)"
+                                               IsEditing="_isEditing"
+                                               ShowLink="_department.ParentDepartmentId.HasValue"
+                                               DisplayValue="@_department.ParentDepartmentName"
+                                               OnNavigate="NavigateToDepartment"
+                                               HelperText="Trykk på knappen for å gå til avdelingen">
+                        <Items>
+                            <MudSelectItem Value="(Guid?)null">Ingen (toppnivå)</MudSelectItem>
+                            @foreach (var department in _departments)
+                            {
+                                <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                            }
+                        </Items>
+                    </DetailSelectWithLinkField>
+                </MudItem>
+
+                @* Opprettelsesdato *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_department.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                                     Label="Opprettet"
+                                     IsEditing="false"/>
+
+                </MudItem>
+
+                @* Brukeren som opprettet *@
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@_department.CreatedByName"
+                                     Label="Opprettet av bruker"
+                                     IsEditing="false"
+                                     ShowLink="_department.CreatedById.HasValue"
+                                     OnAdornmentClick="NavigateToCreatedByUser"
+                                     HelperText="@(HasCreatedByUser ? "Trykk for å gå til brukeren" : null)"/>
+
+                </MudItem>
+                
+                @* Switch-knapp for å gjøre brukeren aktiv/inaktiv *@
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Status</MudText>
+                    <MudSwitch @bind-Value="_editModel.IsActive"
+                               ReadOnly="!_isEditing"
+                               Label="@(_editModel.IsActive == true ? "Aktiv" : "Inaktiv")"
+                               Color="Color.Success"/>
+                </MudItem>
+
+                @* Brukere i avdelingen *@
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Ansatte i avdelingen</MudText>
+                    @if (_departmentUsers.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Ingen ansatte i denne avdelingen.
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudDataGrid Items="_departmentUsers"
+                                     Filterable="false"
+                                     Dense="true"
+                                     Hover="true"
+                                     Striped="true"
+                                     Square="true"
+                                     Bordered="true"
+                                     SortMode="SortMode.Single"
+                                     RowClick="@((DataGridRowClickEventArgs<UserDto> args) 
+                                                   => NavigateToUser(args.Item.Id))">
+                            <Columns>
+                                <PropertyColumn Property="x => x.FullName" Title="Navn"
+                                                SortBy="x => x.LastName"/>
+                                <PropertyColumn Property="x => x.JobTitleName" Title="Stillingstittel"/>
+                                <PropertyColumn Property="x => x.EmploymentType" Title="Ansettelsestype"/>
+                            </Columns>
+                        </MudDataGrid>
+                    }
+                </MudItem>
+
+                @* Underavdelinger *@
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Underavdelinger</MudText>
+
+                    @if (_subDepartments.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Ingen underavdelinger registrert.
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudDataGrid Items="_subDepartments"
+                                     Filterable="false"
+                                     Dense="true"
+                                     Hover="true"
+                                     Striped="true"
+                                     Square="true"
+                                     Bordered="true"
+                                     SortMode="SortMode.Single"
+                                     RowClick="@((DataGridRowClickEventArgs<DepartmentDto> args) 
+                                                   => NavigateToSubDepartment(args.Item.Id))">
+                            <Columns>
+                                <PropertyColumn Property="x => x.Name" Title="Navn"/>
+                                <PropertyColumn Property="x => x.SubDepartmentCount" Title="Underavdelinger"/>
+                            </Columns>
+                        </MudDataGrid>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </EditForm>
+}
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en avdeling
+    public bool Created { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private DepartmentDto? _department;
+    private List<UserDto> _departmentUsers = [];
+    private List<DepartmentDto> _departments = [];
+    private List<DepartmentDto> _subDepartments = [];
+
+    private DepartmentEditModel _editModel = new();
+
+    private bool _isLoading = true;
+
+    // Forskjellige feilmeldinger for forkjellige beskjeder
+    private AlertInfo? _errorAlert;
+    private AlertInfo? _usersAlert;
+    private AlertInfo? _successAlert;
+
+    private EditContext _editContext = null!;
+
+    private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
+    
+    private bool HasCreatedByUser => _department?.CreatedById.HasValue == true;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnParametersSetAsync()
+    {
+        // Resetter alle feltene ved oppdatering/navigering til siden - feks ved navigering til en annen avdeling
+        _isLoading = true;
+        _isEditing = false;
+        _departmentUsers = [];
+        _departments = [];
+        _editModel = new();
+
+        try
+        {
+            _editContext = new EditContext(_editModel);
+
+            // Hentr alle avdelinger og brukere for å vise en oversikt - Utfører begge kall parallelt
+            var departmentsTask = DepartmentService.GetAllAsync(Cts.Token);
+            var usersTask = UserService.GetAllAsync(Cts.Token);
+
+            await Task.WhenAll(departmentsTask, usersTask);
+
+            var departmentsResult = await departmentsTask;
+            var usersResult = await usersTask;
+
+            if (departmentsResult.IsFailure)
+            {
+                _errorAlert = new AlertInfo(departmentsResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            // Finn den spesifikke avdelingen fra listen
+            _department = departmentsResult.Value?.FirstOrDefault(d => d.Id == Id);
+            if (_department == null)
+            {
+                NavigationManager.NavigateTo(PageRoutes.Errors.NotFound);
+                return;
+            }
+
+            _departments = departmentsResult.Value!.Where(d => d.IsActive && d.Id != Id).ToList();
+            _subDepartments = departmentsResult.Value!.Where(d => d.ParentDepartmentId == Id).ToList();
+
+            if (usersResult.IsFailure)
+                _usersAlert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
+            else
+                _departmentUsers = usersResult.Value!.Where(u => u.DepartmentId == Id).ToList();
+
+            ResetEditModel();
+
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _errorAlert = new AlertInfo("Klarte ikke å laste avdelingen. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+
+            if (Created)
+                _successAlert = new AlertInfo("Avdelingen ble opprettet", Severity.Success);
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger og 
+    private void StartEdit()
+    {
+        _errorAlert = null;
+        _usersAlert = null;
+        _successAlert = null;
+        ResetEditModel();
+        _isEditing = true;
+    }
+
+    // Handling når vi avbryter redigering - Resetter modellene og fjerner redigeringsmodus
+    private void CancelEdit()
+    {
+        ResetEditModel();
+        _isEditing = false;
+    }
+
+    // Resetter redigeringsmodellen og editcontexten
+    private void ResetEditModel()
+    {
+        _editModel = DepartmentEditModel.FromDto(_department!);
+        _editContext = new EditContext(_editModel);
+    }
+
+    // Handling som utføres når vi trykker på lagring - Bygger en request og utfører kall til backend
+    private async Task SaveEdit()
+    {
+        // Fjerner kun parent avdeling his brukeren hadde en avdeling fra tdiligere
+        var request = _editModel.ToRequest(_department!.ParentDepartmentId != null 
+                                           && _editModel.ParentDepartmentId == null);
+
+        var updateResult = await DepartmentService.UpdateAsync(Id, request, Cts.Token);
+        if (updateResult.IsFailure)
+        {
+            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        // Resetter feltene kun hvis det var vellykket
+        _department = updateResult.Value;
+        ResetEditModel();
+        _isEditing = false;
+        _successAlert = new AlertInfo("Avdelingen ble oppdatert", Severity.Success);
+    }
+
+    private void NavigateToDepartment()
+    {
+        if (_department?.ParentDepartmentId.HasValue == true)
+            NavigationManager.NavigateTo(
+                PageRoutes.Departments.DepartmentsDetail(_department.ParentDepartmentId.Value));
+    }
+    
+    private void NavigateToSubDepartment(Guid departmentId) =>
+        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentsDetail(departmentId));
+
+    private void NavigateToCreatedByUser()
+    {
+        if (_department?.CreatedById.HasValue == true)
+            NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(_department.CreatedById!.Value));
+    }
+    
+    private void NavigateToUser(Guid userId) =>
+        NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(userId));
+
+    // Viser en dialog som brukeren må godkjenne for å kunne slette entiteten. Navigerer til List-siden hivs vellykket
+    private async Task Delete()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDeleteDialog.Title), "Slett avdeling" },
+            { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette {_department!.Name}?" },
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        var updateResult = await DepartmentService.DeleteAsync(Id, Cts.Token);
+        if (updateResult.IsFailure)
+        {
+            _errorAlert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(PageRoutes.Departments.DepartmentList + "?deleted=true");
+    }
+
+}

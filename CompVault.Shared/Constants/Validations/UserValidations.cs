@@ -1,7 +1,8 @@
 namespace CompVault.Shared.Constants.Validations;
 
 /// <summary>
-/// Felles klasse for valideringer for User-featuren. Ved oppdatering så må både variabelene og Error-feltene endres   
+/// Felles klasse for valideringer for User-featuren.
+/// Ved oppdatering så må både variabelene og Error-feltene endres   
 /// </summary>
 public static class UserValidations
 {
