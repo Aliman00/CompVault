@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.Enums;
 
 namespace CompVault.Shared.DTOs.Competencies;
@@ -17,11 +18,11 @@ public sealed class UpdateCompetencyRequest
     public DateTime? IssuedDate { get; set; }
 
     /// <summary>Nytt sertifikatnummer.</summary>
-    [MaxLength(100)]
+    [MaxLength(CompValidations.CertificateNumberMaxLength, ErrorMessage = CompValidations.Errors.CertNumberMaxLength)]
     public string? CertificateNumber { get; set; }
 
     /// <summary>Nye notater.</summary>
-    [StringLength(2000)]
+    [StringLength(CompValidations.NotesMaxLength, ErrorMessage = CompValidations.Errors.NotesMaxLength)]
     public string? Notes { get; set; }
 
     /// <summary>
@@ -33,5 +34,6 @@ public sealed class UpdateCompetencyRequest
     /// <summary>
     /// Årsak til tilbakekalling. Påkrevt hvis <see cref="Status"/> settes til Revoked.
     /// </summary>
+    [StringLength(CompValidations.RevokedReasonMaxLength, ErrorMessage = CompValidations.Errors.RevokedReasonMaxLength)]
     public string? RevokedReason { get; set; }
 }

@@ -27,9 +27,9 @@ public static class RoleMapper
     };
 
     /// <summary>
-    /// Konverterer en <see cref="Permission"/> til en <see cref="PermissionDto"/>.
+    /// Konverterer en <see cref="Permission"/> til en <see cref="ExpiringCompetencyDto"/>.
     /// </summary>
-    public static PermissionDto ToPermissionDto(Permission permission) => new()
+    public static ExpiringCompetencyDto ToPermissionDto(Permission permission) => new()
     {
         Name = permission.Name,
         Description = permission.Description,

@@ -1,25 +1,34 @@
-﻿@page "/roles/create"
+﻿@page "/competency-types/create"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.RolesWrite)]
-@inject IRoleService RoleService
+@attribute [Authorize(Policy = Permissions.CompetenciesWrite)]
+@inject ICompetencyTypeService CompetencyTypeService
 @inject NavigationManager NavigationManager
 
-@* Side for å opprette en avdeling *@
-<CreateForm Title="Opprett rolle"
+@* Side for å opprette en kompetansetype *@
+
+<CreateForm Title="Opprett kompetansetype"
             EditContext="_editContext"
-            OnValidSubmit="CreateRole"
+            OnValidSubmit="CreateCompetencyType"
             @bind-Alert="_alert">
     <Fields>
-        @* Rollenavn *@
+        @* Navn *@
         <MudItem xs="12" sm="6">
             <DetailTextField Value="@_editModel.Name"
                              ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                             Label="Rollenavn"
+                             Label="Navn"
                              IsEditing="true"
                              For="() => _editModel.Name"/>
         </MudItem>
-        @* Beskrivelse *@
+        @* Kategori *@
         <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Category"
+                             ValueChanged="(string? v) => _editModel.Category = v ?? string.Empty"
+                             Label="Kategori (valgfritt)"
+                             IsEditing="true"
+                             For="() => _editModel.Category"/>
+        </MudItem>
+        @* Beskrivelse *@
+        <MudItem xs="12">
             <DetailTextField Value="@_editModel.Description"
                              ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
                              Label="Beskrivelse (valgfritt)"
@@ -27,14 +36,21 @@
                              For="() => _editModel.Description"
                              Lines="4"/>
         </MudItem>
+        @* Utløpsdato *@
+        <MudItem xs="12">
+            <ToggleButton Label="Skal kompetansebevisene utgå?"
+                          @bind-Value="_editModel.RequiresExpiration"
+                          IsEditing="true">
+                <MudToggleItem Value="(bool?)true" Text="Krever utløpsdato"/>
+                <MudToggleItem Value="(bool?)false" Text="Ingen utløpsdato"/>
+            </ToggleButton>
+        </MudItem>
     </Fields>
 </CreateForm>
 
-
-
 @code {
     // ===================== PRIVATE FELT =====================
-    private readonly CreateRoleModel _editModel = new();
+    private readonly CreateCompetencyTypeModel _editModel = new();
 
     private AlertInfo? _alert;
 
@@ -49,18 +65,19 @@
     // ===================== PRIVATE METHODS =====================
 
     // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
-    // navigerer oss til rollens side med created=true som et parameter
-    private async Task CreateRole()
+    // navigerer oss til kompetansebevistypen
+    private async Task CreateCompetencyType()
     {
         var request = _editModel.ToRequest();
 
-        var createResult = await RoleService.CreateAsync(request, Cts.Token);
+        var createResult = await CompetencyTypeService.CreateAsync(request, Cts.Token);
         if (createResult.IsFailure)
         {
             _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
             return;
         }
 
-        NavigationManager.NavigateTo(PageRoutes.Roles.Detail(createResult.Value!.Id) + "?created=true");
+        NavigationManager.NavigateTo(
+            PageRoutes.CompetencyTypes.Detail(createResult.Value!.Id) + "?created=true");
     }
 }

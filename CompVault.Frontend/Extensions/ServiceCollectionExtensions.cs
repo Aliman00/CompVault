@@ -4,15 +4,16 @@ using CompVault.Frontend.Common.Localization;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
 using CompVault.Frontend.Features.Auth.Services;
+using CompVault.Frontend.Features.Competencies.Services;
 using CompVault.Frontend.Features.Departments.Services;
 using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.JobTitle.Services;
+using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.Users.Services;
 using CompVault.Shared.Constants;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
-
 
 using MudBlazor;
 
@@ -79,8 +80,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CircuitUserContext>();
         services.AddScoped<CookieValidationEvents>();
         
-        
-
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
@@ -173,9 +172,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<ICompetencyService, CompetencyService>();
+        services.AddScoped<ICompetencyTypeService, CompetencyTypeService>();
         services.AddScoped<IJobTitleService, JobTitleService>();
-
-
+        
         return services;
     }
 }

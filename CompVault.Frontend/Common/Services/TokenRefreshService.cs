@@ -1,15 +1,10 @@
 ﻿using System.Collections.Concurrent;
-using System.Security.Claims;
-
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Http.Models;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
-
-using Microsoft.AspNetCore.Components.Authorization;
-
 namespace CompVault.Frontend.Common.Services;
 
 public class TokenRefreshService(

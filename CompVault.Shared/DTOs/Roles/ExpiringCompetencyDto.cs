@@ -3,7 +3,7 @@ namespace CompVault.Shared.DTOs.Roles;
 /// <summary>
 /// DTO for en permission.
 /// </summary>
-public sealed class PermissionDto
+public sealed class ExpiringCompetencyDto
 {
     /// <summary>Unikt navn på tillatelsen, f.eks. "users:read".</summary>
     public string Name { get; set; } = string.Empty;

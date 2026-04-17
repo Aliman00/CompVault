@@ -8,124 +8,94 @@
 
 @* Side for å opprette en bruker *@
 
-<AppAlert @bind-Alert="_errorAlert"/>
-<AppAlert @bind-Alert="_departmentAlert"/>
-
-@if (_isLoading)
-{
-    <AppSpinner Class="pa-20"/>
-}
-else
-{
-    @* SkjemaForm med validering med DataAnnotations *@
-    <EditForm EditContext="_editContext" OnValidSubmit="CreateUser">
-        <DataAnnotationsValidator/>
+<CreateForm Title="Opprett bruker"
+            EditContext="_editContext"
+            OnValidSubmit="CreateUser"
+            IsLoading="_isLoading"
+            @bind-Alert="_alert">
+    <Fields>
+        @* Fornavn *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.FirstName"
+                             ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
+                             Label="Fornavn"
+                             IsEditing="true"
+                             For="() => _editModel.FirstName"/>
+        </MudItem>
+        @* Etternavn *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.LastName"
+                             ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
+                             Label="Etternavn"
+                             IsEditing="true"
+                             For="() => _editModel.LastName"/>
+        </MudItem>
+        @* Email *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Email"
+                             ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
+                             Label="Email"
+                             IsEditing="true"
+                             For="() => _editModel.Email"/>
+        </MudItem>
+        @* Stillingstittel *@
+        <MudItem xs="12" sm="6">
+            <DetailSelectWithLinkField Value="_editModel.JobTitleId"
+                                       ValueChanged="(Guid? v) => _editModel.JobTitleId = v"
+                                       Label="Stillingstittel"
+                                       ToStringFunc="@(id => _jobTitles.FirstOrDefault(
+                                                         d => d.Id == id)?.Name ?? string.Empty)"
+                                       IsEditing="true">
+                <Items>
+                    @foreach (var jobTitle in _jobTitles)
+                    {
+                        <MudSelectItem Value="(Guid?)jobTitle.Id">@jobTitle.Name</MudSelectItem>
+                    }
+                </Items>
+            </DetailSelectWithLinkField>
+        </MudItem>
         
-        @* Kortet *@
-        <MudPaper Class="pa-6" Elevation="1" Square="true">
-            @* Headeren med side-tittel og Opprett-knapp *@
-            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
-                <MudText Typo="Typo.h5">Opprett bruker</MudText>
-                <MudSpacer/>
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           ButtonType="ButtonType.Submit">
-                    Opprett
-                </MudButton>
-            </MudStack>
-
-            @* Alle felt i en grid *@
-            <MudGrid>
-                @* Fornavn *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.FirstName"
-                                     ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
-                                     Label="Fornavn"
-                                     IsEditing="true"
-                                     For="() => _editModel.FirstName"/>
-                </MudItem>
-                @* Etternavn *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.LastName"
-                                     ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
-                                     Label="Etternavn"
-                                     IsEditing="true"
-                                     For="() => _editModel.LastName"/>
-                </MudItem>
-                @* Email *@
-                <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.Email"
-                                     ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
-                                     Label="Email"
-                                     IsEditing="true"
-                                     For="() => _editModel.Email"/>
-                </MudItem>
-                @* Stillingstittel *@
-                <MudItem xs="12" sm="6">
-                    <DetailSelectWithLinkField Value="_editModel.JobTitleId"
-                                               ValueChanged="(Guid? v) => _editModel.JobTitleId = v"
-                                               Label="Stillingstittel"
-                                               ToStringFunc="@(id => _jobTitles.FirstOrDefault(
-                                                                 d => d.Id == id)?.Name ?? string.Empty)"
-                                               IsEditing="true">
-                        <Items>
-                            @foreach (var jobTitle in _jobTitles)
-                            {
-                                <MudSelectItem Value="(Guid?)jobTitle.Id">@jobTitle.Name</MudSelectItem>
-                            }
-                        </Items>
-                    </DetailSelectWithLinkField>
-                </MudItem>
-
-                @* EmploymentType *@
-                <MudItem xs="12" sm="6">
-                    <DetailEnumField Value="@_editModel.EmploymentType"
-                                     ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
-                                     Label="Ansettelsestype"
-                                     IsEditing="true"/>
-                </MudItem>
-
-                @* Avdeling  *@
-                <MudItem xs="12" sm="6">
-                    <DetailSelectWithLinkField Value="_editModel.DepartmentId"
-                                               ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
-                                               Label="Avdeling"
-                                               ToStringFunc="@(id => _departments.FirstOrDefault(
-                                                                 d => d.Id == id)?.Name ?? string.Empty)"
-                                               IsEditing="true">
-                        <Items>
-                            @foreach (var department in _departments)
-                            {
-                                <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
-                            }
-                        </Items>
-                    </DetailSelectWithLinkField>
-                </MudItem>
-
-                @* Manager TODO: Filtrerering av brukere som kan være managere for 
-                    denne brukeren/avdelingen til brukeren*@
-                <MudItem xs="12" sm="6">
-                    <DetailSelectWithLinkField Value="_editModel.ManagerId"
-                                               ValueChanged="(Guid? v) => _editModel.ManagerId = v"
-                                               Label="Nærmeste leder"
-                                               ToStringFunc="@(id => _allUsers.FirstOrDefault(
-                                                                 u => u.Id == id)?.FullName ?? string.Empty)"
-                                               IsEditing="true">
-                        <Items>
-                            @foreach (var user in _allUsers)
-                            {
-                                <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
-                            }
-                        </Items>
-                    </DetailSelectWithLinkField>
-                </MudItem>
-            </MudGrid>
-
-        </MudPaper>
-    </EditForm>
-}
-
-
+        @* Ansettelsestype *@
+        <MudItem xs="12" sm="6">
+            <DetailEnumField Value="@_editModel.EmploymentType"
+                             ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
+                             Label="Ansettelsestype"
+                             IsEditing="true"/>
+        </MudItem>
+        @* Avdeling *@
+        <MudItem xs="12" sm="6">
+            <DetailSelectWithLinkField Value="_editModel.DepartmentId"
+                                       ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
+                                       Label="Avdeling"
+                                       ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                         d => d.Id == id)?.Name ?? string.Empty)"
+                                       IsEditing="true">
+                <Items>
+                    @foreach (var department in _departments)
+                    {
+                        <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                    }
+                </Items>
+            </DetailSelectWithLinkField>
+        </MudItem>
+        @* Nærmeste leder *@
+        <MudItem xs="12" sm="6">
+            <DetailSelectWithLinkField Value="_editModel.ManagerId"
+                                       ValueChanged="(Guid? v) => _editModel.ManagerId = v"
+                                       Label="Nærmeste leder"
+                                       ToStringFunc="@(id => _allUsers.FirstOrDefault(
+                                                         u => u.Id == id)?.FullName ?? string.Empty)"
+                                       IsEditing="true">
+                <Items>
+                    @foreach (var user in _allUsers)
+                    {
+                        <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
+                    }
+                </Items>
+            </DetailSelectWithLinkField>
+        </MudItem>
+    </Fields>
+</CreateForm>
 
 @code {
     // ===================== PRIVATE FELT =====================
@@ -136,9 +106,7 @@ else
     
     private bool _isLoading = true;
     
-    private AlertInfo? _errorAlert;
-    private AlertInfo? _departmentAlert;
-    
+    private AlertInfo? _alert;
     private EditContext _editContext = null!;
     
     // ===================== LIFECYCLE =====================
@@ -178,16 +146,16 @@ else
     {
         var departmentResults = await DepartmentService.GetAllAsync(Cts.Token);
         if (departmentResults.IsFailure)
-            _departmentAlert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
         else
-            _departments = departmentResults.Value!;
+            _departments = departmentResults.Value!.Where(d => d.IsActive).ToList();
     }
     
     private async Task LoadJobTitlesAsync()
     {
         var jobTitleResult = await JobTitleService.GetAllAsync(Cts.Token);
         if (jobTitleResult.IsFailure)
-            _departmentAlert = new AlertInfo(jobTitleResult.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(jobTitleResult.Error!.ToString(), Severity.Error);
         else
             _jobTitles = jobTitleResult.Value!;
     }
@@ -196,7 +164,7 @@ else
     {
         var result = await UserService.GetAllAsync(Cts.Token);
         if (result.IsFailure)
-            _errorAlert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
             _allUsers = result.Value!;
     }
@@ -210,10 +178,10 @@ else
         var createResult = await UserService.CreateAsync(request, Cts.Token);
         if (createResult.IsFailure)
         {
-            _errorAlert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
             return;
         }
         
-        NavigationManager.NavigateTo(PageRoutes.Users.UserDetail(createResult.Value!.Id) + "?created=true");
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(createResult.Value!.Id) + "?created=true");
     }
 }
