@@ -46,6 +46,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
         await DbSet
             .Include(u => u.Department)
             .Include(u => u.Manager)
+            .Include(u => u.JobTitle)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
     /// <inheritdoc />
