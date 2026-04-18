@@ -1,0 +1,80 @@
+﻿@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject ICompetencyService CompetencyService
+
+<AppAlert @bind-Alert="_alert"/>
+
+@* Dialog for å bekrefte tilbakekalling av et kompetansebevis *@
+<MudDialog>
+    @* Tittelen med egen tittel tekst *@
+    <TitleContent>
+        <MudText Typo="Typo.h6" Color="Color.Error">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2"/>
+            Tilbakekall kompetansebevis
+        </MudText>
+    </TitleContent>
+
+    @* Body til dialogen *@
+    <DialogContent>
+        <MudText Class="mb-4">@Message</MudText>
+        <DetailTextField @bind-Value="@_editModel.RevokedReason"
+                         Label="Årsak til tilbakekalling:"
+                         IsEditing="true"/>
+    </DialogContent>
+
+    @* Knapp for godkjenn handling og avbryt handling *@
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Error"
+                   Disabled="string.IsNullOrWhiteSpace(_editModel.RevokedReason)"
+                   OnClick="Confirm">
+            Tilbakekall
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
+    /// </summary>
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    /// <summary>
+    /// ID-en til kompetansebeviset
+    /// </summary>
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+    
+    /// <summary>
+    /// Meldingen i dialogen
+    /// </summary>
+    [Parameter, EditorRequired] public string Message { get; set; } = string.Empty;
+    
+    // ===================== PRIVATE FIELDS =====================
+    
+    private CompetencyEditModel _editModel = new();
+    
+    private AlertInfo? _alert;
+    // ===================== PRIVATE METHOD =====================
+    
+    // Sender forespørselen til backend og oppdaterer kompetansebeviset. Lukkes ved vellykket lagring
+    private async Task Confirm()
+    {
+
+        var request = _editModel.ToRevokeRequest();
+        var updateCompetencyResult = await CompetencyService.UpdateAsync(Id, request,
+            Cts.Token);
+        if (updateCompetencyResult.IsFailure)
+        {
+            _alert = new AlertInfo(updateCompetencyResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(updateCompetencyResult.Value));
+    }
+    
+    private void Cancel() => MudDialog.Cancel();
+}

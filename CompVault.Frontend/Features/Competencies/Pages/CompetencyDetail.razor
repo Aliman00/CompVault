@@ -1,4 +1,5 @@
 ﻿@page "/competencies/{Id:guid}"
+@using CompVault.Frontend.Features.Competencies.Components
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.CompetenciesRead)]
 @inject ICompetencyService CompetencyService
@@ -29,22 +30,40 @@ else if (_competency != null)
                     <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                  IconColor="Color.Error"
                                  OnClick="Delete">
-                        <MudText Color="Color.Error">Slett kompetansebevis</MudText>
+                        <MudText Color="Color.Error">Slett ansattkompetanse</MudText>
                     </MudMenuItem>
+                    @if (_competency.Status != CompetencyStatus.Revoked)
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.Block"
+                                     IconColor="Color.Warning"
+                                     OnClick="Revoke">
+                            <MudText Color="Color.Warning">Tilbakekall ansattkompetanse</MudText>
+                        </MudMenuItem>
+                    }
                 </Authorized>
                 <NotAuthorized>
-                    <MudTooltip Text="Du har ikke tilgang til å slette kompetansetypen">
+                    <MudTooltip Text="Du har ikke tilgang til å slette ansattkompetansen">
                         <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                      IconColor="Color.Default"
                                      Disabled="true">
                             <MudText>Slett kompetansebevis</MudText>
                         </MudMenuItem>
                     </MudTooltip>
+                    @if (_competency.Status != CompetencyStatus.Revoked)
+                    {
+                        <MudTooltip Text="Du har ikke tilgang til å tilbakekalle ansattkompetansen">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Block"
+                                         IconColor="Color.Default"
+                                         Disabled="true">
+                                <MudText>Tilbakekall kompetansebevis</MudText>
+                            </MudMenuItem>
+                        </MudTooltip>
+                    }
                 </NotAuthorized>
             </AuthorizeView>
         </DropdownActions>
         <Fields>
-            @* Navn *@
+           
             @* Brukeren *@
             <MudItem xs="12" sm="6">
                 <DetailTextField Value="@_competency!.FullName"
@@ -62,73 +81,107 @@ else if (_competency != null)
                                  IsEditing="false"
                                  ShowLink="true"
                                  OnAdornmentClick="NavigateToCompetencyType"
-                                 HelperText="Trykk for å gå til brukeren"/>
+                                 HelperText="Trykk for å gå til kompetansetypen"/>
+            </MudItem>
+            
+            @* Utstedtdato *@
+            <MudItem xs="12" sm="6">
+                @if (!_isEditing)
+                {
+                    <DetailTextField Value="@(_competency!.IssuedDate.ToString("dd.MM.yyyy"))"
+                                     Label="Utstedt"
+                                     IsEditing="false"/>
+                }
+                else
+                {
+                    <MudDatePicker @bind-Date="_editModel.IssuedDate"
+                                   Label="Utstedt"
+                                   DateFormat="dd.MM.yyyy"
+                                   Required="true"
+                                   RequiredError="Utsteddato er påkrevd" />
+                }
+            </MudItem>
+            
+            @* Utløpsdato *@
+            @if (_competency.CompetencyTypeRequiresExpiration)
+            {   
+                <MudItem xs="12" sm="6">
+                @if (!_isEditing)
+                {
+                        <DetailTextField Value="@(_competency!.ExpiryDate?.ToString("dd.MM.yyyy") 
+                                                  ?? string.Empty)"
+                                         Label="Utløpsdato"
+                                         IsEditing="false"/>
+                    
+                }
+                else
+                {
+                        <MudDatePicker @bind-Date="_editModel.ExpiryDate"
+                                       Label="Utløpsdato"
+                                       DateFormat="dd.MM.yyyy"
+                                       Required="true"
+                                       RequiredError="Utløpsdato er påkrevd for denne kompetansetypen" />
+                }
+                </MudItem>
+            }
+
+            @* CertificateNumber *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_editModel.CertificateNumber"
+                                 ValueChanged="(string? v) => _editModel.CertificateNumber = v ?? string.Empty"
+                                 Label="Sertifikatnummer (valgfritt)"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.CertificateNumber"/>
+            </MudItem>
+
+            @* Opprettet *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@(_competency!.CreatedAt.ToString("dd.MM.yyyy"))"
+                                 Label="Opprettet"
+                                 IsEditing="false"/>
+            </MudItem>
+            
+            @* Notat *@
+            <MudItem xs="12">
+                <DetailTextField Value="@_editModel.Notes"
+                                 ValueChanged="(string? v) => _editModel.Notes = v ?? string.Empty"
+                                 Label=@(_isEditing ? $"Notat (valgfritt). Maks lengde: " +
+                                                      $"{CompValidations.NotesMaxLength}" : "Notat")
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Notes"
+                                 Lines="4"/>
             </MudItem>
             
             @* Status *@
             <MudItem xs="12" sm="6">
-                @if (!_isEditing)
-                {
-                    <MudStack>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
-                        <div style="width: fit-content">
-                            <MudChip T="string"
-                                     Color="@_competency.Status.ToStatusColor()"
-                                     Size="Size.Medium"
-                                     Class="cv-rounded">
-                                @_competency.Status.ToDisplayString()
-                            </MudChip>
-                        </div>
-                    </MudStack>
-                }
-                else
-                {
-                    <MudSelect T="CompetencyStatus?"
-                               @bind-Value="_editModel.Status"
-                               Label="Status"
-                               Variant="Variant.Outlined">
-                        @foreach (var status in Enum.GetValues<CompetencyStatus>())
-                        {
-                            <MudSelectItem T="CompetencyStatus" Value="status">
-                                @status.ToDisplayString()
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
-                }
-            </MudItem>
-            
-            
-            <MudItem xs="12" sm="6">
-                @* Utstedelsesdato *@
-            </MudItem>
-            @if (_competency.CompetencyTypeRequiresExpiration)
-            {
-                <MudItem xs="12" sm="6">
-                    @* Utløpsdato *@
-                </MudItem>
-            }
-            <MudItem xs="12" sm="6">
-                @* Sertifikatnummer *@
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                    <div style=" width: fit-content">
+                        <MudChip T="string"
+                                 Color="@_competency.Status.ToStatusColor()"
+                                 Size="Size.Medium"
+                                 Class="cv-rounded">
+                            @_competency.Status.ToDisplayString()
+                        </MudChip>
+                    </div>
+                </MudStack>
             </MudItem>
 
-            @* 3. Tilbakekalling *@
+            @* Årsak til revoking og dato tilbakekalt *@
             @if (_competency.Status == CompetencyStatus.Revoked)
             {
                 <MudItem xs="12" sm="6">
-                    @* Tilbakekalt dato *@
+                    <DetailTextField Value="@_editModel.RevokedReason"
+                                     Label="Årsak til tilbakekalling"
+                                     IsEditing="false"/>
                 </MudItem>
-                <MudItem xs="12">
-                    @* Årsak *@
+
+                <MudItem xs="12" sm="6">
+                    <DetailTextField Value="@(_competency!.RevokedAt?.ToString("dd.MM.yyyy") ?? string.Empty)"
+                                     Label="Tilbakekalt"
+                                     IsEditing="false"/>
                 </MudItem>
             }
-
-            @* 4. Tilleggsinformasjon *@
-            <MudItem xs="12">
-                @* Notater *@
-            </MudItem>
-            <MudItem xs="12" sm="6">
-                @* Opprettet *@
-            </MudItem>
         </Fields>
     </DetailForm>
 }
@@ -138,17 +191,16 @@ else if (_competency != null)
     // ===================== PARAMETER =====================
     [Parameter, EditorRequired] public Guid Id { get; set; }
 
-    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en kompetansetype
+    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en kompetansebevis
     public bool Created { get; set; }
 
-    // ===================== PRIVATE FELT =====================
+    // ===================== PRIVATE FIELDS =====================
     private CompetencyDto? _competency;
 
     private CompetencyEditModel _editModel = new();
 
     private bool _isLoading = true;
 
-    // Forskjellige feilmeldinger for forkjellige beskjeder
     private AlertInfo? _alert;
 
     private EditContext _editContext = null!;
@@ -166,7 +218,7 @@ else if (_competency != null)
         try
         {
             _editContext = new EditContext(_editModel);
-            
+
             // Henter kompetansetypen og bevisene til denne typen
             var competencyResult = await CompetencyService.GetByIdAsync(Id, Cts.Token);
             if (competencyResult.IsFailure)
@@ -242,10 +294,10 @@ else if (_competency != null)
 
     private void NavigateToCompetencyType() =>
         NavigationManager.NavigateTo(PageRoutes.CompetencyTypes.Detail(_competency!.CompetencyTypeId));
-    
+
     private void NavigateToUser() =>
-            NavigationManager.NavigateTo(PageRoutes.Users.Detail(_competency!.UserId));
-    
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(_competency!.UserId));
+
 
     // Viser en dialog som brukeren må godkjenne for å kunne slette entiteten. Navigerer til List-siden hviss vellykket
     private async Task Delete()
@@ -253,9 +305,11 @@ else if (_competency != null)
         // Oppretter parameterne for dialogen
         var parameters = new DialogParameters
         {
-            { nameof(ConfirmDeleteDialog.Title), "Slett kompetansetypen" },
-            { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette kursbeviset til " +
-                                                   $"{_competency!.UserFirstName} {_competency!.UserLastName}?" },
+            { nameof(ConfirmDeleteDialog.Title), "Slett kompetansebevis" },
+            {
+                nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette ansattkompetansen til " +
+                                                     $"{_competency!.UserFirstName} {_competency!.UserLastName}?"
+            },
         };
 
         // Kaller dialogen
@@ -273,4 +327,33 @@ else if (_competency != null)
 
         NavigationManager.NavigateTo(PageRoutes.Competencies.List + "?deleted=true");
     }
+    
+    private async Task Revoke()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmRevokeDialog.Id), Id },
+            {  nameof(ConfirmRevokeDialog.Message), 
+                $"Er du sikker på at du ønsker å tilbakekalle ansattkompetansen " +
+                $"«{_competency!.CompetencyTypeName}» for {_competency!.FullName}?" }
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<ConfirmRevokeDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        if (dialogResult.Data is not CompetencyDto updatedCompetencyDto)
+        {
+            _alert = new AlertInfo("Noe gikk galt ved tilbakekalling av ansattkompetansen.", Severity.Error);
+            return;
+        }
+        
+        _competency = updatedCompetencyDto;
+        ResetEditModel();
+        _alert = new AlertInfo("Kompetansebeviset er tilbakekalt", Severity.Warning);
+    }
+
 }

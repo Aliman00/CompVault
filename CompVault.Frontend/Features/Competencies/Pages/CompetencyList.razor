@@ -13,9 +13,10 @@
           SelectedItemsChanged="@(s => _selectedCompetencies = s)"
           RowClick="@(args => OnCompetenciesClick(args))">
     <Header>
-        <ListHeader Title="Kompetansebevis"
+        <ListHeader Title="Ansattkompetanse"
+                    PageIcon="@Icons.Material.Filled.WorkspacePremium"
                     CreateHref="@PageRoutes.Competencies.Create"
-                    CreateLabel="Opprett kompetansebevis"
+                    CreateLabel="Opprett ansattkompetanse"
                     CreateIcon="@Icons.Material.Filled.WorkspacePremium"
                     CreatePolicy="@Permissions.CompetenciesWrite"/>
     </Header>

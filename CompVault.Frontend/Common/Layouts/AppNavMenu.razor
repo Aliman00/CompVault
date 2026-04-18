@@ -34,20 +34,20 @@
             </MudNavLink>
         </Authorized>
     </AuthorizeView>
-
+    
     <AuthorizeView Policy="@Permissions.CompetenciesRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.Competencies.List" 
-                        Icon="@Icons.Material.Filled.WorkspacePremium">
-                Kompetansebevis
+            <MudNavLink Href="@PageRoutes.CompetencyTypes.List" Icon="@Icons.Material.Filled.Category">
+                Kompetansetyper
             </MudNavLink>
         </Authorized>
     </AuthorizeView>
 
     <AuthorizeView Policy="@Permissions.CompetenciesRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.CompetencyTypes.List" Icon="@Icons.Material.Filled.Category">
-                Kompetansetyper
+            <MudNavLink Href="@PageRoutes.Competencies.List"
+                        Icon="@Icons.Material.Filled.WorkspacePremium">
+                Ansattkompetanse
             </MudNavLink>
         </Authorized>
     </AuthorizeView>
