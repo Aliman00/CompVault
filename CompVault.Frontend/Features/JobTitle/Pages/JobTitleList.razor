@@ -1,0 +1,79 @@
+﻿@page "/jobtitles"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.JobTitlesRead)]
+@inject IJobTitleService JobTitleService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle stillinger *@
+
+<ListPage TItem="JobTitleDto"
+          Items="_jobTitles"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          SelectedItemsChanged="@(s => _selectedJobTitles = s)"
+          RowClick="@(args => OnRoleClick(args))">
+    <Header>
+        <ListHeader Title="Stillingstitler"
+                    PageIcon="@Icons.Material.Filled.Work"
+                    CreateHref="@PageRoutes.JobTitles.Create"
+                    CreateLabel="Opprett stillingstittel"
+                    CreateIcon="@Icons.Material.Filled.Work"
+                    CreatePolicy="@Permissions.RolesWrite"/>
+    </Header>
+    <Columns>
+        <PropertyColumn T="JobTitleDto" TProperty="string"
+                        Property="r => r.Name.Truncate(40)" Title="Navn"/>
+    </Columns>
+</ListPage>
+
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private List<JobTitleDto> _jobTitles = [];
+    private HashSet<JobTitleDto> _selectedJobTitles = [];
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getRolesResult = await JobTitleService.GetAllAsync(Cts.Token);
+
+            if (getRolesResult.IsFailure)
+            {
+                _alert = new AlertInfo(getRolesResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _jobTitles = getRolesResult.Value!;
+
+            if (Deleted)
+                _alert = new AlertInfo("Stillingen er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste stillingstitler. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnRoleClick(DataGridRowClickEventArgs<JobTitleDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.JobTitles.Detail(args.Item.Id));
+}
