@@ -28,6 +28,8 @@ internal sealed class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
             .HasForeignKey(o => o.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(o => o.UserId);
+        builder.HasIndex(o => o.UserId)
+            .IsUnique()
+            .HasFilter("\"ExpiresAt\" > NOW()");
     }
 }
