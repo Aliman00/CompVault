@@ -201,5 +201,90 @@ public class OtpCodeRepositoryIntegrationsTests(
             .AnyAsync(r => r.Id == activeCode.Id);
         codeExists.Should().BeTrue();
     }
+    
+    // -------------------------------------------------------------------------
+    // DeleteExpiredCodesAsync
+    // -------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Tester at vi sletter alle utgåtte OTP-koder for en bruker
+    /// </summary>
+    [Fact]
+    public async Task DeleteExpiredForUserAsync_ExpiredCode_DeletesCode()
+    {
+        // Arrange - oppretter utgått token
+        OtpCode expiredCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
+            userId: TestConstants.Users.ActiveUserId,
+            expiresAt: DateTime.UtcNow.AddMinutes(-30));
+
+        // Act
+        await _sut.DeleteExpiredForUserAsync(TestConstants.Users.ActiveUserId, CancellationToken.None);
+        await _context.SaveChangesAsync(); 
+
+        // Assert
+        bool codeExists = await _context.Set<OtpCode>()
+            .AnyAsync(r => r.Id == expiredCode.Id);
+        codeExists.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Tester at vi sletter alle brukte OTP-koder for en bruker
+    /// </summary>
+    [Fact]
+    public async Task DeleteExpiredForUserAsync_UsedCode_DeletesCode()
+    {
+        // Arrange
+        OtpCode usedCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services, 
+            userId: TestConstants.Users.ActiveUserId,
+            isUsed: true);
+
+        // Act
+        await _sut.DeleteExpiredForUserAsync(TestConstants.Users.ActiveUserId, CancellationToken.None);
+        await _context.SaveChangesAsync(); 
+
+        // Assert
+        bool codeExists = await _context.Set<OtpCode>()
+            .AnyAsync(r => r.Id == usedCode.Id);
+        codeExists.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Tester at vi ikke sletter aktive OTP-koder for en bruker
+    /// </summary>
+    [Fact]
+    public async Task DeleteExpiredForUserAsync_ActiveCode_DoesNotDeleteCode()
+    {
+        // Arrange
+        OtpCode activeCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
+            userId: TestConstants.Users.ActiveUserId);
+
+        // Act
+        await _sut.DeleteExpiredForUserAsync(TestConstants.Users.ActiveUserId, CancellationToken.None);
+        await _context.SaveChangesAsync(); 
+
+        // Assert
+        bool codeExists = await _context.Set<OtpCode>()
+            .AnyAsync(r => r.Id == activeCode.Id);
+        codeExists.Should().BeTrue();
+    }
+    
+    /// <summary>
+    /// Tester at vi ikke sletter en annen brukers OTP-kode
+    /// </summary>
+    [Fact]
+    public async Task DeleteExpiredForUserAsync_ExpiredCodeForOtherUser_DoesNotDeleteCode()
+    {
+        ApplicationUser otherUser = await TestDataSeeder.SeedUserAsync(factory.Services, email: "test2@compvault.com");
+        OtpCode expiredCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
+            userId: otherUser.Id,
+            expiresAt: DateTime.UtcNow.AddMinutes(-30));
+
+        await _sut.DeleteExpiredForUserAsync(TestConstants.Users.ActiveUserId, CancellationToken.None);
+        await _context.SaveChangesAsync(); 
+
+        bool codeExists = await _context.Set<OtpCode>()
+            .AnyAsync(r => r.Id == expiredCode.Id);
+        codeExists.Should().BeTrue();
+    }
 
 }

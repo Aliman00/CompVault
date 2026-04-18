@@ -15,4 +15,9 @@ public interface IOtpCodeRepository : IRepository<OtpCode>
     /// Kalles av bakgrunnsjobben for å holde tabellen ryddig.
     /// </summary>
     Task DeleteExpiredCodesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Sletter utåtte koder for en bruker
+    /// </summary>
+    Task DeleteExpiredForUserAsync(Guid userId, CancellationToken ct);
 }

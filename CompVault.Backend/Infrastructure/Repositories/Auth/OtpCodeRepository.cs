@@ -1,8 +1,6 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Infrastructure.Data;
-
 using Microsoft.EntityFrameworkCore;
-
 namespace CompVault.Backend.Infrastructure.Repositories.Auth;
 
 public class OtpCodeRepository(AppDbContext context) : BaseRepository<OtpCode>(context), IOtpCodeRepository
@@ -19,5 +17,14 @@ public class OtpCodeRepository(AppDbContext context) : BaseRepository<OtpCode>(c
         await DbSet
             .Where(o => o.IsUsed || o.ExpiresAt <= DateTime.UtcNow)
             .ExecuteDeleteAsync(ct);
+    
+    /// <inheritdoc />
+    public async Task DeleteExpiredForUserAsync(Guid userId, CancellationToken ct)
+    {
+        List<OtpCode> expired = await context.OtpCodes
+            .Where(o => o.UserId == userId && (o.ExpiresAt <= DateTime.UtcNow || o.IsUsed))
+            .ToListAsync(ct);
 
+        context.OtpCodes.RemoveRange(expired);
+    }
 }

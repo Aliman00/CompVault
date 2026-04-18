@@ -55,7 +55,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("OtpCodes");
+                    b.ToTable("OtpCodes", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Auth.RefreshToken", b =>
@@ -90,7 +90,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Competencies.Competency", b =>
@@ -153,7 +153,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("UserId", "CompetencyTypeId");
 
-                    b.ToTable("Competencies");
+                    b.ToTable("Competencies", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Competencies.CompetencyType", b =>
@@ -197,7 +197,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("DeletedAt");
 
-                    b.ToTable("CompetencyTypes");
+                    b.ToTable("CompetencyTypes", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Departments.Department", b =>
@@ -241,7 +241,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("ParentDepartmentId");
 
-                    b.ToTable("Departments");
+                    b.ToTable("Departments", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.Document", b =>
@@ -320,7 +320,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("DocumentTypeId", "IsActive");
 
-                    b.ToTable("Documents");
+                    b.ToTable("Documents", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentDepartment", b =>
@@ -340,7 +340,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("DepartmentId1");
 
-                    b.ToTable("DocumentDepartments");
+                    b.ToTable("DocumentDepartments", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentJobTitle", b =>
@@ -355,7 +355,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("JobTitleId");
 
-                    b.ToTable("DocumentJobTitles");
+                    b.ToTable("DocumentJobTitles", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentSignature", b =>
@@ -383,7 +383,7 @@ namespace CompVault.Backend.Migrations
                     b.HasIndex("DocumentId", "UserId", "SignatureVersion")
                         .IsUnique();
 
-                    b.ToTable("DocumentSignatures");
+                    b.ToTable("DocumentSignatures", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentType", b =>
@@ -446,7 +446,7 @@ namespace CompVault.Backend.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("DocumentTypes");
+                    b.ToTable("DocumentTypes", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentTypeCategory", b =>
@@ -482,7 +482,7 @@ namespace CompVault.Backend.Migrations
                         .IsUnique()
                         .HasFilter("\"DeletedAt\" IS NULL");
 
-                    b.ToTable("DocumentTypeCategories");
+                    b.ToTable("DocumentTypeCategories", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentVersion", b =>
@@ -524,7 +524,7 @@ namespace CompVault.Backend.Migrations
                     b.HasIndex("DocumentId", "Version")
                         .IsUnique();
 
-                    b.ToTable("DocumentVersions");
+                    b.ToTable("DocumentVersions", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.ApplicationRole", b =>
@@ -707,7 +707,7 @@ namespace CompVault.Backend.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permissions", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.RolePermission", b =>
@@ -730,7 +730,7 @@ namespace CompVault.Backend.Migrations
 
                     b.HasIndex("PermissionId");
 
-                    b.ToTable("RolePermissions");
+                    b.ToTable("RolePermissions", (string)null);
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.JobTitles.JobTitle", b =>
@@ -763,7 +763,7 @@ namespace CompVault.Backend.Migrations
                         .IsUnique()
                         .HasFilter("\"DeletedAt\" IS NULL");
 
-                    b.ToTable("JobTitles");
+                    b.ToTable("JobTitles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>

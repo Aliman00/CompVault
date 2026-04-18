@@ -51,6 +51,7 @@ public class OtpCodeService(
         // så vil det ende opp 2 stk gyldige OtpKoder. Vi har et SQL-filter som sikrer at dette ikke skjer
         try
         {
+            await otpCodeRepository.DeleteExpiredForUserAsync(userId, ct);
             await otpCodeRepository.AddAsync(otpCode, ct);
         }
         catch (DbUpdateException)
