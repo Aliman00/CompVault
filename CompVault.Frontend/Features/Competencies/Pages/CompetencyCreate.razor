@@ -53,9 +53,12 @@
         <MudItem xs="12" sm="6">
             <MudDatePicker @bind-Date="_editModel.IssuedDate"
                            Label="Utstedt"
-                           DateFormat="dd.MM.yyyy"/>
+                           DateFormat="dd.MM.yyyy"
+                           Required="true"
+                           RequiredError="Utsteddato er påkrevd"/>
         </MudItem>
 
+        @* Utløpsdato hvis det trengs *@
         @if (SelectedCompetencyType?.RequiresExpiration == true)
         {
             <MudItem xs="12" sm="6">
@@ -66,14 +69,25 @@
                                RequiredError="Utløpsdato er påkrevd for denne kompetansetypen" />
             </MudItem>
         }
-        else
-        {
-            <MudItem xs="12" sm="6">
-                <MudDatePicker @bind-Date="_editModel.ExpiryDate"
-                               Label="Utløpsdato (valgfri)"
-                               DateFormat="dd.MM.yyyy" />
-            </MudItem>
-        }
+
+        @* CertificateNumber *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.CertificateNumber"
+                             ValueChanged="(string? v) => _editModel.CertificateNumber = v ?? string.Empty"
+                             Label="Sertifikatnummer (valgfritt)"
+                             IsEditing="true"
+                             For="() => _editModel.CertificateNumber"/>
+        </MudItem>
+        
+        @* Notat *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Notes"
+                             ValueChanged="(string? v) => _editModel.Notes = v ?? string.Empty"
+                             Label=@($"Notat (valgfritt). Maks lengde: {CompValidations.NotesMaxLength}")
+                             IsEditing="true"
+                             For="() => _editModel.Notes"
+                             Lines="4"/>
+        </MudItem>
 
     </Fields>
 </CreateForm>
@@ -117,7 +131,6 @@
         {
             _isLoading = false;
         }
-        
     }
 
     // ===================== PRIVATE METHODS =====================
@@ -136,7 +149,7 @@
         }
 
         NavigationManager.NavigateTo(
-            PageRoutes.CompetencyTypes.Detail(createResult.Value!.Id) + "?created=true", replace: true);
+            PageRoutes.Competencies.Detail(createResult.Value!.Id) + "?created=true", replace: true);
     }
     
     private async Task LoadUsersAsync()

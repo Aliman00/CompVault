@@ -35,7 +35,6 @@ public static class CompetencyMapper
         {
             Id = competency.Id,
             UserId = competency.UserId,
-            UserName = competency.ApplicationUser?.UserName,
             UserFirstName = competency.ApplicationUser?.FirstName,
             UserLastName = competency.ApplicationUser?.LastName,
             CompetencyTypeId = competency.CompetencyTypeId,

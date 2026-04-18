@@ -13,7 +13,8 @@
           SelectedItemsChanged="@(s => _selectedCompetencyTypes = s)"
           RowClick="@(args => OnCompetencyTypeClick(args))">
     <Header>
-        <ListHeader Title="Kompetansetyper"
+        <ListHeader Title="Kompetanser"
+                    PageIcon="@Icons.Material.Filled.Category"
                     CreateHref="@PageRoutes.CompetencyTypes.Create"
                     CreateLabel="Opprett kompetansetype"
                     CreateIcon="@Icons.Material.Filled.Category"

@@ -14,9 +14,6 @@ public sealed class CompetencyDto
     /// <summary>ID til brukeren som har kompetansebeviset.</summary>
     public Guid UserId { get; set; }
 
-    /// <summary>Brukernavn.</summary>
-    public string? UserName { get; set; }
-
     /// <summary>Brukerens fornavn.</summary>
     public string? UserFirstName { get; set; }
 

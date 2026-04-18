@@ -26,8 +26,8 @@ public class CreateCompetencyModel
     {
         UserId = UserId,
         CompetencyTypeId = CompetencyTypeId,
-        IssuedDate = IssuedDate,
-        ExpiryDate = ExpiryDate,
+        IssuedDate = IssuedDate.HasValue ? DateTime.SpecifyKind(IssuedDate.Value, DateTimeKind.Utc) : null,
+        ExpiryDate = ExpiryDate.HasValue ? DateTime.SpecifyKind(ExpiryDate.Value, DateTimeKind.Utc) : null,
         CertificateNumber = CertificateNumber,
         Notes = Notes,
     };

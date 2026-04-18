@@ -16,7 +16,7 @@ public class CompetencyEditModel
     [MaxLength(CompValidations.NotesMaxLength, ErrorMessage = CompValidations.Errors.NotesMaxLength)]
     public string? Notes { get; set; }
 
-    public CompetencyStatus? Status { get; set; }
+    public CompetencyStatus Status { get; set; }
 
     [MaxLength(CompValidations.RevokedReasonMaxLength, ErrorMessage = CompValidations.Errors.RevokedReasonMaxLength)]
     public string? RevokedReason { get; set; }
@@ -37,7 +37,11 @@ public class CompetencyEditModel
         ExpiryDate = ExpiryDate,
         CertificateNumber = CertificateNumber,
         Notes = Notes,
-        Status = Status,
+    };
+    
+    public UpdateCompetencyRequest ToRevokeRequest() => new()
+    {
+        Status = CompetencyStatus.Revoked,
         RevokedReason = RevokedReason,
     };
 }
