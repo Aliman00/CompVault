@@ -30,19 +30,19 @@ else if (_competency != null)
                     <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                  IconColor="Color.Error"
                                  OnClick="Delete">
-                        <MudText Color="Color.Error">Slett kompetansebevis</MudText>
+                        <MudText Color="Color.Error">Slett ansattkompetanse</MudText>
                     </MudMenuItem>
                     @if (_competency.Status != CompetencyStatus.Revoked)
                     {
                         <MudMenuItem Icon="@Icons.Material.Filled.Block"
                                      IconColor="Color.Warning"
                                      OnClick="Revoke">
-                            <MudText Color="Color.Warning">Tilbakekall kompetansebevis</MudText>
+                            <MudText Color="Color.Warning">Tilbakekall ansattkompetanse</MudText>
                         </MudMenuItem>
                     }
                 </Authorized>
                 <NotAuthorized>
-                    <MudTooltip Text="Du har ikke tilgang til å slette kompetansetypen">
+                    <MudTooltip Text="Du har ikke tilgang til å slette ansattkompetansen">
                         <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                      IconColor="Color.Default"
                                      Disabled="true">
@@ -51,7 +51,7 @@ else if (_competency != null)
                     </MudTooltip>
                     @if (_competency.Status != CompetencyStatus.Revoked)
                     {
-                        <MudTooltip Text="Du har ikke tilgang til å tilbakekalle kompetansebeviset">
+                        <MudTooltip Text="Du har ikke tilgang til å tilbakekalle ansattkompetansen">
                             <MudMenuItem Icon="@Icons.Material.Filled.Block"
                                          IconColor="Color.Default"
                                          Disabled="true">
@@ -81,7 +81,7 @@ else if (_competency != null)
                                  IsEditing="false"
                                  ShowLink="true"
                                  OnAdornmentClick="NavigateToCompetencyType"
-                                 HelperText="Trykk for å gå til brukeren"/>
+                                 HelperText="Trykk for å gå til kompetansetypen"/>
             </MudItem>
             
             @* Utstedtdato *@
@@ -191,7 +191,7 @@ else if (_competency != null)
     // ===================== PARAMETER =====================
     [Parameter, EditorRequired] public Guid Id { get; set; }
 
-    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en kompetansetype
+    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en kompetansebevis
     public bool Created { get; set; }
 
     // ===================== PRIVATE FIELDS =====================
@@ -305,9 +305,9 @@ else if (_competency != null)
         // Oppretter parameterne for dialogen
         var parameters = new DialogParameters
         {
-            { nameof(ConfirmDeleteDialog.Title), "Slett kompetansetypen" },
+            { nameof(ConfirmDeleteDialog.Title), "Slett kompetansebevis" },
             {
-                nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette kursbeviset til " +
+                nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette ansattkompetansen til " +
                                                      $"{_competency!.UserFirstName} {_competency!.UserLastName}?"
             },
         };
@@ -335,7 +335,7 @@ else if (_competency != null)
         {
             { nameof(ConfirmRevokeDialog.Id), Id },
             {  nameof(ConfirmRevokeDialog.Message), 
-                $"Er du sikker på at du ønsker å tilbakekalle kompetansebeviset " +
+                $"Er du sikker på at du ønsker å tilbakekalle ansattkompetansen " +
                 $"«{_competency!.CompetencyTypeName}» for {_competency!.FullName}?" }
         };
 
@@ -347,11 +347,12 @@ else if (_competency != null)
 
         if (dialogResult.Data is not CompetencyDto updatedCompetencyDto)
         {
-            _alert = new AlertInfo("Noe gikk galt ved tilbakekalling av permissions.", Severity.Error);
+            _alert = new AlertInfo("Noe gikk galt ved tilbakekalling av ansattkompetansen.", Severity.Error);
             return;
         }
         
         _competency = updatedCompetencyDto;
+        ResetEditModel();
         _alert = new AlertInfo("Kompetansebeviset er tilbakekalt", Severity.Warning);
     }
 
