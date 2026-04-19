@@ -121,4 +121,33 @@ public static class DocumentMapper
             IsActive = category.IsActive
         };
     }
+
+    /// <summary>
+    /// Kartlegger en liste dokumenter til DocumentListDto med signaturstatistikk.
+    /// Centraliserer logikken for å telle signaturer og sjekke om brukeren har signert.
+    /// </summary>
+    public static List<DocumentListDto> MapToListDtos(
+        IReadOnlyList<Document> documents,
+        IReadOnlyList<DocumentSignature> allSignatures,
+        Guid? currentUserId = null,
+        bool? signedByCurrentUserOverride = null)
+    {
+        var dtos = new List<DocumentListDto>(documents.Count);
+
+        foreach (Document doc in documents)
+        {
+            int signatureCount = allSignatures.Count(
+                s => s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
+
+            bool signedByCurrentUser = signedByCurrentUserOverride ?? (currentUserId.HasValue &&
+                allSignatures.Any(s =>
+                    s.DocumentId == doc.Id &&
+                    s.SignatureVersion == doc.Version &&
+                    s.UserId == currentUserId.Value));
+
+            dtos.Add(ToListDto(doc, signatureCount, signedByCurrentUser));
+        }
+
+        return dtos;
+    }
 }

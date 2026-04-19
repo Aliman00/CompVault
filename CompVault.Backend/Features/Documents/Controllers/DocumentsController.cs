@@ -18,7 +18,9 @@ namespace CompVault.Backend.Features.Documents.Controllers;
 [Authorize(Policy = Permissions.DocumentsRead)]
 [Produces("application/json")]
 public sealed class DocumentsController(
-    IDocumentService documentService) : BaseController
+    IDocumentService documentService,
+    IDocumentVersioningService versioningService,
+    IDocumentSignatureService signatureService) : BaseController
 {
     /// <summary>Henter alle dokumenter for en dokumenttype.</summary>
     [HttpGet]
@@ -76,7 +78,6 @@ public sealed class DocumentsController(
         Guid uploadedById = User.GetUserId();
 
         await using Stream? fileStream = file is not null ? file.OpenReadStream() : null;
-        
         
         Result<DocumentDto> result = await documentService.CreateAsync(
             documentTypeSlug,
@@ -149,7 +150,7 @@ public sealed class DocumentsController(
         Guid uploadedById = User.GetUserId();
 
         await using Stream stream = file.OpenReadStream();
-        Result<DocumentDto> result = await documentService.UploadVersionAsync(
+        Result<DocumentDto> result = await versioningService.UploadVersionAsync(
             id, documentTypeSlug, file.FileName, file.ContentType, stream, uploadedById, cancellationToken);
 
         if (result.IsFailure)
@@ -170,7 +171,7 @@ public sealed class DocumentsController(
     {
         Guid userId = User.GetUserId();
 
-        Result<bool> result = await documentService.SignAsync(id, userId, cancellationToken);
+        Result<bool> result = await signatureService.SignAsync(id, userId, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -187,7 +188,7 @@ public sealed class DocumentsController(
     {
         Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
-        Result<DocumentDownloadResult> result = await documentService.GetDownloadAsync(
+        Result<DocumentDownloadResult> result = await versioningService.GetDownloadAsync(
             id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)
@@ -196,7 +197,7 @@ public sealed class DocumentsController(
         DocumentDownloadResult download = result.Value!;
 
         // Åpne stream her i controlleren slik at ASP.NET Core kan håndtere disposal
-        Stream fileStream = await documentService.OpenFileStreamAsync(
+        Stream fileStream = await versioningService.OpenFileStreamAsync(
             download.FilePath, cancellationToken);
 
         return File(fileStream, download.ContentType, download.FileName);
@@ -211,7 +212,7 @@ public sealed class DocumentsController(
     {
         Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
-        Result<IReadOnlyList<DocumentSignatureDto>> result = await documentService.GetSignaturesAsync(
+        Result<IReadOnlyList<DocumentSignatureDto>> result = await signatureService.GetSignaturesAsync(
             id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)
@@ -228,7 +229,7 @@ public sealed class DocumentsController(
     {
         Guid userId = User.GetUserId();
 
-        Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetMySignedDocumentsAsync(
+        Result<IReadOnlyList<DocumentListDto>> result = await signatureService.GetMySignedDocumentsAsync(
             userId, cancellationToken);
 
         if (result.IsFailure)
@@ -245,7 +246,7 @@ public sealed class DocumentsController(
     {
         Guid userId = User.GetUserId();
 
-        Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetMyPendingDocumentsAsync(
+        Result<IReadOnlyList<DocumentListDto>> result = await signatureService.GetMyPendingDocumentsAsync(
             userId, cancellationToken);
 
         if (result.IsFailure)
