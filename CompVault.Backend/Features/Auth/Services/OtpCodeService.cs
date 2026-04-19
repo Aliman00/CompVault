@@ -53,6 +53,7 @@ public class OtpCodeService(
         {
             await otpCodeRepository.DeleteExpiredForUserAsync(userId, ct);
             await otpCodeRepository.AddAsync(otpCode, ct);
+            await otpCodeRepository.SaveChangesAsync(ct); // Lagrer her for å trigge filteret hvis paralell request
         }
         catch (DbUpdateException)
         {

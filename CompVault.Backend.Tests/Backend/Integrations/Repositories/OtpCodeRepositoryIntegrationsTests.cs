@@ -1,9 +1,11 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Tests.Common;
 using CompVault.Backend.Tests.Common.Constants;
+using CompVault.Shared.Result;
 
 using FluentAssertions;
 
@@ -54,24 +56,63 @@ public class OtpCodeRepositoryIntegrationsTests(
     }
 
     /// <summary>
-    /// Tester at det metoden henter sist opprettet aktive OtpCode i databasen, hvis det eksisterer flere.
-    /// Vi har et SQL-filter og logikk i servicen for å sikre at dette ikke vil skje i produksjon.
+    /// Tester at oppretting av to OTP-koder på engang kaster en feil, når begge
     /// </summary>
     [Fact]
-    public async Task GetActiveCodeAsync_MultipleActiveUnexpiredCode_ReturnsNewestCode()
+    public async Task GetActiveCodeAsync_OneExpiredOneActive_ReturnsActiveCode()
     {
-        // Arrange - seeder 2 stk koder med forskjellig tid
-        OtpCode newestCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
-            userId: TestConstants.Users.ActiveUserId);
+        // Arrange - seeder en utgått og en aktiv kode
         await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
-            userId: TestConstants.Users.ActiveUserId, createdAt: DateTime.UtcNow.AddMinutes(-5));
-
+            userId: TestConstants.Users.ActiveUserId,
+            expiresAt: DateTime.UtcNow.AddMinutes(-20),
+            isUsed: true); 
+        
+        OtpCode activeCode =  await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
+            userId: TestConstants.Users.ActiveUserId); 
+        
         // Act
-        OtpCode? existingOtpCode = await _sut.GetActiveCodeAsync(TestConstants.Users.ActiveUserId);
-
+        OtpCode? activeCodeResult = await _sut.GetActiveCodeAsync(TestConstants.Users.ActiveUserId);
+        
         // Assert
-        existingOtpCode.Should().NotBeNull();
-        existingOtpCode.Id.Should().Be(newestCode.Id);
+        activeCodeResult.Should().NotBeNull();
+        activeCodeResult!.Id.Should().Be(activeCode.Id);
+    }
+    
+    /// <summary>
+    /// Tester at vårt filter fungerer med å kjøre to parallele requester.
+    /// Sikrer at try-catchen sender feilmelding og at det ikke blir to eposter med to forskjellige koder til brukeren
+    /// </summary>
+    [Fact]
+    public async Task GenerateOtpCodeAsync_ConcurrentRequests_OnlyOneSucceeds()
+    {
+        // Arrange
+        await using AsyncServiceScope scope1 = factory.Services.CreateAsyncScope();
+        await using AsyncServiceScope scope2 = factory.Services.CreateAsyncScope();
+
+        IOtpCodeService sut1 = scope1.ServiceProvider.GetRequiredService<IOtpCodeService>();
+        IOtpCodeService sut2 = scope2.ServiceProvider.GetRequiredService<IOtpCodeService>();
+
+        // Barrier brukes til å sikre at at begge kall kjøres parallelt
+        var barrier = new Barrier(2);
+
+        // Act - Setter opp to oppgaver, et for hvert kall, og kaller de samtidig
+        var task1 = Task.Run(async () =>
+        {
+            barrier.SignalAndWait();
+            return await sut1.GenerateOtpCodeAsync(TestConstants.Users.ActiveUserId);
+        });
+
+        var task2 = Task.Run(async () =>
+        {
+            barrier.SignalAndWait();
+            return await sut2.GenerateOtpCodeAsync(TestConstants.Users.ActiveUserId);
+        });
+        
+        Result<string>[] results = await Task.WhenAll(task1, task2);
+
+        // Assert - Teller at et kall var vellykket og at et kall skal få OtpCooldown fra try-catch
+        results.Count(r => r.IsSuccess).Should().Be(1);
+        results.Count(r => r.IsFailure && r.Error!.Code == ErrorCode.OtpCooldown).Should().Be(1);
     }
 
     // -------------------------------------------------------------------------

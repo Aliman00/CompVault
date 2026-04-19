@@ -19,12 +19,9 @@ public class OtpCodeRepository(AppDbContext context) : BaseRepository<OtpCode>(c
             .ExecuteDeleteAsync(ct);
     
     /// <inheritdoc />
-    public async Task DeleteExpiredForUserAsync(Guid userId, CancellationToken ct)
-    {
-        List<OtpCode> expired = await context.OtpCodes
+    public async Task DeleteExpiredForUserAsync(Guid userId, CancellationToken ct) =>
+        await DbSet
+            .IgnoreQueryFilters()
             .Where(o => o.UserId == userId && (o.ExpiresAt <= DateTime.UtcNow || o.IsUsed))
-            .ToListAsync(ct);
-
-        context.OtpCodes.RemoveRange(expired);
-    }
+            .ExecuteDeleteAsync(ct);
 }
