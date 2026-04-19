@@ -27,6 +27,9 @@ public sealed class UserDto
 
     /// <summary>Navn på stillingstittelen.</summary>
     public string? JobTitleName { get; set; }
+    
+    /// <summary>Er stillingstittelen aktiv (standard som true hvis satt).</summary>
+    public bool? JobTitleIsActive { get; set; } = true;
 
     /// <summary>Ansettelsestype.</summary>
     public EmploymentType EmploymentType { get; set; }

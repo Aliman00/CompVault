@@ -3,13 +3,14 @@
 
 @if (IsEditing)
 {
-    <MudSelect Value="Value"
+    <MudSelect T="T"
+               Value="Value"
                ValueChanged="ValueChanged"
                Label="@Label"
                Variant="Variant.Outlined">
         @foreach (T item in Enum.GetValues<T>())
         {
-            <MudSelectItem Value="item">@item.ToDisplayString()</MudSelectItem>
+            <MudSelectItem T="T" Value="item">@item.ToDisplayString()</MudSelectItem>
         }
     </MudSelect>
 }
