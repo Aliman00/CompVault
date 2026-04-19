@@ -52,6 +52,15 @@ else if (_jobTitle != null)
                                  IsEditing="_isEditing"
                                  For="() => _editModel.Name"/>
             </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Status"
+                              @bind-Value="_editModel.IsActive"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
+                    <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
+                </ToggleButton>
+            </MudItem>
            
             @* Brukere med denne rollen *@
             <MudItem xs="12">

@@ -118,14 +118,14 @@ public class DocumentTypeCategoryService(
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Nettverksfeil ved sletting av ategori {CategoryId} for {Slug}", 
+            logger.LogError(ex, "Nettverksfeil ved sletting av kategori {CategoryId} for {Slug}", 
                 id, documentTypeSlug);
             return Result.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Uventet feil ved sletting av ategori {CategoryId} for {Slug}", 
+            logger.LogError(ex, "Uventet feil ved sletting av kategori {CategoryId} for {Slug}", 
                 id, documentTypeSlug);
             return Result.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
