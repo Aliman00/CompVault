@@ -2,8 +2,6 @@ using CompVault.Backend.Common.Utils;
 
 using FluentAssertions;
 
-using Xunit;
-
 namespace CompVault.Backend.Tests.Backend.Common;
 
 public class SlugUtilityTests

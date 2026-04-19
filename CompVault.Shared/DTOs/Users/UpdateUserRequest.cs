@@ -17,7 +17,7 @@ public sealed class UpdateUserRequest
     /// <summary>Nytt etternavn (valgfritt).</summary>
     [MaxLength(UserValidations.LastNameMaxLength, ErrorMessage = UserValidations.Errors.LastNameMaxLength)]
     public string? LastName { get; set; }
-    
+
     /// <summary>Bytt epost (valgfritt).</summary>
     [EmailAddress(ErrorMessage = UserValidations.Errors.EmailInvalid)]
     [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
@@ -46,7 +46,7 @@ public sealed class UpdateUserRequest
 
     /// <summary>Sett til true for å fjerne ledertilknytning.</summary>
     public bool ClearManagerId { get; set; }
-    
+
     /// <summary>Roller brukeren skal ha (overskriver eksisterende, valgfritt).</summary>
     public IReadOnlyList<string>? Roles { get; set; }
 }

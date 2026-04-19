@@ -27,7 +27,7 @@ internal sealed class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
             .WithMany(u => u.OtpCodes)
             .HasForeignKey(o => o.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         // Sikrer at kun en aktive OTP-kode (en Otp-kode med IsUsed = false) pr bruker kan eksistere på en og samme tid
         builder.HasIndex(o => o.UserId)
             .IsUnique()

@@ -119,7 +119,7 @@ public class CookieValidationEventsTests
     // -------------------------------------------------------------------------
     // Happy path
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester happy path ved at vi setter ShouldRenew og at ApplyTokenPair kalles med riktig RefreshRecord
     /// når TokenRefreshService returnerer suksess, oppdateres access token-claim og refresh token-cookie settes
@@ -148,7 +148,7 @@ public class CookieValidationEventsTests
         context.HttpContext.Response.Headers.SetCookie
             .Should().ContainMatch("refreshToken=new_refresh_token*");
     }
-    
+
     /// <summary>
     /// Tester at ved vellykket oppdatering av tokens så blir det satt korrekt i CircuitUserContext
     /// </summary>
@@ -172,11 +172,11 @@ public class CookieValidationEventsTests
         // Assert - Sjekker at vi oppdaterer CircuitUserContext med token og at riktig UserId er satt
         _circuitUserContext.RefreshToken.Should().Be("new_refresh_token");
     }
-    
+
     // -------------------------------------------------------------------------
     // Failure paths
     // -------------------------------------------------------------------------
-    
+
 
     /// <summary>
     /// Tester at brukeren blir logget ut hvis vi får NotFound fra RefreshPairAsync (altså ingen refresh token)
@@ -277,7 +277,7 @@ public class CookieValidationEventsTests
             It.IsAny<HttpContext>(), CookieAuthenticationDefaults.AuthenticationScheme,
             It.IsAny<AuthenticationProperties?>()), Times.Never());
     }
-    
+
     /// <summary>
     /// Tester at det ikke finnes en sub-claim med UserId. Logger brukern ut og fjernes fra contexten
     /// </summary>
@@ -305,7 +305,7 @@ public class CookieValidationEventsTests
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never());
     }
 
-    
 
-   
+
+
 }

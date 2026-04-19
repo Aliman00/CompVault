@@ -41,7 +41,7 @@ public class UserService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<UserDto?>> GetByIdAsync(Guid id, CancellationToken ct)
     {
@@ -54,29 +54,29 @@ public class UserService(
 
             if (result.IsFailure)
                 return Result<UserDto?>.Failure(result.Error!);
-            
+
             return Result<UserDto?>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av brukere");
-            return Result<UserDto?>.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<UserDto?>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av brukere");
-            return Result<UserDto?>.Failure(AppError.Create(ErrorCode.Unknown, 
+            return Result<UserDto?>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<UserDto>> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(ApiRoutes.User.ById(id), request, ct);
 
             Result<UserDto> result = await HttpClientExtensions.ParseResponseAsync<UserDto>(response, ct);
@@ -99,13 +99,13 @@ public class UserService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<UserDto>> CreateAsync(CreateUserRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.User.Base, request, ct);
 
             Result<UserDto> result = await HttpClientExtensions.ParseResponseAsync<UserDto>(response, ct);
@@ -128,8 +128,8 @@ public class UserService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
-    
+
+
     /// <inheritdoc />
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct)
     {

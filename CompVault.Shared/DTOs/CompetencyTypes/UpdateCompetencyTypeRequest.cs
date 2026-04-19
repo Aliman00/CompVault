@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Constants.Validations;
 namespace CompVault.Shared.DTOs.CompetencyTypes;
 

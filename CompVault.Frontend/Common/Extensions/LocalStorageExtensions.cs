@@ -21,8 +21,8 @@ public static class LocalStorageExtensions
             return false;
         }
     }
-    
-    
+
+
 
 
     /// <summary>

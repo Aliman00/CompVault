@@ -22,8 +22,8 @@ public static class DepartmentMapper
         IsActive = department.IsActive,
         CreatedAt = department.CreatedAt,
         CreatedById = department.CreatedById,
-        CreatedByName = department.CreatedBy != null 
-            ? $"{department.CreatedBy.FirstName} {department.CreatedBy.LastName}" 
+        CreatedByName = department.CreatedBy != null
+            ? $"{department.CreatedBy.FirstName} {department.CreatedBy.LastName}"
             : null
     };
 }
