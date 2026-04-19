@@ -284,6 +284,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentTypeService, DocumentTypeService>();
         services.AddScoped<IDocumentFileService, DocumentFileService>();
         services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IDocumentTargetingService, DocumentTargetingService>();
+        services.AddScoped<IDocumentVersioningService, DocumentVersioningService>();
+        services.AddScoped<IDocumentSignatureService, DocumentSignatureService>();
 
         // JobTitles
         services.AddScoped<IJobTitleService, JobTitleService>();
