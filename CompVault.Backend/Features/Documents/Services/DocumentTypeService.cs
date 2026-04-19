@@ -221,22 +221,26 @@ public sealed class DocumentTypeService(
             return Result<DocumentTypeCategoryDto>.Failure(
                 AppError.NotFound($"Kategori med ID '{categoryId}' ble ikke funnet for dokumenttype '{documentTypeSlug}'."));
 
-        // Oppdater navn hvis oppgitt
+        // Oppdater navn og regenerer slug hvis navn endres
         if (!string.IsNullOrWhiteSpace(request.Name))
-            category.Name = request.Name.Trim();
-
-        // Oppdater slug hvis oppgitt og forskjellig fra eksisterende
-        if (!string.IsNullOrWhiteSpace(request.Slug) &&
-            !string.Equals(category.Slug, request.Slug, StringComparison.OrdinalIgnoreCase))
         {
-            bool slugExists = await categoryRepository.SlugExistsAsync(
-                documentType.Id, request.Slug.Trim(), excludeId: categoryId, cancellationToken: cancellationToken);
+            string newName = request.Name.Trim();
+            string newSlug = SlugUtility.GenerateSlug(newName);
 
-            if (slugExists)
-                return Result<DocumentTypeCategoryDto>.Failure(
-                    AppError.Conflict($"Kategori-slug '{request.Slug}' finnes allerede for denne dokumenttypen."));
+            category.Name = newName;
 
-            category.Slug = request.Slug.Trim();
+            // Oppdater slug kun hvis den nye er forskjellig fra eksisterende
+            if (!string.Equals(category.Slug, newSlug, StringComparison.OrdinalIgnoreCase))
+            {
+                bool slugExists = await categoryRepository.SlugExistsAsync(
+                    documentType.Id, newSlug, excludeId: categoryId, cancellationToken: cancellationToken);
+
+                if (slugExists)
+                    return Result<DocumentTypeCategoryDto>.Failure(
+                        AppError.Conflict($"Kategori med navn '{newName}' kunne ikke oppdateres — slug '{newSlug}' finnes allerede for denne dokumenttypen."));
+
+                category.Slug = newSlug;
+            }
         }
 
         if (request.IsActive.HasValue)
