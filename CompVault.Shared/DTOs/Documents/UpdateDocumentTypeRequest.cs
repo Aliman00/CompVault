@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.Enums;
 
 namespace CompVault.Shared.DTOs.Documents;
@@ -10,11 +11,11 @@ namespace CompVault.Shared.DTOs.Documents;
 public sealed class UpdateDocumentTypeRequest
 {
     /// <summary>Nytt visningsnavn.</summary>
-    [MaxLength(100)]
+    [MaxLength(DocTypeValidations.NameMaxLength, ErrorMessage = DocTypeValidations.Errors.NameMaxLength)]
     public string? Name { get; set; }
 
     /// <summary>Ny beskrivelse.</summary>
-    [MaxLength(500)]
+    [MaxLength(DocTypeValidations.DescMaxLength, ErrorMessage = DocTypeValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
 
     /// <summary>Fjerner beskrivelsen hvis satt.</summary>

@@ -30,6 +30,17 @@ public static class EnumDisplayExtensions
     };
     
     /// <summary>
+    /// Oversetter fra engelsk til norsk
+    /// </summary>
+    public static string ToDisplayString(this DocumentTargetMode mode) => mode switch
+    {
+        DocumentTargetMode.None    => "Alle brukere",
+        DocumentTargetMode.Department => "Avdeling",
+        DocumentTargetMode.JobTitle   => "Stillingstittel",
+        _ => mode.ToString()
+    };
+    
+    /// <summary>
     /// Generisk metode for å oversette enums til norsk når EnumType kan variere
     /// </summary>
     /// <param name="value">Den valgte verdien til en enum. (feks EmploymentType.Permanent)</param>
@@ -39,6 +50,7 @@ public static class EnumDisplayExtensions
     {
         EmploymentType e => e.ToDisplayString(),
         CompetencyStatus s => s.ToDisplayString(),
+        DocumentTargetMode d    => d.ToDisplayString(),
         _ => value.ToString()
     };
 }

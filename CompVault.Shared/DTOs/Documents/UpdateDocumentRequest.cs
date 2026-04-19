@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
+
 namespace CompVault.Shared.DTOs.Documents;
 
 /// <summary>
@@ -8,19 +10,19 @@ namespace CompVault.Shared.DTOs.Documents;
 public sealed class UpdateDocumentRequest
 {
     /// <summary>Ny tittel.</summary>
-    [MaxLength(200)]
+    [MaxLength(DocValidations.TitleMaxLength, ErrorMessage = DocValidations.Errors.TitleMaxLength)]
     public string? Title { get; set; }
 
     /// <summary>Ny beskrivelse.</summary>
-    [MaxLength(2000)]
+    [MaxLength(DocValidations.DescMaxLength, ErrorMessage = DocValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
 
     /// <summary>Ny kategori-ID (DocumentTypeCategory).</summary>
     public Guid? DocumentTypeCategoryId { get; set; }
 
     /// <summary>Ny ekstern URL.</summary>
-    [MaxLength(500)]
-    [Url]
+    [MaxLength(DocValidations.ExternalUrlMaxLength, ErrorMessage = DocValidations.Errors.ExternalUrlMaxLength)]
+    [Url(ErrorMessage = DocValidations.Errors.ExternalUrlFormat)]
     public string? ExternalUrl { get; set; }
 
     /// <summary>Ny liste med mål-avdelinger. Null = ikke endret. Tom liste = fjern alle.</summary>

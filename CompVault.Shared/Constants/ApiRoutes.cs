@@ -59,4 +59,25 @@ public static class ApiRoutes
         public const string Base = "api/jobtitles";
         public static string ById(Guid id) => $"{Base}/{id}";
     }
+    
+    public static class DocumentTypes
+    {
+        public const string Base = "api/document-types";
+        public static string BySlug(string slug) => $"{Base}/{slug}";
+    }
+
+    public static class DocumentTypeCategories // Base brukes ikke her siden det ligger inne i DocumentType, bruker All
+    {
+        private static string Base(string documentTypeSlug) => $"api/document-types/{documentTypeSlug}/categories";
+        public static string All(string documentTypeSlug) => Base(documentTypeSlug);
+        public static string ById(string documentTypeSlug, Guid categoryId) => $"{Base(documentTypeSlug)}/{categoryId}";
+    }
+    
+    public static class Documents
+    {
+        public static string Base(string documentTypeSlug) => $"api/documents/{documentTypeSlug}";
+        public static string ById(string documentTypeSlug, Guid id) => $"api/documents/{documentTypeSlug}/{id}";
+    }
+    
+    
 }
