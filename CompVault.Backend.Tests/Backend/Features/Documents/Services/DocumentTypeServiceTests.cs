@@ -148,7 +148,6 @@ public class DocumentTypeServiceTests
         var request = new CreateDocumentTypeRequest
         {
             Name = "HMS",
-            Slug = "hms",
             TargetMode = DocumentTargetMode.Department
         };
 
@@ -175,13 +174,13 @@ public class DocumentTypeServiceTests
         var request = new CreateDocumentTypeRequest
         {
             Name = "HMS Dokumenter",
-            Slug = "hms-documents",
             Description = "Helse, miljø og sikkerhet",
             TargetMode = DocumentTargetMode.Department
         };
 
+        // Slug auto-genereres fra navn: "HMS Dokumenter" → "hms-dokumenter"
         _documentTypeRepositoryMock
-            .Setup(x => x.SlugExistsAsync("hms-documents", null, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SlugExistsAsync("hms-dokumenter", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         _documentTypeRepositoryMock
@@ -192,7 +191,6 @@ public class DocumentTypeServiceTests
             .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        // Simuler at GetWithCategoriesAsync returnerer den opprettede typen
         _documentTypeRepositoryMock
             .Setup(x => x.GetWithCategoriesAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Guid id, CancellationToken _) =>
@@ -200,7 +198,7 @@ public class DocumentTypeServiceTests
                 {
                     Id = id,
                     Name = request.Name,
-                    Slug = request.Slug,
+                    Slug = "hms-dokumenter",
                     Description = request.Description,
                     TargetMode = request.TargetMode,
                     IsActive = true
@@ -212,12 +210,13 @@ public class DocumentTypeServiceTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value?.Name.Should().Be("HMS Dokumenter");
-        result.Value?.Slug.Should().Be("hms-documents");
+        result.Value?.Slug.Should().Be("hms-dokumenter");
 
         _documentTypeRepositoryMock.Verify(
             x => x.AddAsync(It.Is<DocumentType>(dt =>
                 dt.Name == request.Name &&
-                dt.Slug == request.Slug &&
+                dt.Slug == "hms-dokumenter" &&
+                dt.StorageFolder == "hms-dokumenter" &&
                 dt.CreatedById == createdById), It.IsAny<CancellationToken>()),
             Times.Once);
 
@@ -437,7 +436,7 @@ public class DocumentTypeServiceTests
     {
         // Arrange
         string typeSlug = "nonexistent";
-        var request = new CreateDocumentTypeCategoryRequest { Name = "Test", Slug = "test" };
+        var request = new CreateDocumentTypeCategoryRequest { Name = "Test" };
 
         _documentTypeRepositoryMock
             .Setup(x => x.GetBySlugAsync(typeSlug, It.IsAny<CancellationToken>()))
@@ -462,12 +461,13 @@ public class DocumentTypeServiceTests
         var typeId = Guid.NewGuid();
         string slug = "hms-documents";
         var documentType = new DocumentType { Id = typeId, Slug = slug, IsActive = true };
-        var request = new CreateDocumentTypeCategoryRequest { Name = "Test", Slug = "test" };
+        var request = new CreateDocumentTypeCategoryRequest { Name = "Test" };
 
         _documentTypeRepositoryMock
             .Setup(x => x.GetBySlugAsync(slug, It.IsAny<CancellationToken>()))
             .ReturnsAsync(documentType);
 
+        // Slug auto-genereres fra navn: "Test" → "test"
         _categoryRepositoryMock
             .Setup(x => x.SlugExistsAsync(typeId, "test", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -493,16 +493,16 @@ public class DocumentTypeServiceTests
         var documentType = new DocumentType { Id = typeId, Slug = slug, IsActive = true };
         var request = new CreateDocumentTypeCategoryRequest
         {
-            Name = "Nødsprosedyrer",
-            Slug = "nodprosedyrer"
+            Name = "Nødsprosedyrer"
         };
 
         _documentTypeRepositoryMock
             .Setup(x => x.GetBySlugAsync(slug, It.IsAny<CancellationToken>()))
             .ReturnsAsync(documentType);
 
+        // Slug auto-genereres: "Nødsprosedyrer" → "noedsprosedyrer"
         _categoryRepositoryMock
-            .Setup(x => x.SlugExistsAsync(typeId, "nodprosedyrer", null, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SlugExistsAsync(typeId, "noedsprosedyrer", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         _categoryRepositoryMock
@@ -520,7 +520,7 @@ public class DocumentTypeServiceTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value?.Name.Should().Be("Nødsprosedyrer");
-        result.Value?.Slug.Should().Be("nodprosedyrer");
+        result.Value?.Slug.Should().Be("noedsprosedyrer");
 
         _categoryRepositoryMock.Verify(
             x => x.AddAsync(It.Is<DocumentTypeCategory>(c =>

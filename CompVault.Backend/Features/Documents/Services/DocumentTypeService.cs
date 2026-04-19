@@ -1,3 +1,4 @@
+using CompVault.Backend.Common.Utils;
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Shared.DTOs.Documents;
@@ -38,19 +39,21 @@ public sealed class DocumentTypeService(
     public async Task<Result<DocumentTypeDto>> CreateAsync(
         CreateDocumentTypeRequest request, Guid createdById, CancellationToken cancellationToken = default)
     {
+        string slug = SlugUtility.GenerateSlug(request.Name);
+
         // Sjekk at slug er unik
-        bool slugExists = await documentTypeRepository.SlugExistsAsync(request.Slug, cancellationToken: cancellationToken);
+        bool slugExists = await documentTypeRepository.SlugExistsAsync(slug, cancellationToken: cancellationToken);
         if (slugExists)
             return Result<DocumentTypeDto>.Failure(
-                AppError.Conflict($"Slug '{request.Slug}' er allerede i bruk."));
+                AppError.Conflict($"Dokumenttype med navn '{request.Name}' kunne ikke opprettes — slug '{slug}' er allerede i bruk."));
 
         var documentType = new DocumentType
         {
             Name = request.Name,
-            Slug = request.Slug,
+            Slug = slug,
             Description = request.Description,
             TargetMode = request.TargetMode,
-            StorageFolder = request.Slug,
+            StorageFolder = slug,
             AllowedMimeTypes = request.AllowedMimeTypes,
             MaxFileSizeBytes = request.MaxFileSizeBytes,
             CreatedById = createdById
@@ -64,10 +67,8 @@ public sealed class DocumentTypeService(
         }
         catch (DbUpdateException)
         {
-            // Slug-unikhet sjekkes før lagring, men concurrent requests kan likevel
-            // opprette samme slug. Unique constraint fanger dette opp.
             return Result<DocumentTypeDto>.Failure(
-                AppError.Conflict($"Dokumenttype med slug '{request.Slug}' kunne ikke opprettes. Prøv på nytt."));
+                AppError.Conflict($"Dokumenttype med slug '{slug}' kunne ikke opprettes. Prøv på nytt."));
         }
 
         DocumentType? created = await documentTypeRepository.GetWithCategoriesAsync(documentType.Id, cancellationToken);
@@ -172,18 +173,20 @@ public sealed class DocumentTypeService(
             return Result<DocumentTypeCategoryDto>.Failure(
                 AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
 
+        string slug = SlugUtility.GenerateSlug(request.Name);
+
         bool slugExists = await categoryRepository.SlugExistsAsync(
-            documentType.Id, request.Slug, cancellationToken: cancellationToken);
+            documentType.Id, slug, cancellationToken: cancellationToken);
 
         if (slugExists)
             return Result<DocumentTypeCategoryDto>.Failure(
-                AppError.Conflict($"Kategori-slug '{request.Slug}' finnes allerede for denne dokumenttypen."));
+                AppError.Conflict($"Kategori med navn '{request.Name}' kunne ikke opprettes — slug '{slug}' finnes allerede for denne dokumenttypen."));
 
         var category = new DocumentTypeCategory
         {
             DocumentTypeId = documentType.Id,
             Name = request.Name,
-            Slug = request.Slug
+            Slug = slug
         };
 
         await categoryRepository.AddAsync(category, cancellationToken);
@@ -194,10 +197,8 @@ public sealed class DocumentTypeService(
         }
         catch (DbUpdateException)
         {
-            // Slug-unikhet sjekkes før lagring, men concurrent requests kan likevel
-            // opprette samme slug. Unique constraint fanger dette opp.
             return Result<DocumentTypeCategoryDto>.Failure(
-                AppError.Conflict($"Kategori-slug '{request.Slug}' kunne ikke opprettes. Prøv på nytt."));
+                AppError.Conflict($"Kategori-slug '{slug}' kunne ikke opprettes. Prøv på nytt."));
         }
 
         return Result<DocumentTypeCategoryDto>.Success(DocumentMapper.ToCategoryDto(category));

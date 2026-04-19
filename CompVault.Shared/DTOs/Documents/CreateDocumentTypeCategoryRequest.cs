@@ -7,13 +7,8 @@ namespace CompVault.Shared.DTOs.Documents;
 /// </summary>
 public sealed class CreateDocumentTypeCategoryRequest
 {
-    /// <summary>Visningsnavn, f.eks. "Nødsprosedyrer".</summary>
+    /// <summary>Visningsnavn, f.eks. "Nødsprosedyrer". Genererer automatisk URL-vennlig slug.</summary>
     [Required]
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>URL-vennlig slug, f.eks. "emergency-procedure".</summary>
-    [Required]
-    [MaxLength(50)]
-    public string Slug { get; set; } = string.Empty;
 }
