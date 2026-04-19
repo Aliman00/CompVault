@@ -19,6 +19,14 @@
         </Authorized>
     </AuthorizeView>
 
+    <AuthorizeView Policy="@Permissions.JobTitlesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.JobTitles.List" Icon="@Icons.Material.Filled.Work">
+                Stillingstitler
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
     <AuthorizeView Policy="@Permissions.DepartmentsRead">
         <Authorized>
             <MudNavLink Href="@PageRoutes.Departments.List" Icon="@Icons.Material.Filled.Business">

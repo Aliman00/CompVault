@@ -16,17 +16,17 @@ internal sealed class DocumentDepartmentConfiguration : IEntityTypeConfiguration
         builder.HasKey(dd => new { dd.DocumentId, dd.DepartmentId });
 
         // Relasjon: DocumentDepartment → Document
-        builder.HasOne(dd => dd.Department)
+        builder.HasOne(dd => dd.Document)
             .WithMany(d => d.DocumentDepartments)
-            .HasForeignKey(dd => dd.DepartmentId)
+            .HasForeignKey(dd => dd.DocumentId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Relasjon: DocumentDepartment → Department
         builder.HasOne(dd => dd.Department)
-            .WithMany()
+            .WithMany(d => d.DocumentDepartments)
             .HasForeignKey(dd => dd.DepartmentId)
             .OnDelete(DeleteBehavior.Restrict);
-
+        
         // Indeks for spørringer på avdeling
         builder.HasIndex(dd => dd.DepartmentId);
     }

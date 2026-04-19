@@ -1,4 +1,6 @@
-﻿using CompVault.Frontend.Common.Configuration;
+﻿using System.Reflection;
+
+using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Localization;
 using CompVault.Frontend.Common.Services;
@@ -114,41 +116,16 @@ public static class ServiceCollectionExtensions
     {
         services.AddAuthorization(options =>
         {   
-            // Admin-panel tilgang 
-            options.AddPolicy(Permissions.AdminAccess, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.AdminAccess));
-            
-            // Users
-            options.AddPolicy(Permissions.UsersRead, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersRead));
-            options.AddPolicy(Permissions.UsersWrite, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersWrite));
-            options.AddPolicy(Permissions.UsersDelete, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersDelete));
-            
-            // Roles
-            options.AddPolicy(Permissions.RolesRead, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesRead));
-            options.AddPolicy(Permissions.RolesWrite, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesWrite));
-            options.AddPolicy(Permissions.RolesDelete, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesDelete));
-            
-            // Department
-            options.AddPolicy(Permissions.DepartmentsRead, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsRead));
-            options.AddPolicy(Permissions.DepartmentsWrite, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsWrite));
-            options.AddPolicy(Permissions.DepartmentsDelete, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsDelete));
-            
-            // Competencies
-            options.AddPolicy(Permissions.CompetenciesRead, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesRead));
-            options.AddPolicy(Permissions.CompetenciesWrite, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesWrite));
-            options.AddPolicy(Permissions.CompetenciesDelete, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesDelete));
+            typeof(Permissions)
+                .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(f => f.FieldType == typeof(string) && f.Name != nameof(Permissions.ClaimType))
+                .Select(f => (string)f.GetValue(null)!)
+                .ToList()
+                .ForEach(permission =>
+                {
+                    options.AddPolicy(permission, policy =>
+                        policy.RequireClaim(Permissions.ClaimType, permission));
+                });
         });
 
         return services;

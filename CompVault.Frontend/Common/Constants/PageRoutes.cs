@@ -19,6 +19,13 @@ public static class PageRoutes
         public const string Create = "/users/create";
     }
     
+    public static class JobTitles
+    {
+        public const string List = "/jobtitles";
+        public static string Detail(Guid id) => $"/jobtitles/{id}";
+        public const string Create = "/jobtitles/create";
+    }
+    
     public static class Departments
     {
         public const string List = "/departments";

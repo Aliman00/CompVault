@@ -1,0 +1,57 @@
+﻿@page "/jobtitles/create"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.JobTitlesWrite)]
+@inject IJobTitleService JobTitleService
+@inject NavigationManager NavigationManager
+
+@* Side for å opprette en stillingstittel *@
+
+<CreateForm Title="Opprett stillingstittel"
+            EditContext="_editContext"
+            OnValidSubmit="CreateJobTitle"
+            @bind-Alert="_alert">
+    <Fields>
+        @* Navn *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Name"
+                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                             Label="Stillingstittel"
+                             IsEditing="true"
+                             For="() => _editModel.Name"/>
+        </MudItem>
+        
+    </Fields>
+</CreateForm>
+
+@code {
+    // ===================== PRIVATE FELT =====================
+    private readonly CreateJobTitleModel _editModel = new();
+
+    private AlertInfo? _alert;
+
+    private EditContext _editContext = null!;
+
+    protected override Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(_editModel);
+        return Task.CompletedTask;
+    }
+    
+    // ===================== PRIVATE METHODS =====================
+
+    // Handling som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
+    // navigerer oss til entitetens side med created=true som et parameter
+    private async Task CreateJobTitle()
+    {
+        var request = _editModel.ToRequest();
+
+        var createResult = await JobTitleService.CreateAsync(request, Cts.Token);
+        if (createResult.IsFailure)
+        {
+            _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(PageRoutes.JobTitles.Detail(createResult.Value!.Id) + "?created=true");
+    }
+}

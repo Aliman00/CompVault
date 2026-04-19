@@ -24,6 +24,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .AsNoTracking()
             .Include(u => u.Department)
             .Include(u => u.Manager)
+            .Include(u => u.JobTitle)
             .Where(u => u.IsActive && u.DeletedAt == null)
             .Select(u => new
             {

@@ -1,0 +1,221 @@
+﻿@page "/jobtitles/{Id:guid}"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.JobTitlesRead)]
+@inject IUserService UserService
+@inject IJobTitleService JobTitleService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+@* Detalje visning av en stillingstittel med mulighet for oppdatering *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_jobTitle != null)
+{
+    <DetailForm Title="@_jobTitle?.Name"
+            EditPolicy="@Permissions.JobTitlesWrite"
+            EditContext="_editContext"
+            OnValidSubmit="SaveEdit"
+            IsEditing="_isEditing"
+            OnStartEdit="StartEdit"
+            OnCancelEdit="CancelEdit">
+        <DropdownActions>
+            <AuthorizeView Policy="@Permissions.JobTitlesDelete">
+                <Authorized>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                 IconColor="Color.Error"
+                                 OnClick="Delete">
+                        <MudText Color="Color.Error">Slett stillingstittel</MudText>
+                    </MudMenuItem>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å slette stillingstittelen">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     IconColor="Color.Default"
+                                     Disabled="true">
+                            <MudText>Slett stillingstittel</MudText>
+                        </MudMenuItem>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
+        </DropdownActions>
+        <Fields>
+            @* Stillingstittel *@
+            <MudItem xs="12" sm="6">
+                <DetailTextField Value="@_editModel.Name"
+                                 ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                 Label="Stillingstittel"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Name"/>
+            </MudItem>
+           
+            @* Brukere med denne rollen *@
+            <MudItem xs="12">
+                <UserTable Title="@($"Brukere tildelt denne stillingstittelen ({_usersWithJobTitle.Count})")"
+                           EmptyText="Ingen brukere tildelt denne stillingstittelen."
+                           Users="_usersWithJobTitle"
+                           OnUserClick="NavigateToUser">
+                </UserTable>
+            </MudItem>
+        </Fields>
+    </DetailForm>
+}
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en entitet
+    public bool Created { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private JobTitleDto? _jobTitle;
+    private List<UserDto> _usersWithJobTitle = [];
+
+    private JobTitleEditModel _editModel = new();
+
+    private bool _isLoading = true;
+    
+    private AlertInfo? _alert;
+    
+    private EditContext _editContext = null!;
+
+    private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnParametersSetAsync()
+    {
+        // Resetter alle feltene ved oppdatering/navigering til siden
+        _isLoading = true;
+        _isEditing = false;
+        _usersWithJobTitle = [];
+        _editModel = new();
+
+        try
+        {
+            _editContext = new EditContext(_editModel);
+
+            // Henter jobtitle og brukere for å vise en oversikt over brukere tildelt tittelen - Kalles parallelt
+            var jobTitleTask = JobTitleService.GetByIdAsync(Id, Cts.Token);
+            var usersTask = UserService.GetAllAsync(Cts.Token);
+
+            await Task.WhenAll(jobTitleTask, usersTask);
+
+            var jobTitleResult = await jobTitleTask;
+            var usersResult = await usersTask;
+
+            if (jobTitleResult.IsFailure)
+            {
+                _alert = new AlertInfo(jobTitleResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _jobTitle = jobTitleResult.Value;
+            if (_jobTitle == null) // Stillingstittelen kan være null ved feil Guid
+            {
+                _alert = new AlertInfo("Fant ikke stillingstittelen", Severity.Error);
+                return;
+            }
+
+            if (usersResult.IsFailure)
+                _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
+            else
+                _usersWithJobTitle = usersResult.Value!.Where(u => u.JobTitleId == Id).ToList();
+
+            ResetEditModel();
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste stillingstittelen. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+
+            if (Created)
+                _alert = new AlertInfo("Stillingstittelen ble opprettet", Severity.Success);
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger og resetter modell
+    private void StartEdit()
+    {
+        _alert = null;
+        ResetEditModel();
+        _isEditing = true;
+    }
+
+    // Handling når vi avbryter redigering - Resetter modellene og fjerner redigeringsmodus
+    private void CancelEdit()
+    {
+        ResetEditModel();
+        _isEditing = false;
+    }
+
+    // Resetter redigeringsmodellen og editcontexten
+    private void ResetEditModel()
+    {
+        _editModel = JobTitleEditModel.FromDto(_jobTitle!);
+        _editContext = new EditContext(_editModel);
+    }
+
+    // Handling som utføres når vi trykker på lagring - Bygger en request og utfører kall til backend
+    private async Task SaveEdit()
+    {
+        var request = _editModel.ToRequest();
+
+        var updateResult = await JobTitleService.UpdateAsync(Id, request, Cts.Token);
+        if (updateResult.IsFailure)
+        {
+            _alert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        // Resetter feltene kun hvis det var vellykket
+        _jobTitle = updateResult.Value;
+        ResetEditModel();
+        _isEditing = false;
+        _alert = new AlertInfo("Stillingstittelen ble oppdatert", Severity.Success);
+    }
+    
+    private void NavigateToUser(Guid userId) =>
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(userId));
+
+    // Viser en dialog som brukeren må godkjenne for å kunne slette entiteten. Navigerer til List-siden hivs vellykket
+    private async Task Delete()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDeleteDialog.Title), "Slett stillingstittelen" },
+            { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette {_jobTitle!.Name}?" },
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        var deleteResult = await JobTitleService.DeleteAsync(Id, Cts.Token);
+        if (deleteResult.IsFailure)
+        {
+            _alert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(PageRoutes.JobTitles.List + "?deleted=true");
+    }
+}

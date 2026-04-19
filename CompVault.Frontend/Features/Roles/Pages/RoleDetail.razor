@@ -25,9 +25,20 @@ else if (_role != null)
             OnStartEdit="StartEdit"
             OnCancelEdit="CancelEdit">
         <ExtraActions>
-            <ResponsiveButton Label="Permissions"
-                              Icon="@Icons.Material.Filled.Security"
-                              OnClick="OpenPermissionsDialog"/>
+            <AuthorizeView Policy="@Permissions.RolesWrite">
+                <Authorized>
+                    <ResponsiveButton Label="Permissions"
+                                      Icon="@Icons.Material.Filled.Security"
+                                      OnClick="OpenPermissionsDialog"/>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å administrere permissions">
+                        <ResponsiveButton Label="Permissions"
+                                          Icon="@Icons.Material.Filled.Security"
+                                          Disabled="true"/>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
         </ExtraActions>
         <DropdownActions>
             <AuthorizeView Policy="@Permissions.RolesDelete">
@@ -130,8 +141,7 @@ else if (_role != null)
     private RoleEditModel _editModel = new();
 
     private bool _isLoading = true;
-
-    // Forskjellige meldinger for forkjellige beskjeder
+    
     private AlertInfo? _alert;
     
     private EditContext _editContext = null!;
@@ -152,8 +162,6 @@ else if (_role != null)
         try
         {
             _editContext = new EditContext(_editModel);
-            
-            // TODO: Permissions her
 
             // Henter rollen og brukere for å vise en oversikt over brukere tildelt rollen - Kalles parallelt
             var roleTask = RoleService.GetByIdAsync(Id, Cts.Token);
