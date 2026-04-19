@@ -113,5 +113,5 @@
 
     // ===================== PRIVATE METHODS =====================
     private void OnDocumentTypeClick(DataGridRowClickEventArgs<DocumentTypeDto> args) =>
-        NavigationManager.NavigateTo(PageRoutes.DocumentTypes.Detail(args.Item.Id));
+        NavigationManager.NavigateTo(PageRoutes.DocumentTypes.Detail(args.Item.Slug));
 }

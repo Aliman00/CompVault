@@ -64,7 +64,7 @@ public static class PageRoutes
     public static class DocumentTypes
     {
         public const string List = "/document-types";
-        public static string Detail(Guid id) => $"/document-types/{id}";
+        public static string Detail(string slug) => $"/document-types/{slug}";
         public const string Create = "/document-types/create";
     }
     
