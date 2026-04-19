@@ -76,7 +76,7 @@ public class DocumentTypeService(
         try
         {
             HttpResponseMessage response = 
-                await _httpClient.PostAsJsonAsync(ApiRoutes.CompetencyTypes.Base, request, ct);
+                await _httpClient.PostAsJsonAsync(ApiRoutes.DocumentTypes.Base, request, ct);
 
             Result<DocumentTypeDto> result =
                 await HttpClientExtensions.ParseResponseAsync<DocumentTypeDto>(response, ct);
