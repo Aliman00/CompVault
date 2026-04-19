@@ -17,7 +17,7 @@ public interface IOtpCodeRepository : IRepository<OtpCode>
     Task DeleteExpiredCodesAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Sletter utåtte koder for en bruker
+    /// Sletter utgåtte koder for en bruker
     /// </summary>
-    Task DeleteExpiredForUserAsync(Guid userId, CancellationToken ct);
+    Task DeleteInactiveForUserAsync(Guid userId, CancellationToken ct);
 }

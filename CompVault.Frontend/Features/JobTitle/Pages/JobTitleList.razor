@@ -11,14 +11,14 @@
           IsLoading="_isLoading"
           @bind-Alert="_alert"
           SelectedItemsChanged="@(s => _selectedJobTitles = s)"
-          RowClick="@(args => OnRoleClick(args))">
+          RowClick="@(args => OnJobTitleClick(args))">
     <Header>
         <ListHeader Title="Stillingstitler"
                     PageIcon="@Icons.Material.Filled.Work"
                     CreateHref="@PageRoutes.JobTitles.Create"
                     CreateLabel="Opprett stillingstittel"
                     CreateIcon="@Icons.Material.Filled.Work"
-                    CreatePolicy="@Permissions.RolesWrite"/>
+                    CreatePolicy="@Permissions.JobTitlesWrite"/>
     </Header>
     <Columns>
         <PropertyColumn T="JobTitleDto" TProperty="string"
@@ -74,6 +74,6 @@
     }
 
     // ===================== PRIVATE METHODS =====================
-    private void OnRoleClick(DataGridRowClickEventArgs<JobTitleDto> args) =>
+    private void OnJobTitleClick(DataGridRowClickEventArgs<JobTitleDto> args) =>
         NavigationManager.NavigateTo(PageRoutes.JobTitles.Detail(args.Item.Id));
 }

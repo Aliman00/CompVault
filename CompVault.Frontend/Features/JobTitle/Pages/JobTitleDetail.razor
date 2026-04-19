@@ -1,12 +1,12 @@
 ﻿@page "/jobtitles/{Id:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.RolesRead)]
+@attribute [Authorize(Policy = Permissions.JobTitlesRead)]
 @inject IUserService UserService
 @inject IJobTitleService JobTitleService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 
-@* Detalje visning av en rolle med mulighet for oppdatering *@
+@* Detalje visning av en stillingstittel med mulighet for oppdatering *@
 
 <AppAlert @bind-Alert="_alert"/>
 
@@ -44,11 +44,11 @@ else if (_jobTitle != null)
             </AuthorizeView>
         </DropdownActions>
         <Fields>
-            @* Rollenavn *@
+            @* Stillingstittel *@
             <MudItem xs="12" sm="6">
                 <DetailTextField Value="@_editModel.Name"
                                  ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                                 Label="Rollenavn"
+                                 Label="Stillingstittel"
                                  IsEditing="_isEditing"
                                  For="() => _editModel.Name"/>
             </MudItem>
@@ -187,7 +187,7 @@ else if (_jobTitle != null)
         _jobTitle = updateResult.Value;
         ResetEditModel();
         _isEditing = false;
-        _alert = new AlertInfo("Rollen ble oppdatert", Severity.Success);
+        _alert = new AlertInfo("Stillingstittelen ble oppdatert", Severity.Success);
     }
     
     private void NavigateToUser(Guid userId) =>
@@ -199,7 +199,7 @@ else if (_jobTitle != null)
         // Oppretter parameterne for dialogen
         var parameters = new DialogParameters
         {
-            { nameof(ConfirmDeleteDialog.Title), "Slett rollen" },
+            { nameof(ConfirmDeleteDialog.Title), "Slett stillingstittelen" },
             { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette {_jobTitle!.Name}?" },
         };
 
