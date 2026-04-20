@@ -70,22 +70,28 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         Guid? jobTitleId,
         CancellationToken cancellationToken = default)
     {
-        return await DbSet
-            .Include(d => d.DocumentType)
-            .Include(d => d.Category)
-            .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
-            .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
-            .Include(d => d.Uploader)
-            .Where(d => d.IsActive)
-            .Where(d =>
-                (!d.DocumentDepartments.Any() && !d.DocumentJobTitles.Any()) ||
-                (d.DocumentDepartments.Any() && !d.DocumentJobTitles.Any() &&
-                 d.DocumentDepartments.Any(dd => dd.DepartmentId == departmentId)) ||
-                (!d.DocumentDepartments.Any() && d.DocumentJobTitles.Any() &&
-                 d.DocumentJobTitles.Any(dj => dj.JobTitleId == jobTitleId)) ||
-                (d.DocumentDepartments.Any() && d.DocumentJobTitles.Any() &&
-                 d.DocumentDepartments.Any(dd => dd.DepartmentId == departmentId) &&
-                 d.DocumentJobTitles.Any(dj => dj.JobTitleId == jobTitleId)))
+        return await ApplyTargetingFilter(
+                DbSet
+                    .Include(d => d.DocumentType)
+                    .Include(d => d.Category)
+                    .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
+                    .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
+                    .Include(d => d.Uploader)
+                    .Where(d => d.IsActive),
+                departmentId, jobTitleId)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Document>> GetAccessibleByDocumentTypeAsync(
+        Guid documentTypeId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        CancellationToken cancellationToken = default)
+    {
+        return await ApplyTargetingFilter(
+                DbSet.Where(d => d.DocumentTypeId == documentTypeId && d.IsActive),
+                departmentId, jobTitleId)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
@@ -118,5 +124,24 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         document.IsActive = false;
         document.DeletedAt = DateTime.UtcNow;
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Filtrerer dokumenter basert på målgruppe (avdeling/jobbtittel).
+    /// Dokumenter uten målgruppe er synlige for alle.
+    /// Når både avdeling og jobbtittel er satt, kreves match på begge (AND-logikk).
+    /// </summary>
+    private static IQueryable<Document> ApplyTargetingFilter(
+        IQueryable<Document> query, Guid? departmentId, Guid? jobTitleId)
+    {
+        return query.Where(d =>
+            (!d.DocumentDepartments.Any() && !d.DocumentJobTitles.Any()) ||
+            (d.DocumentDepartments.Any() && !d.DocumentJobTitles.Any() &&
+             d.DocumentDepartments.Any(dd => dd.DepartmentId == departmentId)) ||
+            (!d.DocumentDepartments.Any() && d.DocumentJobTitles.Any() &&
+             d.DocumentJobTitles.Any(dj => dj.JobTitleId == jobTitleId)) ||
+            (d.DocumentDepartments.Any() && d.DocumentJobTitles.Any() &&
+             d.DocumentDepartments.Any(dd => dd.DepartmentId == departmentId) &&
+             d.DocumentJobTitles.Any(dj => dj.JobTitleId == jobTitleId)));
     }
 }
