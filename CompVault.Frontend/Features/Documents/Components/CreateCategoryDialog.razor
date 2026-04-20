@@ -1,0 +1,117 @@
+﻿@inject IDocumentTypeCategoryService DocumentTypeCategoryService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+
+@* Dialog for å opprette en kategori til en dokumenttype *@
+<MudDialog>
+   
+    @* Tittel *@
+    <TitleContent>
+        <MudText Typo="Typo.h6">Opprett en kategori for dokumenttype @DocumentTypeName</MudText>
+    </TitleContent>
+    
+    @* Body til dialogen *@
+    <DialogContent>
+        <AppAlert @bind-Alert="_alert"/>
+        <EditForm EditContext="_editContext">
+            <DataAnnotationsValidator/>
+            <MudGrid>
+                <MudItem xs="12">
+                    <DetailTextField Value="@_editModel.Name"
+                                     ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                     Label="Navn"
+                                     IsEditing="true"
+                                     For="() => _editModel.Name"/>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+
+    @* Knapp for godkjenn handling og avbryt handling *@
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel"
+                   Disabled="_isSaving">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Save"
+                   Disabled="_isSaving">
+            Opprett
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
+    /// </summary>
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    /// <summary>
+    /// Slug til dokumenttypen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Slug { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Nanvet på dokumenttypen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string DocumentTypeName { get; set; } = string.Empty;
+
+    // ===================== PRIVATE FIELDS =====================
+
+    private CreateDocumentTypeCategoryModel _editModel = new();
+
+    private bool _isSaving;
+    
+    private EditContext _editContext = null!;
+
+    private AlertInfo? _alert;
+    
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(_editModel);
+    }
+    
+
+    // ===================== PRIVATE METHODS =====================
+   
+    // Prøver å opprette en kategori ved å sende request til backend
+    private async Task Save()
+    {
+        if (!_editContext.Validate())
+        {
+            StateHasChanged();
+            return;
+        }
+        
+        _isSaving = true;
+        try
+        {
+            var createDocumentTypeCategoryResult = await DocumentTypeCategoryService
+                .CreateAsync(Slug, _editModel.ToRequest(),
+                    Cts.Token);
+            if (createDocumentTypeCategoryResult.IsFailure)
+            {
+                _alert = new AlertInfo(createDocumentTypeCategoryResult.Error!.ToString(), Severity.Error);
+                _isSaving = false;
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(createDocumentTypeCategoryResult.Value));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+        
+        
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -1,8 +1,10 @@
 ﻿@page "/document-types/{Slug}"
+@using CompVault.Frontend.Features.Documents.Components
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.DocumentTypesRead)]
 @inject IDocumentTypeService DocumentTypeService
 @inject IDocumentService DocumentService
+@inject IDocumentTypeCategoryService DocumentTypeCategoryService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 
@@ -72,12 +74,66 @@ else if (_documentType != null)
                                  IsEditing="_isEditing"/>
             </MudItem>
             
+            @* Kategorier *@
+            <MudItem xs="12">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
+                    <MudText Typo="Typo.subtitle1">Kategorier</MudText>
+                    <MudSpacer/>
+                    <AuthorizeView Policy="@Permissions.DocumentTypesWrite">
+                        <Authorized>
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       Color="Color.Primary"
+                                       OnClick="CreateCategory">
+                                Opprett kategori
+                            </MudButton>
+                        </Authorized>
+                    </AuthorizeView>
+                </MudStack>
+                @* CategoryDataGrid *@
+                <MudDataGrid T="DocumentTypeCategoryDto"
+                             Items="_documentTypeCategories"
+                             Dense="true"
+                             Hover="true"
+                             Striped="true"
+                             Square="true"
+                             Bordered="true"
+                             SortMode="SortMode.Single"
+                             RowsPerPage="10"
+                             RowClick="@((DataGridRowClickEventArgs<DocumentTypeCategoryDto> args)
+                                           => OpenEditCategoryDialog(args.Item))">
+                    <Columns>
+                        <PropertyColumn Property='x => x.Name.Truncate(40)'
+                                        Title="Tittel" />
+                        
+                        <TemplateColumn T="DocumentTypeCategoryDto" Title="Status" Sortable="true"
+                                        SortBy="@(d => d.IsActive)">
+                            <CellTemplate>
+                                <MudChip T="string"
+                                         Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                                         Size="Size.Small"
+                                         Class="cv-rounded">
+                                    @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                                </MudChip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        
+                    </Columns>
+                    <PagerContent>
+                        <MudDataGridPager T="DocumentTypeCategoryDto"
+                                          RowsPerPageString="Rader per side:"/>
+                    </PagerContent>
+                </MudDataGrid>
+                
+                
+            </MudItem>
+            
             @* Dokumenter med denne typen *@
             <MudItem xs="12">
                 <MudText Typo="Typo.subtitle1">Dokumenter av type @_documentType!.Name</MudText>
                 <MudDataGrid T="DocumentListDto"
                              Items="_documentsWithType"
-                             Filterable="false"
                              Dense="true"
                              Hover="true"
                              Striped="true"
@@ -141,6 +197,7 @@ else if (_documentType != null)
     // ===================== PRIVATE FELT =====================
     private DocumentTypeDto? _documentType;
     private List<DocumentListDto> _documentsWithType = [];
+    private List<DocumentTypeCategoryDto> _documentTypeCategories = [];
 
     private DocumentTypeEditModel _editModel = new();
 
@@ -160,6 +217,7 @@ else if (_documentType != null)
         _isLoading = true;
         _isEditing = false;
         _documentsWithType = [];
+        _documentTypeCategories = [];
         _editModel = new();
 
         try
@@ -168,11 +226,13 @@ else if (_documentType != null)
             
             // Henter dokumenttype og dokumenter til denne typen
             var documentTypeTask = DocumentTypeService.GetBySlugAsync(Slug, Cts.Token);
+            var documentTypeCategoriesTask = DocumentTypeCategoryService.GetAllAsync(Slug, Cts.Token);
             var documentTask = DocumentService.GetAllAsync(Slug, Cts.Token);
 
             await Task.WhenAll(documentTypeTask, documentTask);
 
             var documentTypeResult = await documentTypeTask;
+            var documentTypeCategoriesResult = await documentTypeCategoriesTask;
             var documentResult = await documentTask;
 
             if (documentTypeResult.IsFailure)
@@ -187,7 +247,13 @@ else if (_documentType != null)
                 _alert = new AlertInfo(documentResult.Error!.ToString(), Severity.Error);
             else
                 _documentsWithType = documentResult.Value!;
-
+            
+            if (documentTypeCategoriesResult.IsFailure)
+                _alert = new AlertInfo(documentTypeCategoriesResult.Error!.ToString(), Severity.Error);
+            else
+                _documentTypeCategories = documentTypeCategoriesResult.Value!;
+            
+            
             ResetEditModel();
         }
         catch (OperationCanceledException)
@@ -279,5 +345,65 @@ else if (_documentType != null)
         }
 
         NavigationManager.NavigateTo(PageRoutes.DocumentTypes.List + "?deleted=true");
+    }
+    
+    // Viser en dialog for å opprette en kategori
+    private async Task CreateCategory()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(CreateCategoryDialog.Slug), _documentType!.Slug },
+            { nameof(CreateCategoryDialog.DocumentTypeName), _documentType!.Name },
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<CreateCategoryDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        if (dialogResult.Data is not DocumentTypeCategoryDto createdDocumentTypeCategory)
+        {
+            _alert = new AlertInfo("Noe gikk galt ved oppretting av kategori.", Severity.Error);
+            return;
+        }
+        
+        _documentTypeCategories.Add(createdDocumentTypeCategory);
+        _alert = new AlertInfo("Kategori lagt til", Severity.Success);
+    }
+    
+    // Viser en dialog for å endre og slette en kategori
+    private async Task OpenEditCategoryDialog(DocumentTypeCategoryDto documentTypeCategory)
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(EditCategoryDialog.Slug), _documentType!.Slug },
+            { nameof(EditCategoryDialog.DocumentTypeCategory), documentTypeCategory },
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<EditCategoryDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+        
+        // Oppdaterer kategorien som er endret eller sletter kategorien hvis den har blitt slettet
+        if (dialogResult.Data is DocumentTypeCategoryDto updatedCategory)
+        {
+            var indexOfUpdatedCategory = _documentTypeCategories
+                .FindIndex(c => c.Id == updatedCategory.Id);
+            if (indexOfUpdatedCategory >= 0)
+                _documentTypeCategories[indexOfUpdatedCategory] = updatedCategory;
+            _alert = new AlertInfo("Kategorien ble oppdatert", Severity.Success);
+        }
+        else if (dialogResult.Data is Guid deletedId)
+        {
+            _documentTypeCategories.RemoveAll(c => c.Id == deletedId);
+            _alert = new AlertInfo("Kategori slettet", Severity.Success);
+        }
+        else
+            _alert = new AlertInfo("Noe gikk galt ved oppretting av kategori.", Severity.Error);
     }
 }
