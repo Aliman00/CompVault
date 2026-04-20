@@ -8,7 +8,7 @@ public interface IDocumentService
     /// Henter alle dokumenter for en dokumenttype-slug
     /// </summary>
     Task<Result<List<DocumentListDto>>> GetAllAsync(string documentTypeSlug, CancellationToken ct);
-    
+
     /// <summary>
     /// Henter et dokument fra backend
     /// </summary>
@@ -18,13 +18,13 @@ public interface IDocumentService
     /// Oppretter et nytt dokument TODO: Må ha med filopplastning
     /// </summary>
     Task<Result<DocumentDto>> CreateAsync(string documentTypeSlug, CreateDocumentRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Oppdaterer eksisterende dokument
     /// </summary>
-    Task<Result<DocumentDto>> UpdateAsync(string documentTypeSlug, Guid id, UpdateDocumentRequest request, 
+    Task<Result<DocumentDto>> UpdateAsync(string documentTypeSlug, Guid id, UpdateDocumentRequest request,
         CancellationToken ct);
-    
+
     /// <summary>
     /// Sletter et dokument
     /// </summary>

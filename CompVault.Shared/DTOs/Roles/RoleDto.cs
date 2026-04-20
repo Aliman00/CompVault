@@ -22,7 +22,7 @@ public sealed class RoleDto
 
     /// <summary>Brukeren som opprettet rollen.</summary>
     public Guid? CreatedById { get; set; }
-    
+
     /// <summary>Navn på brukeren som opprettet rollen.</summary>
     public string? CreatedByName { get; set; }
 

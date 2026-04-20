@@ -10,7 +10,7 @@ public class DocumentTypeService(
     IHttpClientFactory httpClientFactory) : IDocumentTypeService
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
-    
+
     /// <inheritdoc />
     public async Task<Result<List<DocumentTypeDto>>> GetAllAsync(CancellationToken ct)
     {
@@ -39,13 +39,13 @@ public class DocumentTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<DocumentTypeDto>> GetBySlugAsync(string slug, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.GetAsync(ApiRoutes.DocumentTypes.BySlug(slug), ct);
 
             Result<DocumentTypeDto> result =
@@ -53,7 +53,7 @@ public class DocumentTypeService(
 
             if (result.IsFailure)
                 return Result<DocumentTypeDto>.Failure(result.Error!);
-            
+
             return Result<DocumentTypeDto>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
@@ -69,13 +69,13 @@ public class DocumentTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<DocumentTypeDto>> CreateAsync(CreateDocumentTypeRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.DocumentTypes.Base, request, ct);
 
             Result<DocumentTypeDto> result =
@@ -99,17 +99,17 @@ public class DocumentTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<DocumentTypeDto>> UpdateAsync(string slug, UpdateDocumentTypeRequest request,
         CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(ApiRoutes.DocumentTypes.BySlug(slug), request, ct);
 
-            Result<DocumentTypeDto> result = 
+            Result<DocumentTypeDto> result =
                 await HttpClientExtensions.ParseResponseAsync<DocumentTypeDto>(response, ct);
 
             if (result.IsFailure)
@@ -130,13 +130,13 @@ public class DocumentTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result> DeleteAsync(string slug, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.DeleteAsync(ApiRoutes.DocumentTypes.BySlug(slug), ct);
 
             return await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);

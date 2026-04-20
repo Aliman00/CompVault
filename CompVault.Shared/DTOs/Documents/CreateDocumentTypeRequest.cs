@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.Enums;
-
 namespace CompVault.Shared.DTOs.Documents;
 
 /// <summary>
@@ -10,15 +9,10 @@ namespace CompVault.Shared.DTOs.Documents;
 /// </summary>
 public sealed class CreateDocumentTypeRequest
 {
-    /// <summary>Visningsnavn, f.eks. "HMS Dokumenter".</summary>
+    /// <summary>Visningsnavn, f.eks. "HMS Dokumenter". Genererer automatisk URL-vennlig slug.</summary>
     [Required(ErrorMessage = DocTypeValidations.Errors.NameRequired)]
     [MaxLength(DocTypeValidations.NameMaxLength, ErrorMessage = DocTypeValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>URL-vennlig slug, f.eks. "hms-documents".</summary>
-    [Required(ErrorMessage = DocTypeValidations.Errors.SlugRequired)]
-    [MaxLength(DocTypeValidations.SlugMaxLength, ErrorMessage = DocTypeValidations.Errors.SlugMaxLength)]
-    public string Slug { get; set; } = string.Empty;
 
     /// <summary>Beskrivelse.</summary>
     [MaxLength(DocTypeValidations.DescMaxLength, ErrorMessage = DocTypeValidations.Errors.DescMaxLength)]

@@ -71,14 +71,14 @@ public sealed class DocumentsController(
         CancellationToken cancellationToken)
     {
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsAllDepartments);
-        
+
         if (file is not null && file.Length == 0)
             return BadRequest("Filen er tom.");
 
         Guid uploadedById = User.GetUserId();
 
         await using Stream? fileStream = file is not null ? file.OpenReadStream() : null;
-        
+
         Result<DocumentDto> result = await documentService.CreateAsync(
             documentTypeSlug,
             request,
@@ -108,7 +108,7 @@ public sealed class DocumentsController(
     {
         Guid userId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsAllDepartments);
-        Result<DocumentDto> result = await documentService.UpdateAsync(id, userId, request, bypassTargeting, 
+        Result<DocumentDto> result = await documentService.UpdateAsync(id, userId, request, bypassTargeting,
             cancellationToken);
 
         if (result.IsFailure)
@@ -214,6 +214,24 @@ public sealed class DocumentsController(
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
         Result<IReadOnlyList<DocumentSignatureDto>> result = await signatureService.GetSignaturesAsync(
             id, currentUserId, bypassTargeting, cancellationToken);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>Henter fremdriftsstatistikk for en dokumenttype for innlogget bruker.</summary>
+    [HttpGet("progress")]
+    [ProducesResponseType(typeof(DocumentProgressDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<DocumentProgressDto>> GetProgressAsync(
+        string documentTypeSlug, CancellationToken cancellationToken)
+    {
+        Guid userId = User.GetUserId();
+
+        Result<DocumentProgressDto> result = await signatureService.GetProgressAsync(
+            documentTypeSlug, userId, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

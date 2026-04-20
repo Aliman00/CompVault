@@ -13,6 +13,7 @@ namespace CompVault.Backend.Features.Documents.Services;
 public sealed class DocumentSignatureService(
     IDocumentRepository documentRepository,
     IDocumentSignatureRepository signatureRepository,
+    IDocumentTypeRepository documentTypeRepository,
     IUserRepository userRepository,
     IDocumentTargetingService targetingService,
     ILogger<DocumentSignatureService> logger) : IDocumentSignatureService
@@ -141,5 +142,60 @@ public sealed class DocumentSignatureService(
         List<DocumentListDto> dtos = DocumentMapper.MapToListDtos(pendingDocuments, allSignatures, signedByCurrentUserOverride: false);
 
         return Result<IReadOnlyList<DocumentListDto>>.Success(dtos);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<DocumentProgressDto>> GetProgressAsync(
+        string documentTypeSlug, Guid userId, CancellationToken cancellationToken = default)
+    {
+        DocumentType? documentType = await documentTypeRepository.GetBySlugAsync(documentTypeSlug, cancellationToken);
+        if (documentType is null)
+            return Result<DocumentProgressDto>.Failure(
+                AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
+
+        ApplicationUser? user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+            return Result<DocumentProgressDto>.Failure(
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+
+        IReadOnlyList<Document> documents = await documentRepository.GetAccessibleByDocumentTypeAsync(
+            documentType.Id, user.DepartmentId, user.JobTitleId, cancellationToken);
+
+        // Kun dokumenter som krever signering er relevante for fremdrift
+        var requiringSignature = documents.Where(d => d.RequiresSignature).ToList();
+        int total = requiringSignature.Count;
+
+        if (total == 0)
+        {
+            return Result<DocumentProgressDto>.Success(new DocumentProgressDto
+            {
+                Total = 0,
+                Signed = 0,
+                Pending = 0,
+                PercentComplete = 0
+            });
+        }
+
+        // Hent signaturer for disse dokumentene og sjekk mot gjeldende versjon.
+        // Dette sikrer at signaturer på gamle versjoner ikke telles som "signert"
+        // når dokumentet har fått ny versjon og krever ny signering.
+        var docIds = requiringSignature.Select(d => d.Id).ToList();
+        IReadOnlyList<DocumentSignature> allSignatures = await signatureRepository.GetByDocumentIdsAsync(
+            docIds, cancellationToken);
+
+        int signed = requiringSignature.Count(d =>
+            allSignatures.Any(s =>
+                s.DocumentId == d.Id &&
+                s.UserId == userId &&
+                s.SignatureVersion == d.Version));
+        int pending = total - signed;
+
+        return Result<DocumentProgressDto>.Success(new DocumentProgressDto
+        {
+            Total = total,
+            Signed = signed,
+            Pending = pending,
+            PercentComplete = (int)Math.Round((double)signed / total * 100)
+        });
     }
 }

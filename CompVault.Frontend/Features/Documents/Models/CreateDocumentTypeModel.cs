@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
@@ -10,10 +11,6 @@ public class CreateDocumentTypeModel
     [MaxLength(DocTypeValidations.NameMaxLength, ErrorMessage = DocTypeValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = DocTypeValidations.Errors.SlugRequired)]
-    [MaxLength(DocTypeValidations.SlugMaxLength, ErrorMessage = DocTypeValidations.Errors.SlugMaxLength)]
-    public string Slug { get; set; } = string.Empty;
-
     [MaxLength(DocTypeValidations.DescMaxLength, ErrorMessage = DocTypeValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
 
@@ -22,9 +19,8 @@ public class CreateDocumentTypeModel
 
     public CreateDocumentTypeRequest ToRequest() => new()
     {
-        Name        = Name,
-        Slug        = Slug,
+        Name = Name,
         Description = Description,
-        TargetMode  = TargetMode,
+        TargetMode = TargetMode,
     };
 }

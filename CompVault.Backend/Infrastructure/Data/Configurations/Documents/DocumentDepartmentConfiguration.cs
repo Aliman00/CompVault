@@ -26,11 +26,11 @@ internal sealed class DocumentDepartmentConfiguration : IEntityTypeConfiguration
             .WithMany(d => d.DocumentDepartments)
             .HasForeignKey(dd => dd.DepartmentId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         // Matcher query filters på Document og Department slik at avdelinger som er soft deleted ikke vil dukke opp
         // som målgrupper hos dokumenter lenger
         builder.HasQueryFilter(dd => dd.Document!.DeletedAt == null && dd.Department!.DeletedAt == null);
-        
+
         // Indeks for spørringer på avdeling
         builder.HasIndex(dd => dd.DepartmentId);
     }

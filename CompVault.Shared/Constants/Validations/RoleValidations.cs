@@ -11,7 +11,7 @@ public static class RoleValidations
     public const int NameMaxLength = 256;
     public const int DescriptionMinLength = 5;
     public const int DescriptionMaxLength = 250;
-    
+
     // Permissions
     public const int PermissionNamesMaxCount = 50;
 
@@ -25,7 +25,7 @@ public static class RoleValidations
         public const string DescriptionRequired = "Beskrivelse er påkrevd";
         public const string DescriptionMinLength = "Beskrivelse må være minst 5 tegn";
         public const string DescriptionMaxLength = "Beskrivelse kan ikke være lengre enn 250 tegn";
-        
+
         // Permissions
         public const string PermissionNamesRequired = "Permissions er påkrevd";
         public const string PermissionNamesMaxCount = "Maks 50 permissions per forespørsel";

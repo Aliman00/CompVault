@@ -65,19 +65,19 @@ public class OtpCodeRepositoryIntegrationsTests(
         await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
             userId: TestConstants.Users.ActiveUserId,
             expiresAt: DateTime.UtcNow.AddMinutes(-20),
-            isUsed: true); 
-        
-        OtpCode activeCode =  await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
-            userId: TestConstants.Users.ActiveUserId); 
-        
+            isUsed: true);
+
+        OtpCode activeCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
+            userId: TestConstants.Users.ActiveUserId);
+
         // Act
         OtpCode? activeCodeResult = await _sut.GetActiveCodeAsync(TestConstants.Users.ActiveUserId);
-        
+
         // Assert
         activeCodeResult.Should().NotBeNull();
         activeCodeResult.Id.Should().Be(activeCode.Id);
     }
-    
+
     /// <summary>
     /// Tester at vårt filter fungerer med å kjøre to parallele requester.
     /// Sikrer at try-catchen sender feilmelding og at det ikke blir to eposter med to forskjellige koder til brukeren
@@ -96,18 +96,18 @@ public class OtpCodeRepositoryIntegrationsTests(
         var barrier = new Barrier(2);
 
         // Act - Setter opp to oppgaver, et for hvert kall, og kaller de samtidig
-        var task1 = Task.Run(async () =>
+        Task<Result<string>> task1 = Task.Run(async () =>
         {
             barrier.SignalAndWait();
             return await sut1.GenerateOtpCodeAsync(TestConstants.Users.ActiveUserId);
         });
 
-        var task2 = Task.Run(async () =>
+        Task<Result<string>> task2 = Task.Run(async () =>
         {
             barrier.SignalAndWait();
             return await sut2.GenerateOtpCodeAsync(TestConstants.Users.ActiveUserId);
         });
-        
+
         Result<string>[] results = await Task.WhenAll(task1, task2);
 
         // Assert - Teller at et kall var vellykket og at et kall skal få OtpCooldown fra try-catch
@@ -242,11 +242,11 @@ public class OtpCodeRepositoryIntegrationsTests(
             .AnyAsync(r => r.Id == activeCode.Id);
         codeExists.Should().BeTrue();
     }
-    
+
     // -------------------------------------------------------------------------
     // DeleteExpiredCodesAsync
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester at vi sletter alle utgåtte OTP-koder for en bruker
     /// </summary>
@@ -260,7 +260,7 @@ public class OtpCodeRepositoryIntegrationsTests(
 
         // Act
         await _sut.DeleteInactiveForUserAsync(TestConstants.Users.ActiveUserId, CancellationToken.None);
-        await _context.SaveChangesAsync(); 
+        await _context.SaveChangesAsync();
 
         // Assert
         bool codeExists = await _context.Set<OtpCode>()
@@ -275,13 +275,13 @@ public class OtpCodeRepositoryIntegrationsTests(
     public async Task DeleteInactiveForUserAsync_UsedCode_DeletesCode()
     {
         // Arrange
-        OtpCode usedCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services, 
+        OtpCode usedCode = await TestDataSeeder.SeedOtpCodeAsync(factory.Services,
             userId: TestConstants.Users.ActiveUserId,
             isUsed: true);
 
         // Act
         await _sut.DeleteInactiveForUserAsync(TestConstants.Users.ActiveUserId, CancellationToken.None);
-        await _context.SaveChangesAsync(); 
+        await _context.SaveChangesAsync();
 
         // Assert
         bool codeExists = await _context.Set<OtpCode>()
@@ -301,14 +301,14 @@ public class OtpCodeRepositoryIntegrationsTests(
 
         // Act
         await _sut.DeleteInactiveForUserAsync(TestConstants.Users.ActiveUserId, CancellationToken.None);
-        await _context.SaveChangesAsync(); 
+        await _context.SaveChangesAsync();
 
         // Assert
         bool codeExists = await _context.Set<OtpCode>()
             .AnyAsync(r => r.Id == activeCode.Id);
         codeExists.Should().BeTrue();
     }
-    
+
     /// <summary>
     /// Tester at vi ikke sletter en annen brukers OTP-kode
     /// </summary>
@@ -321,7 +321,7 @@ public class OtpCodeRepositoryIntegrationsTests(
             expiresAt: DateTime.UtcNow.AddMinutes(-30));
 
         await _sut.DeleteInactiveForUserAsync(TestConstants.Users.ActiveUserId, CancellationToken.None);
-        await _context.SaveChangesAsync(); 
+        await _context.SaveChangesAsync();
 
         bool codeExists = await _context.Set<OtpCode>()
             .AnyAsync(r => r.Id == expiredCode.Id);

@@ -134,6 +134,9 @@ public static class DatabaseSeeder
         ("Kursmateriell", "course-materials",
             "Kursmateriell og opplæringsdokumenter. Tilgjengelig for alle.",
             DocumentTargetMode.None),
+        ("Onboarding", "onboarding",
+            "Dokumenter og sjekklister for nye ansatte. Målrettes mot avdeling.",
+            DocumentTargetMode.Department),
     ];
 
     // DocumentTypeCategories: (DocumentTypeSlug, Name, Slug)
@@ -154,6 +157,11 @@ public static class DatabaseSeeder
         ("position-instructions", "Prosedyrer", "procedures"),
         ("position-instructions", "Retningslinjer", "guidelines"),
         ("position-instructions", "Kompetansekrav", "competency-requirements"),
+        // Onboarding
+        ("onboarding", "Generelt", "general"),
+        ("onboarding", "IT-oppsett", "it-setup"),
+        ("onboarding", "Sikkerhet og HMS", "safety-hms"),
+        ("onboarding", "Sjekklister", "checklists"),
     ];
 
     // Documents: (DocumentTypeSlug, CategorySlug, Title, RequiresSignature, TargetDepartmentName, TargetJobTitleName)
@@ -173,6 +181,19 @@ public static class DatabaseSeeder
         // Course materials (no targeting, available to all)
         ("course-materials", null, "Onboarding-guide for nye ansatte", false, null, null),
         ("course-materials", null, "CompVault presentasjon", false, null, null),
+
+        // Onboarding documents with department targeting
+        ("onboarding", "general", "Velkomstbrev og oppstartsinfo", true, "IT", null),
+        ("onboarding", "general", "Virksomhetsoversikt og organisasjonskart", true, "IT", null),
+        ("onboarding", "it-setup", "IT-regler og akseptable brukspolicy", true, "Utvikling", null),
+        ("onboarding", "it-setup", "Oppsett av utviklingsmiljø", false, "Utvikling", null),
+        ("onboarding", "safety-hms", "HMS-introduksjon for nye ansatte", true, "IT", null),
+        ("onboarding", "safety-hms", "Brannvern og evakueringsplan", true, "IT", null),
+        ("onboarding", "checklists", "Sjekkliste - første dag", true, "IT", null),
+        ("onboarding", "checklists", "Sjekkliste - første uke", true, "IT", null),
+        ("onboarding", "general", "Velkomstbrev og oppstartsinfo", true, "HR", null),
+        ("onboarding", "safety-hms", "HMS-introduksjon for nye ansatte", true, "HR", null),
+        ("onboarding", "checklists", "Sjekkliste - første dag", true, "HR", null),
     ];
 
     /// <summary>

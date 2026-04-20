@@ -9,7 +9,7 @@ public interface IUserRepository : IRepository<ApplicationUser>
 {
     /// <summary>Finner en bruker basert på e-postadressen.</summary>
     Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
-    
+
     /// <summary>Bruker ID til å hente en bruker, med Department og Manager-tabellene</summary>
     Task<ApplicationUser?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
 

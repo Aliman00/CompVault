@@ -23,14 +23,14 @@ public class UserEditModel
     [EmailAddress(ErrorMessage = UserValidations.Errors.EmailInvalid)]
     [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
     public string Email { get; set; } = string.Empty;
-    
+
     public Guid? JobTitleId { get; set; }
-    
+
     public EmploymentType EmploymentType { get; set; }
     public bool IsActive { get; set; }
-    
+
     public Guid? DepartmentId { get; set; }
-    
+
     public Guid? ManagerId { get; set; }
 
     public static UserEditModel FromDto(UserDto dto) => new()
@@ -44,7 +44,7 @@ public class UserEditModel
         ManagerId = dto.ManagerId,
         DepartmentId = dto.DepartmentId,
     };
-    
+
     public UpdateUserRequest ToRequest() => new()
     {
         FirstName = FirstName,

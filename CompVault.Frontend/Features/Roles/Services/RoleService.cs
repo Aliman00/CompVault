@@ -11,7 +11,7 @@ public class RoleService(
     IHttpClientFactory httpClientFactory) : IRoleService
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
-    
+
     /// <inheritdoc />
     public async Task<Result<List<RoleDto>>> GetAllAsync(CancellationToken ct)
     {
@@ -40,7 +40,7 @@ public class RoleService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<RoleDto?>> GetByIdAsync(Guid id, CancellationToken ct)
     {
@@ -53,29 +53,29 @@ public class RoleService(
 
             if (result.IsFailure)
                 return Result<RoleDto?>.Failure(result.Error!);
-            
+
             return Result<RoleDto?>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av rolle {RoleId}", id);
-            return Result<RoleDto?>.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<RoleDto?>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av rolle {RoleId}", id);
-            return Result<RoleDto?>.Failure(AppError.Create(ErrorCode.Unknown, 
+            return Result<RoleDto?>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<RoleDto>> CreateAsync(CreateRoleRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.Role.Base, request, ct);
 
             Result<RoleDto> result = await HttpClientExtensions.ParseResponseAsync<RoleDto>(response, ct);
@@ -99,13 +99,13 @@ public class RoleService(
         }
     }
 
-    
+
     /// <inheritdoc />
     public async Task<Result<RoleDto>> UpdateAsync(Guid id, UpdateRoleRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(ApiRoutes.Role.ById(id), request, ct);
 
             Result<RoleDto> result = await HttpClientExtensions.ParseResponseAsync<RoleDto>(response, ct);
@@ -128,9 +128,9 @@ public class RoleService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
- 
-    
+
+
+
     /// <inheritdoc />
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct)
     {
@@ -153,14 +153,14 @@ public class RoleService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
-    public async Task<Result<RoleDto>> AssignPermissionsAsync(Guid id, AssignPermissionsRequest request, 
+    public async Task<Result<RoleDto>> AssignPermissionsAsync(Guid id, AssignPermissionsRequest request,
         CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(ApiRoutes.Role.Permissions(id), request, ct);
 
             Result<RoleDto> result = await HttpClientExtensions.ParseResponseAsync<RoleDto>(response, ct);
@@ -183,7 +183,7 @@ public class RoleService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<List<PermissionDto>>> GetAllPermissionsAsync(CancellationToken ct)
     {

@@ -1,7 +1,7 @@
 ﻿namespace CompVault.Frontend.Common.Extensions;
 
 public static class DateTimeExtensions
-{   
+{
     /// <summary>
     /// Gir oss antall timer, dager eller år siden utifra en DateTime
     /// </summary>
@@ -10,7 +10,7 @@ public static class DateTimeExtensions
     public static string ToRelativeNorwegian(this DateTime utcDate)
     {
         TimeSpan diff = DateTime.UtcNow - utcDate;
-        
+
         return diff.TotalSeconds switch
         {
             < 60 => "Akkurat nå",
@@ -22,5 +22,5 @@ public static class DateTimeExtensions
             _ => $"for {(int)(diff.TotalDays / 365)} år siden"
         };
     }
-    
+
 }

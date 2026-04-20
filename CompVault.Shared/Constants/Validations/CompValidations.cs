@@ -18,7 +18,7 @@ public static class CompValidations
 
         public const string CertNumberMaxLength = "Sertifikatnummer kan ikke være lengre enn 100 tegn";
         public const string NotesMaxLength = "Notater kan ikke være lengre enn 2000 tegn";
-        
+
         public const string RevokedReasonMaxLength = "Årsak til tilbakekalling kan ikke være lengre enn 500 tegn";
     }
 }

@@ -31,7 +31,7 @@ public sealed class DepartmentDto
 
     /// <summary>ID til brukeren som opprettet avdelingen.</summary>
     public Guid? CreatedById { get; set; }
-    
+
     /// <summary>Navn på brukeren som opprettet avdelingen.</summary>
     public string? CreatedByName { get; set; }
 }

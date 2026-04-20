@@ -9,10 +9,11 @@ using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Competencies.Services;
 using CompVault.Frontend.Features.Departments.Services;
 using CompVault.Frontend.Features.Documents.Services;
-using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.JobTitle.Services;
+using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.Users.Services;
 using CompVault.Shared.Constants;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
@@ -81,7 +82,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CircuitHandler, CircuitUserContextHandler>();
         services.AddScoped<CircuitUserContext>();
         services.AddScoped<CookieValidationEvents>();
-        
+
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
@@ -101,7 +102,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AuthStateProvider>();
         // Forteller Blazor at vår egen AuthStateProvider brukes
         services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthStateProvider>());
-        
+
         services.AddSingleton<ITokenRefreshService, TokenRefreshService>();
         services.AddScoped<IClaimsRefreshService, ClaimsRefreshService>();
 
@@ -116,7 +117,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAuthPolicies(this IServiceCollection services)
     {
         services.AddAuthorization(options =>
-        {   
+        {
             typeof(Permissions)
                 .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
                 .Where(f => f.FieldType == typeof(string) && f.Name != nameof(Permissions.ClaimType))
@@ -144,7 +145,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IThemeService, ThemeService>();
         services.AddLocalization();
         services.AddTransient<MudLocalizer, NorwegianMudLocalizer>();
-        
+
         // ================================ Admin forretningslogikk ================================
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
@@ -155,7 +156,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentTypeService, DocumentTypeService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IDocumentTypeCategoryService, DocumentTypeCategoryService>();
-        
+
         return services;
     }
 }

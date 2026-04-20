@@ -9,7 +9,7 @@ public interface IDepartmentService
     /// Henter alle departments fra backend
     /// </summary>
     Task<Result<List<DepartmentDto>>> GetAllAsync(CancellationToken ct);
-    
+
     /// <summary>
     /// Henter en avdeling fra backend
     /// </summary>
@@ -19,12 +19,12 @@ public interface IDepartmentService
     /// Oppretter en ny avdeling
     /// </summary>
     Task<Result<DepartmentDto>> CreateAsync(CreateDepartmentRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Oppdaterer eksisterende avdeling
     /// </summary>
     Task<Result<DepartmentDto>> UpdateAsync(Guid id, UpdateDepartmentRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Sletter en avdeling
     /// </summary>

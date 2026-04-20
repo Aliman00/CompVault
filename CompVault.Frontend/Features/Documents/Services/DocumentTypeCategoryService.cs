@@ -10,13 +10,13 @@ public class DocumentTypeCategoryService(
     IHttpClientFactory httpClientFactory) : IDocumentTypeCategoryService
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
-    
+
     /// <inheritdoc />
     public async Task<Result<List<DocumentTypeCategoryDto>>> GetAllAsync(string documentTypeSlug, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.GetAsync(ApiRoutes.DocumentTypeCategories.All(documentTypeSlug), ct);
 
             Result<List<DocumentTypeCategoryDto>> result =
@@ -40,14 +40,14 @@ public class DocumentTypeCategoryService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<DocumentTypeCategoryDto>> CreateAsync(string documentTypeSlug,
         CreateDocumentTypeCategoryRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(
                     ApiRoutes.DocumentTypeCategories.All(documentTypeSlug), request, ct);
 
@@ -72,14 +72,14 @@ public class DocumentTypeCategoryService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<DocumentTypeCategoryDto>> UpdateAsync(string documentTypeSlug, Guid categoryId,
         UpdateDocumentTypeCategoryRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(
                     ApiRoutes.DocumentTypeCategories.ById(documentTypeSlug, categoryId), request, ct);
 
@@ -105,27 +105,27 @@ public class DocumentTypeCategoryService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result> DeleteAsync(string documentTypeSlug, Guid id, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.DeleteAsync(ApiRoutes.DocumentTypeCategories.ById(documentTypeSlug, id), ct);
 
             return await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Nettverksfeil ved sletting av kategori {CategoryId} for {Slug}", 
+            logger.LogError(ex, "Nettverksfeil ved sletting av kategori {CategoryId} for {Slug}",
                 id, documentTypeSlug);
             return Result.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Uventet feil ved sletting av kategori {CategoryId} for {Slug}", 
+            logger.LogError(ex, "Uventet feil ved sletting av kategori {CategoryId} for {Slug}",
                 id, documentTypeSlug);
             return Result.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));

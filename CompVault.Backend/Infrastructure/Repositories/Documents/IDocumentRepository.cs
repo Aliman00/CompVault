@@ -31,6 +31,16 @@ public interface IDocumentRepository : IRepository<Document>
         Guid? jobTitleId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Henter alle aktive dokumenter for en dokumenttype som er synlige for brukeren
+    /// (basert på avdeling/jobbtittel-targeting).
+    /// </summary>
+    Task<IReadOnlyList<Document>> GetAccessibleByDocumentTypeAsync(
+        Guid documentTypeId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Henter dokumenter basert på en liste med IDer.</summary>
     Task<IReadOnlyList<Document>> GetByIdsAsync(
         IEnumerable<Guid> ids, CancellationToken cancellationToken = default);

@@ -24,4 +24,8 @@ public interface IDocumentSignatureService
     /// <summary>Henter alle dokumenter brukeren trenger å signere.</summary>
     Task<Result<IReadOnlyList<DocumentListDto>>> GetMyPendingDocumentsAsync(
         Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Henter fremdriftsstatistikk for en dokumenttype for en spesifikk bruker.</summary>
+    Task<Result<DocumentProgressDto>> GetProgressAsync(
+        string documentTypeSlug, Guid userId, CancellationToken cancellationToken = default);
 }

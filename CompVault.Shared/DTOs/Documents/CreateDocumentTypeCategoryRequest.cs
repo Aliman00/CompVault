@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
 using CompVault.Shared.Constants.Validations;
-
 namespace CompVault.Shared.DTOs.Documents;
 
 /// <summary>
@@ -13,9 +12,4 @@ public sealed class CreateDocumentTypeCategoryRequest
     [Required(ErrorMessage = DocCategoryValidations.Errors.NameRequired)]
     [MaxLength(DocCategoryValidations.NameMaxLength, ErrorMessage = DocCategoryValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>URL-vennlig slug, f.eks. "emergency-procedure".</summary>
-    [Required(ErrorMessage = DocCategoryValidations.Errors.SlugRequired)]
-    [MaxLength(DocCategoryValidations.SlugMaxLength, ErrorMessage = DocCategoryValidations.Errors.SlugMaxLength)]
-    public string Slug { get; set; } = string.Empty;
 }

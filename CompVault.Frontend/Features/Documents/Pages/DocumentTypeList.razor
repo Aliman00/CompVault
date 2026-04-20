@@ -25,10 +25,6 @@
         <PropertyColumn T="DocumentTypeDto" TProperty="string"
                         Property="ct => ct.Name.Truncate(40)" Title="Navn"/>
         
-        @* Slug *@
-        <PropertyColumn T="DocumentTypeDto" TProperty="string"
-                        Property="ct => ct.Slug.Truncate(40)" Title="Identifikator"/>
-        
         @* Beskrivelse *@
         <PropertyColumn T="DocumentTypeDto" TProperty="string"
                         Property="r => r.Description.Truncate(50)"

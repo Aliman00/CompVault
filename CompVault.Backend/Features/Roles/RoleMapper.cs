@@ -20,8 +20,8 @@ public static class RoleMapper
         CreatedAt = role.CreatedAt,
         CreatedById = role.CreatedById,
         IsSystem = role.IsSystem,
-        CreatedByName = role.CreatedBy != null 
-            ? $"{role.CreatedBy.FirstName} {role.CreatedBy.LastName}" 
+        CreatedByName = role.CreatedBy != null
+            ? $"{role.CreatedBy.FirstName} {role.CreatedBy.LastName}"
             : null,
         Permissions = permissionNames
     };

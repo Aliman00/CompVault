@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.JobTitles;
 namespace CompVault.Frontend.Features.JobTitle.Models;

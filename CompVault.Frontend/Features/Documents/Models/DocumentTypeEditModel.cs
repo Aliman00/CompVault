@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
@@ -18,16 +19,16 @@ public class DocumentTypeEditModel
 
     public static DocumentTypeEditModel FromDto(DocumentTypeDto dto) => new()
     {
-        Name        = dto.Name,
+        Name = dto.Name,
         Description = dto.Description,
-        TargetMode  = dto.TargetMode,
+        TargetMode = dto.TargetMode,
     };
 
     public UpdateDocumentTypeRequest ToRequest() => new()
     {
-        Name             = Name,
-        Description      = Description,
+        Name = Name,
+        Description = Description,
         ClearDescription = Description is null,
-        TargetMode       = TargetMode,
+        TargetMode = TargetMode,
     };
 }

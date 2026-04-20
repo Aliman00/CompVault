@@ -9,7 +9,7 @@ public static class UserValidations
     public const int FirstNameMaxLength = 100;
     public const int LastNameMaxLength = 100;
     public const int EmailMaxLength = 256;
-    
+
     public static class Errors
     {
         public const string FirstNameRequired = "Fornavn er påkrevd";

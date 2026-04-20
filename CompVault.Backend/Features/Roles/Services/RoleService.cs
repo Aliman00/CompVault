@@ -67,15 +67,15 @@ public sealed class RoleService(
         if (exists)
             return Result<RoleDto>.Failure(
                 AppError.Conflict($"En rolle med navn '{request.Name}' eksisterer allerede."));
-        
-        ApplicationUser? createdBy  = await userManager.FindByIdAsync(createdById.ToString());
+
+        ApplicationUser? createdBy = await userManager.FindByIdAsync(createdById.ToString());
         if (createdBy is null)
         {
             logger.LogError("Bruker med ID {UserId} eksisterer ikke", createdById);
             return Result<RoleDto>.Failure(
                 AppError.Create(ErrorCode.UserNotFound, $"Bruker med ID '{createdById}' ble ikke funnet."));
         }
-        
+
         var role = new ApplicationRole
         {
             Name = request.Name,
@@ -135,7 +135,7 @@ public sealed class RoleService(
             return Result<RoleDto>.Failure(
                 AppError.Create(ErrorCode.InternalError, "Kunne ikke oppdatere rollen."));
         }
-        
+
         ApplicationRole? savedRole = (await roleRepository.GetByIdWithCreatedByAsync(role.Id, cancellationToken));
         int userCount = (await roleRepository.GetUserCountsForRolesAsync([role.Id], cancellationToken))
             .GetValueOrDefault(role.Id, 0);

@@ -11,23 +11,17 @@ public class DocumentTypeCategoryEditModel
     [MaxLength(DocCategoryValidations.NameMaxLength, ErrorMessage = DocCategoryValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = DocCategoryValidations.Errors.SlugRequired)]
-    [MaxLength(DocCategoryValidations.SlugMaxLength, ErrorMessage = DocCategoryValidations.Errors.SlugMaxLength)]
-    public string Slug { get; set; } = string.Empty;
-
     public bool IsActive { get; set; } = true;
 
     public static DocumentTypeCategoryEditModel FromDto(DocumentTypeCategoryDto dto) => new()
     {
-        Name     = dto.Name,
-        Slug     = dto.Slug,
+        Name = dto.Name,
         IsActive = dto.IsActive,
     };
 
     public UpdateDocumentTypeCategoryRequest ToRequest() => new()
     {
-        Name     = Name,
-        Slug     = Slug,
+        Name = Name,
         IsActive = IsActive,
     };
 }

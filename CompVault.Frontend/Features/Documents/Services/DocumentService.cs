@@ -10,13 +10,13 @@ public class DocumentService(
     IHttpClientFactory httpClientFactory) : IDocumentService
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
-    
+
     /// <inheritdoc />
     public async Task<Result<List<DocumentListDto>>> GetAllAsync(string documentTypeSlug, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.GetAsync(ApiRoutes.Documents.Base(documentTypeSlug), ct);
 
             Result<List<DocumentListDto>> result =
@@ -40,7 +40,7 @@ public class DocumentService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<DocumentDto>> GetByIdAsync(string documentTypeSlug, Guid id, CancellationToken ct)
     {
@@ -54,32 +54,32 @@ public class DocumentService(
 
             if (result.IsFailure)
                 return Result<DocumentDto>.Failure(result.Error!);
-            
+
             return Result<DocumentDto>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Nettverksfeil ved henting av dokumente {Slug}/{DocumentId}", 
+            logger.LogError(ex, "Nettverksfeil ved henting av dokumente {Slug}/{DocumentId}",
                 documentTypeSlug, id);
-            return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av dokument {Slug}/{DocumentId}",
                 documentTypeSlug, id);
-            return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.Unknown, 
+            return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
-    public async Task<Result<DocumentDto>> CreateAsync(string documentTypeSlug, CreateDocumentRequest request, 
+    public async Task<Result<DocumentDto>> CreateAsync(string documentTypeSlug, CreateDocumentRequest request,
         CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.Competencies.Base, request, ct);
 
             Result<DocumentDto> result = await HttpClientExtensions.ParseResponseAsync<DocumentDto>(response, ct);
@@ -102,14 +102,14 @@ public class DocumentService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
-    public async Task<Result<DocumentDto>> UpdateAsync(string documentTypeSlug, Guid id, UpdateDocumentRequest request, 
+    public async Task<Result<DocumentDto>> UpdateAsync(string documentTypeSlug, Guid id, UpdateDocumentRequest request,
         CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(ApiRoutes.Documents.ById(documentTypeSlug, id), request, ct);
 
             Result<DocumentDto> result = await HttpClientExtensions.ParseResponseAsync<DocumentDto>(response, ct);
@@ -132,13 +132,13 @@ public class DocumentService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result> DeleteAsync(string documentTypeSlug, Guid id, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.DeleteAsync(ApiRoutes.Documents.ById(documentTypeSlug, id), ct);
 
             return await HttpClientExtensions.ParseEmptyResponseAsync(response, ct);

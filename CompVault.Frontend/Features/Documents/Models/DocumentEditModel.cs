@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Documents;
 namespace CompVault.Frontend.Features.Documents.Models;
@@ -20,18 +21,18 @@ public class DocumentEditModel
 
     public static DocumentEditModel FromDto(DocumentDto dto) => new()
     {
-        Title             = dto.Title,
-        Description       = dto.Description,
-        ExternalUrl       = dto.ExternalUrl,
+        Title = dto.Title,
+        Description = dto.Description,
+        ExternalUrl = dto.ExternalUrl,
         RequiresSignature = dto.RequiresSignature,
     };
 
     public UpdateDocumentRequest ToRequest() => new()
     {
-        Title             = Title,
-        Description       = Description,
-        ExternalUrl       = ExternalUrl,
-        ClearExternalUrl  = ExternalUrl is null,
+        Title = Title,
+        Description = Description,
+        ExternalUrl = ExternalUrl,
+        ClearExternalUrl = ExternalUrl is null,
         RequiresSignature = RequiresSignature,
     };
 }

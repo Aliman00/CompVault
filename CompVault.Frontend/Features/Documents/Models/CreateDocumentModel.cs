@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Documents;
 
@@ -21,9 +22,9 @@ public class CreateDocumentModel
 
     public CreateDocumentRequest ToRequest() => new()
     {
-        Title             = Title,
-        Description       = Description,
-        ExternalUrl       = ExternalUrl,
+        Title = Title,
+        Description = Description,
+        ExternalUrl = ExternalUrl,
         RequiresSignature = RequiresSignature,
     };
 }

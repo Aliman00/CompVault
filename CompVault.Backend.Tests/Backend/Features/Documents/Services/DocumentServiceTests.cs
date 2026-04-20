@@ -1,6 +1,5 @@
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
-using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
@@ -103,20 +102,6 @@ public class DocumentServiceTests
                 "image/png",
                 "image/jpeg"
             }
-        };
-    }
-
-    private static ApplicationUser CreateUser(
-        Guid? id = null, Guid? departmentId = null, Guid? jobTitleId = null)
-    {
-        return new ApplicationUser
-        {
-            Id = id ?? Guid.NewGuid(),
-            FirstName = "Test",
-            LastName = "Bruker",
-            Email = "test@test.no",
-            DepartmentId = departmentId,
-            JobTitleId = jobTitleId
         };
     }
 
