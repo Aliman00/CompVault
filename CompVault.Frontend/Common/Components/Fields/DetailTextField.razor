@@ -13,7 +13,8 @@
               OnAdornmentClick="OnAdornmentClick"
               HelperText="@HelperText"
               HelperTextOnFocus="@(HelperText != null)"
-              Lines="Lines"/>
+              Sizing="Lines > 1 ? InputSizing.Auto : InputSizing.Fixed"
+              MaxLines="Lines"/>
 
 @code {
     // ===================== PARAMETER =====================
