@@ -15,7 +15,7 @@ public static class TextHelper
         text is null ? string.Empty : text.Length > maxLength
             ? text[..maxLength] + "…"
             : text;
-    
+
     /// <summary>
     /// Oversetter data fra backend til norsk. Alternativt til localization da vi ikke har implementert det enda. 
     /// </summary>
@@ -28,7 +28,7 @@ public static class TextHelper
         "Admins" => "Administrator",
         _ => category
     };
-    
+
     /// <summary>
     /// Mapper en permission til noe forståerlig for å vise permissions til en bruker.
     /// Eks: User.Read blir "Se brukere"

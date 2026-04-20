@@ -24,7 +24,7 @@ public interface IUserService
     /// <param name="ct"></param>
     /// <returns>UserDto-en til den opprettede brukeren</returns>
     Task<Result<UserDto>> CreateAsync(CreateUserRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Oppdaterer eksisterende bruker
     /// </summary>
@@ -33,7 +33,7 @@ public interface IUserService
     /// <param name="ct"></param>
     /// <returns>Result med Success eller Failure</returns>
     Task<Result<UserDto>> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Soft-deleter en bruker
     /// </summary>

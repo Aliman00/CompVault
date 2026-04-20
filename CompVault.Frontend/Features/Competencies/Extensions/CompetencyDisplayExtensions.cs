@@ -17,7 +17,7 @@ public static class CompetencyDisplayExtensions
     {
         if (status == CompetencyStatus.Revoked)
             return string.Empty;
-        
+
         return daysUntilExpiry switch
         {
             null => string.Empty,
@@ -39,7 +39,7 @@ public static class CompetencyDisplayExtensions
     {
         if (status == CompetencyStatus.Revoked)
             return Color.Default;
-        
+
         return daysUntilExpiry switch
         {
             null => Color.Default,
@@ -48,7 +48,7 @@ public static class CompetencyDisplayExtensions
             _ => Color.Default
         };
     }
-    
+
     /// <summary>
     /// Viser status fargen til kompetansebevis i forskjellige farger
     /// </summary>
@@ -62,7 +62,7 @@ public static class CompetencyDisplayExtensions
         CompetencyStatus.Revoked => Color.Default,
         _ => Color.Default
     };
-    
+
     /// <summary>
     /// Tittelen på detail-siden til Competency. Type bevis og fornavn og etternavn
     /// </summary>
@@ -70,7 +70,7 @@ public static class CompetencyDisplayExtensions
     /// <returns>En string med først type kursbevis og fult navn. Eks: Førstehjelp - Geir Skinkebit </returns>
     public static string ToDetailTitle(this CompetencyDto competencyDto) =>
         $"{competencyDto.CompetencyTypeName} – {competencyDto.FullName}";
-    
+
     /// <summary>
     /// Subtitle på detail-siden til Competency. Status og når den utløper i klar tekst, så fremt den ikke er revoked
     /// </summary>

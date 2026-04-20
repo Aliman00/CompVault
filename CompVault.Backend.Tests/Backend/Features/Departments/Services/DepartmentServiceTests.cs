@@ -156,7 +156,7 @@ public class DepartmentServiceTests
         _departmentRepositoryMock
             .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
-        
+
         _departmentRepositoryMock
             .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
@@ -299,7 +299,7 @@ public class DepartmentServiceTests
         _departmentRepositoryMock
             .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
-        
+
         _departmentRepositoryMock
             .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);

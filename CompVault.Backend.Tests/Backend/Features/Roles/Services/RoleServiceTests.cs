@@ -62,7 +62,7 @@ public class RoleServiceTests
         _roleManagerMock
             .Setup(x => x.RoleExistsAsync(request.Name))
             .ReturnsAsync(false);
-        
+
         _userManagerMock
             .Setup(x => x.FindByIdAsync(createdById.ToString()))
             .ReturnsAsync(createdBy);
@@ -213,7 +213,7 @@ public class RoleServiceTests
         _roleManagerMock
             .Setup(x => x.UpdateAsync(It.IsAny<ApplicationRole>()))
             .ReturnsAsync(IdentityResult.Success);
-        
+
         _roleRepositoryMock
             .Setup(x => x.GetByIdWithCreatedByAsync(roleId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(role);
@@ -515,7 +515,7 @@ public class RoleServiceTests
         result.Error!.Code.Should().Be(ErrorCode.NotFound);
         _roleRepositoryMock.Verify(x => x.GetPermissionsByNamesAsync(It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
-    
+
     [Fact]
     public async Task CreateAsync_WithNonExistentUser_ReturnsUserNotFound()
     {

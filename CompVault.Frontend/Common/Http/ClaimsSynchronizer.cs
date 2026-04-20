@@ -1,5 +1,7 @@
 ﻿using System.Security.Claims;
+
 using CompVault.Shared.Constants;
+
 using Microsoft.IdentityModel.JsonWebTokens;
 namespace CompVault.Frontend.Common.Http;
 
@@ -13,13 +15,13 @@ internal static class ClaimsSynchronizer
     /// </summary>
     private static readonly string[] ClaimsToSync =
     [
-        ClaimTypes.Email, 
+        ClaimTypes.Email,
         "firstName",
         "lastName",
         ClaimTypes.Role,
-        Permissions.ClaimType    
+        Permissions.ClaimType
     ];
-    
+
     /// <summary>
     /// Fjerner og legger til ny claims ved nytt token tilfelle noe er forandret
     /// </summary>
@@ -31,15 +33,15 @@ internal static class ClaimsSynchronizer
         var handler = new JsonWebTokenHandler();
         if (!handler.CanReadToken(newAccessToken))
             return;
-        
+
         // Parser token for å hente ut claims
         JsonWebToken jwtToken = handler.ReadJsonWebToken(newAccessToken);
-        
+
         // Iterer over alle relevante claims og fjerner gamle og legger til ny
         foreach (string claimType in ClaimsToSync)
         {
             var oldClaims = identity.FindAll(claimType).ToList();
-            
+
             foreach (Claim claim in oldClaims)
             {
                 identity.RemoveClaim(claim);

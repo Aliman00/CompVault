@@ -1,5 +1,6 @@
 ﻿using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Infrastructure.Data;
+
 using Microsoft.EntityFrameworkCore;
 namespace CompVault.Backend.Infrastructure.Repositories.Auth;
 
@@ -17,7 +18,7 @@ public class OtpCodeRepository(AppDbContext context) : BaseRepository<OtpCode>(c
         await DbSet
             .Where(o => o.IsUsed || o.ExpiresAt <= DateTime.UtcNow)
             .ExecuteDeleteAsync(ct);
-    
+
     /// <inheritdoc />
     public async Task DeleteInactiveForUserAsync(Guid userId, CancellationToken ct) =>
         await DbSet

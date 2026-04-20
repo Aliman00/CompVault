@@ -11,13 +11,13 @@ public class CompetencyTypeService(
     IHttpClientFactory httpClientFactory) : ICompetencyTypeService
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
-    
+
     /// <inheritdoc />
     public async Task<Result<List<CompetencyTypeDto>>> GetAllAsync(CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.GetAsync(ApiRoutes.CompetencyTypes.Base, ct);
 
             Result<List<CompetencyTypeDto>> result =
@@ -41,13 +41,13 @@ public class CompetencyTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<CompetencyTypeDto>> GetByIdAsync(Guid id, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.GetAsync(ApiRoutes.CompetencyTypes.ById(id), ct);
 
             Result<CompetencyTypeDto> result =
@@ -55,29 +55,29 @@ public class CompetencyTypeService(
 
             if (result.IsFailure)
                 return Result<CompetencyTypeDto>.Failure(result.Error!);
-            
+
             return Result<CompetencyTypeDto>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av kompetansetyper {CompetencyTypeId}", id);
-            return Result<CompetencyTypeDto>.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<CompetencyTypeDto>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av kompetansetyper {CompetencyTypeId}", id);
-            return Result<CompetencyTypeDto>.Failure(AppError.Create(ErrorCode.Unknown, 
+            return Result<CompetencyTypeDto>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<CompetencyTypeDto>> CreateAsync(CreateCompetencyTypeRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.CompetencyTypes.Base, request, ct);
 
             Result<CompetencyTypeDto> result =
@@ -101,16 +101,16 @@ public class CompetencyTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<CompetencyTypeDto>> UpdateAsync(Guid id, UpdateCompetencyTypeRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(ApiRoutes.CompetencyTypes.ById(id), request, ct);
 
-            Result<CompetencyTypeDto> result = 
+            Result<CompetencyTypeDto> result =
                 await HttpClientExtensions.ParseResponseAsync<CompetencyTypeDto>(response, ct);
 
             if (result.IsFailure)
@@ -131,7 +131,7 @@ public class CompetencyTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct)
     {

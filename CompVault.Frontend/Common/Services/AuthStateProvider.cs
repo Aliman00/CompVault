@@ -9,7 +9,7 @@ public class AuthStateProvider(CircuitUserContext circuitUserContext) : Authenti
 {
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
         => Task.FromResult(new AuthenticationState(circuitUserContext.User));
-    
+
     /// <summary>
     /// Re-renderer komponenter med oppdatert AuthenticationState 
     /// </summary>

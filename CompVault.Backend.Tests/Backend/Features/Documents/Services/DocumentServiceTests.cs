@@ -106,20 +106,6 @@ public class DocumentServiceTests
         };
     }
 
-    private static ApplicationUser CreateUser(
-        Guid? id = null, Guid? departmentId = null, Guid? jobTitleId = null)
-    {
-        return new ApplicationUser
-        {
-            Id = id ?? Guid.NewGuid(),
-            FirstName = "Test",
-            LastName = "Bruker",
-            Email = "test@test.no",
-            DepartmentId = departmentId,
-            JobTitleId = jobTitleId
-        };
-    }
-
     // -------------------------------------------------------------------------
     // GetAllAsync
     // -------------------------------------------------------------------------

@@ -37,7 +37,7 @@ public sealed class DepartmentService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<DepartmentDto>> CreateAsync(Guid userId, CreateDepartmentRequest request, 
+    public async Task<Result<DepartmentDto>> CreateAsync(Guid userId, CreateDepartmentRequest request,
         CancellationToken ct = default)
     {
         if (request.ParentDepartmentId.HasValue)
@@ -70,7 +70,7 @@ public sealed class DepartmentService(
     public async Task<Result<DepartmentDto>> UpdateAsync(Guid id, UpdateDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         Department? department = await departmentRepository.GetByIdAsync(id, cancellationToken);
-        
+
         if (department is null)
             return Result<DepartmentDto>.Failure(
                 AppError.NotFound($"Avdeling med ID '{id}' ble ikke funnet."));
@@ -101,17 +101,17 @@ public sealed class DepartmentService(
             if (ancestorIds.Contains(id))
                 return Result<DepartmentDto>.Failure(
                     AppError.Create(ErrorCode.Validation, "Kan ikke sette en underavdeling til å være forelder."));
-            
+
             department.ParentDepartmentId = request.ParentDepartmentId.Value;
         }
         else if (request.ClearParentDepartment)
         {
             department.ParentDepartmentId = null;
-        }  
-        
+        }
+
         await departmentRepository.UpdateAsync(department, cancellationToken);
         await departmentRepository.SaveChangesAsync(cancellationToken);
-        
+
         Department? updatedDepartment = await departmentRepository.GetByIdWithHierarchyAsync(id, cancellationToken);
         return Result<DepartmentDto>.Success(
             DepartmentMapper.ToDto(updatedDepartment!, updatedDepartment!.SubDepartments.Count));

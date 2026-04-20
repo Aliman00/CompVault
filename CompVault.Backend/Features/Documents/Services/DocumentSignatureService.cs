@@ -169,7 +169,10 @@ public sealed class DocumentSignatureService(
         {
             return Result<DocumentProgressDto>.Success(new DocumentProgressDto
             {
-                Total = 0, Signed = 0, Pending = 0, PercentComplete = 0
+                Total = 0,
+                Signed = 0,
+                Pending = 0,
+                PercentComplete = 0
             });
         }
 

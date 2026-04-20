@@ -32,7 +32,7 @@ public static class TestDataSeeder
     {
         using IServiceScope scope = serviceProvider.CreateScope();
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
+
         await context.Database.MigrateAsync();
     }
 

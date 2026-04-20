@@ -70,7 +70,7 @@ public static class HttpClientExtensions
             return AppError.Create(ErrorCode.Unknown, "Ukjent feil fra serveren");
         }
     }
-    
+
     /// <summary>
     /// Bygger query filter til en URL
     /// </summary>
