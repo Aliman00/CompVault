@@ -221,6 +221,24 @@ public sealed class DocumentsController(
         return Ok(result.Value);
     }
 
+    /// <summary>Henter fremdriftsstatistikk for en dokumenttype for innlogget bruker.</summary>
+    [HttpGet("progress")]
+    [ProducesResponseType(typeof(DocumentProgressDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<DocumentProgressDto>> GetProgressAsync(
+        string documentTypeSlug, CancellationToken cancellationToken)
+    {
+        Guid userId = User.GetUserId();
+
+        Result<DocumentProgressDto> result = await signatureService.GetProgressAsync(
+            documentTypeSlug, userId, cancellationToken);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
+
     /// <summary>Henter alle dokumenter brukeren har signert.</summary>
     [HttpGet("/api/documents/my/signed")]
     [ProducesResponseType(typeof(IReadOnlyList<DocumentListDto>), StatusCodes.Status200OK)]

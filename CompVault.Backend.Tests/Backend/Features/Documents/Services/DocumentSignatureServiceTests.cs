@@ -19,6 +19,7 @@ public class DocumentSignatureServiceTests
 {
     private readonly Mock<IDocumentRepository> _documentRepositoryMock;
     private readonly Mock<IDocumentSignatureRepository> _signatureRepositoryMock;
+    private readonly Mock<IDocumentTypeRepository> _documentTypeRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IDocumentTargetingService> _targetingServiceMock;
     private readonly Mock<ILogger<DocumentSignatureService>> _loggerMock;
@@ -28,6 +29,7 @@ public class DocumentSignatureServiceTests
     {
         _documentRepositoryMock = new Mock<IDocumentRepository>();
         _signatureRepositoryMock = new Mock<IDocumentSignatureRepository>();
+        _documentTypeRepositoryMock = new Mock<IDocumentTypeRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
         _targetingServiceMock = new Mock<IDocumentTargetingService>();
         _loggerMock = new Mock<ILogger<DocumentSignatureService>>();
@@ -41,6 +43,7 @@ public class DocumentSignatureServiceTests
         _sut = new DocumentSignatureService(
             _documentRepositoryMock.Object,
             _signatureRepositoryMock.Object,
+            _documentTypeRepositoryMock.Object,
             _userRepositoryMock.Object,
             _targetingServiceMock.Object,
             _loggerMock.Object);
