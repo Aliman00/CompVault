@@ -11,7 +11,56 @@
         OTP
     </MudNavLink>
 
-    <AuthorizeView Policy="@Policies.AdminAccess">
+    <AuthorizeView Policy="@Permissions.UsersRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Users.List" Icon="@Icons.Material.Filled.People">
+                Brukere
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.JobTitlesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.JobTitles.List" Icon="@Icons.Material.Filled.Work">
+                Stillingstitler
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.DepartmentsRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Departments.List" Icon="@Icons.Material.Filled.Business">
+                Avdelinger
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.RolesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Roles.List" Icon="@Icons.Material.Filled.Shield">
+                Roller
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+    
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.CompetencyTypes.List" Icon="@Icons.Material.Filled.Category">
+                Kompetansetyper
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Competencies.List"
+                        Icon="@Icons.Material.Filled.WorkspacePremium">
+                Ansattkompetanse
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.AdminAccess">
         <Authorized>
             <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">
                 Admin-panel

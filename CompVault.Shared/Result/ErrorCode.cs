@@ -33,9 +33,11 @@ public enum ErrorCode
     // Epost
     EmailSendFailed = 4000,
 
-
     // Frontend
     NetworkError = 5000,
-    RecentlyRefreshed = 5001
+    RecentlyRefreshed = 5001,
+
+    // Validering slik at frontend kan vise feilmeldinger deretter
+    ForbiddenDepartment = 6001,
 
 }

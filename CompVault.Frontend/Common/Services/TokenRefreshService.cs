@@ -6,7 +6,6 @@ using CompVault.Frontend.Common.Http.Models;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
-
 namespace CompVault.Frontend.Common.Services;
 
 public class TokenRefreshService(
@@ -134,4 +133,13 @@ public class TokenRefreshService(
                 "Uventet feil ved token-refresh"));
         }
     }
+
+    /// <inheritdoc />
+    public void InvalidateCooldown(string userId)
+    {
+        _lastRefreshed.TryRemove(userId, out _);
+        logger.LogDebug("Cooldown invalidert for bruker {UserId}", userId);
+    }
+
+
 }

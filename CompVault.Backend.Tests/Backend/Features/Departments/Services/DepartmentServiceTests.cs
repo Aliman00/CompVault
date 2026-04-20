@@ -85,6 +85,7 @@ public class DepartmentServiceTests
     public async Task CreateAsync_WithValidData_ReturnsDepartment()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var request = new CreateDepartmentRequest
         {
             Name = "New Department",
@@ -97,7 +98,7 @@ public class DepartmentServiceTests
             .Callback<Department, CancellationToken>((d, _) => capturedDepartment = d);
 
         // Act
-        Result<DepartmentDto> result = await _sut.CreateAsync(request);
+        Result<DepartmentDto> result = await _sut.CreateAsync(userId, request);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -105,6 +106,7 @@ public class DepartmentServiceTests
         capturedDepartment.Should().NotBeNull();
         capturedDepartment!.Name.Should().Be("New Department");
         capturedDepartment.IsActive.Should().BeTrue();
+        capturedDepartment!.CreatedById.Should().Be(userId);
 
         _departmentRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -113,6 +115,7 @@ public class DepartmentServiceTests
     public async Task CreateAsync_WithNonExistentOrInactiveParent_ReturnsNotFound()
     {
         // Arrange - Parent does not exist OR is inactive - both return false from ExistsAsync
+        var userId = Guid.NewGuid();
         var parentId = Guid.NewGuid();
         var request = new CreateDepartmentRequest
         {
@@ -127,7 +130,7 @@ public class DepartmentServiceTests
             .ReturnsAsync(false);
 
         // Act
-        Result<DepartmentDto> result = await _sut.CreateAsync(request);
+        Result<DepartmentDto> result = await _sut.CreateAsync(userId, request);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -151,6 +154,10 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(department);
+
+        _departmentRepositoryMock
             .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
@@ -172,7 +179,7 @@ public class DepartmentServiceTests
         var request = new UpdateDepartmentRequest { Name = "New Name" };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(nonExistentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(nonExistentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Department?)null);
 
         // Act
@@ -196,7 +203,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
         // Act
@@ -224,7 +231,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentAId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentAId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(departmentA);
 
         _departmentRepositoryMock
@@ -258,7 +265,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
         _departmentRepositoryMock
@@ -288,6 +295,10 @@ public class DepartmentServiceTests
         {
             ClearParentDepartment = true
         };
+
+        _departmentRepositoryMock
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(department);
 
         _departmentRepositoryMock
             .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))

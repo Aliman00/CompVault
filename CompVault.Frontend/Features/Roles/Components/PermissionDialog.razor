@@ -1,0 +1,190 @@
+﻿@inject IRoleService RoleService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IClaimsRefreshService ClaimsRefreshService
+@inject CircuitUserContext CircuitUserContext
+
+@* Dialog for å endre og legge til tilattelser til en rolle *@
+<MudDialog>
+   
+    @* Tittel *@
+    <TitleContent>
+        <MudText Typo="Typo.h6">Administrer permissions for rolle @RoleName</MudText>
+    </TitleContent>
+    
+    @* Body til dialogen *@
+    <DialogContent>
+        
+        <AppAlert @bind-Alert="_errorAlert"/>
+        
+        @if (_isLoading)
+        {
+            <AppSpinner Class="pa-20"/>
+        }
+        else
+        {
+            @* Søkefelt *@
+            <MudTextField T="string"
+                          @bind-Value="_searchText"
+                          Placeholder="Søk etter tillatelse..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true"
+                          Class="mb-4"/>
+            
+            @* Kategori visning med checkboxes - Bruker MudGrid for å vise kategoriene ved siden av hverandre*@
+            <MudGrid>
+                @foreach (var category in FilteredPermissionsByCategory)
+                {
+                    <MudItem xs="6">
+                        @* Kategori *@
+                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">@category.Key.ToNorwegian()</MudText>
+                        <MudDivider Class="mb-2"/>
+                        @foreach (var permission in category.Value)
+                        {
+                            @* Check box for hver permission i en kategori *@
+                            <MudCheckBox T="bool"
+                                         Value="_model.SelectedPermissionNames.Contains(permission.Name)"
+                                         ValueChanged="(bool v) => TogglePermission(permission.Name, v)"
+                                         Label="@permission.Description"/>
+                        }
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </DialogContent>
+
+    @* Knapp for godkjenn handling og avbryt handling *@
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Save"
+                   Disabled="_isLoading">
+            Lagre
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
+    /// </summary>
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Rollen vi skal endre permissions på
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Guid RoleId { get; set; }
+    
+    /// <summary>
+    /// Rollenavn brukes for å 
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string RoleName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Permissions allerede satt på rollen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<string> CurrentPermissions { get; set; } = [];
+
+    // ===================== PRIVATE FIELDS =====================
+
+    // En ordbok for å skille tilattelser utifra kategori
+    private Dictionary<string, List<PermissionDto>> _permissionsByCategory = [];
+    
+    // En ordbok som filtrere bort kategorier som ikke stemmer med søkestringen
+    private Dictionary<string, List<PermissionDto>> FilteredPermissionsByCategory =>
+        string.IsNullOrWhiteSpace(_searchText)
+            ? _permissionsByCategory
+            : _permissionsByCategory
+                .Select(kvp => new
+                {
+                    kvp.Key,
+                    Permissions = kvp.Value
+                        .Where(p => p.Description.Contains(_searchText, 
+                            StringComparison.OrdinalIgnoreCase))
+                        .ToList()
+                })
+                .Where(x => x.Permissions.Count > 0)
+                .ToDictionary(x => x.Key, x => x.Permissions);
+    
+    // Søketekst for filtrering
+    private string _searchText = string.Empty;
+
+    private AssignPermissionsModel _model = new();
+
+    private bool _isLoading = true;
+
+    private AlertInfo? _errorAlert;
+    
+    
+
+    // ===================== LIFECYCLE =====================
+    // Henter alle permissions fra backend som PermissionDto gruppert etter kategori
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _model = new AssignPermissionsModel
+            {
+                SelectedPermissionNames = CurrentPermissions.ToList()
+            };
+
+            var permissionResult = await RoleService.GetAllPermissionsAsync(Cts.Token);
+            if (permissionResult.IsFailure)
+            {
+                _errorAlert = new AlertInfo(permissionResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            // Grupperer permissions etter kategori
+            _permissionsByCategory = permissionResult.Value!
+                .GroupBy(p => p.Category)
+                .OrderBy(g => g.Key == "Admins" ? 1 : 0)
+                .ToDictionary(grouping => grouping.Key, grouping => grouping.ToList());
+
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    private void TogglePermission(string permission, bool selected)
+    {
+        if (selected)
+            _model.SelectedPermissionNames.Add(permission);
+        else
+            _model.SelectedPermissionNames.Remove(permission);
+    }
+
+    // Sender permissions til backend og prøver å oppdatere rollen. Lukkes ved vellyket lagring
+    private async Task Save()
+    {
+        var assignPermissionResult = await RoleService.AssignPermissionsAsync(RoleId, _model.ToRequest(),
+            Cts.Token);
+        if (assignPermissionResult.IsFailure)
+        {
+            _errorAlert = new AlertInfo(assignPermissionResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+        
+        // Oppdaterer claim hvis brukeren er tilknyttet den endrete rollen
+        if (CircuitUserContext.Roles.Contains(RoleName))
+            await ClaimsRefreshService.RefreshTokensAsync();
+
+        MudDialog.Close(DialogResult.Ok(assignPermissionResult.Value));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

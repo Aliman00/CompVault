@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
+
 namespace CompVault.Shared.DTOs.Competencies;
 
 /// <summary>
@@ -8,11 +10,11 @@ namespace CompVault.Shared.DTOs.Competencies;
 public sealed class CreateCompetencyRequest
 {
     /// <summary>ID til brukeren som skal ha kompetansebeviset.</summary>
-    [Required]
+    [Required(ErrorMessage = CompValidations.Errors.UserIdRequired)]
     public Guid? UserId { get; set; }
 
     /// <summary>ID til kompetansetypen.</summary>
-    [Required]
+    [Required(ErrorMessage = CompValidations.Errors.CompetencyTypeIdRequired)]
     public Guid? CompetencyTypeId { get; set; }
 
     /// <summary>
@@ -22,14 +24,14 @@ public sealed class CreateCompetencyRequest
     public DateTime? ExpiryDate { get; set; }
 
     /// <summary>Når kompetansebeviset ble utstedt. Alltid påkrevd.</summary>
-    [Required]
+    [Required(ErrorMessage = CompValidations.Errors.IssuedDateRequired)]
     public DateTime? IssuedDate { get; set; }
 
     /// <summary>Valgfritt sertifikatnummer.</summary>
-    [MaxLength(100)]
+    [MaxLength(CompValidations.CertificateNumberMaxLength, ErrorMessage = CompValidations.Errors.CertNumberMaxLength)]
     public string? CertificateNumber { get; set; }
 
     /// <summary>Valgfrie notater.</summary>
-    [StringLength(2000)]
+    [StringLength(CompValidations.NotesMaxLength, ErrorMessage = CompValidations.Errors.NotesMaxLength)]
     public string? Notes { get; set; }
 }

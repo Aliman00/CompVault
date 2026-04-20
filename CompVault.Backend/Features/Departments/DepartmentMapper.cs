@@ -21,6 +21,9 @@ public static class DepartmentMapper
         SubDepartmentCount = subDepartmentCount,
         IsActive = department.IsActive,
         CreatedAt = department.CreatedAt,
-        CreatedById = department.CreatedById
+        CreatedById = department.CreatedById,
+        CreatedByName = department.CreatedBy != null
+            ? $"{department.CreatedBy.FirstName} {department.CreatedBy.LastName}"
+            : null
     };
 }

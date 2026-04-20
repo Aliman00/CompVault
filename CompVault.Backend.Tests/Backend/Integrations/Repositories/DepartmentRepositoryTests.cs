@@ -7,11 +7,11 @@ using CompVault.Backend.Tests.Common;
 using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
-
 namespace CompVault.Backend.Tests.Backend.Integrations.Repositories;
 
+[Collection(nameof(IntegrationTestCollection))]
 public class DepartmentRepositoryTests(
-    BackendWebApplicationFactory factory) : IClassFixture<BackendWebApplicationFactory>, IAsyncLifetime
+    BackendWebApplicationFactory factory) : IAsyncLifetime
 {
     private AppDbContext _context = null!;
     private DepartmentRepository _sut = null!;
@@ -19,18 +19,14 @@ public class DepartmentRepositoryTests(
 
     public async Task InitializeAsync()
     {
-        await TestDataSeeder.CreateDb(factory.Services);
+        await factory.ResetDatabaseAsync();
 
         _scope = factory.Services.CreateScope();
         _context = _scope.ServiceProvider.GetRequiredService<AppDbContext>();
         _sut = new DepartmentRepository(_context);
     }
 
-    public Task DisposeAsync()
-    {
-        _scope?.Dispose();
-        return Task.CompletedTask;
-    }
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task HasSubDepartmentsAsync_WithSubDepartments_ReturnsTrue()

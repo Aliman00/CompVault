@@ -1,0 +1,105 @@
+﻿@* Header for detail-sider med tittel/undertittel og redigerings-knapper. Lagre-knappen er Submit, brukes i FormEdit *@
+<section class="detail-header">
+    @* Navn og tittel *@
+    <header class="detail-header-text">
+        <MudText Typo="Typo.h5">@Title.Truncate(45)</MudText>
+        @if (!string.IsNullOrWhiteSpace(Subtitle))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Subtitle.Truncate(60)</MudText>
+        }
+    </header>
+    @* Redigeringsknapper og meny-knapp *@
+    <div class="detail-header-actions">
+        @if (!IsEditing)
+        {
+            @ExtraActions
+
+            @if (DropdownActions != null)
+            {
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                         Variant="Variant.Outlined"
+                         AnchorOrigin="Origin.BottomRight">
+                    @DropdownActions
+                </MudMenu>
+            }
+            <AuthorizeView Policy="@EditPolicy">
+                <Authorized>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="OnStartEdit">
+                        Rediger
+                    </MudButton>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å redigere">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Edit"
+                                   Disabled="true">
+                            Rediger
+                        </MudButton>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       OnClick="OnCancelEdit">
+                Avbryt
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       ButtonType="ButtonType.Submit">
+                Lagre
+            </MudButton>
+        }
+    </div>
+</section>
+
+
+@code {
+    
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Tittelen til kortet
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Subtitlen til kortet
+    /// </summary>
+    [Parameter] public string? Subtitle { get; set; }
+    
+    /// <summary>
+    /// Bytter mellom visning av redigerknapper
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing { get; set; }
+    
+    /// <summary>
+    /// Handling som skjer ved trykk på Redigerings-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnStartEdit { get; set; }
+    
+    /// <summary>
+    /// Handling som skjer ved trykk på Avbryt-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnCancelEdit { get; set; }
+    
+    /// <summary>
+    /// Ekstra handlinger som må tydelig fram og ikke gjemmes bak en dropdown meny
+    /// </summary>
+    [Parameter] public RenderFragment? ExtraActions { get; set; }
+    
+    /// <summary>
+    /// Ekstra handlinger som feks sletting
+    /// </summary>
+    [Parameter] public RenderFragment? DropdownActions { get; set; }
+    
+    /// <summary>
+    /// Policy som kreves for å aktivere redigeringsmodus. Hvis null vises knappen alltid
+    /// </summary>
+    [Parameter, EditorRequired] public string EditPolicy { get; set; } = string.Empty;
+}

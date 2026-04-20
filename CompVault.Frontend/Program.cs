@@ -1,5 +1,9 @@
+using System.Globalization;
+
 using CompVault.Frontend;
 using CompVault.Frontend.Extensions;
+
+using Microsoft.AspNetCore.Localization;
 
 using MudBlazor.Services;
 
@@ -15,9 +19,20 @@ builder.Services.AddMudServices();
 builder.Services.AddAuth(builder.Configuration, builder.Environment);
 builder.Services.AddAuthPolicies();
 builder.Services.AddFrontendServices(builder.Environment);
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+    options.RootDirectory = "/Common/Pages";
+});
 
 WebApplication app = builder.Build();
+
+CultureInfo[] supportedCultures = [new("nb-NO")];
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("nb-NO"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -30,7 +45,6 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 app.UseAntiforgery();
 
-// ============ Autentisering ============
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();

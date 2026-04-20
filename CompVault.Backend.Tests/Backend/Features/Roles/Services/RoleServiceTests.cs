@@ -2,6 +2,8 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Tests.Common;
+using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Roles;
 using CompVault.Shared.Result;
@@ -19,6 +21,7 @@ public class RoleServiceTests
 {
     private readonly Mock<RoleManager<ApplicationRole>> _roleManagerMock;
     private readonly Mock<IRoleRepository> _roleRepositoryMock;
+    private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<ILogger<RoleService>> _loggerMock;
     private readonly RoleService _sut;
@@ -27,12 +30,15 @@ public class RoleServiceTests
     {
         _roleManagerMock = new Mock<RoleManager<ApplicationRole>>(
             Mock.Of<IRoleStore<ApplicationRole>>(), null!, null!, null!, null!);
+        _userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            Mock.Of<IUserStore<ApplicationUser>>(), null!, null!, null!, null!, null!, null!, null!, null!);
         _roleRepositoryMock = new Mock<IRoleRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _loggerMock = new Mock<ILogger<RoleService>>();
 
         _sut = new RoleService(
             _roleManagerMock.Object,
+            _userManagerMock.Object,
             _roleRepositoryMock.Object,
             _unitOfWorkMock.Object,
             _loggerMock.Object);
@@ -50,11 +56,16 @@ public class RoleServiceTests
             Description = "Test description"
         };
         var createdById = Guid.NewGuid();
+        ApplicationUser createdBy = TestDataFactory.CreateApplicationUser(createdById);
 
         ApplicationRole? capturedRole = null;
         _roleManagerMock
             .Setup(x => x.RoleExistsAsync(request.Name))
             .ReturnsAsync(false);
+
+        _userManagerMock
+            .Setup(x => x.FindByIdAsync(createdById.ToString()))
+            .ReturnsAsync(createdBy);
 
         _roleManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<ApplicationRole>()))
@@ -80,6 +91,7 @@ public class RoleServiceTests
         result.Value.IsSystem.Should().BeFalse();
         capturedRole.Should().NotBeNull();
         capturedRole!.Name.Should().Be("NewRole");
+        result.Value!.CreatedByName.Should().Be(TestConstants.Users.FullName);
     }
 
     [Fact]
@@ -124,8 +136,8 @@ public class RoleServiceTests
             CreatedAt = DateTime.UtcNow
         };
 
-        _roleManagerMock
-            .Setup(x => x.FindByIdAsync(roleId.ToString()))
+        _roleRepositoryMock
+            .Setup(x => x.GetByIdWithCreatedByAsync(roleId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(role);
 
         _roleRepositoryMock
@@ -201,6 +213,10 @@ public class RoleServiceTests
         _roleManagerMock
             .Setup(x => x.UpdateAsync(It.IsAny<ApplicationRole>()))
             .ReturnsAsync(IdentityResult.Success);
+
+        _roleRepositoryMock
+            .Setup(x => x.GetByIdWithCreatedByAsync(roleId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(role);
 
         _roleRepositoryMock
             .Setup(x => x.GetUserCountsForRolesAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
@@ -498,6 +514,30 @@ public class RoleServiceTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.NotFound);
         _roleRepositoryMock.Verify(x => x.GetPermissionsByNamesAsync(It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithNonExistentUser_ReturnsUserNotFound()
+    {
+        // Arrange
+        var request = new CreateRoleRequest { Name = "NewRole", Description = "Test" };
+        var nonExistentUserId = Guid.NewGuid();
+
+        _roleManagerMock
+            .Setup(x => x.RoleExistsAsync(request.Name))
+            .ReturnsAsync(false);
+
+        _userManagerMock
+            .Setup(x => x.FindByIdAsync(nonExistentUserId.ToString()))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        // Act
+        Result<RoleDto> result = await _sut.CreateAsync(request, nonExistentUserId);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.UserNotFound);
+        _roleManagerMock.Verify(x => x.CreateAsync(It.IsAny<ApplicationRole>()), Times.Never);
     }
 
     [Fact]

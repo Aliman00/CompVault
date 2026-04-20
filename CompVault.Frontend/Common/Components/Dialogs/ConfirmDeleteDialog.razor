@@ -1,0 +1,57 @@
+﻿@* Generisk bekreftelsesdialog for destruktive handlinger TODO: Brukes til andre handlinger enn sletting og? *@
+<MudDialog>
+    @* Tittelen med egen tittel tekst *@
+    <TitleContent>
+        <MudText Typo="Typo.h6" Color="Color.Error">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2"/>
+            @Title
+        </MudText>
+    </TitleContent>
+
+    @* Body til dialogen *@
+    <DialogContent>
+        <MudText>@Message</MudText>
+    </DialogContent>
+
+    @* Knapp for godkjenn handling og avbryt handling *@
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Error"
+                   OnClick="Confirm">
+            @ConfirmText
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
+    /// </summary>
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    /// <summary>
+    /// Tittel teksten i dialogen
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Meldingen i dialogen
+    /// </summary>
+    [Parameter, EditorRequired] public string Message { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Bekreftelse tekst - default på slett, men kan være f.eks. Slett bruker, Slett avdeling etc
+    /// </summary>
+    [Parameter] public string ConfirmText { get; set; } = "Slett";
+    
+    // ===================== PRIVATE METHOD =====================
+    
+    // Handlinger som skjer ved trykk
+    private void Confirm() => MudDialog.Close(DialogResult.Ok(true));
+    private void Cancel() => MudDialog.Cancel();
+}

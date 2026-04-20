@@ -11,11 +11,17 @@ public static class UserMapper
         Email = user.Email ?? string.Empty,
         FirstName = user.FirstName,
         LastName = user.LastName,
-        JobTitle = user.JobTitle,
+        JobTitleId = user.JobTitleId,
+        JobTitleName = user.JobTitle?.Name,
         EmploymentType = user.EmploymentType,
         IsActive = user.IsActive,
         DepartmentId = user.DepartmentId,
+        DepartmentName = user.Department?.Name,
+        DepartmentIsActive = user.Department?.IsActive,
         ManagerId = user.ManagerId,
+        ManagerName = user.Manager != null
+            ? $"{user.Manager.FirstName} {user.Manager.LastName}".Trim()
+            : null,
         CreatedAt = user.CreatedAt,
         Roles = roles.ToList()
     };

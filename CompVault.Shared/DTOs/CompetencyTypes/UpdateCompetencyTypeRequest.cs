@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
 namespace CompVault.Shared.DTOs.CompetencyTypes;
 
 /// <summary>
@@ -9,15 +10,15 @@ namespace CompVault.Shared.DTOs.CompetencyTypes;
 public sealed class UpdateCompetencyTypeRequest
 {
     /// <summary>Nytt navn på kompetansetypen.</summary>
-    [MaxLength(200)]
+    [MaxLength(CompTypeValidations.NameMaxLength, ErrorMessage = CompTypeValidations.Errors.NameMaxLength)]
     public string? Name { get; set; }
 
     /// <summary>Ny beskrivelse.</summary>
-    [MaxLength(500)]
+    [MaxLength(CompTypeValidations.DescMaxLength, ErrorMessage = CompTypeValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
 
     /// <summary>Ny kategori.</summary>
-    [MaxLength(100)]
+    [MaxLength(CompTypeValidations.CategoryMaxLength, ErrorMessage = CompTypeValidations.Errors.CategoryMaxLength)]
     public string? Category { get; set; }
 
     /// <summary>Om kompetanse av denne typen krever utløpsdato.</summary>

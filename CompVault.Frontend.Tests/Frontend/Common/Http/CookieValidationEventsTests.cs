@@ -27,6 +27,7 @@ public class CookieValidationEventsTests
     private readonly Mock<IAuthenticationService> _authServiceMock = new();
     private readonly Mock<ITokenRefreshService> _tokenRefreshServiceMock;
     private readonly Mock<IWebHostEnvironment> _envMock = new();
+    private readonly CircuitUserContext _circuitUserContext = new();
 
     private readonly string _userId = Guid.NewGuid().ToString();
 
@@ -41,7 +42,8 @@ public class CookieValidationEventsTests
         _sut = new CookieValidationEvents(loggerMock.Object,
             _tokenRefreshServiceMock.Object,
             authSettings,
-            _envMock.Object);
+            _envMock.Object,
+            _circuitUserContext);
     }
 
     // -------------------------------------------------------------------------
@@ -91,6 +93,7 @@ public class CookieValidationEventsTests
         // Registerer klienten og en mocket IAuthenticationService i DI-en
         var services = new ServiceCollection();
         services.AddSingleton(_authServiceMock.Object);
+        services.AddSingleton(_circuitUserContext);
 
         // ValidatePrincipal kaller SignOutAsync via RequestServices og trenger IAuthenticationService
         var httpContext = new DefaultHttpContext { RequestServices = services.BuildServiceProvider() };
@@ -116,6 +119,64 @@ public class CookieValidationEventsTests
     // -------------------------------------------------------------------------
     // Happy path
     // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tester happy path ved at vi setter ShouldRenew og at ApplyTokenPair kalles med riktig RefreshRecord
+    /// når TokenRefreshService returnerer suksess, oppdateres access token-claim og refresh token-cookie settes
+    /// </summary>
+    [Fact]
+    public async Task ValidatePrincipal_ValidRefreshToken_UpdatesAccessTokenClaimAndRefreshCookie()
+    {
+        // Arrange
+        CookieValidatePrincipalContext context = CreateValidatePrincipalContext();
+
+        // Mocker at RefreshPairAsync returnerer RefreshRecord
+        var refreshRecord = new RefreshRecord("new_access_token", "new_refresh_token",
+            DateTimeOffset.UtcNow);
+        _tokenRefreshServiceMock
+            .Setup(x => x.RefreshPairAsync(_userId, It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RefreshRecord>.Success(refreshRecord));
+
+        // Act
+        await _sut.ValidatePrincipal(context);
+
+        // Assert - Sjekker at brukeren er fortsatt innlogget
+        context.Principal.Should().NotBeNull();
+        context.ShouldRenew.Should().BeTrue();
+        context.Principal!.FindFirst("access_token")?.Value.Should().Be("new_access_token");
+        context.HttpContext.Response.Headers.SetCookie
+            .Should().ContainMatch("refreshToken=new_refresh_token*");
+    }
+
+    /// <summary>
+    /// Tester at ved vellykket oppdatering av tokens så blir det satt korrekt i CircuitUserContext
+    /// </summary>
+    [Fact]
+    public async Task ValidatePrincipal_ValidRefreshToken_UpdatesCircuitUserContext()
+    {
+        // Arrange
+        CookieValidatePrincipalContext context = CreateValidatePrincipalContext();
+
+        // Mocker at RefreshPairAsync returnerer RefreshRecord
+        var refreshRecord = new RefreshRecord("new_access_token", "new_refresh_token",
+            DateTimeOffset.UtcNow);
+        _tokenRefreshServiceMock
+            .Setup(x => x.RefreshPairAsync(_userId, It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RefreshRecord>.Success(refreshRecord));
+
+        // Act
+        await _sut.ValidatePrincipal(context);
+
+        // Assert - Sjekker at vi oppdaterer CircuitUserContext med token og at riktig UserId er satt
+        _circuitUserContext.RefreshToken.Should().Be("new_refresh_token");
+    }
+
+    // -------------------------------------------------------------------------
+    // Failure paths
+    // -------------------------------------------------------------------------
+
 
     /// <summary>
     /// Tester at brukeren blir logget ut hvis vi får NotFound fra RefreshPairAsync (altså ingen refresh token)
@@ -218,35 +279,6 @@ public class CookieValidationEventsTests
     }
 
     /// <summary>
-    /// Tester happy path ved at vi setter ShouldRenew og at ApplyTokenPair kalles med riktig RefreshRecord
-    /// når TokenRefreshService returnerer suksess, oppdateres access token-claim og refresh token-cookie settes
-    /// </summary>
-    [Fact]
-    public async Task ValidatePrincipal_ValidRefreshToken_UpdatesAccessTokenClaimAndRefreshCookie()
-    {
-        // Arrange
-        CookieValidatePrincipalContext context = CreateValidatePrincipalContext();
-
-        // Mocker at RefreshPairAsync returnerer RefreshRecord
-        var refreshRecord = new RefreshRecord("new_access_token", "new_refresh_token",
-            DateTimeOffset.UtcNow);
-        _tokenRefreshServiceMock
-            .Setup(x => x.RefreshPairAsync(_userId, It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RefreshRecord>.Success(refreshRecord));
-
-        // Act
-        await _sut.ValidatePrincipal(context);
-
-        // Assert - Sjekker at brukeren er fortsatt innlogget
-        context.Principal.Should().NotBeNull();
-        context.ShouldRenew.Should().BeTrue();
-        context.Principal!.FindFirst("access_token")?.Value.Should().Be("new_access_token");
-        context.HttpContext.Response.Headers.SetCookie
-            .Should().ContainMatch("refreshToken=new_refresh_token*");
-    }
-
-    /// <summary>
     /// Tester at det ikke finnes en sub-claim med UserId. Logger brukern ut og fjernes fra contexten
     /// </summary>
     [Fact]
@@ -272,4 +304,8 @@ public class CookieValidationEventsTests
         _tokenRefreshServiceMock.Verify(x => x.RefreshPairAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never());
     }
+
+
+
+
 }

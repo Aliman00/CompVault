@@ -11,6 +11,20 @@ public class CircuitUserContext
     public string? RefreshToken { get; private set; }
 
     /// <summary>
+    /// Bruker ID-en til innlogget bruker
+    /// </summary>
+    public Guid? UserId => Guid.TryParse(User.FindFirst("sub")?.Value, out Guid id) ? id : null;
+
+    /// <summary>
+    /// Rollene til innlogget bruker
+    /// </summary>
+    public IReadOnlyList<string> Roles => User.Claims
+        .Where(c => c.Type == ClaimTypes.Role)
+        .Select(c => c.Value)
+        .ToList();
+
+
+    /// <summary>
     /// Setter brukeren og refresh token for aktiv krets. Kalles fra App.razor under SSR
     /// </summary>
     /// <param name="user">Den autentiserte brukeren hentet fra HttpContext</param>

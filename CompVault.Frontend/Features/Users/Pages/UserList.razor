@@ -1,66 +1,55 @@
-﻿@page "/admin/users"
-@layout AdminLayout
-@using CompVault.Frontend.Features.Users.Services
-@using CompVault.Shared.DTOs.Users
+﻿@page "/users"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.UsersRead)]
 @inject IUserService UserService
-@implements IDisposable
+@inject NavigationManager NavigationManager
 
-<AppAlert @bind-Alert="_alert"/>
-
-@* Grid med liste over brukere *@
-<MudDataGrid Items="_users"
-             Filterable="true"
-             FilterMode="DataGridFilterMode.ColumnFilterRow"
-             FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
-             Dense="true"
-             Hover="true"
-             Striped="true"
-             Square="true"
-             Bordered="true"
-             SortMode="SortMode.Multiple"
-             FixedHeader="true"
-             Loading="_isLoading"
-             MultiSelection="true"
-             @bind-SelectedItems="_selectedUsers">
-
-    @* Headeren til listen - Inneholder knappene for å utføre handlinger på en eller flere brukere *@
-    <ToolBarContent>
-        <MudText Typo="Typo.h6">Brukere</MudText>
-        <MudSpacer/>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Success"
-                   StartIcon="@Icons.Material.Filled.PersonAdd">
-            Opprett bruker
-        </MudButton>
-    </ToolBarContent>
-
-    @* Selve kolonnen *@
+@* Side for liste visning av alle brukere *@
+<ListPage TItem="UserDto"
+          Items="_users"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          SelectedItemsChanged="@(s => _selectedUsers = s)"
+          RowClick="@(args => OnUserClick(args))">
+    <Header>
+        <ListHeader Title="Brukere"
+                    PageIcon="@Icons.Material.Filled.People"
+                    CreateHref="@PageRoutes.Users.Create"
+                    CreateLabel="Opprett bruker"
+                    CreateIcon="@Icons.Material.Filled.PersonAdd"
+                    CreatePolicy="@Permissions.UsersWrite"/>
+    </Header>
     <Columns>
-        <SelectColumn T="UserDto"/>
-        <PropertyColumn Property="user => user.FirstName" Title="First Name"/>
-        <PropertyColumn Property="user => user.LastName" Title="Last Name"/>
-        <PropertyColumn Property="user => user.Email" Title="Email"/>
-        <PropertyColumn Property="user => user.JobTitle" Title="Tittel"/>
+        <PropertyColumn T="UserDto" TProperty="string"
+                        Property="x => x.FullName.Truncate(40)" Title="Navn"
+                        SortBy="x => x.LastName.Truncate(40)"/>
+        <PropertyColumn T="UserDto" TProperty="string"
+                        Property="user => user.JobTitleName.Truncate(40)" Title="Stillingstittel"/>
+        <PropertyColumn T="UserDto" TProperty="string"
+                        Property="user => user.DepartmentName.Truncate(40)" Title="Avdeling"/>
+        <PropertyColumn T="UserDto" TProperty="string"
+                        Property="user => user.ManagerName.Truncate(40)" Title="Nærmeste leder"/>
     </Columns>
-</MudDataGrid>
-
+</ListPage>
 
 @code {
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")] // Ved sletting av en bruker
+    public bool Deleted { get; set; }
+    
     // ===================== PRIVATE FELT =====================
-    private List<UserDto>? _users = [];
+    private List<UserDto> _users = [];
     private HashSet<UserDto> _selectedUsers = [];
     
     private bool _isLoading = true;
     private AlertInfo? _alert;
-
-    private readonly CancellationTokenSource _cts = new();
     
     // ===================== LIFECYCLE =====================
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var getUsersResult = await UserService.GetAllUsersAsync(_cts.Token);
+            var getUsersResult = await UserService.GetAllAsync(Cts.Token);
 
             if (getUsersResult.IsFailure)
             {
@@ -68,7 +57,10 @@
                 return;
             }
 
-            _users = getUsersResult.Value;
+            _users = getUsersResult.Value!;
+            
+            if (Deleted)
+                _alert = new AlertInfo("Brukeren er slettet", Severity.Info);
         }
         catch (OperationCanceledException)
         {
@@ -84,11 +76,10 @@
             _isLoading = false;
         }
     }
-
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-    }
+    
+    // ===================== PRIVATE METHODS =====================
+    
+    private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(args.Item.Id));
+    
 }

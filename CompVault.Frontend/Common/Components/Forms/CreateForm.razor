@@ -1,0 +1,70 @@
+﻿@* Gjenbrukbar form-komponentent for alle opprettelses sider *@
+
+<AppAlert @bind-Alert="Alert"/>
+
+@if (IsLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else
+{
+    <EditForm EditContext="EditContext" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator/>
+        <MudPaper Class="pa-6" Elevation="1" Square="true">
+
+            @* Header med tittel og Opprett-knapp *@
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-6">
+                <MudText Typo="Typo.h5">@Title</MudText>
+                <MudSpacer/>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           ButtonType="ButtonType.Submit">
+                    Opprett
+                </MudButton>
+            </MudStack>
+
+            @* Unike felter for hver feature *@
+            <MudGrid>
+                @Fields
+            </MudGrid>
+        </MudPaper>
+    </EditForm>
+}
+
+@code {
+    
+    /// <summary>
+    /// Tittelen som vises øverst i kortet. Eks: "Opprett bruker"
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// EditContext som må opprettes i foreldrekomponenten
+    /// </summary>
+    [Parameter, EditorRequired] public EditContext EditContext { get; set; } = null!;
+
+    /// <summary>
+    /// Handling som utføres ved innsending av skjemaet
+    /// </summary>
+    [Parameter, EditorRequired] public EventCallback OnValidSubmit { get; set; }
+
+    /// <summary>
+    /// Feltene til hver feature
+    /// </summary>
+    [Parameter, EditorRequired] public RenderFragment? Fields { get; set; }
+
+    /// <summary>
+    /// Viser spinner mens vi venter på API-kall
+    /// </summary>
+    [Parameter] public bool IsLoading { get; set; }
+
+    /// <summary>
+    /// Feilmeldinger og suksess meldinger vises her
+    /// </summary>
+    [Parameter] public AlertInfo? Alert { get; set; }
+    
+    /// <summary>
+    /// Ved handlinger i Alert-en (Trykk på bort-knapp)
+    /// </summary>
+    [Parameter] public EventCallback<AlertInfo?> AlertChanged { get; set; }
+}

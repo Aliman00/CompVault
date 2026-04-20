@@ -14,4 +14,10 @@ public interface ITokenRefreshService
     /// <param name="ct"></param>
     /// <returns>Result med RefreshRecord som inneholder token-par og tiden de ble satt</returns>
     Task<Result<RefreshRecord>> RefreshPairAsync(string userId, string refreshToken, CancellationToken ct = default);
+
+    /// <summary>
+    /// Invaldierer cooldown for en bruker for å manuelt refreshe token
+    /// </summary>
+    /// <param name="userId"></param>
+    void InvalidateCooldown(string userId);
 }

@@ -61,6 +61,25 @@ h1:focus {
     text-align: start;
 }
 
+/* ============================= COMMON ============================= */
+.cv-divider {
+    opacity: 0.8;
+    margin: 8px 0;
+    border-bottom-width: 2px;
+}
+
+/* Overstyrer MudBlazor sin radius - brukes på MudChips */
+.cv-rounded {
+    border-radius: 4px !important;
+}
+
+
+/* ============================= SWITCH BUTTONS ============================= */
+
+.cv-group-switch
+{
+    width: fit-content
+}
 
 /* ============================= LOGO ============================= */
 
@@ -137,4 +156,52 @@ h1:focus {
     flex-direction: column;
     align-items: center;
     gap: 8px;
+}
+
+/* ============================= DETAIL HEADER ============================= */
+/* Header-seksjonen til detail header for å sikre at knappene og teksten ser pent ut på mobilvisning og desktop */
+.detail-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 12px;
+}
+
+/* Teksten krymper og forsvinner jo mindre plass, mens knappene beholder plassen sin */
+.detail-header-text {
+    min-width: 0;
+    overflow: hidden;
+    flex: 1;
+}
+
+/* Liner opp ekstra-knappene på samme rad fint med litt mellomrom. Sikrer at de ikke krymper */
+.detail-header-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Overstyrer MudBlazor og sikrer at knappene havner under tittel teksten og subtitle i mobilvisning  */
+@media (max-width: 599.98px) {
+    
+    /* Bytter fra rad til kolonne */
+    .detail-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    /* Skille mmellom tittel og knapper og lar de få full linje */
+    .detail-header-actions {
+        border-top: 1px solid var(--mud-palette-divider);
+        padding-top: 12px;
+        flex-shrink: unset;
+    }
+    
+    /* Gir hver knapp like mye plass */
+    .detail-header-actions .mud-button-root {
+        flex: 1;
+    }
 }

@@ -1,0 +1,152 @@
+﻿@page "/departments"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DepartmentsRead)]
+@inject IDepartmentService DepartmentService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+@* Side for liste visning av alle avdelinger som et hierarki tre eller vanlig tabell *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_showDepartmentTree) @* Skjuler tabellen i hierarki-visning *@
+{
+    
+    <ListHeader Title="Avdelinger"
+                CreateHref="@PageRoutes.Departments.Create"
+                PageIcon="@Icons.Material.Filled.CorporateFare"
+                CreateLabel="Opprett avdeling"
+                CreateIcon="@Icons.Material.Filled.CorporateFare"
+                CreatePolicy="@Permissions.DepartmentsWrite">
+        <Actions>
+            <MudToggleIconButton Toggled="_showDepartmentTree"
+                                 ToggledChanged="ToggleTreeView"
+                                 Icon="@Icons.Material.Outlined.AccountTree"
+                                 ToggledIcon="@Icons.Material.Filled.TableRows"
+                                 title="Bytt til liste"
+                                 aria-label="Bytt til liste"
+                                 Class="mr-2"/>
+        </Actions>
+    </ListHeader>
+
+    <MudPaper Elevation="1" Square="true" Class="pa-4">
+        <DepartmentTree Departments="_department" OnNavigate="OnDepartmentClick"/>
+    </MudPaper>
+}
+else
+{
+    <ListPage TItem="DepartmentDto"
+              Items="_department"
+              IsLoading="_isLoading"
+              @bind-Alert="_alert"
+              SelectedItemsChanged="@(s => _selectedDepartments = s)"
+              RowClick="@(args => OnDepartmentClick(args.Item.Id))">
+        <Header>
+            <ListHeader Title="Avdelinger"
+                        CreateHref="@PageRoutes.Departments.Create"
+                        PageIcon="@Icons.Material.Filled.CorporateFare"
+                        CreateLabel="Opprett avdeling"
+                        CreateIcon="@Icons.Material.Filled.CorporateFare"
+                        CreatePolicy="@Permissions.DepartmentsWrite">
+                <Actions>
+                    <MudToggleIconButton Toggled="_showDepartmentTree"
+                                         ToggledChanged="ToggleTreeView"
+                                         Icon="@Icons.Material.Outlined.AccountTree"
+                                         ToggledIcon="@Icons.Material.Filled.TableRows"
+                                         title="Bytt til hierarki-visning"
+                                         aria-label="Bytt til hierarki-visning"
+                                         Class="mr-2"/>
+                </Actions>
+            </ListHeader>
+        </Header>
+        <Columns>
+            <PropertyColumn T="DepartmentDto" TProperty="string"
+                            Property="d => d.Name.Truncate(40)" Title="Navn"/>
+            <PropertyColumn T="DepartmentDto" TProperty="string"
+                            Property="d => d.ParentDepartmentName.Truncate(40)"
+                            Title="Overordnet avdeling"/>
+            <PropertyColumn T="DepartmentDto" TProperty="int"
+                            Property="d => d.SubDepartmentCount" Title="Underavdelinger"/>
+            <TemplateColumn T="DepartmentDto" Title="Status" Sortable="true"
+                            SortBy="@(d => d.IsActive)">
+                <CellTemplate>
+                    <MudChip T="string"
+                             Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                             Size="Size.Small"
+                             Class="cv-rounded">
+                        @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </ListPage>
+}
+
+
+
+@code {
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+    
+    // ===================== PRIVATE FELT =====================
+    private List<DepartmentDto> _department = [];
+    private HashSet<DepartmentDto> _selectedDepartments = [];
+    
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+    private bool _showDepartmentTree;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getDepartmentResults = await DepartmentService.GetAllAsync(Cts.Token);
+
+            if (getDepartmentResults.IsFailure)
+            {
+                _alert = new AlertInfo(getDepartmentResults.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _department = getDepartmentResults.Value!;
+            
+            if (Deleted)
+                _alert = new AlertInfo("Avdelingen er slettet", Severity.Info);
+            
+            var stored = await JsRuntime.GetItemAsync(AppConstants.DepartmentTreeViewKey);
+            if (stored != null)
+                _showDepartmentTree = stored == "true";
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste avdelinger. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    
+    // ===================== PRIVATE METHODS =====================
+    
+    private void OnDepartmentClick(Guid id) =>
+        NavigationManager.NavigateTo(PageRoutes.Departments.Detail(id));
+    
+    private async Task ToggleTreeView(bool value)
+    {
+        _showDepartmentTree = value;
+        await JsRuntime.SetItemAsync(AppConstants.DepartmentTreeViewKey, value.ToString().ToLower());
+    }
+    
+}

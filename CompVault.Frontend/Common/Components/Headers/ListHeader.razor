@@ -1,0 +1,73 @@
+﻿@* Header for liste-sider med tittel og handlingsknapper. F.eks. opprett Entiten-knapp *@
+<MudPaper Elevation="1" Square="true" Class="p-2">
+    <MudToolBar Dense="true">
+        <MudIcon Icon="@PageIcon" Class="mr-2" Color="Color.Primary" />
+        <MudText Typo="Typo.h6">@Title</MudText>
+        <MudSpacer/>
+
+        @* Ekstra handlinger fra konsumenten *@
+        @Actions
+
+        @* Opprett-knapp - disabled hvis bruker ikke korrekt tilattelse *@
+        @if (CreateHref != null)
+        {
+            <AuthorizeView Policy="@CreatePolicy">
+                <Authorized>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Success"
+                               StartIcon="@CreateIcon"
+                               Href="@CreateHref">
+                        @CreateLabel
+                    </MudButton>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="@($"Du har ikke tilgang til å opprette {CreateLabel.ToLower()}")">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   StartIcon="@CreateIcon"
+                                   Disabled="true">
+                            @CreateLabel
+                        </MudButton>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
+        }
+    </MudToolBar>
+</MudPaper>
+
+@code {
+    /// <summary>
+    /// Tittelen i toolbaren
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// URL til siden for oppretting av entiteten
+    /// </summary>
+    [Parameter] public string? CreateHref { get; set; }
+
+    /// <summary>
+    /// Tekst på opprett-knapp
+    /// </summary>
+    [Parameter] public string CreateLabel { get; set; } = "Opprett";
+    
+    /// <summary>
+    /// Ikon til valgt-feature. Default for å minne oss på å bytte hvis det blir glemt
+    /// </summary>
+    [Parameter] public string PageIcon { get; set; } = Icons.Material.Filled.Radio;
+
+    /// <summary>
+    /// Ikon på opprett-knapp
+    /// </summary>
+    [Parameter] public string CreateIcon { get; set; } = Icons.Material.Filled.Add;
+
+    /// <summary>
+    /// Policy for opprett-knappen
+    /// </summary>
+    [Parameter] public string? CreatePolicy { get; set; }
+
+    /// <summary>
+    /// Ekstra knapper for andre handlinger spesifisert til featuren
+    /// </summary>
+    [Parameter] public RenderFragment? Actions { get; set; }
+}

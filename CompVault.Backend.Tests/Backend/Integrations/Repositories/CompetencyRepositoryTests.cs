@@ -11,11 +11,11 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-
 namespace CompVault.Backend.Tests.Backend.Integrations.Repositories;
 
+[Collection(nameof(IntegrationTestCollection))]
 public class CompetencyRepositoryTests(
-    BackendWebApplicationFactory factory) : IClassFixture<BackendWebApplicationFactory>, IAsyncLifetime
+    BackendWebApplicationFactory factory) : IAsyncLifetime
 {
     private AppDbContext _context = null!;
     private CompetencyRepository _sut = null!;
@@ -24,7 +24,7 @@ public class CompetencyRepositoryTests(
 
     public async Task InitializeAsync()
     {
-        await TestDataSeeder.CreateDb(factory.Services);
+        await factory.ResetDatabaseAsync();
         _testUser = await TestDataSeeder.SeedUserAsync(factory.Services, id: TestConstants.Users.ActiveUserId);
 
         IServiceScope scope = factory.Services.CreateScope();

@@ -37,12 +37,13 @@ public sealed class DepartmentService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<DepartmentDto>> CreateAsync(CreateDepartmentRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<DepartmentDto>> CreateAsync(Guid userId, CreateDepartmentRequest request,
+        CancellationToken ct = default)
     {
         if (request.ParentDepartmentId.HasValue)
         {
             bool parentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.ParentDepartmentId.Value && d.IsActive, cancellationToken);
+                d => d.Id == request.ParentDepartmentId.Value && d.IsActive, ct);
 
             if (!parentExists)
                 return Result<DepartmentDto>.Failure(
@@ -55,11 +56,12 @@ public sealed class DepartmentService(
             Description = request.Description ?? string.Empty,
             ParentDepartmentId = request.ParentDepartmentId,
             CreatedAt = DateTime.UtcNow,
+            CreatedById = userId,
             IsActive = true
         };
 
-        await departmentRepository.AddAsync(department, cancellationToken);
-        await departmentRepository.SaveChangesAsync(cancellationToken);
+        await departmentRepository.AddAsync(department, ct);
+        await departmentRepository.SaveChangesAsync(ct);
 
         return Result<DepartmentDto>.Success(DepartmentMapper.ToDto(department, 0));
     }
@@ -67,7 +69,7 @@ public sealed class DepartmentService(
     /// <inheritdoc />
     public async Task<Result<DepartmentDto>> UpdateAsync(Guid id, UpdateDepartmentRequest request, CancellationToken cancellationToken = default)
     {
-        Department? department = await departmentRepository.GetByIdWithHierarchyAsync(id, cancellationToken);
+        Department? department = await departmentRepository.GetByIdAsync(id, cancellationToken);
 
         if (department is null)
             return Result<DepartmentDto>.Failure(
@@ -110,8 +112,9 @@ public sealed class DepartmentService(
         await departmentRepository.UpdateAsync(department, cancellationToken);
         await departmentRepository.SaveChangesAsync(cancellationToken);
 
+        Department? updatedDepartment = await departmentRepository.GetByIdWithHierarchyAsync(id, cancellationToken);
         return Result<DepartmentDto>.Success(
-            DepartmentMapper.ToDto(department, department.SubDepartments.Count));
+            DepartmentMapper.ToDto(updatedDepartment!, updatedDepartment!.SubDepartments.Count));
     }
 
     /// <inheritdoc />

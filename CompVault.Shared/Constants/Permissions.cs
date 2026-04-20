@@ -32,6 +32,23 @@ public static class Permissions
     public const string CompetenciesWrite = "competencies:write";
     public const string CompetenciesDelete = "competencies:delete";
 
-    // --- Fase 4+ (legg til etterhvert som fasene implementeres) ---
-    // Documents, Requirements, Equipment, Onboarding, ...
+    // AdminAccess
+    public const string AdminAccess = "admin:access";
+
+    // Document Types (admin — opprette og administrere dokumenttyper)
+    public const string DocumentTypesRead = "document_types:read";
+    public const string DocumentTypesWrite = "document_types:write";
+    public const string DocumentTypesDelete = "document_types:delete";
+
+    // Documents (generiske — tilgang per dokumenttype styres av DocumentType-konfigurasjon)
+    public const string DocumentsRead = "documents:read";
+    public const string DocumentsWrite = "documents:write";
+    public const string DocumentsDelete = "documents:delete";
+    public const string DocumentsSign = "documents:sign";
+    public const string DocumentsAllDepartments = "documents:all_departments";
+
+    // Job Titles
+    public const string JobTitlesRead = "job_titles:read";
+    public const string JobTitlesWrite = "job_titles:write";
+    public const string JobTitlesDelete = "job_titles:delete";
 }

@@ -1,0 +1,104 @@
+﻿@page "/roles"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.RolesRead)]
+@inject IRoleService RoleService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle roller *@
+
+<ListPage TItem="RoleDto"
+          Items="_roles"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          SelectedItemsChanged="@(s => _selectedRoles = s)"
+          RowClick="@(args => OnRoleClick(args))">
+    <Header>
+        <ListHeader Title="Roller"
+                    PageIcon="@Icons.Material.Filled.Shield"
+                    CreateHref="@PageRoutes.Roles.Create"
+                    CreateLabel="Opprett rolle"
+                    CreateIcon="@Icons.Material.Filled.Shield"
+                    CreatePolicy="@Permissions.RolesWrite"/>
+    </Header>
+    <Columns>
+        <PropertyColumn T="RoleDto" TProperty="string"
+                        Property="r => r.Name.Truncate(40)" Title="Rollenavn"/>
+
+        <PropertyColumn T="RoleDto" TProperty="string"
+                        Property="r => r.Description.Truncate(50)"
+                        Title="Beskrivelse"
+                        Sortable="true"/>
+
+        <PropertyColumn T="RoleDto" TProperty="int"
+                        Property="r => r.UserCount"
+                        Title="Tildelte brukere"
+                        Filterable="false"
+                        HeaderStyle="width: 60px;"/>
+
+        <TemplateColumn T="RoleDto"
+                        Title="Låst"
+                        Sortable="true"
+                        SortBy="@(r => r.IsSystem)"
+                        HeaderStyle="width: 120px;">
+            <CellTemplate>
+                @if (context.Item.IsSystem)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Warning" Size="Size.Small"
+                             Title="Systemrolle"/>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</ListPage>
+
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")] // Ved sletting av en rolle
+    public bool Deleted { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private List<RoleDto> _roles = [];
+    private HashSet<RoleDto> _selectedRoles = [];
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getRolesResult = await RoleService.GetAllAsync(Cts.Token);
+
+            if (getRolesResult.IsFailure)
+            {
+                _alert = new AlertInfo(getRolesResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _roles = getRolesResult.Value!;
+
+            if (Deleted)
+                _alert = new AlertInfo("Rollen er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste roller. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnRoleClick(DataGridRowClickEventArgs<RoleDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.Roles.Detail(args.Item.Id));
+}

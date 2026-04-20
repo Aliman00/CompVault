@@ -21,7 +21,7 @@ flowchart TB
     L -- "Unauthorized (bruker deaktivert)" --> F
     L -- "Annen ErrorCode f.eks. Unknown. Kan komme av backend nede" --> N2(["Feiler åpent og bruker forblir autorisert"])
     P -- Suksess --> S["Oppdaterer LastRefreshed, rydder opp i PendingRefreshes etter 500ms"]
-    S --> T["CookieValidationEvents kaller ApplyRefreshResult: oppdaterer access_token-claim, setter ny refresh token-cookie og setter ShouldRenew = true"]
+    S --> T["CookieValidationEvents kaller ApplyRefreshResult: oppdaterer access_token-claim, synkroniserer roller/epost/navn via ClaimsSynchronizer, oppdaterer CircuitUserContext.RefreshToken, setter ny refresh token-cookie og setter ShouldRenew = true"]
     T --> D(["Brukeren er autorisert"])
     F --> E(["Brukeren er utlogget"])
 

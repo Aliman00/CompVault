@@ -1,0 +1,172 @@
+﻿@page "/competencies/create"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.CompetenciesWrite)]
+@inject ICompetencyService CompetencyService
+@inject ICompetencyTypeService CompetencyTypeService
+@inject NavigationManager NavigationManager
+@inject IUserService UserService
+
+@* Side for å opprette en kompetansetype *@
+
+<CreateForm Title="Opprett ansattkompetanse"
+            EditContext="_editContext"
+            OnValidSubmit="CreateCompetencyType"
+            IsLoading="_isLoading"
+            @bind-Alert="_alert">
+    <Fields>
+        
+        @* Brukeren vi oppretter sertifisering for *@
+        <MudItem xs="12" sm="6">
+            <DetailSelectWithLinkField Value="_editModel.UserId"
+                                       ValueChanged="(Guid? v) => _editModel.UserId = v"
+                                       Label="Ansatt"
+                                       ToStringFunc="@(id => _allUsers.FirstOrDefault(
+                                                         u => u.Id == id)?.FullName ?? string.Empty)"
+                                       IsEditing="true">
+                <Items>
+                    @foreach (var user in _allUsers)
+                    {
+                        <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
+                    }
+                </Items>
+            </DetailSelectWithLinkField>
+        </MudItem>
+
+        @* Kompetansetype *@
+        <MudItem xs="12" sm="6">
+            <DetailSelectWithLinkField Value="_editModel.CompetencyTypeId"
+                                       ValueChanged="(Guid? v) => _editModel.CompetencyTypeId = v"
+                                       Label="Kompetansetype"
+                                       ToStringFunc="@(id => _allCompetencyTypes.FirstOrDefault(
+                                                         u => u.Id == id)?.Name ?? string.Empty)"
+                                       IsEditing="true">
+                <Items>
+                    @foreach (var user in _allCompetencyTypes)
+                    {
+                        <MudSelectItem Value="(Guid?)user.Id">@user.Name</MudSelectItem>
+                    }
+                </Items>
+            </DetailSelectWithLinkField>
+        </MudItem>
+        
+        @* Når kompetansebeviset er gyldig ifra *@
+        <MudItem xs="12" sm="6">
+            <MudDatePicker @bind-Date="_editModel.IssuedDate"
+                           Label="Utstedt"
+                           DateFormat="dd.MM.yyyy"
+                           Required="true"
+                           RequiredError="Utsteddato er påkrevd"/>
+        </MudItem>
+
+        @* Utløpsdato hvis det trengs *@
+        @if (SelectedCompetencyType?.RequiresExpiration == true)
+        {
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="_editModel.ExpiryDate"
+                               Label="Utløpsdato"
+                               DateFormat="dd.MM.yyyy"
+                               Required="true"
+                               RequiredError="Utløpsdato er påkrevd for denne kompetansetypen" />
+            </MudItem>
+        }
+
+        @* CertificateNumber *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.CertificateNumber"
+                             ValueChanged="(string? v) => _editModel.CertificateNumber = v ?? string.Empty"
+                             Label="Sertifikatnummer (valgfritt)"
+                             IsEditing="true"
+                             For="() => _editModel.CertificateNumber"/>
+        </MudItem>
+        
+        @* Notat *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Notes"
+                             ValueChanged="(string? v) => _editModel.Notes = v ?? string.Empty"
+                             Label=@($"Notat (valgfritt). Maks lengde: {CompValidations.NotesMaxLength}")
+                             IsEditing="true"
+                             For="() => _editModel.Notes"
+                             Lines="4"/>
+        </MudItem>
+
+    </Fields>
+</CreateForm>
+
+@code {
+    // ===================== PRIVATE FELT =====================
+    private readonly CreateCompetencyModel _editModel = new();
+    private List<UserDto> _allUsers = [];
+    private List<CompetencyTypeDto> _allCompetencyTypes = [];
+    
+    private bool _isLoading = true;
+    
+    private AlertInfo? _alert;
+
+    private EditContext _editContext = null!;
+    
+    private CompetencyTypeDto? SelectedCompetencyType =>
+        _editModel.CompetencyTypeId.HasValue
+            ? _allCompetencyTypes.FirstOrDefault(ct => ct.Id == _editModel.CompetencyTypeId.Value)
+            : null;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(_editModel);
+
+        try
+        {
+            // Utfører begge kall samtidig
+            var tasks = new List<Task>();
+
+            if (_allCompetencyTypes.Count == 0)
+                tasks.Add(LoadCompetencyTypes());
+
+            if (_allUsers.Count == 0)
+                tasks.Add(LoadUsersAsync());
+
+            await Task.WhenAll(tasks);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
+    // navigerer oss til kompetansebevistypen
+    private async Task CreateCompetencyType()
+    {
+        var request = _editModel.ToRequest();
+
+        var createResult = await CompetencyService.CreateAsync(request, Cts.Token);
+        if (createResult.IsFailure)
+        {
+            _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(
+            PageRoutes.Competencies.Detail(createResult.Value!.Id) + "?created=true", replace: true);
+    }
+    
+    private async Task LoadUsersAsync()
+    {
+        var result = await UserService.GetAllAsync(Cts.Token);
+        if (result.IsFailure)
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+        else
+            _allUsers = result.Value!;
+    }
+    
+    private async Task LoadCompetencyTypes()
+    {
+        var result = await CompetencyTypeService.GetAllAsync(Cts.Token);
+        if (result.IsFailure)
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+        else
+            _allCompetencyTypes = result.Value!;
+    }
+}

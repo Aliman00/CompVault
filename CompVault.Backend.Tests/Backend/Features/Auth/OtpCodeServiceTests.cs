@@ -61,6 +61,11 @@ public class OtpCodeServiceTests
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OtpCode?)null);
 
+        // Mocker at vi sletter tidlig utgått OtpCode hvis den eksisterer 
+        _otpCodeRepositoryMock
+            .Setup(x => x.DeleteInactiveForUserAsync(userId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         // Act
         Result<string> result = await _sut.GenerateOtpCodeAsync(userId);
 
@@ -71,6 +76,8 @@ public class OtpCodeServiceTests
         _otpCodeRepositoryMock.Verify(x => x.GetActiveCodeAsync(userId,
             It.IsAny<CancellationToken>()), Times.Once);
         _otpCodeRepositoryMock.Verify(x => x.AddAsync(It.IsAny<OtpCode>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _otpCodeRepositoryMock.Verify(x => x.DeleteInactiveForUserAsync(userId,
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -90,6 +97,11 @@ public class OtpCodeServiceTests
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OtpCode?)null);
 
+        // Mocker at vi sletter tidlig utgått OtpCode hvis den eksisterer 
+        _otpCodeRepositoryMock
+            .Setup(x => x.DeleteInactiveForUserAsync(userId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         // mocker AddAsync og returnerer OtpCode-objektet som blir lagt til
         _otpCodeRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<OtpCode>(), It.IsAny<CancellationToken>()))
@@ -104,6 +116,8 @@ public class OtpCodeServiceTests
         // Sjekker at otp-koden metoden lagrer ikke er lik som koden som returnes. 
         capturedOtpCode.Code.Should().NotBe(result.Value);
         capturedOtpCode.UserId.Should().Be(userId); // Sjekker at userId er riktig userId
+        _otpCodeRepositoryMock.Verify(x => x.DeleteInactiveForUserAsync(userId,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
 
@@ -152,6 +166,11 @@ public class OtpCodeServiceTests
         _otpCodeRepositoryMock
             .Setup(x => x.GetActiveCodeAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((OtpCode?)null);
+
+        // Mocker at vi sletter tidlig utgått OtpCode hvis den eksisterer 
+        _otpCodeRepositoryMock
+            .Setup(x => x.DeleteInactiveForUserAsync(userId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         // mocker at repository kaster DbUpdateException()
         _otpCodeRepositoryMock

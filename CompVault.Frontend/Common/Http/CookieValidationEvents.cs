@@ -17,7 +17,8 @@ public class CookieValidationEvents(
     ILogger<CookieValidationEvents> logger,
     ITokenRefreshService tokenRefreshService,
     AuthSettings authSettings,
-    IWebHostEnvironment env)
+    IWebHostEnvironment env,
+    CircuitUserContext circuitUserContext)
     : CookieAuthenticationEvents
 {
 
@@ -75,6 +76,8 @@ public class CookieValidationEvents(
 
         context.HttpContext.AppendRefreshTokenCookie(refreshRecord.RefreshToken, authSettings, env);
         context.ShouldRenew = true;
+        ClaimsSynchronizer.RefreshClaimsFromAccessToken(identity, refreshRecord.AccessToken);
+        circuitUserContext.UpdateRefreshToken(refreshRecord.RefreshToken);
     }
 
 

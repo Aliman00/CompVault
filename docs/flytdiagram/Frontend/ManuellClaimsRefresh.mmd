@@ -1,0 +1,39 @@
+flowchart TB
+    subgraph NOTE1["Om manuell claims-refresh"]
+    direction TB
+        note1["Kalles når en bruker endrer data som endrer innlogget brukerens claims, slik at endringene umiddelbart oppdaterer UI uten re-login eller side-reload. Eksempler kan være endring av navn, e-post, roller eller permissions. Brukes etter brukeren selv har endret noe selv i frontend. Kan på sikt brukes til å oppdatere claims til en annen innlogget bruker ved beskjed over SignalR"]:::note
+    end
+
+    A(["Komponent kaller IClaimsRefreshService.RefreshTokensAsync"]) --> B{"Finnes UserId i CircuitUserContext?"}
+    B -- Nei --> C(["Returnerer tidlig uten noen handlinger. Brukeren er ikke autorisert, noe som ikke egentlig skal forekomme."])
+    B -- Ja --> D{"Finnes RefreshToken i CircuitUserContext?"}
+    D -- Nei --> E(["Returnerer tidlig uten noen handlinger. Ingen refresh token i kretsen. Kan kanskje skje hvis refresh-token er utløpt."])
+    D -- Ja --> F["InvalidateCooldown — fjerner cooldown så neste RefreshPairAsync går igjennom. Cooldown kan hindre oppdatering av tokens for å ikke spamme backend"]
+    F --> G["Kaller RefreshPairAsync i TokenRefreshService"]
+    G -- Feil --> H(["Logger feil og returnerer. Brukeren forblir innlogget og claims forblir uendret. Neste refresh eller navigering logger brukeren ut via CookieValidationEvent."])
+    G -- Suksess --> I["CircuitUserContext.UpdateRefreshToken med nytt refresh token"]
+    I --> J["Oppdaterer access_token-claim i ClaimsIdentity"]
+    J --> K["ClaimsSynchronizer synkroniserer roller, permissions, navn og epost fra nytt JWT"]
+    K --> L["AuthStateProvider.NotifyStateChanged sikrer at Blazor re-rendrer komponenter med verdier fra nye claims"]
+    L --> M["InvalidateCooldown en gang til. Dette sikrer at CookieValidationEvents skriver oppdaterte cookies på neste HTTP-request, noe RefreshTokenAsync ikke har mulighet til."]
+    M --> N(["Claims er oppdatert i kretsen og brukeren ser endringer umiddelbart"])
+
+    A:::start
+    B:::decision
+    C:::failure
+    D:::decision
+    E:::failure
+    F:::action
+    G:::action
+    H:::failure
+    I:::action
+    J:::action
+    K:::action
+    L:::success
+    M:::action
+    N:::start
+    classDef start fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef success fill:#5BA85A,stroke:#3D7A3C,color:#fff
+    classDef failure fill:#D9534F,stroke:#A02020,color:#fff
+    classDef decision fill:#F5A623,stroke:#C47D0E,color:#fff
+    classDef action fill:#E8E8E8,stroke:#999,color:#333

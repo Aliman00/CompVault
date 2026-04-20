@@ -12,7 +12,7 @@ public sealed class DepartmentDto
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Beskrivelse av hva avdelingen driver med.</summary>
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     /// <summary>ID til overordnet avdeling (null hvis toppnivå).</summary>
     public Guid? ParentDepartmentId { get; set; }
@@ -31,4 +31,7 @@ public sealed class DepartmentDto
 
     /// <summary>ID til brukeren som opprettet avdelingen.</summary>
     public Guid? CreatedById { get; set; }
+
+    /// <summary>Navn på brukeren som opprettet avdelingen.</summary>
+    public string? CreatedByName { get; set; }
 }

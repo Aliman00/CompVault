@@ -114,6 +114,8 @@ public class AccessTokenHandler(
             identity.RemoveClaim(gammeltToken);
         identity.AddClaim(new Claim("access_token", refreshRecord.AccessToken));
 
+        ClaimsSynchronizer.RefreshClaimsFromAccessToken(identity, refreshRecord.AccessToken);
+
         circuitUserContext.UpdateRefreshToken(refreshRecord.RefreshToken);
     }
 }

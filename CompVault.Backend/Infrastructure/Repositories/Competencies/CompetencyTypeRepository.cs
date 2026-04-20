@@ -15,7 +15,6 @@ public sealed class CompetencyTypeRepository(AppDbContext dbContext) : BaseRepos
     public override async Task<IReadOnlyList<CompetencyType>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await DbSet
             .AsNoTracking()
-            .Where(ct => ct.IsActive)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />

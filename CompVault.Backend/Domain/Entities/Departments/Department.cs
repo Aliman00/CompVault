@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 
 namespace CompVault.Backend.Domain.Entities.Departments;
@@ -44,4 +45,7 @@ public class Department
     public ApplicationUser? CreatedBy { get; set; }
     public ICollection<Department> SubDepartments { get; set; } = new List<Department>();
     public ICollection<ApplicationUser> Members { get; set; } = new List<ApplicationUser>();
+
+    /// <summary>Navigasjonsegenskap for dokumenter rettet mot avdelinger.</summary>
+    public ICollection<DocumentDepartment> DocumentDepartments { get; set; } = new List<DocumentDepartment>();
 }

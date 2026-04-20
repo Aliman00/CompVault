@@ -1,4 +1,3 @@
-﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 using CompVault.Shared.Constants;
@@ -12,7 +11,7 @@ public static class ClaimsPrincipalExtensions
     /// </summary>
     public static Guid GetUserId(this ClaimsPrincipal user)
     {
-        string? userIdStr = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        string? userIdStr = user.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
             throw new UnauthorizedAccessException("Bruker-ID mangler eller er ugyldig i tokenet.");

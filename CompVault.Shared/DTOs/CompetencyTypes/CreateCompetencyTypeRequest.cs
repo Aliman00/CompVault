@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
 namespace CompVault.Shared.DTOs.CompetencyTypes;
 
 /// <summary>
@@ -8,16 +9,17 @@ namespace CompVault.Shared.DTOs.CompetencyTypes;
 public sealed class CreateCompetencyTypeRequest
 {
     /// <summary>Navn på kompetansetypen.</summary>
-    [Required]
-    [MaxLength(200)]
+    [Required(ErrorMessage = CompTypeValidations.Errors.NameRequired)]
+    [MaxLength(CompTypeValidations.NameMaxLength,
+        ErrorMessage = CompTypeValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Valgfri beskrivelse.</summary>
-    [MaxLength(500)]
+    [MaxLength(CompTypeValidations.DescMaxLength, ErrorMessage = CompTypeValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
 
     /// <summary>Kategori for gruppering, f.eks. "HMS", "Sertifikat", "Kurs".</summary>
-    [MaxLength(100)]
+    [MaxLength(CompTypeValidations.CategoryMaxLength, ErrorMessage = CompTypeValidations.Errors.CategoryMaxLength)]
     public string? Category { get; set; }
 
     /// <summary>Om kompetanse av denne typen krever utløpsdato. Standard: true.</summary>
