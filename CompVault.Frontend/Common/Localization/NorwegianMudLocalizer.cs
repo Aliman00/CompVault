@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Localization;
+
 using MudBlazor;
 namespace CompVault.Frontend.Common.Localization;
 
@@ -51,7 +52,7 @@ public class NorwegianMudLocalizer : MudLocalizer
         { "MudDataGrid_CollapseAllGroups", "Skjul alle grupper" },
         { "MudDataGrid_ExpandAllGroups", "Vis alle grupper" },
     };
-    
+
     public override LocalizedString this[string key]
     {
         get

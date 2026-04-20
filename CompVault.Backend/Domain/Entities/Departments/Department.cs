@@ -45,7 +45,7 @@ public class Department
     public ApplicationUser? CreatedBy { get; set; }
     public ICollection<Department> SubDepartments { get; set; } = new List<Department>();
     public ICollection<ApplicationUser> Members { get; set; } = new List<ApplicationUser>();
-    
+
     /// <summary>Navigasjonsegenskap for dokumenter rettet mot avdelinger.</summary>
     public ICollection<DocumentDepartment> DocumentDepartments { get; set; } = new List<DocumentDepartment>();
 }

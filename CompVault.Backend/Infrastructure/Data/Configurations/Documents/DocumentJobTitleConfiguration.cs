@@ -26,7 +26,7 @@ internal sealed class DocumentJobTitleConfiguration : IEntityTypeConfiguration<D
             .WithMany(j => j.DocumentJobTitles)
             .HasForeignKey(dj => dj.JobTitleId)
             .OnDelete(DeleteBehavior.Restrict);
-        
+
         // Sikrer at stillinger som er soft deleted ikke dukker som en kobling i dokumentene
         builder.HasQueryFilter(dj => dj.Document!.DeletedAt == null && dj.JobTitle!.DeletedAt == null);
 

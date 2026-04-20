@@ -26,7 +26,7 @@ public sealed class UserService(
     public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles = 
+        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles =
             await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
 
         var dtos = usersWithRoles
@@ -221,7 +221,7 @@ public sealed class UserService(
         if (request.LastName is not null) user.LastName = request.LastName;
         if (request.EmploymentType.HasValue) user.EmploymentType = request.EmploymentType.Value;
         if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
-        
+
         // Normaliserer og oppdater brukernavn da det endres ved epost bytte
         if (request.Email is not null)
         {
@@ -230,7 +230,7 @@ public sealed class UserService(
             user.UserName = request.Email;
             user.NormalizedUserName = request.Email.ToUpperInvariant();
         }
-        
+
         if (request.JobTitleId.HasValue)
             user.JobTitleId = request.JobTitleId;
         else if (request.ClearJobTitleId)
@@ -245,18 +245,18 @@ public sealed class UserService(
             user.ManagerId = request.ManagerId;
         else if (request.ClearManagerId)
             user.ManagerId = null;
-        
+
         return await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             if (request.Roles is not null)
             {
                 IList<string> currentRoles = await userManager.GetRolesAsync(user);
-        
+
                 IdentityResult removeResult = await userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeResult.Succeeded)
                     return Result<UserDto>.Failure(
                         AppError.Create(ErrorCode.InternalError, "Kunne ikke fjerne eksisterende roller."));
-        
+
                 if (request.Roles.Count > 0)
                 {
                     IdentityResult addResult = await userManager.AddToRolesAsync(user, request.Roles);
@@ -268,9 +268,9 @@ public sealed class UserService(
 
             await userRepository.UpdateAsync(user, ct);
             await userRepository.SaveChangesAsync(ct);
-            
+
             ApplicationUser updatedUser = (await userRepository.GetByIdWithDetailsAsync(userId, ct))!;
-            
+
             logger.LogInformation("Bruker {UserId} oppdatert", userId);
             IList<string> roles = await userManager.GetRolesAsync(updatedUser);
             return Result<UserDto>.Success(UserMapper.ToDto(updatedUser, roles));

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Enums;
@@ -38,7 +39,7 @@ public class CompetencyEditModel
         CertificateNumber = CertificateNumber,
         Notes = Notes,
     };
-    
+
     public UpdateCompetencyRequest ToRevokeRequest() => new()
     {
         Status = CompetencyStatus.Revoked,

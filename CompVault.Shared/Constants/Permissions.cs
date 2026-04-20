@@ -31,7 +31,7 @@ public static class Permissions
     public const string CompetenciesRead = "competencies:read";
     public const string CompetenciesWrite = "competencies:write";
     public const string CompetenciesDelete = "competencies:delete";
-    
+
     // AdminAccess
     public const string AdminAccess = "admin:access";
 

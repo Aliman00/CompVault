@@ -19,7 +19,7 @@ public sealed class CompetencyDto
 
     /// <summary>Brukerens etternavn.</summary>
     public string? UserLastName { get; set; }
-    
+
     /// <summary>Fullt navn — satt sammen automatisk.</summary>
     public string FullName => $"{UserFirstName} {UserLastName}".Trim();
 

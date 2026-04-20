@@ -18,12 +18,12 @@ public interface IJobTitleService
     /// Oppretter en ny stilling
     /// </summary>
     Task<Result<JobTitleDto>> CreateAsync(CreateJobTitleRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Oppdaterer eksisterende stilling
     /// </summary>
     Task<Result<JobTitleDto>> UpdateAsync(Guid id, UpdateJobTitleRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Soft-deleter en stilling
     /// </summary>

@@ -9,7 +9,7 @@ public interface ICompetencyTypeService
     /// Henter alle kompetansebevistyper fra backend TODO: Med query parameter. Ikke implementert
     /// </summary>
     Task<Result<List<CompetencyTypeDto>>> GetAllAsync(CancellationToken ct);
-    
+
     /// <summary>
     /// Henter et kompetansebevistyper fra backend
     /// </summary>
@@ -19,12 +19,12 @@ public interface ICompetencyTypeService
     /// Oppretter et ny kompetansebevistyper
     /// </summary>
     Task<Result<CompetencyTypeDto>> CreateAsync(CreateCompetencyTypeRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Oppdaterer eksisterende kompetansebevistyper
     /// </summary>
     Task<Result<CompetencyTypeDto>> UpdateAsync(Guid id, UpdateCompetencyTypeRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Sletter et kompetansebevistyper
     /// </summary>

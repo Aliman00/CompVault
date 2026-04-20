@@ -9,15 +9,10 @@ namespace CompVault.Shared.DTOs.Documents;
 /// </summary>
 public sealed class CreateDocumentTypeRequest
 {
-    /// <summary>Visningsnavn, f.eks. "HMS Dokumenter".</summary>
+    /// <summary>Visningsnavn, f.eks. "HMS Dokumenter". Genererer automatisk URL-vennlig slug.</summary>
     [Required]
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>URL-vennlig slug, f.eks. "hms-documents".</summary>
-    [Required]
-    [MaxLength(50)]
-    public string Slug { get; set; } = string.Empty;
 
     /// <summary>Beskrivelse.</summary>
     [MaxLength(500)]

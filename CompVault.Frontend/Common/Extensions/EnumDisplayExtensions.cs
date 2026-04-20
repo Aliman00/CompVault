@@ -5,7 +5,7 @@ namespace CompVault.Frontend.Common.Extensions;
 /// Metoder for visning av enum i UI
 /// </summary>
 public static class EnumDisplayExtensions
-{   
+{
     /// <summary>
     /// Oversetter fra engelsk til norsk
     /// </summary>
@@ -16,7 +16,7 @@ public static class EnumDisplayExtensions
         EmploymentType.Contracted => "Innleid",
         _ => type.ToString()
     };
-    
+
     /// <summary>
     /// Oversetter fra engelsk til norsk
     /// </summary>
@@ -28,7 +28,7 @@ public static class EnumDisplayExtensions
         CompetencyStatus.Revoked => "Tilbakekalt",
         _ => status.ToString()
     };
-    
+
     /// <summary>
     /// Generisk metode for å oversette enums til norsk når EnumType kan variere
     /// </summary>
