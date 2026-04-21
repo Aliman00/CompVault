@@ -56,9 +56,10 @@ public static class PageRoutes
 
     public static class Documents
     {
-        public const string List = "/documents";
-        public static string Detail(Guid id) => $"/documents/{id}";
-        public const string Create = "/documents/create";
+        public const string Overview = "/documents";
+        public static string List(string slug, string typeName) => $"/documents/{slug}/{typeName}";
+        public static string Detail(string slug, Guid id) => $"/documents/{slug}/{id}";
+        public static string Create(string slug) => $"/documents/{slug}/create";
     }
 
     public static class DocumentTypes
@@ -66,13 +67,6 @@ public static class PageRoutes
         public const string List = "/document-types";
         public static string Detail(string slug) => $"/document-types/{slug}";
         public const string Create = "/document-types/create";
-    }
-
-    public static class DocumentTypeCategories
-    {
-        public const string List = "/document-type-categories";
-        public static string Detail(Guid id) => $"/document-type-categories/{id}";
-        public const string Create = "/document-type-categories/create";
     }
 
     public static class Admin

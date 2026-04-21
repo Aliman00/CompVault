@@ -1,0 +1,147 @@
+﻿@page "/documents/{Slug}/create"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DocumentsWrite)]
+@inject IDocumentService DocumentService
+@inject IDocumentTypeService DocumentTypeService
+@inject NavigationManager NavigationManager
+
+@* Side for å opprette et dokument *@
+
+<CreateForm Title="Opprett dokument"
+            EditContext="_editContext"
+            OnValidSubmit="CreateDocument"
+            @bind-Alert="_alert"
+            IsLoading="_isLoading">
+    <Fields>
+        @* Tittel *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.Title"
+                             ValueChanged="(string? v) => _editModel.Title = v ?? string.Empty"
+                             Label="Navn"
+                             IsEditing="true"
+                             For="() => _editModel.Title"/>
+        </MudItem>
+        
+        @* Beskrivelse *@
+        <MudItem xs="12">
+            <DetailTextField Value="@_editModel.Description"
+                             ValueChanged="(string? v) => _editModel.Description = v"
+                             Label="Beskrivelse (valgfritt)"
+                             IsEditing="true"
+                             For="() => _editModel.Description"
+                             Lines="4"/>
+        </MudItem>
+        
+        @* RequireSignature *@
+        <MudItem xs="12">
+            <ToggleButton Label="Krever dokumentet signatur?"
+                          @bind-Value="_editModel.RequiresSignature"
+                          IsEditing="true">
+                <MudToggleItem Value="(bool?)true" Text="Krever signatur"/>
+                <MudToggleItem Value="(bool?)false" Text="Ingen signatur"/>
+            </ToggleButton>
+        </MudItem>
+
+        @* ExternalURL *@
+        <MudItem xs="12" sm="6">
+            <DetailTextField Value="@_editModel.ExternalUrl"
+                             ValueChanged="(string? v) => _editModel.ExternalUrl = v ?? string.Empty"
+                             Label="Ekstern lenke (valgfritt)"
+                             IsEditing="true"
+                             For="() => _editModel.ExternalUrl"/>
+        </MudItem>
+        
+        @* Filopplasting *@
+        <MudItem xs="12" sm="6">
+            <MudFileUpload T="IBrowserFile"
+                           @bind-Files="_selectedFile"
+                           Accept=".pdf,.doc,.docx">
+                <CustomContent Context="fileUpload">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.AttachFile"
+                               OnClick="@fileUpload.OpenFilePickerAsync">
+                        @(_selectedFile != null ? "Endre fil" : "Velg fil (valgfritt)")
+                    </MudButton>
+                </CustomContent>
+                <SelectedTemplate>
+                    @if (context is not null)
+                    {
+                        <MudChip T="string"
+                                 Icon="@Icons.Material.Filled.AttachFile"
+                                 Color="Color.Info"
+                                 Class="cv-rounded"
+                                 Variant="Variant.Filled"
+                                 OnClose="() => _selectedFile = null">
+                            @context.Name
+                        </MudChip>
+                    }
+                </SelectedTemplate>
+            </MudFileUpload>
+        </MudItem>
+     
+    </Fields>
+</CreateForm>
+
+@code {
+    // ===================== PARAMETERS=====================
+    [Parameter] public string Slug { get; set; } = string.Empty;
+    
+    // ===================== PRIVATE FELT =====================
+    private DocumentTypeDto _documentType = null!;
+    
+    private readonly CreateDocumentModel _editModel = new();
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    private EditContext _editContext = null!;
+
+    private IBrowserFile? _selectedFile;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(_editModel);
+
+        try
+        {
+            var result = await DocumentTypeService.GetBySlugAsync(Slug, Cts.Token);
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _documentType = result.Value!;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
+    // navigerer oss til detalje-siden
+    private async Task CreateDocument()
+    {
+        var request = _editModel.ToRequest();
+        
+        // Bygg en stream og FileAttachment-record hvis fil er vedlagt
+        FileAttachment? file = _selectedFile != null
+            ? await _selectedFile.ToFileAttachmentAsync(_documentType.MaxFileSizeBytes, Cts.Token)
+            : null;
+        
+        var createResult = await DocumentService.CreateAsync(Slug, request, file, Cts.Token);
+        if (createResult.IsFailure)
+        {
+            _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(
+            PageRoutes.Documents.Detail(Slug, createResult.Value!.Id) + "?created=true");
+    }
+}

@@ -1,5 +1,6 @@
 ﻿using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
+using CompVault.Frontend.Common.Models;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
@@ -75,12 +76,13 @@ public class DocumentService(
 
     /// <inheritdoc />
     public async Task<Result<DocumentDto>> CreateAsync(string documentTypeSlug, CreateDocumentRequest request,
-        CancellationToken ct)
+        FileAttachment? file, CancellationToken ct)
     {
         try
         {
             HttpResponseMessage response =
-                await _httpClient.PostAsJsonAsync(ApiRoutes.Competencies.Base, request, ct);
+                await _httpClient.PostAsMultipartFormAsync(ApiRoutes.Documents.Base(documentTypeSlug), 
+                    request, file, ct);
 
             Result<DocumentDto> result = await HttpClientExtensions.ParseResponseAsync<DocumentDto>(response, ct);
 

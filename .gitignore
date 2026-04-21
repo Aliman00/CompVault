@@ -487,3 +487,6 @@ opencode.json
 
 # Graphify
 graphify-out/
+
+# FileStorage
+**/storage/

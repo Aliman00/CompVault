@@ -13,10 +13,10 @@
           SelectedItemsChanged="@(s => _selectedDocumentTypes = s)"
           RowClick="@(args => OnDocumentTypeClick(args))">
     <Header>
-        <ListHeader Title="Dokumenttyper"
+        <ListHeader Title="Dokumentkategorier"
                     PageIcon="@Icons.Material.Filled.Topic"
                     CreateHref="@PageRoutes.DocumentTypes.Create"
-                    CreateLabel="Opprett dokumenttype"
+                    CreateLabel="Opprett dokumentkategori"
                     CreateIcon="@Icons.Material.Filled.Topic"
                     CreatePolicy="@Permissions.DocumentTypesWrite"/>
     </Header>
@@ -90,7 +90,7 @@
             _documentTypes = getDocumentTypesResult.Value!;
 
             if (Deleted)
-                _alert = new AlertInfo("Dokumenttypen er slettet", Severity.Info);
+                _alert = new AlertInfo("Dokumentkategori er slettet", Severity.Info);
         }
         catch (OperationCanceledException)
         {
@@ -98,7 +98,7 @@
         }
         catch
         {
-            _alert = new AlertInfo("Klarte ikke å laste dokumenttypen. Oppdater siden for å prøve igjen",
+            _alert = new AlertInfo("Klarte ikke å laste dokumentkategorier. Oppdater siden for å prøve igjen",
                 Severity.Error);
         }
         finally

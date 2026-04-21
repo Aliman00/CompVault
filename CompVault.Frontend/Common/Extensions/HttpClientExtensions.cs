@@ -1,8 +1,12 @@
 ﻿using System.Text.Json;
 
+using CompVault.Frontend.Common.Http;
+using CompVault.Frontend.Common.Models;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.WebUtilities;
+
+using MudBlazor;
 
 namespace CompVault.Frontend.Common.Extensions;
 
@@ -83,4 +87,29 @@ public static class HttpClientExtensions
             ? baseUrl
             : QueryHelpers.AddQueryString(baseUrl, queryParams);
     }
+    
+    /// <summary>
+    /// Generisk metode som bygger og poster en MultipartFormDataContent med en request og
+    /// eventuelt en fil hvis vedlagt.
+    /// </summary>
+    /// <param name="httpClient">Klienten vi sender med</param>
+    /// <param name="url">URL-en til endepunktet</param>
+    /// <param name="request">Generisk request. Eks: CraeteDocument-request</param>
+    /// <param name="file">Valgrfitt vedlagt fil som FileAttachment</param>
+    /// <param name="ct"></param>
+    /// <typeparam name="TRequest">Generisk request. Eks: CraeteDocument-request</typeparam>
+    /// <returns>Responsen fra backend som en HttpResponseMessage</returns>
+    public static async Task<HttpResponseMessage> PostAsMultipartFormAsync<TRequest>(
+        this HttpClient httpClient,
+        string url,
+        TRequest request,
+        FileAttachment? file = null,
+        CancellationToken ct = default)
+        where TRequest : class
+    {
+        using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
+        return await httpClient.PostAsync(url, content, ct);
+    }
+    
+    
 }
