@@ -47,7 +47,7 @@ else if (_department != null)
         <Fields>
             @* Avdelingsnavn *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Name"
+                <TextField Value="@_editModel.Name"
                                  ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                                  Label="Avdelingsnavn"
                                  IsEditing="_isEditing"
@@ -55,7 +55,7 @@ else if (_department != null)
             </MudItem>
             @* Beskrivelse *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Description"
+                <TextField Value="@_editModel.Description"
                                  ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
                                  Label="Beskrivelse (valgfritt)"
                                  IsEditing="_isEditing"
@@ -69,7 +69,7 @@ else if (_department != null)
                         Overordnet avdeling er inaktiv. Vennligst endre overordnet avdeling.
                     </MudAlert>
                 }
-                <DetailSelectWithLinkField Value="_editModel.ParentDepartmentId"
+                <SelectWithLinkField Value="_editModel.ParentDepartmentId"
                                            ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
                                            Label="Overordnet avdeling"
                                            ToStringFunc="@(id => _departments.FirstOrDefault(
@@ -86,17 +86,17 @@ else if (_department != null)
                             <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
                         }
                     </Items>
-                </DetailSelectWithLinkField>
+                </SelectWithLinkField>
             </MudItem>
             @* Opprettelsesdato *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_department!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                <TextField Value="@_department!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
                                  Label="Opprettet"
                                  IsEditing="false"/>
             </MudItem>
             @* Opprettet av *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_department!.CreatedByName"
+                <TextField Value="@_department!.CreatedByName"
                                  Label="Opprettet av bruker"
                                  IsEditing="false"
                                  ShowLink="_department!.CreatedById.HasValue"

@@ -4,6 +4,8 @@
 @inject IDocumentService DocumentService
 @inject IDocumentTypeService DocumentTypeService
 @inject NavigationManager NavigationManager
+@inject IDepartmentService DepartmentService
+@inject IJobTitleService JobTitleService
 
 @* Side for å opprette et dokument *@
 
@@ -15,16 +17,25 @@
     <Fields>
         @* Tittel *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Title"
-                             ValueChanged="(string? v) => _editModel.Title = v ?? string.Empty"
-                             Label="Navn"
-                             IsEditing="true"
-                             For="() => _editModel.Title"/>
+            <TextField Value="@_editModel.Title"
+                       ValueChanged="(string? v) => _editModel.Title = v ?? string.Empty"
+                       Label="Navn"
+                       IsEditing="true"
+                       For="() => _editModel.Title"/>
+        </MudItem>
+
+        @* ExternalURL *@
+        <MudItem xs="12" sm="6">
+            <TextField Value="@_editModel.ExternalUrl"
+                       ValueChanged="(string? v) => _editModel.ExternalUrl = v ?? string.Empty"
+                       Label="Ekstern lenke (valgfritt)"
+                       IsEditing="true"
+                       For="() => _editModel.ExternalUrl"/>
         </MudItem>
         
         @* Beskrivelse *@
         <MudItem xs="12">
-            <DetailTextField Value="@_editModel.Description"
+            <TextField Value="@_editModel.Description"
                              ValueChanged="(string? v) => _editModel.Description = v"
                              Label="Beskrivelse (valgfritt)"
                              IsEditing="true"
@@ -42,42 +53,29 @@
             </ToggleButton>
         </MudItem>
 
-        @* ExternalURL *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.ExternalUrl"
-                             ValueChanged="(string? v) => _editModel.ExternalUrl = v ?? string.Empty"
-                             Label="Ekstern lenke (valgfritt)"
-                             IsEditing="true"
-                             For="() => _editModel.ExternalUrl"/>
-        </MudItem>
+        
         
         @* Filopplasting *@
         <MudItem xs="12" sm="6">
-            <MudFileUpload T="IBrowserFile"
-                           @bind-Files="_selectedFile"
-                           Accept=".pdf,.doc,.docx">
-                <CustomContent Context="fileUpload">
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.AttachFile"
-                               OnClick="@fileUpload.OpenFilePickerAsync">
-                        @(_selectedFile != null ? "Endre fil" : "Velg fil (valgfritt)")
-                    </MudButton>
-                </CustomContent>
-                <SelectedTemplate>
-                    @if (context is not null)
+            <FileUploadField @bind-File="_selectedFile"
+                             AcceptedFileTypes="@string.Join(',', _documentType.AllowedMimeTypes)"
+                             ButtonText="Velg fil (valgfritt)"/>
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <SelectWithLinkField Value="_editModel.DepartmentId"
+                                 ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
+                                 Label="Avdeling"
+                                 ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                   d => d.Id == id)?.Name ?? string.Empty)"
+                                 IsEditing="true">
+                <Items>
+                    @foreach (var department in _departments)
                     {
-                        <MudChip T="string"
-                                 Icon="@Icons.Material.Filled.AttachFile"
-                                 Color="Color.Info"
-                                 Class="cv-rounded"
-                                 Variant="Variant.Filled"
-                                 OnClose="() => _selectedFile = null">
-                            @context.Name
-                        </MudChip>
+                        <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
                     }
-                </SelectedTemplate>
-            </MudFileUpload>
+                </Items>
+            </SelectWithLinkField>
         </MudItem>
      
     </Fields>
@@ -94,6 +92,9 @@
 
     private bool _isLoading = true;
     private AlertInfo? _alert;
+    
+    private List<DepartmentDto> _departments = [];
+    private List<JobTitleDto> _jobTitles = [];
 
     private EditContext _editContext = null!;
 
@@ -106,14 +107,35 @@
 
         try
         {
-            var result = await DocumentTypeService.GetBySlugAsync(Slug, Cts.Token);
-            if (result.IsFailure)
+            var documentTypeTask = DocumentTypeService.GetBySlugAsync(Slug, Cts.Token);
+            var departmentsTask = DepartmentService.GetAllAsync(Cts.Token);
+            var jobTitlesTask = JobTitleService.GetAllAsync(Cts.Token);
+
+            await Task.WhenAll(documentTypeTask, departmentsTask, jobTitlesTask);
+
+            var documentTypeResult = await documentTypeTask;
+            if (documentTypeResult.IsFailure)
             {
-                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                _alert = new AlertInfo(documentTypeResult.Error!.ToString(), Severity.Error);
                 return;
             }
+            _documentType = documentTypeResult.Value!;
 
-            _documentType = result.Value!;
+            var departmentsResult = await departmentsTask;
+            if (departmentsResult.IsFailure)
+                _alert = new AlertInfo(departmentsResult.Error!.ToString(), Severity.Error);
+            else
+                _departments = departmentsResult.Value!.Where(d => d.IsActive).ToList();
+
+            var jobTitlesResult = await jobTitlesTask;
+            if (jobTitlesResult.IsFailure)
+                _alert = new AlertInfo(jobTitlesResult.Error!.ToString(), Severity.Error);
+            else
+                _jobTitles = jobTitlesResult.Value!.Where(j => j.IsActive).ToList();
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
         }
         finally
         {

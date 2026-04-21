@@ -47,7 +47,7 @@ else if (_competencyType != null)
         <Fields>
             @* Navn *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Name"
+                <TextField Value="@_editModel.Name"
                                  ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                                  Label="Navn"
                                  IsEditing="_isEditing"
@@ -55,7 +55,7 @@ else if (_competencyType != null)
             </MudItem>
             @* Kategori *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Category"
+                <TextField Value="@_editModel.Category"
                                  ValueChanged="(string? v) => _editModel.Category = v ?? string.Empty"
                                  Label="Kategori (valgfritt)"
                                  IsEditing="_isEditing"
@@ -63,7 +63,7 @@ else if (_competencyType != null)
             </MudItem>
             @* Beskrivelse *@
             <MudItem xs="12">
-                <DetailTextField Value="@_editModel.Description"
+                <TextField Value="@_editModel.Description"
                                  ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
                                  Label="Beskrivelse (valgfritt)"
                                  IsEditing="_isEditing"
@@ -89,7 +89,7 @@ else if (_competencyType != null)
             </MudItem>
             @* Opprettelsesdato *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_competencyType!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                <TextField Value="@_competencyType!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
                                  Label="Opprettet"
                                  IsEditing="false"/>
             </MudItem>

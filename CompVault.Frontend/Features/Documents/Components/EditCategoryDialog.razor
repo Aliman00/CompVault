@@ -18,7 +18,7 @@
             <MudGrid>
                 @* Navn *@
                 <MudItem xs="12">
-                    <DetailTextField Value="@_editModel.Name"
+                    <TextField Value="@_editModel.Name"
                                      ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                                      Label="Navn"
                                      IsEditing="true"

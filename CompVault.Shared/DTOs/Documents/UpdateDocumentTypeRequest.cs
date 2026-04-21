@@ -28,6 +28,7 @@ public sealed class UpdateDocumentTypeRequest
     public string[]? AllowedMimeTypes { get; set; }
 
     /// <summary>Ny maksimal filstørrelse i bytes.</summary>
-    [Range(1, 100 * 1024 * 1024, ErrorMessage = "Maksimal filstørrelse må være mellom 1 byte og 100 MB.")]
+    [Range(DocTypeValidations.MaxFileSizeMinBytes, DocTypeValidations.MaxFileSizeMaxBytes,
+        ErrorMessage = DocTypeValidations.Errors.MaxFileSizeRange)]
     public long? MaxFileSizeBytes { get; set; }
 }

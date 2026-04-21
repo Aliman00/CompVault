@@ -48,7 +48,7 @@ else if (_user != null)
         <Fields>
             @* Fornavn *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.FirstName"
+                <TextField Value="@_editModel.FirstName"
                                  ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
                                  Label="Fornavn"
                                  IsEditing="_isEditing"
@@ -56,7 +56,7 @@ else if (_user != null)
             </MudItem>
             @* Etternavn *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.LastName"
+                <TextField Value="@_editModel.LastName"
                                  ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
                                  Label="Etternavn"
                                  IsEditing="_isEditing"
@@ -64,7 +64,7 @@ else if (_user != null)
             </MudItem>
             @* Email *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Email"
+                <TextField Value="@_editModel.Email"
                                  ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
                                  Label="Email"
                                  IsEditing="_isEditing"
@@ -78,7 +78,7 @@ else if (_user != null)
                         Stillingstittelen er inaktiv. Vennligst endre stillingstittelen.
                     </MudAlert>
                 }
-                <DetailSelectWithLinkField Value="_editModel.JobTitleId"
+                <SelectWithLinkField Value="_editModel.JobTitleId"
                                            ValueChanged="(Guid? v) => _editModel.JobTitleId = v"
                                            Label="Stillingstittel"
                                            ToStringFunc="@(id => _jobTitles.FirstOrDefault(
@@ -95,12 +95,12 @@ else if (_user != null)
                             <MudSelectItem Value="(Guid?)jobTitle.Id">@jobTitle.Name</MudSelectItem>
                         }
                     </Items>
-                </DetailSelectWithLinkField>
+                </SelectWithLinkField>
             </MudItem>
 
             @* EmploymentType *@
             <MudItem xs="12" sm="6">
-                <DetailEnumField T="EmploymentType"
+                <EnumField T="EmploymentType"
                                  Value="@_editModel.EmploymentType"
                                  ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
                                  Label="Ansettelsestype"
@@ -108,7 +108,7 @@ else if (_user != null)
             </MudItem>
             @* Opprettelsesdato *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_user!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                <TextField Value="@_user!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
                                  Label="Opprettet"
                                  IsEditing="false"/>
             </MudItem>
@@ -120,7 +120,7 @@ else if (_user != null)
                         Avdeling er inaktiv. Vennligst endre avdeling.
                     </MudAlert>
                 }
-                <DetailSelectWithLinkField Value="_editModel.DepartmentId"
+                <SelectWithLinkField Value="_editModel.DepartmentId"
                                            ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
                                            Label="Avdeling"
                                            ToStringFunc="@(id => _departments.FirstOrDefault(
@@ -137,11 +137,11 @@ else if (_user != null)
                             <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
                         }
                     </Items>
-                </DetailSelectWithLinkField>
+                </SelectWithLinkField>
             </MudItem>
             @* Nærmeste leder *@
             <MudItem xs="12" sm="6">
-                <DetailSelectWithLinkField Value="_editModel.ManagerId"
+                <SelectWithLinkField Value="_editModel.ManagerId"
                                            ValueChanged="(Guid? v) => _editModel.ManagerId = v"
                                            Label="Nærmeste leder"
                                            ToStringFunc="@(id => _allUsers.FirstOrDefault(
@@ -158,7 +158,7 @@ else if (_user != null)
                             <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
                         }
                     </Items>
-                </DetailSelectWithLinkField>
+                </SelectWithLinkField>
             </MudItem>
             @* Roller *@
             <MudItem xs="12" sm="6">

@@ -48,7 +48,7 @@ else if (_documentType != null)
         <Fields>
             @* Navn *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Name"
+                <TextField Value="@_editModel.Name"
                                  ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                                  Label="Navn"
                                  IsEditing="_isEditing"
@@ -57,7 +57,7 @@ else if (_documentType != null)
             
             @* Beskrivelse *@
             <MudItem xs="12">
-                <DetailTextField Value="@_editModel.Description"
+                <TextField Value="@_editModel.Description"
                                  ValueChanged="(string? v) => _editModel.Description = v"
                                  Label="Beskrivelse (valgfritt)"
                                  IsEditing="_isEditing"
@@ -67,14 +67,34 @@ else if (_documentType != null)
             
             @* TargetMode *@
             <MudItem xs="12" sm="6">
-                <DetailEnumField Value="@_editModel.TargetMode"
-                                 ValueChanged="(DocumentTargetMode v) => _editModel.TargetMode = v"
-                                 Label="Målgruppe"
-                                 IsEditing="_isEditing"/>
+                <EnumField Value="@_editModel.TargetMode"
+                           ValueChanged="(DocumentTargetMode v) => _editModel.TargetMode = v"
+                           Label="Målgruppe"
+                           IsEditing="_isEditing"/>
+            </MudItem>
+
+            @* Maks filstørrelse *@
+            <MudItem xs="12" sm="6">
+                <NumberField T="long"
+                             Value="@_editModel.MaxFileSizeMb"
+                             ValueChanged="(long v) => _editModel.MaxFileSizeMb = v"
+                             Label="Maks filstørrelse"
+                             IsEditing="_isEditing"
+                             AdornmentText="MB"
+                             Min="DocTypeValidations.MaxFileSizeMinMb"
+                             Max="DocTypeValidations.MaxFileSizeMaxMb"
+                             For="() => _editModel.MaxFileSizeMb"/>
+            </MudItem>
+
+            @* Tilatte MimeTypes *@
+            <MudItem xs="12" sm="6">
+                <MimeTypeSelectorField SelectedMimeTypes="@_editModel.AllowedMimeTypes"
+                                       SelectedMimeTypesChanged="(string[] v) => _editModel.AllowedMimeTypes = v"
+                                       IsEditing="_isEditing"/>
             </MudItem>
             
             @* Kategorier *@
-            <MudItem xs="12">
+            <MudItem xs="12" Class="mt-6">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
                     <MudText Typo="Typo.subtitle1">Underkategorier</MudText>
                     <MudSpacer/>

@@ -17,7 +17,7 @@
         
         @* Brukeren vi oppretter sertifisering for *@
         <MudItem xs="12" sm="6">
-            <DetailSelectWithLinkField Value="_editModel.UserId"
+            <SelectWithLinkField Value="_editModel.UserId"
                                        ValueChanged="(Guid? v) => _editModel.UserId = v"
                                        Label="Ansatt"
                                        ToStringFunc="@(id => _allUsers.FirstOrDefault(
@@ -29,12 +29,12 @@
                         <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
                     }
                 </Items>
-            </DetailSelectWithLinkField>
+            </SelectWithLinkField>
         </MudItem>
 
         @* Kompetansetype *@
         <MudItem xs="12" sm="6">
-            <DetailSelectWithLinkField Value="_editModel.CompetencyTypeId"
+            <SelectWithLinkField Value="_editModel.CompetencyTypeId"
                                        ValueChanged="(Guid? v) => _editModel.CompetencyTypeId = v"
                                        Label="Kompetansetype"
                                        ToStringFunc="@(id => _allCompetencyTypes.FirstOrDefault(
@@ -46,7 +46,7 @@
                         <MudSelectItem Value="(Guid?)user.Id">@user.Name</MudSelectItem>
                     }
                 </Items>
-            </DetailSelectWithLinkField>
+            </SelectWithLinkField>
         </MudItem>
         
         @* Når kompetansebeviset er gyldig ifra *@
@@ -72,7 +72,7 @@
 
         @* CertificateNumber *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.CertificateNumber"
+            <TextField Value="@_editModel.CertificateNumber"
                              ValueChanged="(string? v) => _editModel.CertificateNumber = v ?? string.Empty"
                              Label="Sertifikatnummer (valgfritt)"
                              IsEditing="true"
@@ -81,7 +81,7 @@
         
         @* Notat *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Notes"
+            <TextField Value="@_editModel.Notes"
                              ValueChanged="(string? v) => _editModel.Notes = v ?? string.Empty"
                              Label=@($"Notat (valgfritt). Maks lengde: {CompValidations.NotesMaxLength}")
                              IsEditing="true"

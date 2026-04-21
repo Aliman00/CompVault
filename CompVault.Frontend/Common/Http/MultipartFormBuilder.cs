@@ -78,7 +78,7 @@ internal static class MultipartFormBuilder
     /// </summary>
     /// <param name="content"></param>
     /// <param name="file"></param>
-    private static void AddFile(MultipartFormDataContent content, FileAttachment? file)
+    internal static void AddFile(MultipartFormDataContent content, FileAttachment? file)
     {
         if (file == null)
             return;

@@ -15,31 +15,47 @@
 {
     <AppSpinner Class="pa-20"/>
 }
-else if (_document != null)
+else if (_document != null || _documentType != null)
 {
     <DetailForm Title="@_document?.Title"
                 Subtitle="@_document?.Description"
-                EditPolicy="@Permissions.DocumentTypesWrite"
+                EditPolicy="@Permissions.DocumentsWrite"
                 EditContext="_editContext"
                 OnValidSubmit="SaveEdit"
                 IsEditing="_isEditing"
                 OnStartEdit="StartEdit"
                 OnCancelEdit="CancelEdit">
+        <ExtraActions>
+            <AuthorizeView Policy="@Permissions.DocumentsWrite">
+                <Authorized>
+                    <ResponsiveButton Label="Last opp ny versjon"
+                                      Icon="@Icons.Material.Filled.Upload"
+                                      OnClick="UpdateDocumentVersion"/>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å laste opp ny versjon">
+                        <ResponsiveButton Label="Last opp ny versjon"
+                                          Icon="@Icons.Material.Filled.Upload"
+                                          Disabled="true"/>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
+        </ExtraActions>
         <DropdownActions>
-            <AuthorizeView Policy="@Permissions.DocumentTypesDelete">
+            <AuthorizeView Policy="@Permissions.DocumentsDelete">
                 <Authorized>
                     <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                  IconColor="Color.Error"
                                  OnClick="Delete">
-                        <MudText Color="Color.Error">Slett dokumentkategorien</MudText>
+                        <MudText Color="Color.Error">Slett dokumentet</MudText>
                     </MudMenuItem>
                 </Authorized>
                 <NotAuthorized>
-                    <MudTooltip Text="Du har ikke tilgang til å slette dokumentkategorien">
+                    <MudTooltip Text="Du har ikke tilgang til å slette dokumentet">
                         <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                      IconColor="Color.Default"
                                      Disabled="true">
-                            <MudText>Slett dokumentkategorien</MudText>
+                            <MudText>Slett dokumentet</MudText>
                         </MudMenuItem>
                     </MudTooltip>
                 </NotAuthorized>
@@ -48,23 +64,23 @@ else if (_document != null)
         <Fields>
             @* Tittel *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Title"
-                                 ValueChanged="(string? v) => _editModel.Title = v ?? string.Empty"
-                                 Label="Tittel"
-                                 IsEditing="_isEditing"
-                                 For="() => _editModel.Title"/>
+                <TextField Value="@_editModel.Title"
+                           ValueChanged="(string? v) => _editModel.Title = v ?? string.Empty"
+                           Label="Tittel"
+                           IsEditing="_isEditing"
+                           For="() => _editModel.Title"/>
             </MudItem>
-            
+
             @* Beskrivelse *@
             <MudItem xs="12">
-                <DetailTextField Value="@_editModel.Description"
-                                 ValueChanged="(string? v) => _editModel.Description = v"
-                                 Label="Beskrivelse (valgfritt)"
-                                 IsEditing="_isEditing"
-                                 For="() => _editModel.Description"
-                                 Lines="4"/>
+                <TextField Value="@_editModel.Description"
+                           ValueChanged="(string? v) => _editModel.Description = v"
+                           Label="Beskrivelse (valgfritt)"
+                           IsEditing="_isEditing"
+                           For="() => _editModel.Description"
+                           Lines="4"/>
             </MudItem>
-            
+
             @* RequireSignature *@
             <MudItem xs="12">
                 <ToggleButton Label="Krever dokumentet signatur?"
@@ -77,73 +93,21 @@ else if (_document != null)
 
             @* ExternalURL *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.ExternalUrl"
-                                 ValueChanged="(string? v) => _editModel.ExternalUrl = v ?? string.Empty"
-                                 Label="Ekstern lenke (valgfritt)"
-                                 IsEditing="_isEditing"
-                                 For="() => _editModel.ExternalUrl"/>
+                <TextField Value="@_editModel.ExternalUrl"
+                           ValueChanged="(string? v) => _editModel.ExternalUrl = v ?? string.Empty"
+                           Label="Ekstern lenke (valgfritt)"
+                           IsEditing="_isEditing"
+                           For="() => _editModel.ExternalUrl"/>
             </MudItem>
-            
-            @* Kategorier *@
-            <MudItem xs="12">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
-                    <MudText Typo="Typo.subtitle1">Underkategorier</MudText>
-                    <MudSpacer/>
-                    <AuthorizeView Policy="@Permissions.DocumentTypesWrite">
-                        <Authorized>
-                            <MudButton Variant="Variant.Outlined"
-                                       Size="Size.Small"
-                                       StartIcon="@Icons.Material.Filled.Add"
-                                       Color="Color.Primary"
-                                       OnClick="UpdateDocumentVersion">
-                                Opprett underkategori
-                            </MudButton>
-                        </Authorized>
-                    </AuthorizeView>
-                </MudStack>
-                @* CategoryDataGrid *@
-                <MudDataGrid T="DocumentTypeCategoryDto"
-                             Items="_documentTypeCategories"
-                             Dense="true"
-                             Hover="true"
-                             Striped="true"
-                             Square="true"
-                             Bordered="true"
-                             SortMode="SortMode.Single"
-                             RowsPerPage="10"
-                             RowClick="@((DataGridRowClickEventArgs<DocumentTypeCategoryDto> args)
-                                           => OpenEditCategoryDialog(args.Item))">
-                    <Columns>
-                        <PropertyColumn Property='x => x.Name.Truncate(40)'
-                                        Title="Tittel" />
-                        
-                        <TemplateColumn T="DocumentTypeCategoryDto" Title="Status" Sortable="true"
-                                        SortBy="@(d => d.IsActive)">
-                            <CellTemplate>
-                                <MudChip T="string"
-                                         Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
-                                         Size="Size.Small"
-                                         Class="cv-rounded">
-                                    @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
-                                </MudChip>
-                            </CellTemplate>
-                        </TemplateColumn>
-                        
-                    </Columns>
-                    <PagerContent>
-                        <MudDataGridPager T="DocumentTypeCategoryDto"
-                                          RowsPerPageString="Rader per side:"/>
-                    </PagerContent>
-                </MudDataGrid>
-                
-                
-            </MudItem>
-            
-            @* Dokumenter med denne typen *@
+
+            @* TODO: Hvis info om opplastet fil*@
+
+
+            @* Dokumenter med denne typen 
             <MudItem xs="12">
                 <MudText Typo="Typo.subtitle1">Dokumenter av type @_document!.Name</MudText>
                 <MudDataGrid T="DocumentListDto"
-                             Items="_documentTypesForDocument"
+                             Items="_documentType"
                              Dense="true"
                              Hover="true"
                              Striped="true"
@@ -192,6 +156,8 @@ else if (_document != null)
                     </Columns>
                 </MudDataGrid>
             </MudItem>
+            
+            *@
         </Fields>
     </DetailForm>
 }
@@ -207,7 +173,7 @@ else if (_document != null)
 
     // ===================== PRIVATE FELT =====================
     private DocumentDto? _document;
-    private List<DocumentTypeDto> _documentTypesForDocument = [];
+    private DocumentTypeDto? _documentType;
     private List<DocumentTypeCategoryDto> _documentTypeCategories = [];
 
     private DocumentEditModel _editModel = new();
@@ -227,7 +193,7 @@ else if (_document != null)
         // Resetter alle feltene ved oppdatering/navigering til siden
         _isLoading = true;
         _isEditing = false;
-        _documentTypesForDocument = [];
+        _documentType = new();
         _documentTypeCategories = [];
         _editModel = new();
 
@@ -237,7 +203,7 @@ else if (_document != null)
             
             // Henter dokumenttype og dokumenter til denne typen
             var documentTask = DocumentService.GetByIdAsync(Slug, Id, Cts.Token);
-            var documentTypeTask = DocumentTypeService.GetAllAsync(Cts.Token);
+            var documentTypeTask = DocumentTypeService.GetBySlugAsync(Slug, Cts.Token);
             var documentTypeCategoriesTask = DocumentTypeCategoryService.GetAllAsync(Slug, Cts.Token);
             
 
@@ -258,7 +224,7 @@ else if (_document != null)
             if (documentTypeResult.IsFailure)
                 _alert = new AlertInfo(documentTypeResult.Error!.ToString(), Severity.Error);
             else
-                _documentTypesForDocument = documentTypeResult.Value!;
+                _documentType = documentTypeResult.Value!;
             
             if (documentTypeCategoriesResult.IsFailure)
                 _alert = new AlertInfo(documentTypeCategoriesResult.Error!.ToString(), Severity.Error);
@@ -362,23 +328,26 @@ else if (_document != null)
         // Oppretter parameterne for dialogen
         var parameters = new DialogParameters
         {
-            { nameof(CreateCategoryDialog.Slug), _document!.Slug },
-            { nameof(CreateCategoryDialog.DocumentTypeName), _document!.Name },
+            { nameof(UpdateDocumentVersionDialog.Slug), Slug },
+            { nameof(UpdateDocumentVersionDialog.DocumentId), _document!.Id },
+            { nameof(UpdateDocumentVersionDialog.Title), _document!.Title },
+            { nameof(UpdateDocumentVersionDialog.MaxFileSizeInBytes), _documentType!.MaxFileSizeBytes },
+            { nameof(UpdateDocumentVersionDialog.AcceptedMimeTypes), string.Join(',', _documentType.AllowedMimeTypes) }
         };
 
         // Kaller dialogen
-        var dialog = await DialogService.ShowAsync<CreateCategoryDialog>("", parameters);
+        var dialog = await DialogService.ShowAsync<UpdateDocumentVersionDialog>("", parameters);
         var dialogResult = await dialog.Result;
         if (dialogResult!.Canceled)
             return;
 
-        if (dialogResult.Data is not DocumentTypeCategoryDto createdDocumentTypeCategory)
+        if (dialogResult.Data is not DocumentDto updatedDocument)
         {
-            _alert = new AlertInfo("Noe gikk galt ved oppretting av underkategorier.", Severity.Error);
+            _alert = new AlertInfo("Noe gikk galt ved opplasting av ny versjon.", Severity.Error);
             return;
         }
-        
-        _documentTypeCategories.Add(createdDocumentTypeCategory);
-        _alert = new AlertInfo("Underkategorier lagt til", Severity.Success);
+
+        _document = updatedDocument;
+        _alert = new AlertInfo($"Versjon {updatedDocument.Version} lastet opp", Severity.Success);
     }
 }

@@ -13,7 +13,7 @@
     <Fields>
         @* Navn *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Name"
+            <TextField Value="@_editModel.Name"
                              ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                              Label="Navn"
                              IsEditing="true"
@@ -22,7 +22,7 @@
         
         @* Beskrivelse *@
         <MudItem xs="12">
-            <DetailTextField Value="@_editModel.Description"
+            <TextField Value="@_editModel.Description"
                              ValueChanged="(string? v) => _editModel.Description = v"
                              Label="Beskrivelse (valgfritt)"
                              IsEditing="true"
@@ -31,11 +31,32 @@
         </MudItem>
         @* TargetMode *@
         <MudItem xs="12" sm="6">
-        <DetailEnumField Value="@_editModel.TargetMode"
-                         ValueChanged="(DocumentTargetMode v) => _editModel.TargetMode = v"
-                         Label="Målgruppe"
-                         IsEditing="true"/>
+            <EnumField Value="@_editModel.TargetMode"
+                       ValueChanged="(DocumentTargetMode v) => _editModel.TargetMode = v"
+                       Label="Målgruppe"
+                       IsEditing="true"/>
         </MudItem>
+        
+        @* Filstørrelse *@
+        <MudItem xs="12" sm="6">
+            <NumberField T="long"
+                         Value="@_editModel.MaxFileSizeMb"
+                         ValueChanged="(long v) => _editModel.MaxFileSizeMb = v"
+                         Label="Maks filstørrelse"
+                         IsEditing="true"
+                         AdornmentText="MB"
+                         Min="DocTypeValidations.MaxFileSizeMinMb"
+                         Max="DocTypeValidations.MaxFileSizeMaxMb"
+                         For="() => _editModel.MaxFileSizeMb"/>
+        </MudItem>
+
+        @* Tilatte MimeTypes *@
+        <MudItem xs="12">
+            <MimeTypeSelectorField SelectedMimeTypes="@_editModel.AllowedMimeTypes"
+                                   SelectedMimeTypesChanged="(string[] v) => _editModel.AllowedMimeTypes = v"
+                                   IsEditing="true"/>
+        </MudItem>
+        
     </Fields>
 </CreateForm>
 

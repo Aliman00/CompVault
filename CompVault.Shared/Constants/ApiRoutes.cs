@@ -77,6 +77,8 @@ public static class ApiRoutes
     {
         public static string Base(string documentTypeSlug) => $"api/documents/{documentTypeSlug}";
         public static string ById(string documentTypeSlug, Guid id) => $"api/documents/{documentTypeSlug}/{id}";
+        public static string UploadVersion(string documentTypeSlug, Guid id) => 
+            $"api/documents/{documentTypeSlug}/{id}/upload";
     }
 
 

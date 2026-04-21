@@ -10,7 +10,8 @@ namespace CompVault.Frontend.Common.Extensions;
 public static class BrowserFileExtensions
 {
     /// <summary>
-    /// Oppretter en MemoryStream for en fil og bygger en FileAttachment-record til å sendes mellom lag
+    /// Oppretter en MemoryStream for en fil og bygger en FileAttachment-record til å sendes mellom lag.
+    /// Vi gir maksstørrelsen 10% slingringsmoment slik at det er backend som gir feilmelding og ikke frontend
     /// </summary>
     /// <param name="file">IBrowserFile lagt til av bruker</param>
     /// <param name="maxSizeInBytes">Maks størrelse til et dokument</param>
@@ -20,7 +21,7 @@ public static class BrowserFileExtensions
         CancellationToken ct = default)
     {
         var buffer = new MemoryStream();
-        await using Stream browserStream = file.OpenReadStream(maxAllowedSize: maxSizeInBytes);
+        await using Stream browserStream = file.OpenReadStream(maxAllowedSize: (long)(maxSizeInBytes * 1.1));
         await browserStream.CopyToAsync(buffer, ct);
         buffer.Position = 0;
 

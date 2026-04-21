@@ -1,5 +1,6 @@
 ﻿using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
+using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Models;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Documents;
@@ -130,6 +131,42 @@ public class DocumentService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved oppdatering av dokument {Slug}/{Id}", documentTypeSlug, id);
+            return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
+    
+    /// <inheritdoc />
+    public async Task<Result<DocumentDto>> UpdateVersionAsync(string documentTypeSlug, Guid documentId, 
+        FileAttachment? file, CancellationToken ct)
+    {
+        try
+        { // Bygger FormFile med filen
+            using var content = new MultipartFormDataContent();
+            MultipartFormBuilder.AddFile(content, file);
+            
+            HttpResponseMessage response =
+                await _httpClient.PostAsync(
+                    ApiRoutes.Documents.UploadVersion(documentTypeSlug, documentId), content, ct);
+
+            Result<DocumentDto> result = await HttpClientExtensions.ParseResponseAsync<DocumentDto>(response, ct);
+
+            if (result.IsFailure)
+                return Result<DocumentDto>.Failure(result.Error!);
+
+            return Result<DocumentDto>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved versjonsoppdatering av dokument {Slug}/{Id}", 
+                documentTypeSlug, documentId);
+            return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved versjonsoppdatering av dokument {Slug}/{Id}", 
+                documentTypeSlug, documentId);
             return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }

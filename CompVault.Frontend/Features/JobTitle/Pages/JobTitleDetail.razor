@@ -46,7 +46,7 @@ else if (_jobTitle != null)
         <Fields>
             @* Stillingstittel *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Name"
+                <TextField Value="@_editModel.Name"
                                  ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                                  Label="Stillingstittel"
                                  IsEditing="_isEditing"
