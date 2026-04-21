@@ -59,4 +59,24 @@ public static class ApiRoutes
         public const string Base = "api/jobtitles";
         public static string ById(Guid id) => $"{Base}/{id}";
     }
+
+    public static class EquipmentCategories
+    {
+        public const string Base = "api/equipment-categories";
+        public static string ById(Guid id) => $"{Base}/{id}";
+    }
+
+    public static class EquipmentItems
+    {
+        public const string Base = "api/equipment-items";
+        public static string ById(Guid id) => $"{Base}/{id}";
+        public const string ByCategory = "by-category";
+    }
+
+    public static class EquipmentIssuances
+    {
+        public const string Base = "api/equipment-issuances";
+        public static string ById(Guid id) => $"{Base}/{id}";
+        public const string ByUser = "by-user";
+    }
 }
