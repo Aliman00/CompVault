@@ -921,7 +921,7 @@ public static class DatabaseSeeder
                     Quantity = quantity,
                     Size = size,
                     IssuedById = admin.Id,
-                    IssuedDate = new DateTime(2026, 1, 1),
+                    IssuedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
