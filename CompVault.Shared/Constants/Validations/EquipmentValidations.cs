@@ -11,7 +11,9 @@ public static class EquipmentValidations
     public const int ItemNameMaxLength = 200;
     public const int SizeMaxLength = 20;
     public const int NotesMaxLength = 500;
-
+    public const int QuantityMin = 1;
+    public const int QuantityMax = 100;
+    
     public static class Errors
     {
         // Category

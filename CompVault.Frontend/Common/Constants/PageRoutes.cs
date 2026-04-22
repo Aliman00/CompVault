@@ -68,6 +68,20 @@ public static class PageRoutes
         public static string Detail(string slug) => $"/document-types/{slug}";
         public const string Create = "/document-types/create";
     }
+    
+    public static class EquipmentCategories
+    {
+        public const string List = "/equipment-categories";
+        public static string Detail(Guid id) => $"/equipment-categories/{id}";
+        public const string Create = "/equipment-categories/create";
+    }
+
+    public static class EquipmentItems
+    {
+        public const string List = "/equipment-items";
+        public static string Detail(Guid id) => $"/equipment-items/{id}";
+        public const string Create = "/equipment-items/create";
+    }
 
     public static class Admin
     {

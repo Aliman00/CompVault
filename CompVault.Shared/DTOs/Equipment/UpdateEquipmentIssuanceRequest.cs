@@ -11,7 +11,8 @@ namespace CompVault.Shared.DTOs.Equipment;
 public sealed class UpdateEquipmentIssuanceRequest
 {
     /// <summary>Nytt antall.</summary>
-    [Range(1, 100, ErrorMessage = EquipmentValidations.Errors.QuantityRange)]
+    [Range(EquipmentValidations.QuantityMin, EquipmentValidations.QuantityMax, 
+        ErrorMessage = EquipmentValidations.Errors.QuantityRange)]
     public int? Quantity { get; set; }
 
     /// <summary>Ny størrelse.</summary>

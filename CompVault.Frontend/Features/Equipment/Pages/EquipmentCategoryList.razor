@@ -1,0 +1,101 @@
+﻿@page "/equipment-categories"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.EquipmentRead)]
+@inject IEquipmentCategoryService EquipmentCategoryService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle dokumenttyper *@
+
+<ListPage TItem="EquipmentCategoryDto"
+          Items="_equipmentCategories"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          SelectedItemsChanged="@(s => _selectedEquipmentCategories = s)"
+          RowClick="@(args => OnCategoryClick(args))">
+    <Header>
+        <ListHeader Title="Dokumentkategorier"
+                    PageIcon="@Icons.Material.Filled.Topic"
+                    CreateHref="@PageRoutes.DocumentTypes.Create"
+                    CreateLabel="Opprett dokumentkategori"
+                    CreateIcon="@Icons.Material.Filled.Topic"
+                    CreatePolicy="@Permissions.DocumentTypesWrite"/>
+    </Header>
+    <Columns>
+        @* Dokumenttype navn *@
+        <PropertyColumn T="EquipmentCategoryDto" TProperty="string"
+                        Property="ct => ct.Name.Truncate(40)" Title="Navn"/>
+        
+        @* Beskrivelse *@
+        <PropertyColumn T="EquipmentCategoryDto" TProperty="string"
+                        Property="r => r.Description.Truncate(50)"
+                        Title="Beskrivelse"
+                        Sortable="true"/>
+
+        @* Er kategorien aktiv *@
+        <TemplateColumn T="EquipmentCategoryDto"
+                        Title="Status"
+                        Sortable="true"
+                        SortBy="@(ct => ct.IsActive)">
+            <CellTemplate>
+                <MudChip T="string"
+                         Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                         Size="Size.Small"
+                         Class="cv-rounded">
+                    @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                </MudChip>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</ListPage>
+
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private List<EquipmentCategoryDto> _equipmentCategories = [];
+    private HashSet<EquipmentCategoryDto> _selectedEquipmentCategories = [];
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getCategoriesResult = await EquipmentCategoryService.GetAllAsync(Cts.Token);
+
+            if (getCategoriesResult.IsFailure)
+            {
+                _alert = new AlertInfo(getCategoriesResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _equipmentCategories = getCategoriesResult.Value!;
+
+            if (Deleted)
+                _alert = new AlertInfo("Dokumentkategori er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste dokumentkategorier. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnCategoryClick(DataGridRowClickEventArgs<EquipmentCategoryDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.EquipmentCategories.Detail(args.Item.Id));
+}

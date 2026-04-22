@@ -78,6 +78,24 @@
         </Authorized>
     </AuthorizeView>
 
+    <AuthorizeView Policy="@Permissions.EquipmentRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.EquipmentCategories.List"
+                        Icon="@Icons.Material.Filled.Article">
+                Utstyrskategori
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.EquipmentRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.EquipmentItems.List"
+                        Icon="@Icons.Material.Filled.Article">
+                Utstyr
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
     <AuthorizeView Policy="@Permissions.AdminAccess">
         <Authorized>
             <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">
