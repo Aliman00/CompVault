@@ -1,0 +1,52 @@
+﻿@* Viser om brukeren har signert, ikke signert og/eller signert en eldre versjon av et dokument *@
+
+@if (CurrentUserMustSign)
+{
+    @if (!CurrentUserHasSigned)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+            Du har ikke signert dette dokumentet ennå.
+        </MudAlert>
+    }
+    else if (CurrentUserSignedOldVersion)
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+            Du signerte versjon @SignatureVersion —
+            dokumentet er nå oppdatert til versjon @DocumentVersion.
+        </MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Success" Dense="true" Class="mb-2">
+            Du har signert dette dokumentet.
+        </MudAlert>
+    }
+}
+
+@code {
+    /// <summary>
+    /// Krever dokumentet en signatur av innlogget bruker
+    /// </summary>
+    [Parameter, EditorRequired] public bool CurrentUserMustSign { get; set; }
+    
+    /// <summary>
+    /// Hvis brukeren har signert eller ikke
+    /// </summary>
+    [Parameter, EditorRequired] public bool CurrentUserHasSigned { get; set; }
+    
+    /// <summary>
+    /// Versjonen til dokumentet - kan være at brukeren har signert en eldre versjon
+    /// </summary>
+    [Parameter, EditorRequired] public int? SignatureVersion { get; set; }
+    
+    /// <summary>
+    /// Dokumentet sitt nåvæærende versjoner
+    /// </summary>
+    [Parameter, EditorRequired] public int DocumentVersion { get; set; }
+    
+    /// <summary>
+    ///  Gjør en sjekk om brukeren har signert en eldre versjon men ikke nåværende versjon
+    /// </summary>
+    private bool CurrentUserSignedOldVersion =>
+        CurrentUserHasSigned && SignatureVersion < DocumentVersion;
+}

@@ -7,7 +7,7 @@
               ReadOnly="!IsEditing"
               Variant="IsEditing ? Variant.Outlined : Variant.Text"
               For="For"
-              Adornment="@(ShowLink && OnAdornmentClick.HasDelegate ? Adornment.End : Adornment.None)"
+              Adornment="@(ShowLink && OnAdornmentClick.HasDelegate && !IsEditing ? Adornment.End : Adornment.None)"
               AdornmentIcon="@Icons.Material.Filled.OpenInNew"
               AdornmentAriaLabel="Naviger til lenke"
               OnAdornmentClick="OnAdornmentClick"

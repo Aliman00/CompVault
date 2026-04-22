@@ -18,7 +18,7 @@ public static class DocTypeValidations
 
     public static class Errors
     {
-        public const string NameRequired = "Navn på dokumenttypen er påkrevd";
+        public const string NameRequired = "Navn på dokumentkategorien er påkrevd";
         public const string NameMaxLength = "Navn kan ikke være lengre enn 100 tegn";
 
         public const string DescMaxLength = "Beskrivelse kan ikke være lengre enn 500 tegn";

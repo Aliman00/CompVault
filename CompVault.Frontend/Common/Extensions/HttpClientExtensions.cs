@@ -1,13 +1,8 @@
 ﻿using System.Text.Json;
-
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Models;
 using CompVault.Shared.Result;
-
 using Microsoft.AspNetCore.WebUtilities;
-
-using MudBlazor;
-
 namespace CompVault.Frontend.Common.Extensions;
 
 
@@ -60,14 +55,33 @@ public static class HttpClientExtensions
     {
         try
         {
-            ProblemDetail? problemDetail = await response.Content.ReadFromJsonAsync<ProblemDetail>(ct);
-            if (problemDetail == null)
-                return AppError.Create(ErrorCode.Unknown, "Ukjent feil fra serveren");
+            // Henter ut hele bodyen som en et JsonDocument for å sjekke om det er datavalidation eller vår egen
+            // feilmelding
+            using JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), 
+                cancellationToken: ct);
+            JsonElement root = doc.RootElement;
 
-            if (!Enum.TryParse(problemDetail.Code, out ErrorCode errorCode))
+            // Vi sjekker om det er et errors-felt her i responsen. Er det et så er det da DataValidation
+            if (root.TryGetProperty("errors", out JsonElement errors))
+            {
+                var messages = errors.EnumerateObject()
+                    .SelectMany(field => field.Value.EnumerateArray()
+                        .Select(v => v.GetString() ?? string.Empty))
+                    .Where(message => !string.IsNullOrEmpty(message))
+                    .ToList();
+
+                string combined = string.Join(" ", messages);
+                return AppError.Create(ErrorCode.Validation, combined);
+            }
+
+            // Henter ut code og message og mapper til en AppError for å vise i UI-en
+            string? code = root.TryGetProperty("code", out JsonElement c) ? c.GetString() : null;
+            string? message = root.TryGetProperty("message", out JsonElement m) ? m.GetString() : null;
+
+            if (!Enum.TryParse(code, out ErrorCode errorCode))
                 errorCode = ErrorCode.Unknown;
 
-            return AppError.Create(errorCode, problemDetail.Message);
+            return AppError.Create(errorCode, message ?? "Ukjent feil fra serveren");
         }
         catch (JsonException)
         {
@@ -109,6 +123,25 @@ public static class HttpClientExtensions
     {
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
         return await httpClient.PostAsync(url, content, ct);
+    }
+    
+    
+    /// <summary>
+    /// Leser filinnholdet fra en HTTP-respons og mapper det til en FileAttachment
+    /// </summary>
+    /// <param name="response">Http-forespørsel fra backend</param>
+    /// <param name="ct"></param>
+    /// <returns>Ferdig mappet FileAttachment for nedlastning</returns>
+    internal static async Task<FileAttachment> ReadFileAttachmentAsync(HttpResponseMessage response, 
+        CancellationToken ct)
+    {
+        Stream stream = await response.Content.ReadAsStreamAsync(ct);
+        string contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        string fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                          ?? response.Content.Headers.ContentDisposition?.FileName
+                          ?? "dokument";
+
+        return new FileAttachment(stream, fileName, contentType);
     }
     
     

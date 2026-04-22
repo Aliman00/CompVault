@@ -3,6 +3,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Documents;
+using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
 
 using Microsoft.EntityFrameworkCore;
@@ -267,7 +268,8 @@ public sealed class DocumentService(
                 return Result<DocumentDto>.Failure(
                     AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for dokumentets dokumenttype."));
         }
-
+        
+        ApplyTargetingUpdate(document, request);
         ApplyUpdate(document, request);
 
         try
@@ -331,21 +333,40 @@ public sealed class DocumentService(
             document.ExternalUrl = null;
         else if (request.ExternalUrl is not null)
             document.ExternalUrl = request.ExternalUrl;
-
-        // Oppdater mål-avdelinger: null = ikke endret, liste = erstatt
-        if (request.TargetDepartmentIds is not null)
+    }
+    
+    // Ved endring av målgruppe til en dokumenttype så kan dokumenter sitte igjen med verdier i listen til gamle
+    // måltyper. Vi rydder opp i listene og legger til og fjerner gamle utifra hva brukeren legger til i requesten
+    private static void ApplyTargetingUpdate(Document document, UpdateDocumentRequest request)
+    {
+        switch (document.DocumentType!.TargetMode)
         {
-            document.DocumentDepartments = request.TargetDepartmentIds
-                .Select(id => new DocumentDepartment { DocumentId = document.Id, DepartmentId = id })
-                .ToList();
-        }
+            case DocumentTargetMode.Department when request.TargetDepartmentIds is not null:
+                document.DocumentDepartments.Clear();
+                foreach (Guid departmentId in request.TargetDepartmentIds)
+                {
+                    document.DocumentDepartments.Add(
+                        new DocumentDepartment { DocumentId = document.Id, DepartmentId = departmentId });
+                }
 
-        // Oppdater mål-jobbtitler: null = ikke endret, liste = erstatt
-        if (request.TargetJobTitleIds is not null)
-        {
-            document.DocumentJobTitles = request.TargetJobTitleIds
-                .Select(id => new DocumentJobTitle { DocumentId = document.Id, JobTitleId = id })
-                .ToList();
+                document.DocumentJobTitles.Clear();
+                break;
+
+            case DocumentTargetMode.JobTitle when request.TargetJobTitleIds is not null:
+                document.DocumentJobTitles.Clear();
+                foreach (Guid jobTitleId in request.TargetJobTitleIds)
+                {
+                    document.DocumentJobTitles.Add(
+                        new DocumentJobTitle { DocumentId = document.Id, JobTitleId = jobTitleId });
+                }
+
+                document.DocumentDepartments.Clear();
+                break;
+
+            case DocumentTargetMode.None:
+                document.DocumentDepartments.Clear();
+                document.DocumentJobTitles.Clear();
+                break;
         }
     }
 }

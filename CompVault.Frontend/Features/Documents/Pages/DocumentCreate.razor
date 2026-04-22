@@ -3,6 +3,7 @@
 @attribute [Authorize(Policy = Permissions.DocumentsWrite)]
 @inject IDocumentService DocumentService
 @inject IDocumentTypeService DocumentTypeService
+@inject IDocumentTypeCategoryService DocumentTypeCategoryService
 @inject NavigationManager NavigationManager
 @inject IDepartmentService DepartmentService
 @inject IJobTitleService JobTitleService
@@ -36,15 +37,39 @@
         @* Beskrivelse *@
         <MudItem xs="12">
             <TextField Value="@_editModel.Description"
-                             ValueChanged="(string? v) => _editModel.Description = v"
-                             Label="Beskrivelse (valgfritt)"
-                             IsEditing="true"
-                             For="() => _editModel.Description"
-                             Lines="4"/>
+                       ValueChanged="(string? v) => _editModel.Description = v"
+                       Label="Beskrivelse (valgfritt)"
+                       IsEditing="true"
+                       For="() => _editModel.Description"
+                       Lines="4"/>
+        </MudItem>
+        
+        @* Kategori *@
+        <MudItem xs="12" sm="6">
+            @if (_documentTypeCategories.Count > 0)
+            {
+                <MudItem xs="12" sm="6">
+                    <SelectWithLinkField Value="_editModel.DocumentTypeCategoryId"
+                                         ValueChanged="(Guid? v) => _editModel.DocumentTypeCategoryId = v"
+                                         Label="Underkategori (valgfritt)"
+                                         ToStringFunc="@(id => _documentTypeCategories.FirstOrDefault(
+                                                           c => c.Id == id)?.Name ?? string.Empty)"
+                                         IsEditing="true"
+                                         ShowLink="false">
+                        <Items>
+                            <MudSelectItem Value="(Guid?)null">Ingen kategori</MudSelectItem>
+                            @foreach (var category in _documentTypeCategories)
+                            {
+                                <MudSelectItem Value="(Guid?)category.Id">@category.Name</MudSelectItem>
+                            }
+                        </Items>
+                    </SelectWithLinkField>
+                </MudItem>
+            }
         </MudItem>
         
         @* RequireSignature *@
-        <MudItem xs="12">
+        <MudItem xs="12" sm="6">
             <ToggleButton Label="Krever dokumentet signatur?"
                           @bind-Value="_editModel.RequiresSignature"
                           IsEditing="true">
@@ -111,6 +136,7 @@
     
     // ===================== PRIVATE FELT =====================
     private DocumentTypeDto _documentType = null!;
+    private List<DocumentTypeCategoryDto> _documentTypeCategories = [];
     
     private readonly CreateDocumentModel _editModel = new();
 
@@ -132,6 +158,7 @@
         try
         {
             var documentTypeTask = DocumentTypeService.GetBySlugAsync(Slug, Cts.Token);
+            var documentTypeCategoryTask = DocumentTypeCategoryService.GetAllAsync(Slug, Cts.Token);
             var departmentsTask = DepartmentService.GetAllAsync(Cts.Token);
             var jobTitlesTask = JobTitleService.GetAllAsync(Cts.Token);
 
@@ -144,6 +171,12 @@
                 return;
             }
             _documentType = documentTypeResult.Value!;
+            
+            var documentTypeCategoryResult = await documentTypeCategoryTask;
+            if (documentTypeCategoryResult.IsFailure)
+                _alert = new AlertInfo(documentTypeCategoryResult.Error!.ToString(), Severity.Error);
+            else
+                _documentTypeCategories = documentTypeCategoryResult.Value!;
 
             var departmentsResult = await departmentsTask;
             if (departmentsResult.IsFailure)

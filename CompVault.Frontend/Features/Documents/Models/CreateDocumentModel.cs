@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+using CompVault.Frontend.Common.Validations;
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Documents;
 
@@ -13,9 +14,11 @@ public class CreateDocumentModel
 
     [MaxLength(DocValidations.DescMaxLength, ErrorMessage = DocValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
+    
+    public Guid? DocumentTypeCategoryId { get; set; }
 
     [MaxLength(DocValidations.ExternalUrlMaxLength, ErrorMessage = DocValidations.Errors.ExternalUrlMaxLength)]
-    [Url(ErrorMessage = DocValidations.Errors.ExternalUrlFormat)]
+    [OptionalUrl(ErrorMessage = DocValidations.Errors.ExternalUrlFormat)]
     public string? ExternalUrl { get; set; }
 
     public bool RequiresSignature { get; set; } = true;
@@ -27,6 +30,7 @@ public class CreateDocumentModel
     {
         Title = Title,
         Description = Description,
+        DocumentTypeCategoryId = DocumentTypeCategoryId,
         ExternalUrl = ExternalUrl,
         RequiresSignature = RequiresSignature,
         TargetDepartmentIds = TargetDepartmentIds,

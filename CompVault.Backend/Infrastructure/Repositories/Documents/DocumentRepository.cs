@@ -23,15 +23,13 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     }
 
     public async Task<Document?> GetForUpdateAsync(
-        Guid id, CancellationToken cancellationToken = default)
-    {
-        return await DbSet
+        Guid id, CancellationToken cancellationToken = default) => await DbSet
+            .IgnoreQueryFilters()
             .Include(d => d.DocumentType)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
-            .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
-    }
-
+            .FirstOrDefaultAsync(d => d.Id == id && d.DeletedAt == null, cancellationToken);
+    
     public async Task<Document?> GetCurrentWithSignaturesAsync(
         Guid id, CancellationToken cancellationToken = default)
     {

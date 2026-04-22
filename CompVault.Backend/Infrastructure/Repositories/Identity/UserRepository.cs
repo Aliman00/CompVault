@@ -41,6 +41,19 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
 
         return result.Select(x => (x.User, x.Roles)).ToList();
     }
+    
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ApplicationUser>> GetUsersByTargetAsync(IReadOnlyList<Guid> departmentIds,
+        IReadOnlyList<Guid> jobTitleIds, CancellationToken ct = default) =>
+        await DbSet
+            .AsNoTracking()
+            .Include(u => u.Department)
+            .Include(u => u.JobTitle)
+            .Where(u => departmentIds.Count == 0 ||
+                        (u.DepartmentId.HasValue && departmentIds.Contains(u.DepartmentId.Value)))
+            .Where(u => jobTitleIds.Count == 0 ||
+                        (u.JobTitleId.HasValue && jobTitleIds.Contains(u.JobTitleId.Value)))
+            .ToListAsync(ct);
 
     /// <inheritdoc />
     public async Task<ApplicationUser?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default) =>

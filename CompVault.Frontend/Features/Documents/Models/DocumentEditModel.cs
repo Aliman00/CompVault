@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+using CompVault.Frontend.Common.Validations;
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Documents;
 namespace CompVault.Frontend.Features.Documents.Models;
@@ -12,9 +13,11 @@ public class DocumentEditModel
 
     [MaxLength(DocValidations.DescMaxLength, ErrorMessage = DocValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
+    
+    public Guid? DocumentTypeCategoryId { get; set; }
 
     [MaxLength(DocValidations.ExternalUrlMaxLength, ErrorMessage = DocValidations.Errors.ExternalUrlMaxLength)]
-    [Url(ErrorMessage = DocValidations.Errors.ExternalUrlFormat)]
+    [OptionalUrl(ErrorMessage = DocValidations.Errors.ExternalUrlFormat)]
     public string? ExternalUrl { get; set; }
 
     public bool RequiresSignature { get; set; } = true;
@@ -26,6 +29,7 @@ public class DocumentEditModel
     {
         Title = dto.Title,
         Description = dto.Description,
+        DocumentTypeCategoryId = dto.DocumentTypeCategoryId,
         ExternalUrl = dto.ExternalUrl,
         RequiresSignature = dto.RequiresSignature,
         TargetDepartmentIds = dto.TargetDepartmentIds,
@@ -36,8 +40,10 @@ public class DocumentEditModel
     {
         Title = Title,
         Description = Description,
-        ExternalUrl = ExternalUrl,
-        ClearExternalUrl = ExternalUrl is null,
+        DocumentTypeCategoryId = DocumentTypeCategoryId,
+        ClearDocumentTypeCategoryId = DocumentTypeCategoryId is null,
+        ExternalUrl = string.IsNullOrWhiteSpace(ExternalUrl) ? null : ExternalUrl,
+        ClearExternalUrl = string.IsNullOrWhiteSpace(ExternalUrl),
         RequiresSignature = RequiresSignature,
         TargetDepartmentIds = TargetDepartmentIds,
         TargetJobTitleIds = TargetJobTitleIds,

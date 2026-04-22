@@ -68,17 +68,26 @@ public static class ApiRoutes
 
     public static class DocumentTypeCategories // Base brukes ikke her siden det ligger inne i DocumentType, bruker All
     {
-        private static string Base(string documentTypeSlug) => $"api/document-types/{documentTypeSlug}/categories";
-        public static string All(string documentTypeSlug) => Base(documentTypeSlug);
-        public static string ById(string documentTypeSlug, Guid categoryId) => $"{Base(documentTypeSlug)}/{categoryId}";
+        private static string Base(string slug) => $"api/document-types/{slug}/categories";
+        public static string All(string slug) => Base(slug);
+        public static string ById(string slug, Guid categoryId) => $"{Base(slug)}/{categoryId}";
     }
 
     public static class Documents
     {
-        public static string Base(string documentTypeSlug) => $"api/documents/{documentTypeSlug}";
-        public static string ById(string documentTypeSlug, Guid id) => $"api/documents/{documentTypeSlug}/{id}";
-        public static string UploadVersion(string documentTypeSlug, Guid id) => 
-            $"api/documents/{documentTypeSlug}/{id}/upload";
+        // ================= Dokumenter =================
+        public static string Base(string slug) => $"api/documents/{slug}";
+        public static string ById(string slug, Guid id) => $"api/documents/{slug}/{id}";
+        public static string UploadVersion(string slug, Guid id) => $"api/documents/{slug}/{id}/upload";
+        
+        // ================= Signaturer =================
+        public static string Signatures(string slug, Guid id) => $"api/documents/{slug}/{id}/signatures";
+        public static string Sign(string slug, Guid id) => $"api/documents/{slug}/{id}/sign";
+        public const string MySigned = "api/documents/my/signed";
+        public const string MyPending = "api/documents/my/pending";
+        
+        // ================= Nedlastning =================
+        public static string Download(string slug, Guid id) => $"api/documents/{slug}/{id}/download";
     }
 
 

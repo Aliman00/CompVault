@@ -1,0 +1,86 @@
+﻿@inject IDocumentService DocumentService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IJSRuntime Js
+
+@* Visning av en fil med størrelse, versjon og når den er lastet opp og annen relevant informasjon *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+<MudPaper Outlined="true" Class="pa-4 d-flex align-center gap-4">
+    
+    @* Ikonet til filen - forskjellig fra forskjellige typer mimefiles*@
+    <MudIcon Icon="@(DocumentFileRecord.MimeType.GetFileIcon())"
+             Color="Color.Primary"
+             Size="Size.Large"/>
+    
+    @* Informasjon samlet over og under hverandre*@
+    <MudStack Spacing="0" Class="flex-grow-1">
+        <MudText Typo="Typo.body1">@DocumentFileRecord.FileName</MudText>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            @(DocumentFileRecord.FileSize.FormatFileSize()) - Versjon @DocumentFileRecord.Version -
+            Lastet opp av
+            <MudLink Href="@PageRoutes.Users.Detail(DocumentFileRecord.UploadedBy)">
+                @DocumentFileRecord.UploadedByName
+            </MudLink>
+            - @DocumentFileRecord.UploadedAt.ToRelativeNorwegian()
+        </MudText>
+    </MudStack>
+    
+    @* Nedlastningsknapp *@
+    <MudIconButton Icon="@Icons.Material.Filled.Download"
+                   OnClick="DownloadFile"
+                   Disabled="_isDownloading"/>
+</MudPaper>
+
+@code {
+    // ===================== PARAMETER =====================
+    
+    /// <summary>
+    /// En record med alle egenskapene vi må vise for et dokument
+    /// </summary>
+    [Parameter, EditorRequired] 
+    public DocumentFileRecord DocumentFileRecord { get; set; } = null!;
+    
+    // ===================== PRIVATE FIELDS =====================
+    
+    private AlertInfo? _alert;
+    
+    private bool _isDownloading;
+    private IJSObjectReference? _jsModule;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            _jsModule = await Js.InvokeAsync<IJSObjectReference>(
+                "import", "/js/fileUtils.js");
+    }
+    
+    // ===================== PRIVATE METHODS =====================
+    
+    // Ved nedlastning så bruker vi JS-scriptet og laster det ned
+    private async Task DownloadFile()
+    {
+        _isDownloading = true;
+        try
+        {
+            var downloadResult = await DocumentService.DownloadAsync(DocumentFileRecord.Slug,
+                DocumentFileRecord.DocumentId, CancellationToken.None);
+            if (downloadResult.IsFailure)
+            {
+                _alert = new AlertInfo("Klarte ikke å laste ned dokumentet. Prøv igjen",
+                    Severity.Error);
+                return;
+            }
+
+            FileAttachment file = downloadResult.Value!;
+            string base64 = await file.ToBase64Async(Cts.Token);
+
+            await _jsModule!.InvokeVoidAsync("downloadFile", file.FileName, file.ContentType, base64);
+        }
+        finally
+        {
+            _isDownloading = false;
+        }
+    }
+}

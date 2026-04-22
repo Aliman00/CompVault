@@ -72,27 +72,42 @@ public sealed class DocumentSignatureService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
+    public async Task<Result<IReadOnlyList<UserSignatureStatusDto>>> GetSignatureStatus(
         Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default)
     {
         Document? document = await documentRepository.GetWithDetailsAsync(documentId, cancellationToken);
 
         if (document is null)
-            return Result<IReadOnlyList<DocumentSignatureDto>>.Failure(
+            return Result<IReadOnlyList<UserSignatureStatusDto>>.Failure(
                 AppError.NotFound($"Dokument med ID '{documentId}' ble ikke funnet."));
-
-        Result accessResult = await targetingService.CheckAccessAsync(document, currentUserId, bypassTargeting, cancellationToken);
+        
+        // Sjekker at brukeren har lov til å se dokumentet
+        Result accessResult = await targetingService.CheckAccessAsync(document, currentUserId, bypassTargeting, 
+            cancellationToken);
         if (accessResult.IsFailure)
-            return Result<IReadOnlyList<DocumentSignatureDto>>.Failure(accessResult.Error!);
+            return Result<IReadOnlyList<UserSignatureStatusDto>>.Failure(accessResult.Error!);
+        
+        // Henter ut avdelingene og jobbstillingene hvis noen er i målgruppen
+        var departmentIds = document.DocumentDepartments.Select(dd => dd.DepartmentId).ToList();
+        var jobTitleIds = document.DocumentJobTitles.Select(dj => dj.JobTitleId).ToList();
 
-        // Hent signaturer for dokumentets gjeldende versjon
-        int currentVersion = document.Version;
+        // Hent signaturer og målgruppebrukere - ikke kjør paralellt siden de er innom samme tabell
         IReadOnlyList<DocumentSignature> signatures = await signatureRepository.GetForDocumentVersionAsync(
-            documentId, currentVersion, cancellationToken);
+            documentId, document.Version, cancellationToken);
 
-        var dtos = signatures.Select(DocumentMapper.ToSignatureDto).ToList();
-        return Result<IReadOnlyList<DocumentSignatureDto>>.Success(dtos);
+        IReadOnlyList<ApplicationUser> targetedUsers = await userRepository.GetUsersByTargetAsync(
+            departmentIds, jobTitleIds, cancellationToken);
+        
+        // Slår sammen signaturen og brukeren til SignatureStatusDto og sorterer etter om brukeren har signert
+        var dtos = targetedUsers
+            .Select(u => DocumentMapper.ToSignatureStatusDto(
+                u, signatures.FirstOrDefault(s => s.UserId == u.Id)))
+            .OrderBy(u => u.HasSigned)
+            .ThenBy(u => u.FullName)
+            .ToList();
+
+        return Result<IReadOnlyList<UserSignatureStatusDto>>.Success(dtos);
     }
 
     /// <inheritdoc />

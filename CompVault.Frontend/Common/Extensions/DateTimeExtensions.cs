@@ -13,7 +13,7 @@ public static class DateTimeExtensions
 
         return diff.TotalSeconds switch
         {
-            < 60 => "Akkurat nå",
+            < 60 => "akkurat nå",
             < 3600 => $"for {(int)diff.TotalMinutes} minutt{((int)diff.TotalMinutes == 1 ? "" : "er")} siden",
             < 86400 => $"for {(int)diff.TotalHours} time{((int)diff.TotalHours == 1 ? "" : "r")} siden",
             < 7 * 86400 => $"for {(int)diff.TotalDays} dag{((int)diff.TotalDays == 1 ? "" : "er")} siden",

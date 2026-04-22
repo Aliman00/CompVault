@@ -156,6 +156,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentTypeService, DocumentTypeService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IDocumentTypeCategoryService, DocumentTypeCategoryService>();
+        services.AddScoped<ISignatureService, SignatureService>();
 
         return services;
     }

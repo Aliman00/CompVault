@@ -6,6 +6,10 @@
 @inject IDocumentTypeCategoryService DocumentTypeCategoryService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject IDepartmentService DepartmentService
+@inject IJobTitleService JobTitleService
+@inject ISignatureService SignatureService
+@inject CircuitUserContext CircuitUser
 
 @* Detalje visning av et dokument med oppdatering og fornying av et dokument ved ny versjon *@
 
@@ -71,6 +75,32 @@ else if (_document != null || _documentType != null)
                            For="() => _editModel.Title"/>
             </MudItem>
 
+            @* Kategori *@
+            <MudItem xs="12" sm="6">
+                @if (_documentTypeCategories.Count > 0)
+                {
+                    <MudItem xs="12" sm="6">
+                        <SelectWithLinkField Value="_editModel.DocumentTypeCategoryId"
+                                             ValueChanged="(Guid? v) => _editModel.DocumentTypeCategoryId = v"
+                                             Label="Underkategori (valgfritt)"
+                                             ToStringFunc="@(id => _documentTypeCategories.FirstOrDefault(
+                                                               c => c.Id == id)?.Name ?? string.Empty)"
+                                             IsEditing="_isEditing"
+                                             ShowLink="false"
+                                             DisplayValue="@(_documentTypeCategories.
+                                                           FirstOrDefault(c => c.Id == _document?.DocumentTypeCategoryId)?.Name)">
+                            <Items>
+                                <MudSelectItem Value="(Guid?)null">Ingen kategori</MudSelectItem>
+                                @foreach (var category in _documentTypeCategories)
+                                {
+                                    <MudSelectItem Value="(Guid?)category.Id">@category.Name</MudSelectItem>
+                                }
+                            </Items>
+                        </SelectWithLinkField>
+                    </MudItem>
+                }
+            </MudItem>
+
             @* Beskrivelse *@
             <MudItem xs="12">
                 <TextField Value="@_editModel.Description"
@@ -82,7 +112,7 @@ else if (_document != null || _documentType != null)
             </MudItem>
 
             @* RequireSignature *@
-            <MudItem xs="12">
+            <MudItem xs="12" sm="6">
                 <ToggleButton Label="Krever dokumentet signatur?"
                               @bind-Value="_editModel.RequiresSignature"
                               IsEditing="_isEditing">
@@ -91,73 +121,203 @@ else if (_document != null || _documentType != null)
                 </ToggleButton>
             </MudItem>
 
+            @* Filinformasjon hvis fil er lastet opp *@
+            @if (_document!.HasFile)
+            {
+                <MudItem xs="12" sm="6">
+                    <DocumentFileCard DocumentFileRecord="_document.ToFileInfo()!"/>
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12" sm="6">
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        Ingen fil er lastet opp for dette dokumentet.
+                    </MudAlert>
+                </MudItem>
+            }
+
             @* ExternalURL *@
             <MudItem xs="12" sm="6">
                 <TextField Value="@_editModel.ExternalUrl"
                            ValueChanged="(string? v) => _editModel.ExternalUrl = v ?? string.Empty"
                            Label="Ekstern lenke (valgfritt)"
                            IsEditing="_isEditing"
-                           For="() => _editModel.ExternalUrl"/>
-            </MudItem>
-
-            @* TODO: Hvis info om opplastet fil*@
-
-
-            @* Dokumenter med denne typen 
-            <MudItem xs="12">
-                <MudText Typo="Typo.subtitle1">Dokumenter av type @_document!.Name</MudText>
-                <MudDataGrid T="DocumentListDto"
-                             Items="_documentType"
-                             Dense="true"
-                             Hover="true"
-                             Striped="true"
-                             Square="true"
-                             Bordered="true"
-                             SortMode="SortMode.Single"
-                             RowClick="@((DataGridRowClickEventArgs<DocumentListDto> args)
-                                           => NavigateToDocument(args.Item.Id))">
-                    <Columns>
-                        <PropertyColumn Property='x => x.Title.Truncate(40)'
-                                        Title="Tittel" />
-
-                        <PropertyColumn Property='x => x.CategoryName.Truncate(40)'
-                                        Title="Kategori" />
-
-                        <PropertyColumn Property='x => x.Version.ToString()'
-                                        Title="Version" />
-                        
-                        <TemplateColumn T="DocumentListDto"
-                                        Title="Signering"
-                                        Sortable="true"
-                                        SortBy="@(x => x.RequiresSignature)"
-                                        HeaderStyle="width: 90px;">
-                            <CellTemplate>
-                                @if (context.Item.RequiresSignature)
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Draw"
-                                             Color="Color.Warning"
-                                             Size="Size.Small"
-                                             Title="Krever signering"/>
-                                }
-                            </CellTemplate>
-                        </TemplateColumn>
-
-                        <TemplateColumn T="DocumentListDto"
-                                             Title="Lastet opp"
-                                             Sortable="true"
-                                             SortBy="@(x => x.UploadedAt)">
-                            <CellTemplate>
-                                <MudTooltip Text="@context.Item.UploadedAt.ToString("dd.MM.yyyy", 
-                                                    new CultureInfo("nb-NO"))">
-                                    @context.Item.UploadedAt.ToRelativeNorwegian()
-                                </MudTooltip>
-                            </CellTemplate>
-                        </TemplateColumn>
-                    </Columns>
-                </MudDataGrid>
+                           For="() => _editModel.ExternalUrl"
+                           OnAdornmentClick="NavigateToExternalUrl"
+                           ShowLink="@(!string.IsNullOrWhiteSpace(_document?.ExternalUrl))"/>
             </MudItem>
             
-            *@
+            @if (HasInconsistentTargeting)
+            {
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Warning" Dense="true">
+                        Dokumentets målgruppe stemmer ikke med dokumentkategoriens innstillinger.
+                        Rediger dokumentet og oppdater målgruppen.
+                    </MudAlert>
+                </MudItem>
+            }
+            
+            @* Avdelinger som målgruppe *@
+            @if (_documentType!.TargetMode == DocumentTargetMode.Department)
+            {
+                @if (HasInactiveDepartments)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning" Dense="true">
+                            En eller flere målgruppe-avdelinger er inaktive. Vennligst oppdater målgruppen.
+                        </MudAlert>
+                    </MudItem>
+                }
+                <MudItem xs="12">
+                    <MultiSelectField T="Guid"
+                                      SelectedValues="_editModel.TargetDepartmentIds"
+                                      SelectedValuesChanged="(List<Guid> v) => _editModel.TargetDepartmentIds = v"
+                                      Label="Målgruppe - avdelinger"
+                                      IsEditing="_isEditing"
+                                      ToStringFunc="@(id => _departments
+                            .FirstOrDefault(d => d.Id == id)?.Name.Truncate(40) ?? "⚠ Inaktiv avdeling")"
+                                      OnChipClicked="(Guid id) => NavigationManager.NavigateTo(
+                                      PageRoutes.Departments.Detail(id))">
+                        <Items>
+                            @foreach (var department in _departments
+                                              .Where(d => !d.IsActive
+                                                          && _editModel.TargetDepartmentIds.Contains(d.Id)))
+                            {
+                                <MudSelectItem T="Guid" Value="department.Id">
+                                    ⚠ @department.Name (inaktiv)
+                                </MudSelectItem>
+                            }
+                            @foreach (var department in _departments.Where(d => d.IsActive))
+                            {
+                                <MudSelectItem T="Guid" Value="department.Id">@department.Name</MudSelectItem>
+                            }
+                        </Items>
+                    </MultiSelectField>
+                </MudItem>
+            }
+
+            @* Stillinger som målgruppe *@
+            @if (_documentType.TargetMode == DocumentTargetMode.JobTitle)
+            {
+                @if (HasInactiveJobTitles)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning" Dense="true">
+                            En eller flere målgruppe-stillinger er inaktive. Vennligst oppdater målgruppen.
+                        </MudAlert>
+                    </MudItem>
+                }
+                <MudItem xs="12">
+                    <MultiSelectField T="Guid"
+                                      SelectedValues="_editModel.TargetJobTitleIds"
+                                      SelectedValuesChanged="(List<Guid> v) => _editModel.TargetJobTitleIds = v"
+                                      Label="Målgruppe - stillinger"
+                                      IsEditing="_isEditing"
+                                      ToStringFunc="@(id => _jobTitles
+                            .FirstOrDefault(j => j.Id == id)?.Name.Truncate(40) ?? "⚠ Inaktiv stilling")"
+                                      OnChipClicked="(Guid id) => NavigationManager.NavigateTo(
+                                      PageRoutes.JobTitles.Detail(id))">
+                        <Items>
+                            @foreach (var jobTitle in _jobTitles.Where(j => !j.IsActive
+                                                                            && _editModel.TargetJobTitleIds.Contains(j.Id)))
+                            {
+                                <MudSelectItem T="Guid" Value="jobTitle.Id">⚠ @jobTitle.Name (inaktiv)</MudSelectItem>
+                            }
+                            @foreach (var jobTitle in _jobTitles.Where(j => j.IsActive))
+                            {
+                                <MudSelectItem T="Guid" Value="jobTitle.Id">@jobTitle.Name</MudSelectItem>
+                            }
+                        </Items>
+                    </MultiSelectField>
+                </MudItem>
+            }
+            
+            @if (_document!.RequiresSignature)
+            {
+                <MudItem xs="12">
+                    @* Egen melding hvis vi har singert/ikke signert *@
+                    <DocumentSignatureStatusAlert CurrentUserMustSign="CurrentUserMustSign"
+                                                  CurrentUserHasSigned="CurrentUserHasSigned"
+                                                  SignatureVersion="CurrentUserSignature?.SignatureVersion"
+                                                  DocumentVersion="_document!.Version"/>
+
+                    @* Header *@
+                    <ListHeader Title="@($"Signaturer - {_signatures.Count(s => s.HasSigned)} " +
+                                         $"av {_signatures.Count} har signert")"
+                                PageIcon="@Icons.Material.Filled.HistoryEdu">
+                        <Actions>
+                            @if (CurrentUserMustSign && !CurrentUserHasSigned)
+                            {
+                                <MudButton Color="Color.Primary"
+                                           Variant="Variant.Filled"
+                                           StartIcon="@Icons.Material.Filled.Draw"
+                                           OnClick="SignDocument">
+                                    Signer dokumentet
+                                </MudButton>
+                            }
+                        </Actions>
+                    </ListHeader>
+
+                    <MudDataGrid T="UserSignatureStatusDto"
+                                 Items="_signatures"
+                                 Dense="true"
+                                 Hover="true"
+                                 Striped="true"
+                                 Square="true"
+                                 Bordered="true"
+                                 SortMode="SortMode.Single">
+                        <Columns>
+                            <TemplateColumn T="UserSignatureStatusDto" Title="Navn">
+                                <CellTemplate>
+                                    <MudLink Href="@PageRoutes.Users.Detail(context.Item.UserId)">
+                                        @context.Item.FullName
+                                    </MudLink>
+                                </CellTemplate>
+                            </TemplateColumn>
+
+                            <TemplateColumn T="UserSignatureStatusDto"
+                                            Title="Versjon"
+                                            SortBy="x => x.SignatureVersion">
+                                <CellTemplate>
+                                    @(context.Item.SignatureVersion.HasValue ? $"v{context.Item.SignatureVersion}" : "—")
+                                </CellTemplate>
+                            </TemplateColumn>
+
+                            <TemplateColumn T="UserSignatureStatusDto"
+                                            Title="Signert"
+                                            SortBy="x => x.SignedAt">
+                                <CellTemplate>
+                                    @if (context.Item.SignedAt.HasValue)
+                                    {
+                                        <MudTooltip Text="@context.Item.SignedAt.Value.ToString("dd.MM.yyyy HH:mm")">
+                                            @context.Item.SignedAt.Value.ToRelativeNorwegian()
+                                        </MudTooltip>
+                                    }
+                                    else
+                                    {
+                                        <MudText Color="Color.Error">Ikke signert</MudText>
+                                    }
+                                </CellTemplate>
+                            </TemplateColumn>
+
+                            <TemplateColumn T="UserSignatureStatusDto" Title="" HeaderStyle="width: 40px;">
+                                <CellTemplate>
+                                    @if (context.Item.HasSigned && context.Item.SignatureVersion < _document.Version)
+                                    {
+                                        <MudTooltip Text="Signerte en eldre versjon">
+                                            <MudIcon Icon="@Icons.Material.Filled.Warning"
+                                                     Color="Color.Warning"
+                                                     Size="Size.Small"/>
+                                        </MudTooltip>
+                                    }
+                                </CellTemplate>
+                            </TemplateColumn>
+                        </Columns>
+                    </MudDataGrid>
+                </MudItem>
+            }
+            
         </Fields>
     </DetailForm>
 }
@@ -175,6 +335,9 @@ else if (_document != null || _documentType != null)
     private DocumentDto? _document;
     private DocumentTypeDto? _documentType;
     private List<DocumentTypeCategoryDto> _documentTypeCategories = [];
+    private List<DepartmentDto> _departments = [];
+    private List<JobTitleDto> _jobTitles = [];
+    private List<UserSignatureStatusDto> _signatures = [];
 
     private DocumentEditModel _editModel = new();
 
@@ -186,6 +349,22 @@ else if (_document != null || _documentType != null)
     private EditContext _editContext = null!;
 
     private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
+    
+    // Vi sjekker om typen til dokumentet har endret målgruppe og dokumentet ikke er oppdatert
+    private bool HasInconsistentTargeting =>
+        _documentType != null && _document != null &&
+        (
+            (_documentType.TargetMode == DocumentTargetMode.Department && _document.TargetJobTitleIds.Count > 0) ||
+            (_documentType.TargetMode == DocumentTargetMode.JobTitle && _document.TargetDepartmentIds.Count > 0) ||
+            (_documentType.TargetMode == DocumentTargetMode.None && 
+             (_document.TargetDepartmentIds.Count > 0 || _document.TargetJobTitleIds.Count > 0))
+        );
+    
+    // Vi henter innlogget bruker sin UserSignatureStatusDto og deretter sjekker vi om brukeren har singert eller ikke
+    private UserSignatureStatusDto? CurrentUserSignature =>
+        _signatures.FirstOrDefault(s => s.UserId == CircuitUser.UserId);
+    private bool CurrentUserMustSign => CurrentUserSignature != null;
+    private bool CurrentUserHasSigned => CurrentUserSignature?.HasSigned == true;
 
     // ===================== LIFECYCLE =====================
     protected override async Task OnParametersSetAsync()
@@ -196,42 +375,67 @@ else if (_document != null || _documentType != null)
         _documentType = new();
         _documentTypeCategories = [];
         _editModel = new();
+        _departments = [];
+        _jobTitles = [];
+        _signatures = [];
 
         try
         {
             _editContext = new EditContext(_editModel);
-            
+
             // Henter dokumenttype og dokumenter til denne typen
             var documentTask = DocumentService.GetByIdAsync(Slug, Id, Cts.Token);
             var documentTypeTask = DocumentTypeService.GetBySlugAsync(Slug, Cts.Token);
             var documentTypeCategoriesTask = DocumentTypeCategoryService.GetAllAsync(Slug, Cts.Token);
-            
+            var departmentsTask = DepartmentService.GetAllAsync(Cts.Token);
+            var jobTitlesTask = JobTitleService.GetAllAsync(Cts.Token);
+            var signatureTask = SignatureService.GetSignaturesAsync(Slug, Id, Cts.Token);
 
-            await Task.WhenAll(documentTypeTask, documentTask);
-            
+
+            await Task.WhenAll(documentTypeTask, documentTask, documentTypeCategoriesTask, departmentsTask,
+                jobTitlesTask, signatureTask);
+
             var documentResult = await documentTask;
             var documentTypeResult = await documentTypeTask;
             var documentTypeCategoriesResult = await documentTypeCategoriesTask;
-            
+            var jobTitlesResult = await jobTitlesTask;
+            var departmentsResult = await departmentsTask;
+            var signatureResult = await signatureTask;
+
             if (documentResult.IsFailure)
             {
                 _alert = new AlertInfo(documentResult.Error!.ToString(), Severity.Error);
                 return;
             }
-            
+
             _document = documentResult.Value;
 
             if (documentTypeResult.IsFailure)
                 _alert = new AlertInfo(documentTypeResult.Error!.ToString(), Severity.Error);
             else
                 _documentType = documentTypeResult.Value!;
-            
+
             if (documentTypeCategoriesResult.IsFailure)
                 _alert = new AlertInfo(documentTypeCategoriesResult.Error!.ToString(), Severity.Error);
             else
                 _documentTypeCategories = documentTypeCategoriesResult.Value!;
             
+            if (departmentsResult.IsFailure)
+                _alert = new AlertInfo(departmentsResult.Error!.ToString(), Severity.Error);
+            else
+                _departments = departmentsResult.Value!;
             
+            if (jobTitlesResult.IsFailure)
+                _alert = new AlertInfo(jobTitlesResult.Error!.ToString(), Severity.Error);
+            else
+                _jobTitles = jobTitlesResult.Value!;
+            
+            if (signatureResult.IsFailure)
+                _alert = new AlertInfo(signatureResult.Error!.ToString(), Severity.Error);
+            else
+                _signatures = signatureResult.Value!;
+
+
             ResetEditModel();
         }
         catch (OperationCanceledException)
@@ -279,6 +483,18 @@ else if (_document != null || _documentType != null)
     // Handling som utføres når vi trykker på lagring - Bygger en request og utfører kall til backend
     private async Task SaveEdit()
     {
+        if (HasInactiveDepartments)
+        {
+            _alert = new AlertInfo("Fjern inaktive avdelinger fra målgruppen før du lagrer.", Severity.Error);
+            return;
+        }
+
+        if (HasInactiveJobTitles)
+        {
+            _alert = new AlertInfo("Fjern inaktive stillinger fra målgruppen før du lagrer.", Severity.Error);
+            return;
+        }
+
         var request = _editModel.ToRequest();
 
         var updateResult = await DocumentService.UpdateAsync(Slug, Id, request, Cts.Token);
@@ -287,6 +503,9 @@ else if (_document != null || _documentType != null)
             _alert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
             return;
         }
+
+        if (_document!.RequiresSignature)
+            await RefreshSignaturesAsync();
 
         // Resetter feltene kun hvis det var vellykket
         _document = updateResult.Value;
@@ -317,11 +536,12 @@ else if (_document != null || _documentType != null)
             _alert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
             return;
         }
-        
+
         // TODO: Hvordan kan vi navigere hitt? Da må vi ha Slug og navnet til Slug... Kanskje sendees med DocumentDto?
-        NavigationManager.NavigateTo(PageRoutes.Documents.Overview + "?deleted=true");
+        NavigationManager.NavigateTo(PageRoutes.Documents.List(_document.DocumentTypeSlug, _documentType!.Name) 
+                                     + "?deleted=true");
     }
-    
+
     // Viser en dialog for å opprette en kategori
     private async Task UpdateDocumentVersion()
     {
@@ -350,4 +570,63 @@ else if (_document != null || _documentType != null)
         _document = updatedDocument;
         _alert = new AlertInfo($"Versjon {updatedDocument.Version} lastet opp", Severity.Success);
     }
+    
+    private async Task SignDocument()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(SignDocumentDialog.Slug), Slug },
+            { nameof(SignDocumentDialog.DocumentId), _document!.Id },
+            { nameof(SignDocumentDialog.Title), _document!.Title },
+            { nameof(SignDocumentDialog.HasFile), _document!.HasFile },
+            { nameof(SignDocumentDialog.MimeType), _document!.MimeType }
+        };
+        
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<SignDocumentDialog>("", parameters, options);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        if (dialogResult.Data is not bool isSigned)
+        {
+            _alert = new AlertInfo("Noe gikk galt ved singering.", Severity.Error);
+            return;
+        }
+
+        if (isSigned)
+            await RefreshSignaturesAsync();
+    }
+
+    private async Task RefreshSignaturesAsync()
+    {
+        var signatureResult = await SignatureService.GetSignaturesAsync(Slug, Id, Cts.Token);
+        if (signatureResult.IsFailure)
+            _alert = new AlertInfo(signatureResult.Error!.ToString(), Severity.Error);
+        else
+            _signatures = signatureResult.Value!;
+
+        _alert = new AlertInfo("Dokumentet ble signert", Severity.Success); 
+    }
+
+    // Sjekker om det er noen inaktive entiteter blandt de valgte målgruppene
+    private bool HasInactiveDepartments => _document!.TargetDepartmentIds
+        .Any(id => _departments.Any(d => d.Id == id && !d.IsActive));
+
+    private bool HasInactiveJobTitles => _document!.TargetJobTitleIds
+        .Any(id => _jobTitles.Any(j => j.Id == id && !j.IsActive));
+
+    private void NavigateToExternalUrl()
+    {
+        if (!string.IsNullOrWhiteSpace(_document?.ExternalUrl))
+            NavigationManager.NavigateTo(_document.ExternalUrl, forceLoad: true);
+    }
+
 }
