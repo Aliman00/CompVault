@@ -1,0 +1,95 @@
+﻿@page "/document-types/create"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DocumentTypesWrite)]
+@inject IDocumentTypeService DocumentTypeService
+@inject NavigationManager NavigationManager
+
+@* Side for å opprette en dokumenttype *@
+
+<CreateForm Title="Opprett dokumentkategori"
+            EditContext="_editContext"
+            OnValidSubmit="CreateDocumentType"
+            @bind-Alert="_alert">
+    <Fields>
+        @* Navn *@
+        <MudItem xs="12" sm="6">
+            <TextField Value="@_editModel.Name"
+                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                             Label="Navn"
+                             IsEditing="true"
+                             For="() => _editModel.Name"/>
+        </MudItem>
+        
+        @* Beskrivelse *@
+        <MudItem xs="12">
+            <TextField Value="@_editModel.Description"
+                             ValueChanged="(string? v) => _editModel.Description = v"
+                             Label="Beskrivelse (valgfritt)"
+                             IsEditing="true"
+                             For="() => _editModel.Description"
+                             Lines="4"/>
+        </MudItem>
+        @* TargetMode *@
+        <MudItem xs="12" sm="6">
+            <EnumField Value="@_editModel.TargetMode"
+                       ValueChanged="(DocumentTargetMode v) => _editModel.TargetMode = v"
+                       Label="Målgruppe"
+                       IsEditing="true"/>
+        </MudItem>
+        
+        @* Filstørrelse *@
+        <MudItem xs="12" sm="6">
+            <NumberField T="long"
+                         Value="@_editModel.MaxFileSizeMb"
+                         ValueChanged="(long v) => _editModel.MaxFileSizeMb = v"
+                         Label="Maks filstørrelse"
+                         IsEditing="true"
+                         AdornmentText="MB"
+                         Min="DocTypeValidations.MaxFileSizeMinMb"
+                         Max="DocTypeValidations.MaxFileSizeMaxMb"
+                         For="() => _editModel.MaxFileSizeMb"/>
+        </MudItem>
+
+        @* Tilatte MimeTypes *@
+        <MudItem xs="12">
+            <MimeTypeSelectorField SelectedMimeTypes="@_editModel.AllowedMimeTypes"
+                                   SelectedMimeTypesChanged="(string[] v) => _editModel.AllowedMimeTypes = v"
+                                   IsEditing="true"/>
+        </MudItem>
+        
+    </Fields>
+</CreateForm>
+
+@code {
+    // ===================== PRIVATE FELT =====================
+    private readonly CreateDocumentTypeModel _editModel = new();
+
+    private AlertInfo? _alert;
+
+    private EditContext _editContext = null!;
+
+    protected override Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(_editModel);
+        return Task.CompletedTask;
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
+    // navigerer oss til detalje-siden
+    private async Task CreateDocumentType()
+    {
+        var request = _editModel.ToRequest();
+
+        var createResult = await DocumentTypeService.CreateAsync(request, Cts.Token);
+        if (createResult.IsFailure)
+        {
+            _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(
+            PageRoutes.DocumentTypes.Detail(createResult.Value!.Slug) + "?created=true");
+    }
+}

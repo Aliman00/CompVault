@@ -55,7 +55,25 @@
         <Authorized>
             <MudNavLink Href="@PageRoutes.Competencies.List"
                         Icon="@Icons.Material.Filled.WorkspacePremium">
-                Ansattkompetanse
+                Ansattkompetanser
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.DocumentTypesRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.DocumentTypes.List"
+                        Icon="@Icons.Material.Filled.Topic">
+                Dokumentkategorier
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.DocumentsRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Documents.Overview"
+                        Icon="@Icons.Material.Filled.Article">
+                Dokumenter
             </MudNavLink>
         </Authorized>
     </AuthorizeView>

@@ -60,6 +60,36 @@ public static class ApiRoutes
         public static string ById(Guid id) => $"{Base}/{id}";
     }
 
+    public static class DocumentTypes
+    {
+        public const string Base = "api/document-types";
+        public static string BySlug(string slug) => $"{Base}/{slug}";
+    }
+
+    public static class DocumentTypeCategories // Base brukes ikke her siden det ligger inne i DocumentType, bruker All
+    {
+        private static string Base(string slug) => $"api/document-types/{slug}/categories";
+        public static string All(string slug) => Base(slug);
+        public static string ById(string slug, Guid categoryId) => $"{Base(slug)}/{categoryId}";
+    }
+
+    public static class Documents
+    {
+        // ================= Dokumenter =================
+        public static string Base(string slug) => $"api/documents/{slug}";
+        public static string ById(string slug, Guid id) => $"api/documents/{slug}/{id}";
+        public static string UploadVersion(string slug, Guid id) => $"api/documents/{slug}/{id}/upload";
+        
+        // ================= Signaturer =================
+        public static string Signatures(string slug, Guid id) => $"api/documents/{slug}/{id}/signatures";
+        public static string Sign(string slug, Guid id) => $"api/documents/{slug}/{id}/sign";
+        public const string MySigned = "api/documents/my/signed";
+        public const string MyPending = "api/documents/my/pending";
+        
+        // ================= Nedlastning =================
+        public static string Download(string slug, Guid id) => $"api/documents/{slug}/{id}/download";
+    }
+    
     public static class EquipmentCategories
     {
         public const string Base = "api/equipment-categories";

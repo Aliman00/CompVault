@@ -205,14 +205,14 @@ public sealed class DocumentsController(
 
     /// <summary>Henter signaturer for et dokument.</summary>
     [HttpGet("{id:guid}/signatures")]
-    [ProducesResponseType(typeof(IReadOnlyList<DocumentSignatureDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<UserSignatureStatusDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
+    public async Task<ActionResult<IReadOnlyList<UserSignatureStatusDto>>> GetSignaturesAsync(
         Guid id, CancellationToken cancellationToken)
     {
         Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
-        Result<IReadOnlyList<DocumentSignatureDto>> result = await signatureService.GetSignaturesAsync(
+        Result<IReadOnlyList<UserSignatureStatusDto>> result = await signatureService.GetSignatureStatusAsync(
             id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)

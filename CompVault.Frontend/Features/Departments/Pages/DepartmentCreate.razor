@@ -14,7 +14,7 @@
     <Fields>
         @* Avdelingsnavn *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Name"
+            <TextField Value="@_editModel.Name"
                              ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                              Label="Avdelingsnavn"
                              IsEditing="true"
@@ -22,7 +22,7 @@
         </MudItem>
         @* Beskrivelse *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Description"
+            <TextField Value="@_editModel.Description"
                              ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
                              Label="Beskrivelse (valgfritt)"
                              IsEditing="true"
@@ -31,7 +31,7 @@
         </MudItem>
         @* Overordnet avdeling *@
         <MudItem xs="12" sm="6">
-            <DetailSelectWithLinkField Value="_editModel.ParentDepartmentId"
+            <SelectWithLinkField Value="_editModel.ParentDepartmentId"
                                        ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
                                        Label="Overordnet avdeling"
                                        ToStringFunc="@(id => _departments.FirstOrDefault(
@@ -44,7 +44,7 @@
                         <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
                     }
                 </Items>
-            </DetailSelectWithLinkField>
+            </SelectWithLinkField>
         </MudItem>
     </Fields>
 </CreateForm>

@@ -1,0 +1,123 @@
+﻿@if (IsEditing)
+{
+    <MudStack Spacing="1">
+        <MudText Typo="Typo.body2" Color="Color.Default" Class="mb-1">Tillate filtyper</MudText>
+    
+        @foreach (var group in MimeTypeGroups.All)
+        {
+            <MudCheckBox T="bool"
+                         Value="group.Types.All(t => SelectedMimeTypes.Contains(t.MimeType))"
+                         ValueChanged="(bool v) => OnGroupToggled(group, v)"
+                         Label="@group.GroupLabel"
+                         Color="Color.Primary"
+                         Dense="true"/>
+            
+            <MudStack Spacing="0" Class="ml-6 mb-1">
+                @foreach (var type in group.Types)
+                {
+                    <MudCheckBox T="bool"
+                                 Value="SelectedMimeTypes.Contains(type.MimeType)"
+                                     ValueChanged="(bool v) => OnTypeToggled(type.MimeType, v)"
+                                     Label="@type.Label"
+                                     Color="Color.Primary"
+                                     Dense="true"/>
+                }
+            </MudStack>
+        }
+        
+        @if (!SelectedMimeTypes.Any())
+        {
+            <MudText Typo="Typo.caption" Color="Color.Error">Minst én filtype må velges</MudText>
+        }
+    </MudStack>
+}
+else
+{
+    <TextField Value="@GetDisplayString()"
+               Label="Tillatte filtyper"
+               IsEditing="false"
+               Lines="3"/>
+}
+
+@code {
+    // ===================== PARAMETER =====================
+    
+    /// <summary>
+    /// Allerede valgte MimeTypes
+    /// </summary>
+    [Parameter, EditorRequired] public string[] SelectedMimeTypes { get; set; } = [];
+    
+    /// <summary>
+    /// Handling som utføres når valgte MimeTypes endres
+    /// </summary>
+    [Parameter, EditorRequired] public EventCallback<string[]> SelectedMimeTypesChanged { get; set; }
+    
+    /// <summary>
+    /// Bytter mellom lese-modus og redigerings-modus
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing { get; set; }
+    
+    // ===================== PRIVATE METHODS =====================
+    
+    // Sjekker om en hel gruppe er valgt eller om kun noen i en gruppe er valgt
+    private bool? GetGroupValue(MimeTypeGroup group)
+    {
+        var allChecked = group.Types.All(t => SelectedMimeTypes.Contains(t.MimeType));
+        if (allChecked) 
+            return true;
+    
+        var someChecked = group.Types.Any(t => SelectedMimeTypes.Contains(t.MimeType));
+        if (someChecked) 
+            return null;
+    
+        return false;
+    }
+    
+    // Hvis en hel gruppe blir toggled av eller på samtidig
+    private async Task OnGroupToggled(MimeTypeGroup group, bool isChecked)
+    {
+        var currentlySelected = SelectedMimeTypes.ToHashSet();
+        if (isChecked)
+            foreach (var type in group.Types)
+            {
+                currentlySelected.Add(type.MimeType);
+            }
+        else
+            foreach (var type in group.Types)
+            {
+                currentlySelected.Remove(type.MimeType);
+            }
+
+        await SelectedMimeTypesChanged.InvokeAsync(currentlySelected.ToArray());
+    }
+    
+    // Ved toggling av en type
+    private async Task OnTypeToggled(string mimeType, bool isChecked)
+    {
+        var currentlySelected = SelectedMimeTypes.ToHashSet();
+        if (isChecked)
+            currentlySelected.Add(mimeType);
+        else
+            currentlySelected.Remove(mimeType);
+
+        await SelectedMimeTypesChanged.InvokeAsync(currentlySelected.ToArray());
+    }
+    
+    // Henter alle labels til valgte mimetypes for å vise alle i et leslig format. Har fallback til å vise en mimestring,
+    // hvis backend legger til en ny type og vi ikke har oppdatert backend
+    private string GetDisplayString()
+    {
+        if (SelectedMimeTypes.Length == 0)
+            return "-";
+        
+        var labels = new List<string>();
+        foreach (var mimeType in SelectedMimeTypes)
+        {
+            var hasLabel = MimeTypeGroups.LabelByMimeType.TryGetValue(mimeType, out var label);
+            labels.Add(hasLabel ? label! : mimeType);
+        }
+        
+        return string.Join(", ", labels);
+    }
+
+}

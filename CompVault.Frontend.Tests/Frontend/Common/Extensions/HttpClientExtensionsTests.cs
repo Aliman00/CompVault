@@ -18,7 +18,7 @@ public class HttpClientExtensionsTests
     public async Task ParseResponseAsync_ResponseIsSuccess_ReturnsResultWithBody()
     {
         // Arrange - Bygger en response backend sender
-        FrontendTestDataFactory.TestResponse response = FrontendTestDataFactory.BuildTestResponse();
+        TestDataFactory.TestResponse response = TestDataFactory.BuildTestResponse();
 
         var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -26,8 +26,8 @@ public class HttpClientExtensionsTests
         };
 
         // Act
-        Result<FrontendTestDataFactory.TestResponse> result =
-            await HttpClientExtensions.ParseResponseAsync<FrontendTestDataFactory.TestResponse>(httpResponseMessage,
+        Result<TestDataFactory.TestResponse> result =
+            await HttpClientExtensions.ParseResponseAsync<TestDataFactory.TestResponse>(httpResponseMessage,
                 CancellationToken.None);
 
         // Assert - Sjekker at Result-objektet og backend-responsen fra body er i value
@@ -44,7 +44,7 @@ public class HttpClientExtensionsTests
     public async Task ParseResponseAsync_ResponseIsFailure_ReturnsCorrectErrorCode()
     {
         // Arrange - Bygger ProblemDetail og HttpResponseMessage som metoden krever
-        ProblemDetail problemDetail = FrontendTestDataFactory.BuildProblemDetail(
+        ProblemDetail problemDetail = TestDataFactory.BuildProblemDetail(
             403, nameof(ErrorCode.Validation), "Name must be between 1-60 characters");
 
         var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.BadRequest)
@@ -53,8 +53,8 @@ public class HttpClientExtensionsTests
         };
 
         // Act
-        Result<FrontendTestDataFactory.TestResponse> result =
-            await HttpClientExtensions.ParseResponseAsync<FrontendTestDataFactory.TestResponse>(httpResponseMessage,
+        Result<TestDataFactory.TestResponse> result =
+            await HttpClientExtensions.ParseResponseAsync<TestDataFactory.TestResponse>(httpResponseMessage,
                 CancellationToken.None);
 
         // Assert - Sjekker at result-feltene er bygget korrekt ifra ProblemDetail-objektet
@@ -70,7 +70,7 @@ public class HttpClientExtensionsTests
     public async Task ParseResponseAsync_ResponseIsFailureAndErrorCodeDoesNotExist_ReturnsErrorCodeUnknown()
     {
         // Arrange - Bygger et ProblemDetail med en ikke-eksisterende feilmelding
-        ProblemDetail problemDetail = FrontendTestDataFactory.BuildProblemDetail(
+        ProblemDetail problemDetail = TestDataFactory.BuildProblemDetail(
             403, "TilfeldigUkjentErrorKode", "Name must be between 1-60 characters");
 
         var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.BadRequest)
@@ -79,8 +79,8 @@ public class HttpClientExtensionsTests
         };
 
         // Act
-        Result<FrontendTestDataFactory.TestResponse> result =
-            await HttpClientExtensions.ParseResponseAsync<FrontendTestDataFactory.TestResponse>(httpResponseMessage,
+        Result<TestDataFactory.TestResponse> result =
+            await HttpClientExtensions.ParseResponseAsync<TestDataFactory.TestResponse>(httpResponseMessage,
                 CancellationToken.None);
 
         // Assert - Sjekker at ErrorCode er Unknown
@@ -99,8 +99,8 @@ public class HttpClientExtensionsTests
         var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK);
 
         // Act
-        Result<FrontendTestDataFactory.TestResponse> result =
-            await HttpClientExtensions.ParseResponseAsync<FrontendTestDataFactory.TestResponse>(httpResponseMessage,
+        Result<TestDataFactory.TestResponse> result =
+            await HttpClientExtensions.ParseResponseAsync<TestDataFactory.TestResponse>(httpResponseMessage,
                 CancellationToken.None);
 
         // Assert - Sjekker at ErrorCode.Unkown har blitt satt korrekt

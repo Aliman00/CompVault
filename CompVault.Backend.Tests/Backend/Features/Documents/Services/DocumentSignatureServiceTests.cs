@@ -180,7 +180,7 @@ public class DocumentSignatureServiceTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task GetSignaturesAsync_DocumentNotFound_ReturnsFailure()
+    public async Task GetSignatureStatus_DocumentNotFound_ReturnsFailure()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -189,14 +189,110 @@ public class DocumentSignatureServiceTests
             .ReturnsAsync((Document?)null);
 
         // Act
-        Result<IReadOnlyList<DocumentSignatureDto>> result =
-            await _sut.GetSignaturesAsync(id);
+        Result<IReadOnlyList<UserSignatureStatusDto>> result =
+            await _sut.GetSignatureStatusAsync(id);
 
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.NotFound);
     }
+    
+    /// <summary>
+    /// Tester at brukeren ikke riktig tilattelse eller er ikke i målgruppen
+    /// </summary>
+    [Fact]
+    public async Task GetSignatureStatus_AccessDenied_ReturnsFailure()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var document = new Document { Id = docId, Version = 1 };
 
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        
+        // Mocker at vi får feilmelding når vi sjekker om vi har tilgang
+        _targetingServiceMock
+            .Setup(x => x.CheckAccessAsync(
+                document, It.IsAny<Guid?>(), false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(AppError.Create(ErrorCode.Forbidden, 
+                "Du har ikke tilgang til dette dokumentet.")));
+
+        // Act
+        Result<IReadOnlyList<UserSignatureStatusDto>> result =
+            await _sut.GetSignatureStatusAsync(docId, currentUserId: Guid.NewGuid());
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be(ErrorCode.Forbidden);
+    }
+    
+    /// <summary>
+    /// Tester happy path at vi henter dokumentet, brukeren har tilattelse og vi returner en bruker som har singert
+    /// og en som ikke har signert. Tester for alle brukere
+    /// </summary>
+    [Fact]
+    public async Task GetSignatureStatus_ValidDocument_ReturnsSignatureStatus()
+    {
+        // Arrange
+        var docId = Guid.NewGuid();
+        var signedUserId = Guid.NewGuid();
+        var unsignedUserId = Guid.NewGuid();
+
+        var document = new Document
+        {
+            Id = docId,
+            Version = 2,
+            DocumentDepartments = [],
+            DocumentJobTitles = []
+        };
+
+        ApplicationUser signedUser = CreateUser(signedUserId);
+        ApplicationUser unsignedUser = CreateUser(unsignedUserId);
+
+        var signature = new DocumentSignature
+        {
+            UserId = signedUserId,
+            DocumentId = docId,
+            SignatureVersion = 2,
+            SignedAt = DateTime.UtcNow
+        };
+        
+        // Mocker at vi henter dokumentet
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(docId, 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        
+        // Mocker at vi returner en bruker som har signert
+        _signatureRepositoryMock
+            .Setup(x => x.GetForDocumentVersionAsync(docId, 2, 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([signature]);
+        
+        // Mocker at vi henter alle brukerne. Vi har ingen målgruppe, så vi henter begge
+        _userRepositoryMock
+            .Setup(x => x.GetUsersByTargetAsync(
+                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<IReadOnlyList<Guid>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([signedUser, unsignedUser]);
+
+        // Act
+        Result<IReadOnlyList<UserSignatureStatusDto>> result = await _sut.GetSignatureStatusAsync(docId);
+
+        // Assert - Sjekker egenskapene og at en bruker har singert og den andre har ikke signert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(2);
+
+        UserSignatureStatusDto signed = result.Value.First(u => u.UserId == signedUserId);
+        signed.HasSigned.Should().BeTrue();
+        signed.SignatureVersion.Should().Be(2);
+
+        UserSignatureStatusDto unsigned = result.Value.First(u => u.UserId == unsignedUserId);
+        unsigned.HasSigned.Should().BeFalse();
+        unsigned.SignedAt.Should().BeNull();
+    }
+    
     // -------------------------------------------------------------------------
     // GetMySignedDocumentsAsync
     // -------------------------------------------------------------------------

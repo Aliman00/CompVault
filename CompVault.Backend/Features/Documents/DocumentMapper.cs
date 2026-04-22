@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Shared.DTOs.Documents;
 
 namespace CompVault.Backend.Features.Documents;
@@ -78,18 +79,19 @@ public static class DocumentMapper
         };
     }
 
-    public static DocumentSignatureDto ToSignatureDto(DocumentSignature signature)
+    public static UserSignatureStatusDto ToSignatureStatusDto(ApplicationUser user, DocumentSignature? signature)
     {
-        return new DocumentSignatureDto
+        return new UserSignatureStatusDto
         {
-            Id = signature.Id,
-            DocumentId = signature.DocumentId,
-            UserId = signature.UserId,
-            UserName = signature.User is { } user
-                ? $"{user.FirstName} {user.LastName}".Trim()
-                : string.Empty,
-            SignedAt = signature.SignedAt,
-            SignatureVersion = signature.SignatureVersion
+            UserId = user.Id,
+            FullName = $"{user.FirstName} {user.LastName}".Trim(),
+            JobTitleId = user.JobTitleId,
+            JobTitleName = user.JobTitle?.Name,
+            DepartmentId = user.DepartmentId,
+            DepartmentName = user.Department?.Name,
+            HasSigned = signature is not null,
+            SignedAt = signature?.SignedAt,
+            SignatureVersion = signature?.SignatureVersion
         };
     }
 

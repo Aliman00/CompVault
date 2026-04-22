@@ -54,6 +54,21 @@ public static class PageRoutes
         public const string Create = "/competency-types/create";
     }
 
+    public static class Documents
+    {
+        public const string Overview = "/documents";
+        public static string List(string slug, string typeName) => $"/documents/{slug}/{typeName}";
+        public static string Detail(string slug, Guid id) => $"/documents/{slug}/{id}";
+        public static string Create(string slug) => $"/documents/{slug}/create";
+    }
+
+    public static class DocumentTypes
+    {
+        public const string List = "/document-types";
+        public static string Detail(string slug) => $"/document-types/{slug}";
+        public const string Create = "/document-types/create";
+    }
+
     public static class Admin
     {
         public const string Dashboard = "/admin/dashboard";

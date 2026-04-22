@@ -51,10 +51,12 @@ public class UserEditModel
         LastName = LastName,
         Email = Email,
         JobTitleId = JobTitleId,
+        ClearJobTitleId = JobTitleId == null,
         EmploymentType = EmploymentType,
         DepartmentId = DepartmentId,
         ClearDepartmentId = DepartmentId == null,
         ManagerId = ManagerId,
-        ClearManagerId = ManagerId == null
+        ClearManagerId = ManagerId == null,
+        IsActive = IsActive,
     };
 }

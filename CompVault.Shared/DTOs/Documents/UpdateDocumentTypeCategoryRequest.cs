@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
 namespace CompVault.Shared.DTOs.Documents;
 
 /// <summary>
@@ -10,7 +11,7 @@ namespace CompVault.Shared.DTOs.Documents;
 public sealed class UpdateDocumentTypeCategoryRequest
 {
     /// <summary>Nytt visningsnavn. Null = ikke endret. Genererer automatisk ny slug.</summary>
-    [MaxLength(100)]
+    [MaxLength(DocCategoryValidations.NameMaxLength, ErrorMessage = DocCategoryValidations.Errors.NameMaxLength)]
     public string? Name { get; set; }
 
     /// <summary>Om kategorien skal være aktiv. Null = ikke endret.</summary>

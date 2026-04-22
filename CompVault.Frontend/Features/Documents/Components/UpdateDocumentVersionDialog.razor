@@ -1,0 +1,125 @@
+﻿@inject IDocumentService DocumentService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+
+@*  Dialog for å oppdatere filversjonen til et dokument. Den gamle blir arkivtert, vi øker versjonnummeret
+    og signaturer blir slettet *@
+<MudDialog>
+
+    @* Tittel *@
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Upload" Class="mr-2"/>
+            Last opp ny versjon for @Title
+        </MudText>
+    </TitleContent>
+
+    @* Body til dialogen *@
+    <DialogContent>
+        <AppAlert @bind-Alert="_alert"/>
+
+        @* Advarsel om konsekvenser *@
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            Å laste opp en ny versjon vil slette alle eksisterende signaturer.
+            Alle som har signert eller skal signere, må gjøre det på nytt.
+        </MudAlert>
+
+        <MudItem xs="12">
+            <FileUploadField @bind-File="_selectedFile"
+                             AcceptedFileTypes="@AcceptedMimeTypes"
+                             Disabled="_isSaving"/>
+        </MudItem>
+    </DialogContent>
+
+    @* Knapp for sletting, godkjenn handling og avbryt handling *@
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel"
+                   Disabled="_isSaving">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="UpdateVersion"
+                   Disabled="_isSaving || _selectedFile is null">
+            Last opp
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
+    /// </summary>
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Slug til dokumenttypen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Slug { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Nanvet på dokumenttypen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Guid DocumentId { get; set; }
+    
+    /// <summary>
+    /// Tittelen på dokumentet
+    /// </summary>
+    [Parameter, EditorRequired] 
+    public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Maks størrelse på filen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public long MaxFileSizeInBytes { get; set; }
+    
+    /// <summary>
+    /// Tillatte MIME-typer fra DocumentTypeDto. Eks: ".pdf,.doc,.docx"
+    /// </summary>
+    [Parameter, EditorRequired] 
+    public string AcceptedMimeTypes { get; set; } = string.Empty;
+
+    // ===================== PRIVATE FIELDS =====================
+    private IBrowserFile? _selectedFile;
+    
+    private bool _isSaving;
+    
+    private AlertInfo? _alert;
+    
+    // ===================== PRIVATE METHODS =====================
+
+    // Prøver å opprette en kategori ved å sende request til backend
+    private async Task UpdateVersion()
+    {
+        if (_selectedFile == null)
+            return;
+
+        _isSaving = true;
+        
+        try
+        {
+            FileAttachment? file = await _selectedFile.ToFileAttachmentAsync(MaxFileSizeInBytes, Cts.Token);
+             
+            var updateVersionResult = await DocumentService.UpdateVersionAsync(Slug, DocumentId, file, Cts.Token);
+            if (updateVersionResult.IsFailure)
+            {
+                _alert = new AlertInfo(updateVersionResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(updateVersionResult.Value));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

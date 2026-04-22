@@ -1,0 +1,165 @@
+﻿@inject ISignatureService SignatureService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IDocumentService DocumentService
+@inject IJSRuntime Js
+
+@* Dialog for å signere et dokument. Kan brukes fra flere sider *@
+
+<MudDialog>
+    @* Tittel *@
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Draw" Class="mr-2"/>
+            Signer dokument
+        </MudText>
+    </TitleContent>
+
+    @* Body *@
+    <DialogContent>
+        <AppAlert @bind-Alert="_alert"/>
+        <MudText Class="mb-4">
+            Du er i ferd med å signere <strong>@Title</strong>.
+        </MudText>
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Ved å signere bekrefter du at du har lest og forstått innholdet i dokumentet.
+        </MudAlert>
+
+        @if (HasFile)
+        {
+            @if (_previewUrl is null)
+            {
+                <MudButton Class="mt-4"
+                           Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.OpenInNew"
+                           OnClick="OpenDocument"
+                           Disabled="_isOpening">
+                    Åpne dokumentet
+                </MudButton>
+            }
+            else
+            {
+                <iframe src="@_previewUrl"
+                        style="width: 100%; height: 500px; border: none; margin-top: 16px;"
+                        title="@Title">
+                </iframe>
+            }
+        }
+
+        <MudCheckBox @bind-Value="_hasConfirmed"
+                     Class="mt-4"
+                     Label="Jeg bekrefter at jeg har lest og forstått innholdet i dokumentet"/>
+    </DialogContent>
+
+    @* Handlinger *@
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel"
+                   Disabled="_isSigning">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Draw"
+                   OnClick="Sign"
+                   Disabled="_isSigning || !_hasConfirmed">
+            Signer
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    // ===================== PARAMETER =====================
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    /// <summary>
+    /// Slug til dokumenttypen
+    /// </summary>
+    [Parameter, EditorRequired] public string Slug { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// ID-en til dokumentet
+    /// </summary>
+    [Parameter, EditorRequired] public Guid DocumentId { get; set; }
+    
+    /// <summary>
+    /// Hvis dokumentet har en fil så kan man se/åpne det i dialogen
+    /// </summary>
+    [Parameter, EditorRequired] public bool HasFile { get; set; }
+    
+    /// <summary>
+    /// MIME-typen til filen for å vise dokumentet i nettleserens vindu eller om brukeren må laste ned selv
+    /// </summary>
+    [Parameter, EditorRequired] public string? MimeType { get; set; }
+    
+    /// <summary>
+    /// Tittelen til dokumentet
+    /// </summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            _jsModule = await Js.InvokeAsync<IJSObjectReference>(
+                "import", "/js/fileUtils.js");
+    }
+    
+    // ===================== PRIVATE FIELDS =====================
+    private bool _isSigning;
+    private AlertInfo? _alert;
+    private bool _hasConfirmed;
+    
+    private string? _previewUrl;
+    
+    private bool _isOpening;
+    private IJSObjectReference? _jsModule;
+    // ===================== PRIVATE METHODS =====================
+    
+    private async Task Sign()
+    {
+        _isSigning = true;
+        try
+        {
+            var result = await SignatureService.SignAsync(Slug, DocumentId, Cts.Token);
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        finally
+        {
+            _isSigning = false;
+        }
+    }
+    
+    private async Task OpenDocument()
+    {
+        _isOpening = true;
+        try
+        {
+            var result = await DocumentService.DownloadAsync(Slug, DocumentId, Cts.Token);
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo("Klarte ikke å åpne dokumentet. Prøv igjen.", Severity.Error);
+                return;
+            }
+
+            FileAttachment file = result.Value!;
+            string base64 = await file.ToBase64Async(Cts.Token);
+
+            if (MimeType.CanPreviewInBrowser())
+                _previewUrl = await _jsModule!.InvokeAsync<string>("createBlobUrl", base64, file.ContentType);
+            else
+                await _jsModule!.InvokeVoidAsync("downloadFile", file.FileName, file.ContentType, base64);
+        }
+        finally
+        {
+            _isOpening = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

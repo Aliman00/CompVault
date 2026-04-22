@@ -64,7 +64,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return CreatedAtAction(nameof(GetBySlugAsync), new { slug = result.Value!.Slug }, result.Value);
+        return Created($"api/document-types/{result.Value!.Slug}", result.Value);
     }
 
     /// <summary>Oppdaterer en dokumenttype.</summary>
@@ -131,8 +131,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return CreatedAtAction(nameof(GetCategoriesAsync),
-            new { documentTypeSlug }, result.Value);
+        return Created($"api/document-types/{documentTypeSlug}/categories", result.Value);
     }
 
     /// <summary>Oppdaterer en kategori.</summary>

@@ -76,7 +76,7 @@ else if (_role != null)
         <Fields>
             @* Rollenavn *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Name"
+                <TextField Value="@_editModel.Name"
                                  ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                                  Label="Rollenavn"
                                  IsEditing="_isEditing"
@@ -84,7 +84,7 @@ else if (_role != null)
             </MudItem>
             @* Beskrivelse *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Description"
+                <TextField Value="@_editModel.Description"
                                  ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
                                  Label="Beskrivelse (valgfritt)"
                                  IsEditing="_isEditing"
@@ -92,13 +92,13 @@ else if (_role != null)
             </MudItem>
             @* Opprettelsesdato *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_role!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                <TextField Value="@_role!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
                                  Label="Opprettet"
                                  IsEditing="false"/>
             </MudItem>
             @* Opprettet av *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_role!.CreatedByName"
+                <TextField Value="@_role!.CreatedByName"
                                  Label="Opprettet av bruker"
                                  IsEditing="false"
                                  ShowLink="_role!.CreatedById.HasValue"

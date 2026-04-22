@@ -13,6 +13,7 @@ public static class UserMapper
         LastName = user.LastName,
         JobTitleId = user.JobTitleId,
         JobTitleName = user.JobTitle?.Name,
+        JobTitleIsActive = user.JobTitle?.IsActive,
         EmploymentType = user.EmploymentType,
         IsActive = user.IsActive,
         DepartmentId = user.DepartmentId,
