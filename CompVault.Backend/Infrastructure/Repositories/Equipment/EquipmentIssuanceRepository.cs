@@ -15,6 +15,8 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
     public async Task<IReadOnlyList<EquipmentIssuance>> GetAllWithDetailsAsync(
         CancellationToken cancellationToken = default) =>
         await DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null)
             .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
@@ -26,6 +28,8 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
     public async Task<EquipmentIssuance?> GetByIdWithDetailsAsync(
         Guid id, CancellationToken cancellationToken = default) =>
         await DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null)
             .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
@@ -47,12 +51,13 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
     public async Task<IReadOnlyList<EquipmentIssuance>> GetByUserIdAsync(
         Guid userId, CancellationToken cancellationToken = default) =>
         await DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null && i.UserId == userId)
             .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
                 .ThenInclude(item => item!.Category)
             .Include(i => i.IssuedBy)
-            .Where(i => i.UserId == userId)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
@@ -61,5 +66,15 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
         issuance.DeletedAt = DateTime.UtcNow;
         issuance.IsActive = false;
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public async Task<int> SoftDeleteByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .Where(i => i.Id == id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(i => i.DeletedAt, DateTime.UtcNow)
+                .SetProperty(i => i.IsActive, false), cancellationToken);
     }
 }

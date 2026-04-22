@@ -32,7 +32,6 @@ public sealed class EquipmentItemRepository(AppDbContext dbContext)
         Guid id, CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(i => i.Category)
-            .Include(i => i.Issuances)
             .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
 
     /// <inheritdoc />
@@ -43,6 +42,10 @@ public sealed class EquipmentItemRepository(AppDbContext dbContext)
             .Include(i => i.Category)
             .Where(i => i.CategoryId == categoryId)
             .ToListAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<bool> HasActiveIssuancesAsync(Guid itemId, CancellationToken cancellationToken = default) =>
+        await DbContext.EquipmentIssuances.AnyAsync(i => i.ItemId == itemId && i.IsActive, cancellationToken);
 
     /// <inheritdoc />
     public Task SoftDeleteAsync(EquipmentItem item, CancellationToken cancellationToken = default)

@@ -19,6 +19,9 @@ public interface IEquipmentItemRepository : IRepository<EquipmentItem>
     /// <summary>Henter alt utstyr i en bestemt kategori.</summary>
     Task<IReadOnlyList<EquipmentItem>> GetByCategoryIdAsync(Guid categoryId, CancellationToken cancellationToken = default);
 
+    /// <summary>Sjekker om utstyret har aktive utleveringer.</summary>
+    Task<bool> HasActiveIssuancesAsync(Guid itemId, CancellationToken cancellationToken = default);
+
     /// <summary>Soft-sletter utstyret.</summary>
     Task SoftDeleteAsync(EquipmentItem item, CancellationToken cancellationToken = default);
 }

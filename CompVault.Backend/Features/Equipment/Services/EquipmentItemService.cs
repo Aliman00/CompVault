@@ -157,7 +157,8 @@ public sealed class EquipmentItemService(
             return Result<bool>.Failure(
                 AppError.NotFound($"Utstyr med ID '{id}' ble ikke funnet."));
 
-        if (item.Issuances.Any(i => i.IsActive))
+        bool hasActiveIssuances = await itemRepository.HasActiveIssuancesAsync(id, cancellationToken);
+        if (hasActiveIssuances)
             return Result<bool>.Failure(
                 AppError.Create(ErrorCode.Validation,
                     "Kan ikke slette utstyr som har aktive utleveringer. Slett utleveringene først."));

@@ -185,15 +185,10 @@ public sealed class EquipmentIssuanceService(
     /// <inheritdoc />
     public async Task<Result<bool>> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        Domain.Entities.Equipment.EquipmentIssuance? issuance =
-            await issuanceRepository.GetByIdAsync(id, cancellationToken);
-
-        if (issuance is null)
+        int rowsAffected = await issuanceRepository.SoftDeleteByIdAsync(id, cancellationToken);
+        if (rowsAffected == 0)
             return Result<bool>.Failure(
                 AppError.NotFound($"Utlevering med ID '{id}' ble ikke funnet."));
-
-        await issuanceRepository.SoftDeleteAsync(issuance, cancellationToken);
-        await issuanceRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);
     }

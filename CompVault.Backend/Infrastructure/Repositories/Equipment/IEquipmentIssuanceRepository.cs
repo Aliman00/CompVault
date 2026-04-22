@@ -21,4 +21,7 @@ public interface IEquipmentIssuanceRepository : IRepository<EquipmentIssuance>
 
     /// <summary>Soft-sletter utleveringen.</summary>
     Task SoftDeleteAsync(EquipmentIssuance issuance, CancellationToken cancellationToken = default);
+    
+    /// <summary>Soft-sletter utleveringen via ID.</summary>
+    Task<int> SoftDeleteByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }
