@@ -9,6 +9,7 @@ using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Features.JobTitles.Services;
+using CompVault.Backend.Features.Equipment.Services;
 using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
@@ -25,6 +26,7 @@ using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Backend.Infrastructure.Repositories.Equipment;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
 
@@ -262,6 +264,11 @@ public static class ServiceCollectionExtensions
         // JobTitles
         services.AddScoped<IJobTitleRepository, JobTitleRepository>();
 
+        // Equipment
+        services.AddScoped<IEquipmentCategoryRepository, EquipmentCategoryRepository>();
+        services.AddScoped<IEquipmentItemRepository, EquipmentItemRepository>();
+        services.AddScoped<IEquipmentIssuanceRepository, EquipmentIssuanceRepository>();
+
         return services;
     }
 
@@ -290,6 +297,11 @@ public static class ServiceCollectionExtensions
 
         // JobTitles
         services.AddScoped<IJobTitleService, JobTitleService>();
+
+        // Equipment
+        services.AddScoped<IEquipmentCategoryService, EquipmentCategoryService>();
+        services.AddScoped<IEquipmentItemService, EquipmentItemService>();
+        services.AddScoped<IEquipmentIssuanceService, EquipmentIssuanceService>();
 
         return services;
     }

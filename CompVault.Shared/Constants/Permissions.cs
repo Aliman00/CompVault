@@ -51,4 +51,9 @@ public static class Permissions
     public const string JobTitlesRead = "job_titles:read";
     public const string JobTitlesWrite = "job_titles:write";
     public const string JobTitlesDelete = "job_titles:delete";
+
+    // Equipment
+    public const string EquipmentRead = "equipment:read";
+    public const string EquipmentWrite = "equipment:write";
+    public const string EquipmentDelete = "equipment:delete";
 }
