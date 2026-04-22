@@ -17,14 +17,21 @@
     <SelectedTemplate>
         @if (context is not null)
         {
-            <MudChip T="string"
-                     Icon="@Icons.Material.Filled.AttachFile"
-                     Color="Color.Info"
-                     Class="cv-rounded"
-                     Variant="Variant.Filled"
-                     OnClose="OnClose">
-                @context.Name
-            </MudChip>
+            <MudText Typo="Typo.body1" Class="mt-4">Valgt fil:</MudText>
+            <MudPaper Outlined="true" Class="pa-4 mt-2 d-flex align-center gap-4">
+                <MudIcon Icon="@context.ContentType.GetFileIcon()"
+                         Color="Color.Primary"
+                         Size="Size.Large"/>
+                <MudStack Spacing="0" Class="flex-grow-1">
+                    <MudText Typo="Typo.body1">@context.Name</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @context.Size.FormatFileSize()
+                    </MudText>
+                </MudStack>
+                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                               Size="Size.Small"
+                               OnClick="OnClose"/>
+            </MudPaper>
         }
     </SelectedTemplate>
 </MudFileUpload>
