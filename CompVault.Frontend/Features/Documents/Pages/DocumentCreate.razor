@@ -45,28 +45,26 @@
         </MudItem>
         
         @* Kategori *@
-        <MudItem xs="12" sm="6">
-            @if (_documentTypeCategories.Count > 0)
-            {
-                <MudItem xs="12" sm="6">
-                    <SelectWithLinkField Value="_editModel.DocumentTypeCategoryId"
-                                         ValueChanged="(Guid? v) => _editModel.DocumentTypeCategoryId = v"
-                                         Label="Underkategori (valgfritt)"
-                                         ToStringFunc="@(id => _documentTypeCategories.FirstOrDefault(
-                                                           c => c.Id == id)?.Name ?? string.Empty)"
-                                         IsEditing="true"
-                                         ShowLink="false">
-                        <Items>
-                            <MudSelectItem Value="(Guid?)null">Ingen kategori</MudSelectItem>
-                            @foreach (var category in _documentTypeCategories)
-                            {
-                                <MudSelectItem Value="(Guid?)category.Id">@category.Name</MudSelectItem>
-                            }
-                        </Items>
-                    </SelectWithLinkField>
-                </MudItem>
-            }
-        </MudItem>
+        @if (_documentTypeCategories.Count > 0)
+        {
+            <MudItem xs="12" sm="6">
+                <SelectWithLinkField Value="_editModel.DocumentTypeCategoryId"
+                                     ValueChanged="(Guid? v) => _editModel.DocumentTypeCategoryId = v"
+                                     Label="Underkategori (valgfritt)"
+                                     ToStringFunc="@(id => _documentTypeCategories.FirstOrDefault(
+                                                       c => c.Id == id)?.Name ?? string.Empty)"
+                                     IsEditing="true"
+                                     ShowLink="false">
+                    <Items>
+                        <MudSelectItem Value="(Guid?)null">Ingen kategori</MudSelectItem>
+                        @foreach (var category in _documentTypeCategories)
+                        {
+                            <MudSelectItem Value="(Guid?)category.Id">@category.Name</MudSelectItem>
+                        }
+                    </Items>
+                </SelectWithLinkField>
+            </MudItem>
+        }
         
         @* RequireSignature *@
         <MudItem xs="12" sm="6">

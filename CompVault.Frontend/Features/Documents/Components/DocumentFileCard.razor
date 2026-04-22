@@ -65,7 +65,7 @@
         try
         {
             var downloadResult = await DocumentService.DownloadAsync(DocumentFileRecord.Slug,
-                DocumentFileRecord.DocumentId, CancellationToken.None);
+                DocumentFileRecord.DocumentId, Cts.Token);
             if (downloadResult.IsFailure)
             {
                 _alert = new AlertInfo("Klarte ikke å laste ned dokumentet. Prøv igjen",

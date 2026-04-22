@@ -212,7 +212,7 @@ public sealed class DocumentsController(
     {
         Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
-        Result<IReadOnlyList<UserSignatureStatusDto>> result = await signatureService.GetSignatureStatus(
+        Result<IReadOnlyList<UserSignatureStatusDto>> result = await signatureService.GetSignatureStatusAsync(
             id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)

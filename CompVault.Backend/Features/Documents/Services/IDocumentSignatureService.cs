@@ -13,7 +13,7 @@ public interface IDocumentSignatureService
     Task<Result<bool>> SignAsync(Guid documentId, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>Henter signaturer for et dokument (gjeldende versjon).</summary>
-    Task<Result<IReadOnlyList<UserSignatureStatusDto>>> GetSignatureStatus(
+    Task<Result<IReadOnlyList<UserSignatureStatusDto>>> GetSignatureStatusAsync(
         Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default);
 

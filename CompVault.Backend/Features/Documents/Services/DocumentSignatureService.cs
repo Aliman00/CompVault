@@ -72,7 +72,7 @@ public sealed class DocumentSignatureService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<UserSignatureStatusDto>>> GetSignatureStatus(
+    public async Task<Result<IReadOnlyList<UserSignatureStatusDto>>> GetSignatureStatusAsync(
         Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default)
     {

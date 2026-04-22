@@ -19,7 +19,7 @@
 {
     <AppSpinner Class="pa-20"/>
 }
-else if (_document != null || _documentType != null)
+else if (_document != null && _documentType != null)
 {
     <DetailForm Title="@_document?.Title"
                 Subtitle="@_document?.Description"
@@ -76,31 +76,29 @@ else if (_document != null || _documentType != null)
             </MudItem>
 
             @* Kategori *@
-            <MudItem xs="12" sm="6">
-                @if (_documentTypeCategories.Count > 0)
-                {
-                    <MudItem xs="12" sm="6">
-                        <SelectWithLinkField Value="_editModel.DocumentTypeCategoryId"
-                                             ValueChanged="(Guid? v) => _editModel.DocumentTypeCategoryId = v"
-                                             Label="Underkategori (valgfritt)"
-                                             ToStringFunc="@(id => _documentTypeCategories.FirstOrDefault(
-                                                               c => c.Id == id)?.Name ?? string.Empty)"
-                                             IsEditing="_isEditing"
-                                             ShowLink="false"
-                                             DisplayValue="@(_documentTypeCategories.
-                                                           FirstOrDefault(c => c.Id == _document?.DocumentTypeCategoryId)?.Name)">
-                            <Items>
-                                <MudSelectItem Value="(Guid?)null">Ingen kategori</MudSelectItem>
-                                @foreach (var category in _documentTypeCategories)
-                                {
-                                    <MudSelectItem Value="(Guid?)category.Id">@category.Name</MudSelectItem>
-                                }
-                            </Items>
-                        </SelectWithLinkField>
-                    </MudItem>
-                }
-            </MudItem>
-
+            @if (_documentTypeCategories.Count > 0)
+            {
+                <MudItem xs="12" sm="6">
+                    <SelectWithLinkField Value="_editModel.DocumentTypeCategoryId"
+                                         ValueChanged="(Guid? v) => _editModel.DocumentTypeCategoryId = v"
+                                         Label="Underkategori (valgfritt)"
+                                         ToStringFunc="@(id => _documentTypeCategories.FirstOrDefault(
+                                                           c => c.Id == id)?.Name ?? string.Empty)"
+                                         IsEditing="_isEditing"
+                                         ShowLink="false"
+                                         DisplayValue="@(_documentTypeCategories.
+                                                       FirstOrDefault(c => c.Id == _document?.DocumentTypeCategoryId)?.Name)">
+                        <Items>
+                            <MudSelectItem Value="(Guid?)null">Ingen kategori</MudSelectItem>
+                            @foreach (var category in _documentTypeCategories)
+                            {
+                                <MudSelectItem Value="(Guid?)category.Id">@category.Name</MudSelectItem>
+                            }
+                        </Items>
+                    </SelectWithLinkField>
+                </MudItem>
+            }
+                
             @* Beskrivelse *@
             <MudItem xs="12">
                 <TextField Value="@_editModel.Description"
@@ -609,18 +607,22 @@ else if (_document != null || _documentType != null)
     {
         var signatureResult = await SignatureService.GetSignaturesAsync(Slug, Id, Cts.Token);
         if (signatureResult.IsFailure)
+        {
             _alert = new AlertInfo(signatureResult.Error!.ToString(), Severity.Error);
-        else
-            _signatures = signatureResult.Value!;
-
+            return;
+        }
+       
+        _signatures = signatureResult.Value!;
         _alert = new AlertInfo("Dokumentet ble signert", Severity.Success); 
     }
 
     // Sjekker om det er noen inaktive entiteter blandt de valgte målgruppene
-    private bool HasInactiveDepartments => _document!.TargetDepartmentIds
+    private bool HasInactiveDepartments =>
+        (_isEditing ? _editModel.TargetDepartmentIds : _document!.TargetDepartmentIds)
         .Any(id => _departments.Any(d => d.Id == id && !d.IsActive));
 
-    private bool HasInactiveJobTitles => _document!.TargetJobTitleIds
+    private bool HasInactiveJobTitles =>
+        (_isEditing ? _editModel.TargetJobTitleIds : _document!.TargetJobTitleIds)
         .Any(id => _jobTitles.Any(j => j.Id == id && !j.IsActive));
 
     private void NavigateToExternalUrl()

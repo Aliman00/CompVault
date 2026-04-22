@@ -139,7 +139,8 @@ public static class HttpClientExtensions
         string contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
         string fileName = response.Content.Headers.ContentDisposition?.FileNameStar
                           ?? response.Content.Headers.ContentDisposition?.FileName
-                          ?? "dokument";
+                          ?? "dokument"
+                              .Trim('"');
 
         return new FileAttachment(stream, fileName, contentType);
     }

@@ -190,7 +190,7 @@ public class DocumentSignatureServiceTests
 
         // Act
         Result<IReadOnlyList<UserSignatureStatusDto>> result =
-            await _sut.GetSignatureStatus(id);
+            await _sut.GetSignatureStatusAsync(id);
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -220,7 +220,7 @@ public class DocumentSignatureServiceTests
 
         // Act
         Result<IReadOnlyList<UserSignatureStatusDto>> result =
-            await _sut.GetSignatureStatus(docId, currentUserId: Guid.NewGuid());
+            await _sut.GetSignatureStatusAsync(docId, currentUserId: Guid.NewGuid());
 
         // Assert
         result.IsFailure.Should().BeTrue();
@@ -278,7 +278,7 @@ public class DocumentSignatureServiceTests
             .ReturnsAsync([signedUser, unsignedUser]);
 
         // Act
-        Result<IReadOnlyList<UserSignatureStatusDto>> result = await _sut.GetSignatureStatus(docId);
+        Result<IReadOnlyList<UserSignatureStatusDto>> result = await _sut.GetSignatureStatusAsync(docId);
 
         // Assert - Sjekker egenskapene og at en bruker har singert og den andre har ikke signert
         result.IsSuccess.Should().BeTrue();
