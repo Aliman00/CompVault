@@ -168,10 +168,10 @@ public sealed class EquipmentIssuanceService(
                 return Result<EquipmentIssuanceDto>.Failure(
                     AppError.Create(ErrorCode.Validation, EquipmentValidations.Errors.SizeRequired));
 
-            if (issuance.Item != null && !issuance.Item.HasSize && !string.IsNullOrWhiteSpace(request.Size))
-                request.Size = null;
-
-            issuance.Size = request.Size;
+            if (issuance.Item != null && !issuance.Item.HasSize)
+                issuance.Size = null;
+            else
+                issuance.Size = string.IsNullOrWhiteSpace(request.Size) ? null : request.Size.Trim();
         }
 
         if (request.Notes is not null)

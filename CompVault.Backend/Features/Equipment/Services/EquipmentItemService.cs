@@ -151,7 +151,7 @@ public sealed class EquipmentItemService(
     public async Task<Result<bool>> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         Domain.Entities.Equipment.EquipmentItem? item =
-            await itemRepository.GetByIdWithCategoryAndIssuancesAsync(id, cancellationToken);
+            await itemRepository.GetByIdTrackedAsync(id, cancellationToken);
 
         if (item is null)
             return Result<bool>.Failure(

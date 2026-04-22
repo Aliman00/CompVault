@@ -41,6 +41,8 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
     public async Task<EquipmentIssuance?> GetForUpdateAsync(
         Guid id, CancellationToken cancellationToken = default) =>
         await DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null)
             .Include(i => i.Item!)
                 .ThenInclude(item => item!.Category)
             .Include(i => i.User)

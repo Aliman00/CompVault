@@ -28,7 +28,7 @@ public sealed class EquipmentItemRepository(AppDbContext dbContext)
             .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<EquipmentItem?> GetByIdWithCategoryAndIssuancesAsync(
+    public async Task<EquipmentItem?> GetByIdTrackedAsync(
         Guid id, CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(i => i.Category)

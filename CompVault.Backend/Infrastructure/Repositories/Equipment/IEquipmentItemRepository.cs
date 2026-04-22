@@ -13,8 +13,8 @@ public interface IEquipmentItemRepository : IRepository<EquipmentItem>
     /// <summary>Henter ett utstyr med kategori (no-tracking).</summary>
     Task<EquipmentItem?> GetByIdWithCategoryAsync(Guid id, CancellationToken cancellationToken = default);
 
-    /// <summary>Henter ett utstyr med kategori og utleveringer for mutasjon (tracking).</summary>
-    Task<EquipmentItem?> GetByIdWithCategoryAndIssuancesAsync(Guid id, CancellationToken cancellationToken = default);
+    /// <summary>Henter ett utstyr med kategori for mutasjon (tracking).</summary>
+    Task<EquipmentItem?> GetByIdTrackedAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>Henter alt utstyr i en bestemt kategori.</summary>
     Task<IReadOnlyList<EquipmentItem>> GetByCategoryIdAsync(Guid categoryId, CancellationToken cancellationToken = default);
