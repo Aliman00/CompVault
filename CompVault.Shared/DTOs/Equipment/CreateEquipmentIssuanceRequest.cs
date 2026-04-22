@@ -23,9 +23,6 @@ public sealed class CreateEquipmentIssuanceRequest
     [StringLength(EquipmentValidations.SizeMaxLength, ErrorMessage = EquipmentValidations.Errors.SizeMaxLength)]
     public string? Size { get; set; }
 
-    /// <summary>ID til brukeren som deler ut utstyret.</summary>
-    public Guid IssuedById { get; set; }
-
     /// <summary>Når utstyret ble utlevert.</summary>
     public DateTime IssuedDate { get; set; }
 

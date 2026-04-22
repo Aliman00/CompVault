@@ -40,6 +40,8 @@ public sealed class EquipmentCategoryService(
     public async Task<Result<EquipmentCategoryDto>> CreateAsync(
         CreateEquipmentCategoryRequest request, CancellationToken cancellationToken = default)
     {
+        request.Name = request.Name.Trim();
+
         bool nameExists = await categoryRepository.ExistsAsync(
             c => c.Name == request.Name, cancellationToken);
 
@@ -77,6 +79,8 @@ public sealed class EquipmentCategoryService(
 
         if (request.Name is not null)
         {
+            request.Name = request.Name.Trim();
+
             if (string.IsNullOrWhiteSpace(request.Name))
                 return Result<EquipmentCategoryDto>.Failure(
                     AppError.Create(ErrorCode.Validation, "Navn kan ikke være tomt."));

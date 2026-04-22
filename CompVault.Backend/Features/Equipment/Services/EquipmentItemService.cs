@@ -59,6 +59,8 @@ public sealed class EquipmentItemService(
     public async Task<Result<EquipmentItemDto>> CreateAsync(
         CreateEquipmentItemRequest request, CancellationToken cancellationToken = default)
     {
+        request.Name = request.Name.Trim();
+
         if (request.CategoryId == Guid.Empty)
             return Result<EquipmentItemDto>.Failure(
                 AppError.Create(ErrorCode.Validation, "Ugyldig kategori-ID."));
@@ -113,6 +115,8 @@ public sealed class EquipmentItemService(
 
         if (request.Name is not null)
         {
+            request.Name = request.Name.Trim();
+
             if (string.IsNullOrWhiteSpace(request.Name))
                 return Result<EquipmentItemDto>.Failure(
                     AppError.Create(ErrorCode.Validation, "Navn kan ikke være tomt."));

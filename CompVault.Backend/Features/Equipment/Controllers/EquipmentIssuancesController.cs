@@ -1,5 +1,6 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Equipment.Services;
+using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Equipment;
 using CompVault.Shared.Result;
@@ -62,7 +63,8 @@ public sealed class EquipmentIssuancesController(IEquipmentIssuanceService issua
         [FromBody] CreateEquipmentIssuanceRequest request,
         CancellationToken cancellationToken)
     {
-        Result<EquipmentIssuanceDto> result = await issuanceService.CreateAsync(request, cancellationToken);
+        Guid issuedById = User.GetUserId();
+        Result<EquipmentIssuanceDto> result = await issuanceService.CreateAsync(issuedById, request, cancellationToken);
 
         if (result.IsFailure) return HandleFailure(result);
         return CreatedAtAction("GetById", new { id = result.Value!.Id }, result.Value);

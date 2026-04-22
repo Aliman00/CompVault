@@ -60,7 +60,7 @@ public sealed class EquipmentIssuanceService(
 
     /// <inheritdoc />
     public async Task<Result<EquipmentIssuanceDto>> CreateAsync(
-        CreateEquipmentIssuanceRequest request, CancellationToken cancellationToken = default)
+        Guid issuedById, CreateEquipmentIssuanceRequest request, CancellationToken cancellationToken = default)
     {
         // Valider input-GUIDs
         if (request.UserId == Guid.Empty)
@@ -71,13 +71,12 @@ public sealed class EquipmentIssuanceService(
             return Result<EquipmentIssuanceDto>.Failure(
                 AppError.Create(ErrorCode.Validation, "Ugyldig utstyr-ID."));
 
-        if (request.IssuedById == Guid.Empty)
+        if (issuedById == Guid.Empty)
             return Result<EquipmentIssuanceDto>.Failure(
                 AppError.Create(ErrorCode.Validation, "Ugyldig ID for utsteder."));
 
         Guid userId = request.UserId;
         Guid itemId = request.ItemId;
-        Guid issuedById = request.IssuedById;
         DateTime issuedDate = request.IssuedDate;
 
         if (request.IssuedDate > DateTime.UtcNow.AddDays(1))
@@ -111,6 +110,9 @@ public sealed class EquipmentIssuanceService(
         if (item.HasSize && string.IsNullOrWhiteSpace(request.Size))
             return Result<EquipmentIssuanceDto>.Failure(
                 AppError.Create(ErrorCode.Validation, EquipmentValidations.Errors.SizeRequired));
+
+        if (!item.HasSize && !string.IsNullOrWhiteSpace(request.Size))
+            request.Size = null;
 
         // Valider utsteder
         bool issuerExists = await userRepository.ExistsAsync(u => u.Id == issuedById, cancellationToken);
@@ -165,6 +167,10 @@ public sealed class EquipmentIssuanceService(
             if (issuance.Item != null && issuance.Item.HasSize && string.IsNullOrWhiteSpace(request.Size))
                 return Result<EquipmentIssuanceDto>.Failure(
                     AppError.Create(ErrorCode.Validation, EquipmentValidations.Errors.SizeRequired));
+
+            if (issuance.Item != null && !issuance.Item.HasSize && !string.IsNullOrWhiteSpace(request.Size))
+                request.Size = null;
+
             issuance.Size = request.Size;
         }
 
