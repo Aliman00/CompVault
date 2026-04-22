@@ -13,15 +13,15 @@
           SelectedItemsChanged="@(s => _selectedEquipmentCategories = s)"
           RowClick="@(args => OnCategoryClick(args))">
     <Header>
-        <ListHeader Title="Dokumentkategorier"
-                    PageIcon="@Icons.Material.Filled.Topic"
-                    CreateHref="@PageRoutes.DocumentTypes.Create"
-                    CreateLabel="Opprett dokumentkategori"
-                    CreateIcon="@Icons.Material.Filled.Topic"
-                    CreatePolicy="@Permissions.DocumentTypesWrite"/>
+        <ListHeader Title="Utstyrskategorier"
+                    PageIcon="@Icons.Material.Filled.Storage"
+                    CreateHref="@PageRoutes.EquipmentCategories.Create"
+                    CreateLabel="Opprett utstyrskategori"
+                    CreateIcon="@Icons.Material.Filled.Storage"
+                    CreatePolicy="@Permissions.EquipmentWrite"/>
     </Header>
     <Columns>
-        @* Dokumenttype navn *@
+        @* Navn *@
         <PropertyColumn T="EquipmentCategoryDto" TProperty="string"
                         Property="ct => ct.Name.Truncate(40)" Title="Navn"/>
         
@@ -30,6 +30,12 @@
                         Property="r => r.Description.Truncate(50)"
                         Title="Beskrivelse"
                         Sortable="true"/>
+
+        <PropertyColumn T="EquipmentCategoryDto" TProperty="int"
+                        Property="ct => ct.ItemCount"
+                        Title="Antall utstyr"
+                        Sortable="true"
+                        HeaderStyle="width: 200px"/>
 
         @* Er kategorien aktiv *@
         <TemplateColumn T="EquipmentCategoryDto"
@@ -78,7 +84,7 @@
             _equipmentCategories = getCategoriesResult.Value!;
 
             if (Deleted)
-                _alert = new AlertInfo("Dokumentkategori er slettet", Severity.Info);
+                _alert = new AlertInfo("Utstyrskategorien er slettet", Severity.Info);
         }
         catch (OperationCanceledException)
         {
@@ -86,7 +92,7 @@
         }
         catch
         {
-            _alert = new AlertInfo("Klarte ikke å laste dokumentkategorier. Oppdater siden for å prøve igjen",
+            _alert = new AlertInfo("Klarte ikke å laste utstyrskategorier. Oppdater siden for å prøve igjen",
                 Severity.Error);
         }
         finally

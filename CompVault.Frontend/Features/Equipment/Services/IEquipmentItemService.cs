@@ -3,7 +3,7 @@ using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Features.Equipment.Services;
 
-public interface IEquipmentService
+public interface IEquipmentItemService
 {
     /// <summary>
     /// Henter alt utstyr fra backend

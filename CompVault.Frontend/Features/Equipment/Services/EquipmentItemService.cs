@@ -6,9 +6,9 @@ using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Features.Equipment.Services;
 
-public class EquipmentService(
-    ILogger<EquipmentService> logger,
-    IHttpClientFactory httpClientFactory) : IEquipmentService
+public class EquipmentItemService(
+    ILogger<EquipmentItemService> logger,
+    IHttpClientFactory httpClientFactory) : IEquipmentItemService
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
 
