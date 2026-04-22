@@ -1,6 +1,7 @@
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Domain.Entities.JobTitles;
 using CompVault.Backend.Features.Competencies;
@@ -223,6 +224,7 @@ public static class DatabaseSeeder
             await SeedDocumentTypesAsync(dbContext, logger);
             await SeedDocumentTypeCategoriesAsync(dbContext, logger);
             await SeedDocumentsAsync(dbContext, logger);
+            await SeedEquipmentAsync(dbContext, logger);
 
             await transaction.CommitAsync();
             logger.LogInformation("[DatabaseSeeder] Seeding fullført.");
@@ -552,6 +554,9 @@ public static class DatabaseSeeder
             (Permissions.JobTitlesRead, "Se stillingstitler", "JobTitles"),
             (Permissions.JobTitlesWrite, "Opprett/endre stillingstitler", "JobTitles"),
             (Permissions.JobTitlesDelete, "Slett stillingstitler", "JobTitles"),
+            (Permissions.EquipmentRead, "Se utstyr", "Equipment"),
+            (Permissions.EquipmentWrite, "Opprett/endre utstyr", "Equipment"),
+            (Permissions.EquipmentDelete, "Slett utstyr", "Equipment"),
             (Permissions.AdminAccess, "Se administratorpanel", "Admins"),
         ];
 
@@ -630,6 +635,7 @@ public static class DatabaseSeeder
             Permissions.DocumentsRead,
             Permissions.DocumentsSign,
             Permissions.JobTitlesRead,
+            Permissions.EquipmentRead,
         ];
 
         var employeePermissions = allPermissions
@@ -805,6 +811,126 @@ public static class DatabaseSeeder
             dbContext.Documents.Add(document);
             await dbContext.SaveChangesAsync();
             logger.LogInformation("[DatabaseSeeder] Dokument opprettet: {Title}", title);
+        }
+    }
+
+    private static async Task SeedEquipmentAsync(AppDbContext dbContext, ILogger logger)
+    {
+        // Equipment Categories: (Name, Description)
+        var categories = new (string Name, string Description)[]
+        {
+            ("Uniform", "Standard arbeidsuniform"),
+            ("Verneutstyr", "Personlig verneutstyr"),
+        };
+
+        var categoryIds = new Dictionary<string, Guid>();
+
+        foreach ((string name, string description) in categories)
+        {
+            EquipmentCategory? existingCat = await dbContext.EquipmentCategories
+                .FirstOrDefaultAsync(c => c.Name == name);
+            if (existingCat is not null)
+            {
+                categoryIds[name] = existingCat.Id;
+                continue;
+            }
+
+            var category = new EquipmentCategory
+            {
+                Name = name,
+                Description = description,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            dbContext.EquipmentCategories.Add(category);
+            await dbContext.SaveChangesAsync();
+            categoryIds[name] = category.Id;
+            logger.LogInformation("[DatabaseSeeder] Utstyrskategori opprettet: {Name}", name);
+        }
+
+        // Equipment Items: (CategoryName, Name, HasSize)
+        var items = new (string CategoryName, string Name, bool HasSize)[]
+        {
+            ("Uniform", "Sko", true),
+            ("Uniform", "Bukse", true),
+            ("Uniform", "Skjorte", true),
+            ("Uniform", "Jakke", false),
+            ("Verneutstyr", "Hjelm", false),
+            ("Verneutstyr", "Øreklokker", false),
+            ("Verneutstyr", "Hansker", true),
+            ("Verneutstyr", "Vernsko", true),
+        };
+
+        var itemIds = new Dictionary<string, Guid>();
+
+        foreach ((string categoryName, string name, bool hasSize) in items)
+        {
+            EquipmentItem? existingItem = await dbContext.EquipmentItems
+                .FirstOrDefaultAsync(i => i.Name == name && i.CategoryId == categoryIds[categoryName]);
+            if (existingItem is not null)
+            {
+                itemIds[name] = existingItem.Id;
+                continue;
+            }
+
+            var item = new EquipmentItem
+            {
+                CategoryId = categoryIds[categoryName],
+                Name = name,
+                HasSize = hasSize,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            dbContext.EquipmentItems.Add(item);
+            await dbContext.SaveChangesAsync();
+            itemIds[name] = item.Id;
+            logger.LogInformation("[DatabaseSeeder] Utstyr opprettet: {Name} (kategori: {Category})", name, categoryName);
+        }
+
+        // Equipment Issuances for the first test user (lars.hansen)
+        ApplicationUser? lars = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == "lars.hansen@compvault.no");
+        ApplicationUser? admin = await dbContext.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+
+        if (lars is not null && admin is not null)
+        {
+            var issuances = new (string ItemName, int Quantity, string? Size)[]
+            {
+                ("Skjorte", 4, "L"),
+                ("Bukse", 2, "L"),
+                ("Sko", 2, "43"),
+                ("Jakke", 1, null),
+                ("Hjelm", 1, null),
+            };
+
+            foreach ((string itemName, int quantity, string? size) in issuances)
+            {
+                if (!itemIds.TryGetValue(itemName, out Guid itemId))
+                    continue;
+
+                bool exists = await dbContext.EquipmentIssuances.AnyAsync(
+                    i => i.UserId == lars.Id && i.ItemId == itemId);
+                if (exists)
+                    continue;
+
+                var issuance = new EquipmentIssuance
+                {
+                    UserId = lars.Id,
+                    ItemId = itemId,
+                    Quantity = quantity,
+                    Size = size,
+                    IssuedById = admin.Id,
+                    IssuedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                dbContext.EquipmentIssuances.Add(issuance);
+                await dbContext.SaveChangesAsync();
+                logger.LogInformation("[DatabaseSeeder] Utlevering opprettet: {Item} x{Qty} til {User}",
+                    itemName, quantity, lars.Email);
+            }
         }
     }
 }

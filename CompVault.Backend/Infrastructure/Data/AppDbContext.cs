@@ -2,6 +2,7 @@ using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Domain.Entities.JobTitles;
 
@@ -38,6 +39,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     // ============= AUTH ==============
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    // ============= EQUIPMENT ==============
+    public DbSet<EquipmentCategory> EquipmentCategories => Set<EquipmentCategory>();
+    public DbSet<EquipmentItem> EquipmentItems => Set<EquipmentItem>();
+    public DbSet<EquipmentIssuance> EquipmentIssuances => Set<EquipmentIssuance>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)

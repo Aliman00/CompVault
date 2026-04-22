@@ -1,0 +1,27 @@
+using CompVault.Backend.Domain.Entities.Equipment;
+
+namespace CompVault.Backend.Infrastructure.Repositories.Equipment;
+
+/// <summary>
+/// Repository for utleveringer.
+/// </summary>
+public interface IEquipmentIssuanceRepository : IRepository<EquipmentIssuance>
+{
+    /// <summary>Henter alle utleveringer med navigasjonsdata (bruker, utstyr, kategori, utsteder).</summary>
+    Task<IReadOnlyList<EquipmentIssuance>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Henter én utlevering med fullstendige navigasjonsdata.</summary>
+    Task<EquipmentIssuance?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Henter én utlevering for oppdatering (tracking query med navigasjon).</summary>
+    Task<EquipmentIssuance?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Henter alle utleveringer for en bestemt bruker med navigasjonsdata.</summary>
+    Task<IReadOnlyList<EquipmentIssuance>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Soft-sletter utleveringen.</summary>
+    Task SoftDeleteAsync(EquipmentIssuance issuance, CancellationToken cancellationToken = default);
+    
+    /// <summary>Soft-sletter utleveringen via ID.</summary>
+    Task<int> SoftDeleteByIdAsync(Guid id, CancellationToken cancellationToken = default);
+}
