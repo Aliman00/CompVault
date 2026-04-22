@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Competencies;
+using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Competencies;
@@ -13,7 +14,8 @@ namespace CompVault.Backend.Features.Competencies.Services;
 public sealed class CompetencyService(
     ICompetencyRepository competencyRepository,
     ICompetencyTypeRepository competencyTypeRepository,
-    IUserRepository userRepository) : ICompetencyService
+    IUserRepository userRepository,
+    IAuditContext auditContext) : ICompetencyService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<CompetencyDto>>> GetAllAsync(
@@ -140,6 +142,10 @@ public sealed class CompetencyService(
             competency.Status = CompetencyStatus.Revoked;
             competency.RevokedAt = DateTime.UtcNow;
             competency.RevokedReason = request.RevokedReason;
+
+            // Gi interceptoren forretningskontekst for revoke
+            auditContext.SetActionOverride("competency.revoke");
+            auditContext.SetReason(request.RevokedReason);
         }
 
         if (request.ExpiryDate.HasValue && competency.CompetencyType?.RequiresExpiration == false)

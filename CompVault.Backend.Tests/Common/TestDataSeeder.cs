@@ -1,4 +1,4 @@
-﻿using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
@@ -102,6 +102,7 @@ public static class TestDataSeeder
             (Permissions.DocumentsWrite, "Opprett/endre dokumenter", "Documents"),
             (Permissions.DocumentsDelete, "Slett dokumenter", "Documents"),
             (Permissions.DocumentsSign, "Signere dokumenter", "Documents"),
+            (Permissions.AuditRead, "Tilgang til revisjonslogg", "Audit"),
         ];
 
         foreach ((string name, string description, string category) in permissions)
@@ -153,6 +154,7 @@ public static class TestDataSeeder
                 Permissions.DocumentsWrite,
                 Permissions.DocumentsDelete,
                 Permissions.DocumentsSign,
+                Permissions.AuditRead,
             },
             TestConstants.Roles.Default => new[]
             {

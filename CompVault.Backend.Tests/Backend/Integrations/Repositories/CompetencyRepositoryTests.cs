@@ -217,7 +217,7 @@ public class CompetencyRepositoryTests(
         await _context.SaveChangesAsync();
 
         // Act
-        (int expiredCount, int expiringSoonCount) = await _sut.UpdateExpiryStatusesAsync();
+        (int expiredCount, int expiringSoonCount, _) = await _sut.UpdateExpiryStatusesAsync();
 
         // Assert
         expiredCount.Should().Be(1);
@@ -247,7 +247,7 @@ public class CompetencyRepositoryTests(
         await _context.SaveChangesAsync();
 
         // Act
-        (int expiredCount, int expiringSoonCount) = await _sut.UpdateExpiryStatusesAsync();
+        (int expiredCount, int expiringSoonCount, _) = await _sut.UpdateExpiryStatusesAsync();
 
         // Assert
         expiredCount.Should().Be(0);
@@ -277,7 +277,7 @@ public class CompetencyRepositoryTests(
         await _context.SaveChangesAsync();
 
         // Act
-        (int expiredCount, int expiringSoonCount) = await _sut.UpdateExpiryStatusesAsync();
+        (int expiredCount, int expiringSoonCount, _) = await _sut.UpdateExpiryStatusesAsync();
 
         // Assert
         expiredCount.Should().Be(0);

@@ -39,10 +39,11 @@ public interface ICompetencyRepository : IRepository<Competency>
 
     /// <summary>
     /// Oppdaterer status på kompetansebevis basert på utløpsdato via ren SQL.
-    /// Returnerer antall oppdaterte for Expired og ExpiringSoon.
+    /// Returnerer antall oppdaterte for Expired og ExpiringSoon,
+    /// pluss liste over berørte kompetansebevis med ID og gammel/ny status.
     /// Berører aldri Revoked-bevis eller soft-deleted rader (global query filter).
     /// </summary>
-    Task<(int ExpiredCount, int ExpiringSoonCount)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default);
+    Task<(int ExpiredCount, int ExpiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)> StatusChanges)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter kompetansebeviset ved å sette DeletedAt og IsActive.</summary>
     Task SoftDeleteAsync(Competency competency, CancellationToken cancellationToken = default);

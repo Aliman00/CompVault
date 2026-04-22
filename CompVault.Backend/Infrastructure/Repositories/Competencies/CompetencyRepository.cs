@@ -76,12 +76,21 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<(int ExpiredCount, int ExpiringSoonCount)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default)
+    public async Task<(int ExpiredCount, int ExpiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)> StatusChanges)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default)
     {
         int expiringSoonThresholdDays = CompetencyStatusCalculator.ExpiringSoonThresholdDays;
+        var statusChanges = new List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)>();
 
-        // Sett Expired: bevis med utløpsdato i fortiden og RequiresExpiration == true
-        // Berører aldri Revoked (filtrert i WHERE) eller soft-deleted (global query filter)
+        // --- Expired: Finn kompetanser som vil bli satt til Expired ---
+        var toExpire = await DbSet
+            .Where(c => c.Status != CompetencyStatus.Revoked
+                && c.CompetencyType!.RequiresExpiration
+                && c.ExpiryDate != null
+                && c.ExpiryDate < DateTime.UtcNow)
+            .Select(c => new { c.Id, c.Status })
+            .ToListAsync(cancellationToken);
+
+        // Sett Expired via ExecuteUpdateAsync
         int expiredCount = await DbSet
             .Where(c => c.Status != CompetencyStatus.Revoked
                 && c.CompetencyType!.RequiresExpiration
@@ -89,9 +98,20 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
                 && c.ExpiryDate < DateTime.UtcNow)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, CompetencyStatus.Expired), cancellationToken);
 
-        // Sett ExpiringSoon: gyldige bevis med utløpsdato innen 90 dager og RequiresExpiration == true
-        // Begrenser til Status == Valid for å unngå å re-markere Expired-bevis
+        foreach (var item in toExpire)
+            statusChanges.Add((item.Id, item.Status, CompetencyStatus.Expired));
+
+        // --- ExpiringSoon: Finn kompetanser som vil bli satt til ExpiringSoon ---
         DateTime threshold = DateTime.UtcNow.AddDays(expiringSoonThresholdDays);
+        var toExpireSoon = await DbSet
+            .Where(c => c.Status == CompetencyStatus.Valid
+                && c.CompetencyType!.RequiresExpiration
+                && c.ExpiryDate != null
+                && c.ExpiryDate >= DateTime.UtcNow
+                && c.ExpiryDate <= threshold)
+            .Select(c => new { c.Id, c.Status })
+            .ToListAsync(cancellationToken);
+
         int expiringSoonCount = await DbSet
             .Where(c => c.Status == CompetencyStatus.Valid
                 && c.CompetencyType!.RequiresExpiration
@@ -100,7 +120,10 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
                 && c.ExpiryDate <= threshold)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, CompetencyStatus.ExpiringSoon), cancellationToken);
 
-        return (expiredCount, expiringSoonCount);
+        foreach (var item in toExpireSoon)
+            statusChanges.Add((item.Id, item.Status, CompetencyStatus.ExpiringSoon));
+
+        return (expiredCount, expiringSoonCount, statusChanges);
     }
 
     /// <inheritdoc />

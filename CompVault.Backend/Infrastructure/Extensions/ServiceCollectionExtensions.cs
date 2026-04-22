@@ -12,9 +12,11 @@ using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Equipment.Services;
 using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
+using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Data.Interceptors;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.FileStorage;
@@ -59,10 +61,13 @@ public static class ServiceCollectionExtensions
                 .GetSection(DatabaseSettings.SectionName)
                 .Get<DatabaseSettings>() ?? throw new InvalidOperationException("Database-konfigurasjon mangler.");
 
-            services.AddDbContext<AppDbContext>(options =>
+            services.AddDbContext<AppDbContext>((sp, options) =>
+            {
                 options.UseNpgsql(
                     dbSettings.BuildConnectionString(),
-                    npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
+                    npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
+                options.AddInterceptors(new AuditSaveChangesInterceptor(sp));
+            });
         }
 
         services.AddIdentityCore<ApplicationUser>(opts =>
@@ -277,6 +282,10 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        // Audit
+        services.AddScoped<IAuditContext, AuditContext>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
+
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();

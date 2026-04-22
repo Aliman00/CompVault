@@ -1,4 +1,4 @@
-﻿namespace CompVault.Shared.Constants;
+namespace CompVault.Shared.Constants;
 
 /// <summary>
 /// API-rutene til frontend, backend og testing. Backend bruker kun den enkle stien
@@ -78,5 +78,10 @@ public static class ApiRoutes
         public const string Base = "api/equipment-issuances";
         public static string ById(Guid id) => $"{Base}/{id}";
         public const string ByUser = "by-user";
+    }
+
+    public static class Audit
+    {
+        public const string Base = "api/audit-log";
     }
 }

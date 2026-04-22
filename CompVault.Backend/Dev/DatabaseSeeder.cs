@@ -31,7 +31,7 @@ public static class DatabaseSeeder
         ("Ingrid", "Berg",     "ingrid.berg@compvault.no",   ["Employee"]),
         ("Tobias", "Lie",      "tobias.lie@compvault.no",    ["Employee"]),
         ("Sofie",  "Dahl",     "sofie.dahl@compvault.no",    ["Employee"]),
-        ("Almin",  "Colakovic","almin.dev@pm.me",            ["Employee"]),
+        ("Almin",  "Colakovic","almin.dev@pm.me",            ["Admin"]),
         ("Majlinda","Lajci",   "gamingnerd824@gmail.com",    ["Employee"]),
         ("Fredrik","Magee",    "fredrik@magee.no",           ["Employee"]),
     ];
@@ -558,6 +558,7 @@ public static class DatabaseSeeder
             (Permissions.EquipmentWrite, "Opprett/endre utstyr", "Equipment"),
             (Permissions.EquipmentDelete, "Slett utstyr", "Equipment"),
             (Permissions.AdminAccess, "Se administratorpanel", "Admins"),
+            (Permissions.AuditRead, "Tilgang til revisjonslogg", "Audit"),
         ];
 
         int addedCount = 0;
