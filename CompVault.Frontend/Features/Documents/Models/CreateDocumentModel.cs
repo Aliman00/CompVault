@@ -19,6 +19,9 @@ public class CreateDocumentModel
     public string? ExternalUrl { get; set; }
 
     public bool RequiresSignature { get; set; } = true;
+    
+    public List<Guid> TargetDepartmentIds { get; set; } = [];
+    public List<Guid> TargetJobTitleIds { get; set; } = [];
 
     public CreateDocumentRequest ToRequest() => new()
     {
@@ -26,5 +29,7 @@ public class CreateDocumentModel
         Description = Description,
         ExternalUrl = ExternalUrl,
         RequiresSignature = RequiresSignature,
+        TargetDepartmentIds = TargetDepartmentIds,
+        TargetJobTitleIds = TargetJobTitleIds
     };
 }

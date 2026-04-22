@@ -52,8 +52,6 @@
                 <MudToggleItem Value="(bool?)false" Text="Ingen signatur"/>
             </ToggleButton>
         </MudItem>
-
-        
         
         @* Filopplasting *@
         <MudItem xs="12" sm="6">
@@ -61,22 +59,48 @@
                              AcceptedFileTypes="@string.Join(',', _documentType.AllowedMimeTypes)"
                              ButtonText="Velg fil (valgfritt)"/>
         </MudItem>
+        
+        @* Avdelinger som målgruppe *@
+        @if (_documentType.TargetMode == DocumentTargetMode.Department)
+        {
+            <MudItem xs="12">
+                <MultiSelectField T="Guid"
+                                  SelectedValues="_editModel.TargetDepartmentIds"
+                                  SelectedValuesChanged="(List<Guid> v) => _editModel.TargetDepartmentIds = v"
+                                  Label="Målgruppe - avdelinger"
+                                  IsEditing="true"
+                                  ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                    d => d.Id == id)?.Name ?? string.Empty)">
+                    <Items>
+                        @foreach (var department in _departments)
+                        {
+                            <MudSelectItem T="Guid" Value="department.Id">@department.Name</MudSelectItem>
+                        }
+                    </Items>
+                </MultiSelectField>
+            </MudItem>
+        }
 
-        <MudItem xs="12" sm="6">
-            <SelectWithLinkField Value="_editModel.DepartmentId"
-                                 ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
-                                 Label="Avdeling"
-                                 ToStringFunc="@(id => _departments.FirstOrDefault(
-                                                   d => d.Id == id)?.Name ?? string.Empty)"
-                                 IsEditing="true">
-                <Items>
-                    @foreach (var department in _departments)
-                    {
-                        <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
-                    }
-                </Items>
-            </SelectWithLinkField>
-        </MudItem>
+        @* Stillinger som målgruppe *@
+        @if (_documentType.TargetMode == DocumentTargetMode.JobTitle)
+        {
+            <MudItem xs="12">
+                <MultiSelectField T="Guid"
+                                  SelectedValues="_editModel.TargetJobTitleIds"
+                                  SelectedValuesChanged="(List<Guid> v) => _editModel.TargetJobTitleIds = v"
+                                  Label="Målgruppe - stillinger"
+                                  IsEditing="true"
+                                  ToStringFunc="@(id => _jobTitles.FirstOrDefault(
+                                                    j => j.Id == id)?.Name ?? string.Empty)">
+                    <Items>
+                        @foreach (var jobTitle in _jobTitles)
+                        {
+                            <MudSelectItem T="Guid" Value="jobTitle.Id">@jobTitle.Name</MudSelectItem>
+                        }
+                    </Items>
+                </MultiSelectField>
+            </MudItem>
+        }
      
     </Fields>
 </CreateForm>

@@ -19,12 +19,17 @@ public class DocumentEditModel
 
     public bool RequiresSignature { get; set; } = true;
 
+    public List<Guid> TargetDepartmentIds { get; set; } = [];
+    public List<Guid> TargetJobTitleIds { get; set; } = [];
+
     public static DocumentEditModel FromDto(DocumentDto dto) => new()
     {
         Title = dto.Title,
         Description = dto.Description,
         ExternalUrl = dto.ExternalUrl,
         RequiresSignature = dto.RequiresSignature,
+        TargetDepartmentIds = dto.TargetDepartmentIds,
+        TargetJobTitleIds = dto.TargetJobTitleIds,
     };
 
     public UpdateDocumentRequest ToRequest() => new()
@@ -34,5 +39,7 @@ public class DocumentEditModel
         ExternalUrl = ExternalUrl,
         ClearExternalUrl = ExternalUrl is null,
         RequiresSignature = RequiresSignature,
+        TargetDepartmentIds = TargetDepartmentIds,
+        TargetJobTitleIds = TargetJobTitleIds,
     };
 }
