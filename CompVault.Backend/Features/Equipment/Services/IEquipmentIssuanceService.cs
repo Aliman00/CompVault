@@ -12,7 +12,7 @@ public interface IEquipmentIssuanceService
     Task<Result<PagedResult<EquipmentIssuanceDto>>> GetAllAsync(PagedQuery query, CancellationToken cancellationToken = default);
     Task<Result<EquipmentIssuanceDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Result<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, PagedQuery query, CancellationToken cancellationToken = default);
-    
+
     /// <summary> Henter alle utleveringer for et utstyr </summary>
     Task<Result<IReadOnlyList<EquipmentIssuanceDto>>> GetByItemAsync(Guid equipmentItemId,
         CancellationToken ct = default);
