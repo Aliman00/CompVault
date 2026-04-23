@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
@@ -14,6 +15,7 @@ public sealed class DocumentVersioningService(
     IDocumentSignatureRepository signatureRepository,
     IDocumentTargetingService targetingService,
     IDocumentFileService documentFileService,
+    IAuditContext auditContext,
     ILogger<DocumentVersioningService> logger) : IDocumentVersioningService
 {
     /// <inheritdoc />
@@ -113,6 +115,9 @@ public sealed class DocumentVersioningService(
         }
 
         // ---- Fase 3: Persistér alt i ETT SaveChanges ----
+        // Gi interceptoren kontekst: dokumentversjon oppdatering, ikke vanlig update
+        auditContext.SetActionOverride("document.upload_version");
+
         try
         {
             await documentRepository.SaveChangesAsync(cancellationToken);
