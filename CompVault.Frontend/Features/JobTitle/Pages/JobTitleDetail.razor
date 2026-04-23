@@ -112,7 +112,7 @@ else if (_jobTitle != null)
 
             // Henter jobtitle og brukere for å vise en oversikt over brukere tildelt tittelen - Kalles parallelt
             var jobTitleTask = JobTitleService.GetByIdAsync(Id, Cts.Token);
-            var usersTask = UserService.GetAllAsync(Cts.Token);
+            var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
 
             await Task.WhenAll(jobTitleTask, usersTask);
 
@@ -135,7 +135,7 @@ else if (_jobTitle != null)
             if (usersResult.IsFailure)
                 _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
             else
-                _usersWithJobTitle = usersResult.Value!.Where(u => u.JobTitleId == Id).ToList();
+                _usersWithJobTitle = usersResult.Value!.Items.Where(u => u.JobTitleId == Id).ToList();
 
             ResetEditModel();
         }

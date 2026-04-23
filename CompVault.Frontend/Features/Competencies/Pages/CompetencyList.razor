@@ -7,10 +7,8 @@
 @* Side for liste visning av alle kompetansebevi *@
 
 <ListPage TItem="CompetencyDto"
-          Items="_competencies"
-          IsLoading="_isLoading"
+          ServerData="LoadServerData"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedCompetencies = s)"
           RowClick="@(args => OnCompetenciesClick(args))">
     <Header>
         <ListHeader Title="Ansattkompetanse"
@@ -81,48 +79,34 @@
     public bool Deleted { get; set; }
 
     // ===================== PRIVATE FELT =====================
-    private List<CompetencyDto> _competencies = [];
-    private HashSet<CompetencyDto> _selectedCompetencies = [];
-
-    private CompetencyFilterRequest _request = new();
-
-    private bool _isLoading = true;
     private AlertInfo? _alert;
 
     // ===================== LIFECYCLE =====================
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        try
-        {
-            var getCompetenciesResult = await CompetenciesService.GetAllAsync(_request, Cts.Token);
-
-            if (getCompetenciesResult.IsFailure)
-            {
-                _alert = new AlertInfo(getCompetenciesResult.Error!.ToString(), Severity.Error);
-                return;
-            }
-
-            _competencies = getCompetenciesResult.Value!.OrderByStatus();
-
-            if (Deleted)
-                _alert = new AlertInfo("Kompetansetypen er slettet", Severity.Info);
-        }
-        catch (OperationCanceledException)
-        {
-            // Brukeren navigerte bort, fang opp stille
-        }
-        catch
-        {
-            _alert = new AlertInfo("Klarte ikke å laste kompetansetypen. Oppdater siden for å prøve igjen",
-                Severity.Error);
-        }
-        finally
-        {
-            _isLoading = false;
-        }
+        if (Deleted)
+            _alert = new AlertInfo("Kompetansetypen er slettet", Severity.Info);
     }
 
     // ===================== PRIVATE METHODS =====================
     private void OnCompetenciesClick(DataGridRowClickEventArgs<CompetencyDto> args) =>
         NavigationManager.NavigateTo(PageRoutes.Competencies.Detail(args.Item.Id));
+    
+    private async Task<GridData<CompetencyDto>> LoadServerData(GridState<CompetencyDto> state, CancellationToken ct)
+    {
+        var filter = new CompetencyFilterRequest { Page = state.Page + 1, PageSize = state.PageSize };
+        var result = await CompetenciesService.GetAllAsync(filter, ct);
+
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<CompetencyDto>();
+        }
+
+        return new GridData<CompetencyDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
+    }
 }

@@ -6,11 +6,10 @@
 
 @* Side for liste visning av alle brukere *@
 <ListPage TItem="UserDto"
-          Items="_users"
-          IsLoading="_isLoading"
+          ServerData="LoadServerData"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedUsers = s)"
-          RowClick="@(args => OnUserClick(args))">
+          RowClick="@(args => OnUserClick(args))"
+          RowsPerPage="20">
     <Header>
         <ListHeader Title="Brukere"
                     PageIcon="@Icons.Material.Filled.People"
@@ -53,48 +52,37 @@
     public bool Deleted { get; set; }
     
     // ===================== PRIVATE FELT =====================
-    private List<UserDto> _users = [];
-    private HashSet<UserDto> _selectedUsers = [];
-    
-    private bool _isLoading = true;
     private AlertInfo? _alert;
     
     // ===================== LIFECYCLE =====================
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        try
-        {
-            var getUsersResult = await UserService.GetAllAsync(Cts.Token);
-
-            if (getUsersResult.IsFailure)
-            {
-                _alert = new AlertInfo(getUsersResult.Error!.ToString(), Severity.Error);
-                return;
-            }
-
-            _users = getUsersResult.Value!;
-            
-            if (Deleted)
-                _alert = new AlertInfo("Brukeren er slettet", Severity.Info);
-        }
-        catch (OperationCanceledException)
-        {
-            // Brukeren navigerte bort, fang opp stille
-        }
-        catch
-        {
-            _alert = new AlertInfo("Klarte ikke å laste brukere. Oppdater siden for å prøve igjen",
-                Severity.Error);
-        }
-        finally
-        {
-            _isLoading = false;
-        }
+        if (Deleted)
+            _alert = new AlertInfo("Brukeren er slettet", Severity.Info);
     }
     
     // ===================== PRIVATE METHODS =====================
     
     private void OnUserClick(DataGridRowClickEventArgs<UserDto> args) =>
         NavigationManager.NavigateTo(PageRoutes.Users.Detail(args.Item.Id));
+    
+    // Bruker server-side paginering
+    private async Task<GridData<UserDto>> LoadServerData(GridState<UserDto> state, CancellationToken ct)
+    {
+        var query = new PagedQuery { Page = state.Page + 1, PageSize = state.PageSize };
+        var result = await UserService.GetAllAsync(query, ct);
+
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<UserDto>();
+        }
+
+        return new GridData<UserDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
+    }
     
 }

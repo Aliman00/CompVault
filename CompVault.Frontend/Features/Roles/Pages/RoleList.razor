@@ -10,7 +10,6 @@
           Items="_roles"
           IsLoading="_isLoading"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedRoles = s)"
           RowClick="@(args => OnRoleClick(args))">
     <Header>
         <ListHeader Title="Roller"
@@ -60,7 +59,6 @@
 
     // ===================== PRIVATE FELT =====================
     private List<RoleDto> _roles = [];
-    private HashSet<RoleDto> _selectedRoles = [];
 
     private bool _isLoading = true;
     private AlertInfo? _alert;

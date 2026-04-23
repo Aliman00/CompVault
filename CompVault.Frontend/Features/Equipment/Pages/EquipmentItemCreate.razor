@@ -113,6 +113,6 @@
         }
 
         NavigationManager.NavigateTo(
-            PageRoutes.EquipmentItems.Detail(createResult.Value!.Id) + "?created=true");
+            PageRoutes.EquipmentItems.Detail(createResult.Value!.Id) + "?created=true", replace: true);
     }
 }

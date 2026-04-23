@@ -1,6 +1,4 @@
 ﻿@page "/users/{Id:guid}"
-@using CompVault.Frontend.Features.Equipment.Components
-@using CompVault.Shared.DTOs.Equipment
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.UsersRead)]
 @inject IUserService UserService
@@ -206,7 +204,7 @@ else if (_user != null)
 
             @* Utstyr brukeren har fått tildelt *@
             <MudItem xs="12">
-                <ListHeader Title="@($"Utstyr ({_equipmentIssuances.Count})")"
+                <ListHeader Title="@($"Utstyr ({_issuancesTotalCount})")"
                             PageIcon="@Icons.Material.Filled.Headset">
                     <Actions>
                         <AuthorizeView Policy="@Permissions.EquipmentWrite">
@@ -220,15 +218,15 @@ else if (_user != null)
                 </ListHeader>
 
                 <MudDataGrid T="EquipmentIssuanceDto"
-                             Items="_equipmentIssuances"
+                             @ref="_issuancesGrid"
+                             ServerData="LoadIssuancesServerData"
                              Dense="true"
                              Hover="true"
                              Striped="true"
                              Square="true"
                              Bordered="true"
-                             SortMode="SortMode.Multiple"
                              RowClick="OnIssuanceClick"
-                             Filterable="true">
+                             RowsPerPage="20">
                     <Columns>
                         @* Brukeren *@
                         <TemplateColumn T="EquipmentIssuanceDto" Title="Utstyr">
@@ -271,6 +269,11 @@ else if (_user != null)
                         <PropertyColumn T="EquipmentIssuanceDto" TProperty="string?"
                                         Property="i => i.Notes" Title="Notater"/>
                     </Columns>
+                    <PagerContent>
+                        <MudDataGridPager T="EquipmentIssuanceDto"
+                                          RowsPerPageString="Rader pr side:"
+                                          PageSizeOptions="new[] { 10, 20, 50 }"/>
+                    </PagerContent>
                 </MudDataGrid>
             </MudItem>
         </Fields>
@@ -291,7 +294,9 @@ else if (_user != null)
     private List<UserDto> _allUsers = [];
     private List<DepartmentDto> _departments = [];
     private List<JobTitleDto> _jobTitles = [];
-    private List<EquipmentIssuanceDto> _equipmentIssuances = [];
+    
+    private MudDataGrid<EquipmentIssuanceDto> _issuancesGrid = null!;
+    private int _issuancesTotalCount;
     
     private UserEditModel _editModel = new();
     
@@ -326,12 +331,10 @@ else if (_user != null)
             
             // Hent brukeren og listene paralelelt
             var userTask = UserService.GetByIdAsync(Id, Cts.Token);
-            var issuanceTask = EquipmentIssuanceService.GetByUserAsync(Id, Cts.Token);
 
-            await Task.WhenAll(userTask, issuanceTask);
+            await Task.WhenAll(userTask);
 
             var userResult = await userTask;
-            var issuanceResult = await issuanceTask;
 
             if (userResult.IsFailure)
             {
@@ -345,11 +348,6 @@ else if (_user != null)
                 _alert = new AlertInfo("Fant ikke brukeren", Severity.Error);
                 return;
             }
-
-            if (issuanceResult.IsFailure)
-                _alert = new AlertInfo(issuanceResult.Error!.ToString(), Severity.Error);
-            else
-                _equipmentIssuances = issuanceResult.Value!;
 
             ResetEditModel();
 
@@ -421,23 +419,17 @@ else if (_user != null)
             _jobTitles = jobTitleResult.Value!.Where(j => j.IsActive).ToList();
     }
     
+    // Henter brukere for å legge til avdeling
     private async Task LoadUsersAsync()
     {
-        var result = await UserService.GetAllAsync(Cts.Token);
+        var result = await UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
         if (result.IsFailure)
             _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
-            _allUsers = result.Value!.Where(u => u.IsActive).ToList();
+            _allUsers = result.Value!.Items.Where(u => u.IsActive).ToList();
     }
     
-    private async Task LoadEquipmentIssuances()
-    {
-        var issuanceResult = await EquipmentIssuanceService.GetByUserAsync(Id, Cts.Token);
-        if (issuanceResult.IsFailure)
-            _alert = new AlertInfo(issuanceResult.Error!.ToString(), Severity.Error);
-        else
-            _equipmentIssuances = issuanceResult.Value!;
-    }
+    private async Task ReloadEquipmentIssuances() => await _issuancesGrid.ReloadServerData();
     
     // Handling når vi avbryter redigering - Resetter modellene og fjerner redigeringsmodus
     private void CancelEdit()
@@ -572,7 +564,7 @@ else if (_user != null)
         if (dialogResult!.Canceled)
             return;
 
-        await LoadEquipmentIssuances();
+        await ReloadEquipmentIssuances();
         _alert = new AlertInfo("Utstyret ble utlevert", Severity.Success);
     }
 
@@ -589,9 +581,29 @@ else if (_user != null)
         if (dialogResult!.Canceled)
             return;
 
-        await LoadEquipmentIssuances();
+        await ReloadEquipmentIssuances();
         _alert = dialogResult.Data is Guid
             ? new AlertInfo("Utleveringen ble slettet", Severity.Info)
             : new AlertInfo("Utleveringen ble oppdatert", Severity.Success);
+    }
+    
+    private async Task<GridData<EquipmentIssuanceDto>> LoadIssuancesServerData(GridState<EquipmentIssuanceDto> state, 
+        CancellationToken ct)
+    {
+        var query = new PagedQuery { Page = state.Page + 1, PageSize = state.PageSize };
+        var result = await EquipmentIssuanceService.GetByUserAsync(Id, query, ct);
+
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<EquipmentIssuanceDto>();
+        }
+
+        _issuancesTotalCount = result.Value!.TotalCount;
+        return new GridData<EquipmentIssuanceDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
     }
 }

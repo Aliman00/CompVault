@@ -2,6 +2,7 @@
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Frontend.Features.Competencies.Models;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Result;
 
@@ -15,31 +16,31 @@ public class CompetencyService(
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
 
     /// <inheritdoc />
-    public async Task<Result<List<CompetencyDto>>> GetAllAsync(CompetencyFilterRequest? filter, CancellationToken ct)
+    public async Task<Result<PagedResult<CompetencyDto>>> GetAllAsync(CompetencyFilterRequest? filter, CancellationToken ct)
     {
         try
         {
             string url = BuildFilterUrl(ApiRoutes.Competencies.Base, filter);
             HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
 
-            Result<List<CompetencyDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<CompetencyDto>>(response, ct);
+            Result<PagedResult<CompetencyDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<PagedResult<CompetencyDto>>(response, ct);
 
             if (result.IsFailure)
-                return Result<List<CompetencyDto>>.Failure(result.Error!);
+                return Result<PagedResult<CompetencyDto>>.Failure(result.Error!);
 
-            return Result<List<CompetencyDto>>.Success(result.Value!);
+            return Result<PagedResult<CompetencyDto>>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av kompetanser");
-            return Result<List<CompetencyDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+            return Result<PagedResult<CompetencyDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av kompetanser");
-            return Result<List<CompetencyDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+            return Result<PagedResult<CompetencyDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
@@ -198,7 +199,10 @@ public class CompetencyService(
             queryParams["status"] = filter.Status.ToString();
         if (filter.CompetencyTypeId.HasValue)
             queryParams["competencyTypeId"] = filter.CompetencyTypeId.ToString();
-
+        
+        queryParams["page"] = filter.Page.ToString();
+        queryParams["pageSize"] = filter.PageSize.ToString();
+        
         return baseUrl.AddQueryFilter(queryParams);
     }
 }

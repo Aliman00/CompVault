@@ -43,7 +43,6 @@ else
               Items="_department"
               IsLoading="_isLoading"
               @bind-Alert="_alert"
-              SelectedItemsChanged="@(s => _selectedDepartments = s)"
               RowClick="@(args => OnDepartmentClick(args.Item.Id))">
         <Header>
             <ListHeader Title="Avdelinger"
@@ -95,7 +94,6 @@ else
     
     // ===================== PRIVATE FELT =====================
     private List<DepartmentDto> _department = [];
-    private HashSet<DepartmentDto> _selectedDepartments = [];
     
     private bool _isLoading = true;
     private AlertInfo? _alert;

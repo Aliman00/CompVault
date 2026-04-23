@@ -1,4 +1,5 @@
-﻿using CompVault.Shared.DTOs.Users;
+﻿using CompVault.Shared.DTOs.Common.Pagination;
+using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Features.Users.Services;
@@ -9,7 +10,7 @@ public interface IUserService
     /// Henter alle aktive brukere fra backend
     /// </summary>
     /// <returns>En liste med UserDto</returns>
-    Task<Result<List<UserDto>>> GetAllAsync(CancellationToken ct);
+    Task<Result<PagedResult<UserDto>>> GetAllAsync(PagedQuery query, CancellationToken ct);
 
     /// <summary>
     /// Henter en aktiv bruker fra backend

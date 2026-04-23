@@ -1,4 +1,5 @@
-﻿using CompVault.Shared.DTOs.Equipment;
+﻿using CompVault.Shared.DTOs.Common.Pagination;
+using CompVault.Shared.DTOs.Equipment;
 using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Features.Equipment.Services;
@@ -8,7 +9,7 @@ public interface IEquipmentIssuancesService
     /// <summary>
     /// Henter alle utleveringer fra backend
     /// </summary>
-    Task<Result<List<EquipmentIssuanceDto>>> GetAllAsync(CancellationToken ct);
+    Task<Result<PagedResult<EquipmentIssuanceDto>>> GetAllAsync(PagedQuery query, CancellationToken ct);
 
     /// <summary>
     /// Henter én utlevering basert på ID
@@ -18,7 +19,7 @@ public interface IEquipmentIssuancesService
     /// <summary>
     /// Henter alle utleveringer for en bruker
     /// </summary>
-    Task<Result<List<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, CancellationToken ct);
+    Task<Result<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, PagedQuery query, CancellationToken ct);
     
     /// <summary>
     /// Henter alle utleveringer for et utstyr

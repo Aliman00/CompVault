@@ -154,11 +154,11 @@
     
     private async Task LoadUsersAsync()
     {
-        var result = await UserService.GetAllAsync(Cts.Token);
+        var result = await UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
         if (result.IsFailure)
             _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
-            _allUsers = result.Value!;
+            _allUsers = result.Value!.Items.ToList();
     }
     
     private async Task LoadCompetencyTypes()

@@ -165,7 +165,7 @@ else if (_role != null)
 
             // Henter rollen og brukere for å vise en oversikt over brukere tildelt rollen - Kalles parallelt
             var roleTask = RoleService.GetByIdAsync(Id, Cts.Token);
-            var usersTask = UserService.GetAllAsync(Cts.Token);
+            var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
 
             await Task.WhenAll(roleTask, usersTask);
 
@@ -188,7 +188,7 @@ else if (_role != null)
             if (usersResult.IsFailure)
                 _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
             else
-                _usersWithRole = usersResult.Value!.Where(u => u.Roles.Contains(_role.Name)).ToList();
+                _usersWithRole = usersResult.Value!.Items.Where(u => u.Roles.Contains(_role.Name)).ToList();
 
             ResetEditModel();
         }

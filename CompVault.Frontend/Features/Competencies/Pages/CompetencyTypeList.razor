@@ -10,7 +10,6 @@
           Items="_competencyTypes"
           IsLoading="_isLoading"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedCompetencyTypes = s)"
           RowClick="@(args => OnCompetencyTypeClick(args))">
     <Header>
         <ListHeader Title="Kompetansetyper"
@@ -57,8 +56,6 @@
 
     // ===================== PRIVATE FELT =====================
     private List<CompetencyTypeDto> _competencyTypes = [];
-    private HashSet<CompetencyTypeDto> _selectedCompetencyTypes = [];
-
     private bool _isLoading = true;
     private AlertInfo? _alert;
 

@@ -200,7 +200,7 @@ else if (_department != null)
 
             // Hentr alle avdelinger og brukere for å vise en oversikt - Utfører begge kall parallelt
             var departmentsTask = DepartmentService.GetAllAsync(Cts.Token);
-            var usersTask = UserService.GetAllAsync(Cts.Token);
+            var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
 
             await Task.WhenAll(departmentsTask, usersTask);
 
@@ -228,7 +228,7 @@ else if (_department != null)
             if (usersResult.IsFailure)
                 _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
             else
-                _departmentUsers = usersResult.Value!.Where(u => u.DepartmentId == Id).ToList();
+                _departmentUsers = usersResult.Value!.Items.Where(u => u.DepartmentId == Id).ToList();
 
             ResetEditModel();
 

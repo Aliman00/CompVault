@@ -10,7 +10,6 @@
           Items="_documents"
           IsLoading="_isLoading"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedDocuments = s)"
           RowClick="@(args => OnDocumentClick(args))">
     <Header>
         <ListHeader Title="@($"Dokumenter for {TypeName}")"
@@ -76,8 +75,6 @@
 
     // ===================== PRIVATE FELT =====================
     private List<DocumentListDto> _documents = [];
-    private HashSet<DocumentListDto> _selectedDocuments = [];
-
     private bool _isLoading = true;
     private AlertInfo? _alert;
 
