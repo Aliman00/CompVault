@@ -106,15 +106,15 @@ public sealed class DevAuthController(
     }
 
     [HttpGet("dev-get-users")]
-    [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<UserDto>>> GetAllAsync(
-        [FromQuery] PagedQuery query, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<UserDto>>> GetAllAsync(CancellationToken cancellationToken)
     {
+        var query = new PagedQuery { Page = 1, PageSize = 100 };
         Result<PagedResult<UserDto>> result = await userService.GetAllUsersAsync(query, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return Ok(result.Value);
+        return Ok(result.Value!.Items);
     }
 }
