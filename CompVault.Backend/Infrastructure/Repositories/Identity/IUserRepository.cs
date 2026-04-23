@@ -28,4 +28,11 @@ public interface IUserRepository : IRepository<ApplicationUser>
 
     /// <summary>Soft-sletter brukeren ved å sette <see cref="ApplicationUser.DeletedAt"/> og <see cref="ApplicationUser.IsActive"/>.</summary>
     Task SoftDeleteAsync(ApplicationUser user, CancellationToken cancellationToken = default);
+
+    /// <summary>Teller aktive brukere som ikke er slettet.</summary>
+    Task<int> CountActiveAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Henter en paginert side med aktive brukere inkludert rollene sine.</summary>
+    Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesPagedAsync(
+        int skip, int take, CancellationToken cancellationToken = default);
 }

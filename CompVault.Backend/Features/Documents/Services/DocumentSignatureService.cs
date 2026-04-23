@@ -2,6 +2,7 @@ using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
@@ -111,23 +112,32 @@ public sealed class DocumentSignatureService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(
-        Guid userId, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResult<DocumentListDto>>> GetMySignedDocumentsAsync(
+        Guid userId, PagedQuery query, CancellationToken cancellationToken = default)
     {
         IReadOnlyList<Guid> signedDocumentIds = await signatureRepository.GetSignedDocumentIdsAsync(userId, cancellationToken);
 
         if (signedDocumentIds.Count == 0)
-            return Result<IReadOnlyList<DocumentListDto>>.Success(Array.Empty<DocumentListDto>());
+            return Result<PagedResult<DocumentListDto>>.Success(
+                PagedResult<DocumentListDto>.Create([], 0, query));
 
         var documents = (await documentRepository.GetByIdsAsync(signedDocumentIds, cancellationToken))
+            .OrderByDescending(d => d.UploadedAt)
             .ToList();
 
         var allSignatures = (await signatureRepository.GetByDocumentIdsAsync(
             documents.Select(d => d.Id).ToList(), cancellationToken)).ToList();
 
-        List<DocumentListDto> dtos = DocumentMapper.MapToListDtos(documents, allSignatures, signedByCurrentUserOverride: true);
+        var allDtos = DocumentMapper.MapToListDtos(documents, allSignatures, signedByCurrentUserOverride: true);
 
-        return Result<IReadOnlyList<DocumentListDto>>.Success(dtos);
+        // In-memory paginering — listen er per-bruker og typisk overkommelig
+        var pagedDtos = allDtos
+            .Skip(query.Skip)
+            .Take(query.PageSize)
+            .ToList();
+
+        return Result<PagedResult<DocumentListDto>>.Success(
+            PagedResult<DocumentListDto>.Create(pagedDtos, allDtos.Count, query));
     }
 
     /// <inheritdoc />

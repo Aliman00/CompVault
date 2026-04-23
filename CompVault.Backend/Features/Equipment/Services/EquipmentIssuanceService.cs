@@ -1,8 +1,11 @@
 using CompVault.Backend.Infrastructure.Repositories.Equipment;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.Constants.Validations;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Equipment;
 using CompVault.Shared.Result;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Features.Equipment.Services;
 
@@ -15,15 +18,23 @@ public sealed class EquipmentIssuanceService(
     IUserRepository userRepository) : IEquipmentIssuanceService
 {
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<EquipmentIssuanceDto>>> GetAllAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetAllAsync(
+        PagedQuery query, CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<Domain.Entities.Equipment.EquipmentIssuance> issuances =
-            await issuanceRepository.GetAllWithDetailsAsync(cancellationToken);
+        IQueryable<Domain.Entities.Equipment.EquipmentIssuance> baseQuery = issuanceRepository.QueryWithDetails();
+
+        int totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var issuances = await baseQuery
+            .OrderByDescending(i => i.IssuedDate)
+            .Skip(query.Skip)
+            .Take(query.PageSize)
+            .ToListAsync(cancellationToken);
 
         var dtos = issuances.Select(EquipmentMapper.ToDto).ToList();
 
-        return Result<IReadOnlyList<EquipmentIssuanceDto>>.Success(dtos);
+        return Result<PagedResult<EquipmentIssuanceDto>>.Success(
+            PagedResult<EquipmentIssuanceDto>.Create(dtos, totalCount, query));
     }
 
     /// <inheritdoc />
@@ -41,21 +52,30 @@ public sealed class EquipmentIssuanceService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<EquipmentIssuanceDto>>> GetByUserAsync(
-        Guid userId, CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(
+        Guid userId, PagedQuery query, CancellationToken cancellationToken = default)
     {
         bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, cancellationToken);
 
         if (!userExists)
-            return Result<IReadOnlyList<EquipmentIssuanceDto>>.Failure(
+            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
 
-        IReadOnlyList<Domain.Entities.Equipment.EquipmentIssuance> issuances =
-            await issuanceRepository.GetByUserIdAsync(userId, cancellationToken);
+        IQueryable<Domain.Entities.Equipment.EquipmentIssuance> baseQuery = issuanceRepository.QueryWithDetails()
+            .Where(i => i.UserId == userId);
+
+        int totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var issuances = await baseQuery
+            .OrderByDescending(i => i.IssuedDate)
+            .Skip(query.Skip)
+            .Take(query.PageSize)
+            .ToListAsync(cancellationToken);
 
         var dtos = issuances.Select(EquipmentMapper.ToDto).ToList();
 
-        return Result<IReadOnlyList<EquipmentIssuanceDto>>.Success(dtos);
+        return Result<PagedResult<EquipmentIssuanceDto>>.Success(
+            PagedResult<EquipmentIssuanceDto>.Create(dtos, totalCount, query));
     }
     
     /// <inheritdoc />

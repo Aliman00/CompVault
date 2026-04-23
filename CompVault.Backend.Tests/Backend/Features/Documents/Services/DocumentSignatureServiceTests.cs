@@ -3,6 +3,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -307,12 +308,12 @@ public class DocumentSignatureServiceTests
             .ReturnsAsync([]);
 
         // Act
-        Result<IReadOnlyList<DocumentListDto>> result =
-            await _sut.GetMySignedDocumentsAsync(userId);
+        Result<PagedResult<DocumentListDto>> result =
+            await _sut.GetMySignedDocumentsAsync(userId, new PagedQuery());
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.Value!.Items.Should().BeEmpty();
     }
 
     // -------------------------------------------------------------------------

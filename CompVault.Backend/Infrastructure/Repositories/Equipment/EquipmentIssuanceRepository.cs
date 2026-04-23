@@ -76,6 +76,24 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
             .ToListAsync(ct);
 
     /// <inheritdoc />
+    public IQueryable<EquipmentIssuance> QueryWithDetails() =>
+        DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null)
+            .AsNoTracking()
+            .Include(i => i.User)
+            .Include(i => i.Item!)
+                .ThenInclude(item => item!.Category)
+            .Include(i => i.IssuedBy);
+
+    /// <inheritdoc />
+    public async Task<int> CountByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        await DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null && i.UserId == userId)
+            .CountAsync(cancellationToken);
+
+    /// <inheritdoc />
     public Task SoftDeleteAsync(EquipmentIssuance issuance, CancellationToken cancellationToken = default)
     {
         issuance.DeletedAt = DateTime.UtcNow;

@@ -27,6 +27,43 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
         Guid? competencyTypeId,
         CancellationToken cancellationToken = default)
     {
+        IQueryable<Competency> query = BuildFilteredQuery(userId, status, competencyTypeId);
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> CountWithFiltersAsync(
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId,
+        CancellationToken cancellationToken = default) =>
+        await BuildFilteredQuery(userId, status, competencyTypeId).CountAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Competency>> GetAllWithDetailsPagedAsync(
+        int skip,
+        int take,
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId,
+        CancellationToken cancellationToken = default) =>
+        await BuildFilteredQuery(userId, status, competencyTypeId)
+            // ! nødvendig — EF Core garanterer at navigasjonsegenskapen er lastet etter Include
+            .OrderBy(c => c.ApplicationUser!.LastName)
+                .ThenBy(c => c.ApplicationUser!.FirstName)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+    /// <summary>
+    /// Bygger en IQueryable med navigasjon og valgfrie filtre.
+    /// Gjenbrukes av GetAllWithDetailsAsync, CountWithFiltersAsync og GetAllWithDetailsPagedAsync.
+    /// </summary>
+    private IQueryable<Competency> BuildFilteredQuery(
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId)
+    {
         IQueryable<Competency> query = DbSet
             .AsNoTracking()
             .Include(c => c.ApplicationUser)
@@ -41,7 +78,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
         if (competencyTypeId.HasValue)
             query = query.Where(c => c.CompetencyTypeId == competencyTypeId.Value);
 
-        return await query.ToListAsync(cancellationToken);
+        return query;
     }
 
     /// <inheritdoc />

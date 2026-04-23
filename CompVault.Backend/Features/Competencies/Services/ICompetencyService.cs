@@ -1,3 +1,4 @@
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -11,13 +12,10 @@ namespace CompVault.Backend.Features.Competencies.Services;
 public interface ICompetencyService
 {
     /// <summary>
-    /// Henter kompetansebevis med navigasjon, filtrert på valgfrie parametere.
-    /// Alle parametere er nullable — null betyr ingen filtrering.
+    /// Henter paginerte kompetansebevis med navigasjon, filtrert på valgfrie parametere.
     /// </summary>
-    Task<Result<IReadOnlyList<CompetencyDto>>> GetAllAsync(
-        Guid? userId,
-        CompetencyStatus? status,
-        Guid? competencyTypeId,
+    Task<Result<PagedResult<CompetencyDto>>> GetAllAsync(
+        CompetencyQueryParameters queryParameters,
         CancellationToken cancellationToken = default);
 
     /// <summary>Henter ett kompetansebevis basert på ID med navigasjon.</summary>
@@ -36,8 +34,7 @@ public interface ICompetencyService
     /// Henter utløpende (EXPIRING_SOON) og utløpte (EXPIRED) kompetansebevis.
     /// Filtrerbart på userId og departmentId.
     /// </summary>
-    Task<Result<IReadOnlyList<ExpiringCompetencyDto>>> GetExpiringAsync(
-        Guid? userId,
-        Guid? departmentId,
+    Task<Result<PagedResult<ExpiringCompetencyDto>>> GetExpiringAsync(
+        CompetencyExpiringQueryParameters queryParameters,
         CancellationToken cancellationToken = default);
 }

@@ -22,6 +22,26 @@ public interface ICompetencyRepository : IRepository<Competency>
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Teller kompetansebevis med valgfrie filtre (paginering-støtte).
+    /// </summary>
+    Task<int> CountWithFiltersAsync(
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Henter paginerte kompetansebevis med navigasjon og valgfrie filtre.
+    /// </summary>
+    Task<IReadOnlyList<Competency>> GetAllWithDetailsPagedAsync(
+        int skip,
+        int take,
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Henter kompetansebevis med EXPIRING_SOON eller EXPIRED status,
     /// filtrert på valgfrie userId og departmentId.
     /// Brukes av /api/competencies/expiring-endpointen.

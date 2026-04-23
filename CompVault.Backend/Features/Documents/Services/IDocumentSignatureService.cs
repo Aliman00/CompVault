@@ -1,3 +1,4 @@
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
@@ -17,9 +18,9 @@ public interface IDocumentSignatureService
         Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Henter alle dokumenter brukeren har signert (på tvers av typer).</summary>
-    Task<Result<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(
-        Guid userId, CancellationToken cancellationToken = default);
+    /// <summary>Henter paginerte dokumenter brukeren har signert (på tvers av typer).</summary>
+    Task<Result<PagedResult<DocumentListDto>>> GetMySignedDocumentsAsync(
+        Guid userId, PagedQuery query, CancellationToken cancellationToken = default);
 
     /// <summary>Henter alle dokumenter brukeren trenger å signere.</summary>
     Task<Result<IReadOnlyList<DocumentListDto>>> GetMyPendingDocumentsAsync(

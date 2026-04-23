@@ -1,11 +1,12 @@
-using System.ComponentModel.DataAnnotations;
+using CompVault.Shared.DTOs.Common.Pagination;
 
 namespace CompVault.Shared.DTOs.Audit;
 
 /// <summary>
 /// Query-parametere for filtrering og paginering av revisjonsloggen.
+/// Arver paginering fra <see cref="PagedQuery"/> og legger til audit-spesifikke filtre.
 /// </summary>
-public class AuditLogQueryParameters
+public record class AuditLogQueryParameters : PagedQuery
 {
     /// <summary>Filtrer på action-type, f.eks. "competency.revoke".</summary>
     public string? Action { get; set; }
@@ -24,12 +25,4 @@ public class AuditLogQueryParameters
 
     /// <summary>Til-dato (exclusive).</summary>
     public DateTime? To { get; set; }
-
-    /// <summary>Side (1-basert, default 1).</summary>
-    [Range(1, int.MaxValue)]
-    public int Page { get; set; } = 1;
-
-    /// <summary>Antall per side (default 50, max 100).</summary>
-    [Range(1, 100)]
-    public int PageSize { get; set; } = 50;
 }

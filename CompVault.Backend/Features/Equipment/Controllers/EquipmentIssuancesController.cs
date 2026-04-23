@@ -2,6 +2,7 @@ using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Equipment.Services;
 using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Equipment;
 using CompVault.Shared.Result;
 
@@ -20,12 +21,12 @@ namespace CompVault.Backend.Features.Equipment.Controllers;
 public sealed class EquipmentIssuancesController(IEquipmentIssuanceService issuanceService) : BaseController
 {
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<EquipmentIssuanceDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<EquipmentIssuanceDto>>> GetAllAsync(
-        CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResult<EquipmentIssuanceDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<EquipmentIssuanceDto>>> GetAllAsync(
+        [FromQuery] PagedQuery query, CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<EquipmentIssuanceDto>> result =
-            await issuanceService.GetAllAsync(cancellationToken);
+        Result<PagedResult<EquipmentIssuanceDto>> result =
+            await issuanceService.GetAllAsync(query, cancellationToken);
 
         if (result.IsFailure) return HandleFailure(result);
         return Ok(result.Value);
@@ -44,12 +45,12 @@ public sealed class EquipmentIssuancesController(IEquipmentIssuanceService issua
     }
 
     [HttpGet("by-user/{userId:guid}")]
-    [ProducesResponseType(typeof(IReadOnlyList<EquipmentIssuanceDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<EquipmentIssuanceDto>>> GetByUserAsync(
-        Guid userId, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResult<EquipmentIssuanceDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(
+        Guid userId, [FromQuery] PagedQuery query, CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<EquipmentIssuanceDto>> result =
-            await issuanceService.GetByUserAsync(userId, cancellationToken);
+        Result<PagedResult<EquipmentIssuanceDto>> result =
+            await issuanceService.GetByUserAsync(userId, query, cancellationToken);
 
         if (result.IsFailure) return HandleFailure(result);
         return Ok(result.Value);

@@ -10,6 +10,12 @@ public interface IEquipmentIssuanceRepository : IRepository<EquipmentIssuance>
     /// <summary>Henter alle utleveringer med navigasjonsdata (bruker, utstyr, kategori, utsteder).</summary>
     Task<IReadOnlyList<EquipmentIssuance>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Returnerer IQueryable med nødvendige Includes for paginering på DB-nivå.
+    /// Brukes av service for CountAsync + Skip/Take.
+    /// </summary>
+    IQueryable<EquipmentIssuance> QueryWithDetails();
+
     /// <summary>Henter én utlevering med fullstendige navigasjonsdata.</summary>
     Task<EquipmentIssuance?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
 
@@ -21,6 +27,9 @@ public interface IEquipmentIssuanceRepository : IRepository<EquipmentIssuance>
     
     /// <summary>Henter alle utleveringer for et bestemt utstyr med navigasjonsdata.</summary>
     Task<IReadOnlyList<EquipmentIssuance>> GetByItemIdAsync(Guid itemId, CancellationToken ct = default);
+
+    /// <summary>Teller utleveringer for en bestemt bruker (for paginering).</summary>
+    Task<int> CountByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter utleveringen.</summary>
     Task SoftDeleteAsync(EquipmentIssuance issuance, CancellationToken cancellationToken = default);

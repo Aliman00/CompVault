@@ -86,4 +86,38 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
         user.IsActive = false;
         return Task.CompletedTask;
     }
+
+    /// <inheritdoc />
+    public async Task<int> CountActiveAsync(CancellationToken cancellationToken = default) =>
+        await DbSet.CountAsync(u => u.IsActive && u.DeletedAt == null, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesPagedAsync(
+        int skip, int take, CancellationToken cancellationToken = default)
+    {
+        var result = await DbSet
+            .AsNoTracking()
+            .Include(u => u.Department)
+            .Include(u => u.Manager)
+            .Include(u => u.JobTitle)
+            .Where(u => u.IsActive && u.DeletedAt == null)
+            .OrderBy(u => u.LastName)
+                .ThenBy(u => u.FirstName)
+            .Skip(skip)
+            .Take(take)
+            .Select(u => new
+            {
+                User = u,
+                Roles = DbContext.UserRoles
+                    .Where(ur => ur.UserId == u.Id)
+                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id,
+                        (ur, r) => r.Name)
+                    .Where(name => name != null)
+                    .Select(name => name!)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        return result.Select(x => (x.User, x.Roles)).ToList();
+    }
 }

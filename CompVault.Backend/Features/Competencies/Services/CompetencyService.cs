@@ -2,6 +2,7 @@ using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -18,18 +19,23 @@ public sealed class CompetencyService(
     IAuditContext auditContext) : ICompetencyService
 {
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<CompetencyDto>>> GetAllAsync(
-        Guid? userId,
-        CompetencyStatus? status,
-        Guid? competencyTypeId,
+    public async Task<Result<PagedResult<CompetencyDto>>> GetAllAsync(
+        CompetencyQueryParameters queryParameters,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<Competency> competencies = await competencyRepository.GetAllWithDetailsAsync(
-            userId, status, competencyTypeId, cancellationToken);
+        int totalCount = await competencyRepository.CountWithFiltersAsync(
+            queryParameters.UserId, queryParameters.Status, queryParameters.CompetencyTypeId,
+            cancellationToken);
+
+        IReadOnlyList<Competency> competencies = await competencyRepository.GetAllWithDetailsPagedAsync(
+            queryParameters.Skip, queryParameters.PageSize,
+            queryParameters.UserId, queryParameters.Status, queryParameters.CompetencyTypeId,
+            cancellationToken);
 
         var dtos = competencies.Select(CompetencyMapper.ToDto).ToList();
 
-        return Result<IReadOnlyList<CompetencyDto>>.Success(dtos);
+        return Result<PagedResult<CompetencyDto>>.Success(
+            PagedResult<CompetencyDto>.Create(dtos, totalCount, queryParameters));
     }
 
     /// <inheritdoc />
@@ -189,16 +195,24 @@ public sealed class CompetencyService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<ExpiringCompetencyDto>>> GetExpiringAsync(
-        Guid? userId,
-        Guid? departmentId,
+    public async Task<Result<PagedResult<ExpiringCompetencyDto>>> GetExpiringAsync(
+        CompetencyExpiringQueryParameters queryParameters,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<Competency> expiring = await competencyRepository.GetExpiringAsync(
-            userId, departmentId, cancellationToken);
+        // Count og paginert henting gjøres i to steg siden GetExpiringAsync i repoet
+        // returnerer IReadOnlyList, ikke IQueryable.
+        // TODO: Vurder å legge til CountExpiringAsync i repoet for renere DB-nivå paginering.
+        IReadOnlyList<Competency> allExpiring = await competencyRepository.GetExpiringAsync(
+            queryParameters.UserId, queryParameters.DepartmentId, cancellationToken);
 
-        var dtos = expiring.Select(CompetencyMapper.ToExpiringDto).ToList();
+        var dtos = allExpiring
+            .OrderBy(c => c.ExpiryDate)
+            .Skip(queryParameters.Skip)
+            .Take(queryParameters.PageSize)
+            .Select(CompetencyMapper.ToExpiringDto)
+            .ToList();
 
-        return Result<IReadOnlyList<ExpiringCompetencyDto>>.Success(dtos);
+        return Result<PagedResult<ExpiringCompetencyDto>>.Success(
+            PagedResult<ExpiringCompetencyDto>.Create(dtos, allExpiring.Count, queryParameters));
     }
 }

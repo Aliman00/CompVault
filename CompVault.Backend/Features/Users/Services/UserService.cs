@@ -3,6 +3,7 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -23,17 +24,20 @@ public sealed class UserService(
     IUnitOfWork unitOfWork) : IUserService
 {
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResult<UserDto>>> GetAllUsersAsync(
+        PagedQuery query, CancellationToken cancellationToken = default)
     {
+        int totalCount = await userRepository.CountActiveAsync(cancellationToken);
+
         IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles =
-            await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
+            await userRepository.GetActiveUsersWithRolesPagedAsync(query.Skip, query.PageSize, cancellationToken);
 
         var dtos = usersWithRoles
             .Select(uwr => UserMapper.ToDto(uwr.User, uwr.Roles))
             .ToList();
 
-        return Result<IReadOnlyList<UserDto>>.Success(dtos);
+        return Result<PagedResult<UserDto>>.Success(
+            PagedResult<UserDto>.Create(dtos, totalCount, query));
     }
 
     /// <inheritdoc />

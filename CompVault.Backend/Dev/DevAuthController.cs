@@ -7,6 +7,7 @@ using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -105,10 +106,11 @@ public sealed class DevAuthController(
     }
 
     [HttpGet("dev-get-users")]
-    [ProducesResponseType(typeof(IReadOnlyList<UserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<UserDto>>> GetAllAsync(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<UserDto>>> GetAllAsync(
+        [FromQuery] PagedQuery query, CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<UserDto>> result = await userService.GetAllUsersAsync(cancellationToken);
+        Result<PagedResult<UserDto>> result = await userService.GetAllUsersAsync(query, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
