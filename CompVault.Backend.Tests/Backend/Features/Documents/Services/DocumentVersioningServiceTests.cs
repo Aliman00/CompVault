@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Shared.DTOs.Documents;
@@ -20,6 +21,7 @@ public class DocumentVersioningServiceTests
     private readonly Mock<IDocumentSignatureRepository> _signatureRepositoryMock;
     private readonly Mock<IDocumentTargetingService> _targetingServiceMock;
     private readonly Mock<IDocumentFileService> _fileServiceMock;
+    private readonly Mock<IAuditContext> _auditContextMock;
     private readonly Mock<ILogger<DocumentVersioningService>> _loggerMock;
     private readonly DocumentVersioningService _sut;
 
@@ -30,6 +32,7 @@ public class DocumentVersioningServiceTests
         _signatureRepositoryMock = new Mock<IDocumentSignatureRepository>();
         _targetingServiceMock = new Mock<IDocumentTargetingService>();
         _fileServiceMock = new Mock<IDocumentFileService>();
+        _auditContextMock = new Mock<IAuditContext>();
         _loggerMock = new Mock<ILogger<DocumentVersioningService>>();
 
         // Default: all access checks pass
@@ -44,6 +47,7 @@ public class DocumentVersioningServiceTests
             _signatureRepositoryMock.Object,
             _targetingServiceMock.Object,
             _fileServiceMock.Object,
+            _auditContextMock.Object,
             _loggerMock.Object);
     }
 

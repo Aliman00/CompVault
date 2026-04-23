@@ -56,4 +56,7 @@ public static class Permissions
     public const string EquipmentRead = "equipment:read";
     public const string EquipmentWrite = "equipment:write";
     public const string EquipmentDelete = "equipment:delete";
+
+    // Audit
+    public const string AuditRead = "audit:read";
 }

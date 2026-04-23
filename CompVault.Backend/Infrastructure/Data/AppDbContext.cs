@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Audit;
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
@@ -44,6 +45,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<EquipmentCategory> EquipmentCategories => Set<EquipmentCategory>();
     public DbSet<EquipmentItem> EquipmentItems => Set<EquipmentItem>();
     public DbSet<EquipmentIssuance> EquipmentIssuances => Set<EquipmentIssuance>();
+
+    // ============= AUDIT ==============
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)

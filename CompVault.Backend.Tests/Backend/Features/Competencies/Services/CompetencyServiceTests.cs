@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
@@ -21,6 +22,7 @@ public class CompetencyServiceTests
     private readonly Mock<ICompetencyRepository> _competencyRepositoryMock;
     private readonly Mock<ICompetencyTypeRepository> _competencyTypeRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IAuditContext> _auditContextMock;
     private readonly CompetencyService _sut;
 
     public CompetencyServiceTests()
@@ -28,10 +30,12 @@ public class CompetencyServiceTests
         _competencyRepositoryMock = new Mock<ICompetencyRepository>();
         _competencyTypeRepositoryMock = new Mock<ICompetencyTypeRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
+        _auditContextMock = new Mock<IAuditContext>();
         _sut = new CompetencyService(
             _competencyRepositoryMock.Object,
             _competencyTypeRepositoryMock.Object,
-            _userRepositoryMock.Object);
+            _userRepositoryMock.Object,
+            _auditContextMock.Object);
     }
 
     // -------------------------------------------------------------------------

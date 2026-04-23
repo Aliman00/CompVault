@@ -1,4 +1,5 @@
-﻿using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Data.Interceptors;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Tests.Common;
 
@@ -61,8 +62,9 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsy
             foreach (ServiceDescriptor? descriptor in descriptors)
                 services.Remove(descriptor);
 
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(_postgres.GetConnectionString()));
+            services.AddDbContext<AppDbContext>((sp, options) =>
+                options.UseNpgsql(_postgres.GetConnectionString())
+                    .AddInterceptors(new AuditSaveChangesInterceptor(sp)));
 
             // Bytter ut den ekte EmailService med mocken
             services.RemoveAll<IEmailService>();

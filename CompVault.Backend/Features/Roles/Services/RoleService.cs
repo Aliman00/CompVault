@@ -1,3 +1,6 @@
+using System.Text.Json;
+
+using CompVault.Backend.Domain.Entities.Audit;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
@@ -16,6 +19,7 @@ public sealed class RoleService(
     UserManager<ApplicationUser> userManager,
     IRoleRepository roleRepository,
     IUnitOfWork unitOfWork,
+    AppDbContext dbContext,
     ILogger<RoleService> logger) : IRoleService
 {
 
@@ -207,6 +211,13 @@ public sealed class RoleService(
 
         return await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
+            // Hent eksisterende permissions før sletting for å logge hva som ble lagt til/fjernet
+            IReadOnlyList<Permission> oldPermissions = await roleRepository.GetPermissionsByNamesAsync(
+                await roleRepository.GetPermissionNamesForRoleAsync(roleId, cancellationToken) is { } names
+                    ? names.ToHashSet(StringComparer.OrdinalIgnoreCase)
+                    : [], cancellationToken);
+            var oldPermissionNames = oldPermissions.Select(p => p.Name).ToList();
+
             await roleRepository.RemoveRolePermissionsAsync(roleId, cancellationToken);
 
             var newRolePermissions = validPermissions.Select(p => new RolePermission
@@ -218,6 +229,36 @@ public sealed class RoleService(
             }).ToList();
 
             await roleRepository.AddRolePermissionsAsync(newRolePermissions, cancellationToken);
+
+            // Opprett revisjonslogg for tillatelsestildeling
+            var addedPermissions = validPermissions.Select(p => p.Name).Except(oldPermissionNames).ToList();
+            var removedPermissions = oldPermissionNames.Except(validPermissions.Select(p => p.Name)).ToList();
+
+            // Hent innlogget bruker for audit
+            string? userName = null;
+            string? userEmail = null;
+            ApplicationUser? grantedByUser = await userManager.FindByIdAsync(grantedById.ToString());
+            if (grantedByUser is not null)
+            {
+                userName = $"{grantedByUser.FirstName} {grantedByUser.LastName}";
+                userEmail = grantedByUser.Email;
+            }
+
+            dbContext.AuditLogs.Add(new AuditLog
+            {
+                Action = "role.permissions_assigned",
+                EntityType = "ApplicationRole",
+                EntityId = roleId,
+                UserId = grantedById,
+                UserName = userName,
+                UserEmail = userEmail,
+                Details = JsonSerializer.Serialize(new
+                {
+                    added_permissions = addedPermissions,
+                    removed_permissions = removedPermissions,
+                    role_name = role.Name
+                }),
+            });
 
             int userCount = (await roleRepository.GetUserCountsForRolesAsync([roleId], cancellationToken))
                 .GetValueOrDefault(roleId, 0);
