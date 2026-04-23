@@ -99,6 +99,36 @@ public class EquipmentIssuancesService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<List<EquipmentIssuanceDto>>> GetByItemAsync(Guid itemId, CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response =
+                await _httpClient.GetAsync(ApiRoutes.EquipmentIssuances.ByItem(itemId), ct);
+            
+            Result<List<EquipmentIssuanceDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<List<EquipmentIssuanceDto>>(response, ct);
+
+            if (result.IsFailure)
+                return Result<List<EquipmentIssuanceDto>>.Failure(result.Error!);
+
+            return Result<List<EquipmentIssuanceDto>>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved henting av utleveringer for utstyr {ItemId}", itemId);
+            return Result<List<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved henting av utleveringer for utstyr {ItemId}", itemId);
+            return Result<List<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
 
     /// <inheritdoc />
     public async Task<Result<EquipmentIssuanceDto>> CreateAsync(CreateEquipmentIssuanceRequest request, 

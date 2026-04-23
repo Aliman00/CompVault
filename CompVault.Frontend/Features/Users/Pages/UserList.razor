@@ -29,6 +29,7 @@
                         Property="user => user.DepartmentName.Truncate(40)" Title="Avdeling"/>
         <PropertyColumn T="UserDto" TProperty="string"
                         Property="user => user.ManagerName.Truncate(40)" Title="Nærmeste leder"/>
+        
         @* TODO: Skal brukes vises med status eller ikke? *@
         <TemplateColumn T="UserDto"
                         Title="Status"

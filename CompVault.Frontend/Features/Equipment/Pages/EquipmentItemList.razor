@@ -1,6 +1,112 @@
-﻿@page "/EquipmentItemList"
-<h3>EquipmentItemList</h3>
+﻿@page "/equipment-items"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.EquipmentRead)]
+@inject IEquipmentItemService EquipmentItemService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle dokumenttyper *@
+
+<ListPage TItem="EquipmentItemDto"
+          Items="_equipmentItems"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          SelectedItemsChanged="@(s => _selectedEquipmentItems = s)"
+          RowClick="@(args => OnEquipmentItemClick(args))">
+    <Header>
+        <ListHeader Title="Utstyr"
+                    PageIcon="@Icons.Material.Filled.Headset"
+                    CreateHref="@PageRoutes.EquipmentItems.Create"
+                    CreateLabel="Opprett utstyr"
+                    CreateIcon="@Icons.Material.Filled.Headset"
+                    CreatePolicy="@Permissions.EquipmentWrite"/>
+    </Header>
+    <Columns>
+        @* Navn *@
+        <PropertyColumn T="EquipmentItemDto" TProperty="string"
+                        Property="ei => ei.Name.Truncate(40)" Title="Navn"/>
+        
+        @* Beskrivelse *@
+        <PropertyColumn T="EquipmentItemDto" TProperty="string"
+                        Property="ei => ei.CategoryName.Truncate(50)"
+                        Title="Kategori"
+                        Sortable="true"/>
+        
+        @* Størrelse *@
+        <TemplateColumn T="EquipmentItemDto" Title="Har størrelse">
+            <CellTemplate>
+                <MudIcon Icon="@(context.Item.HasSize
+                                   ? Icons.Material.Filled.CheckCircle
+                                   : Icons.Material.Filled.Cancel)"
+                         Color="@(context.Item.HasSize ? Color.Success : Color.Default)"/>
+            </CellTemplate>
+        </TemplateColumn>
+
+        @* Er utstyret aktiv *@
+        <TemplateColumn T="EquipmentItemDto"
+                        Title="Status"
+                        Sortable="true"
+                        SortBy="@(ei => ei.IsActive)">
+            <CellTemplate>
+                <MudChip T="string"
+                         Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                         Size="Size.Small"
+                         Class="cv-rounded">
+                    @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                </MudChip>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</ListPage>
+
 
 @code {
-    
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private List<EquipmentItemDto> _equipmentItems = [];
+    private HashSet<EquipmentItemDto> _selectedEquipmentItems = [];
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getEquipmentItemResult = await EquipmentItemService.GetAllAsync(Cts.Token);
+
+            if (getEquipmentItemResult.IsFailure)
+            {
+                _alert = new AlertInfo(getEquipmentItemResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _equipmentItems = getEquipmentItemResult.Value!;
+
+            if (Deleted)
+                _alert = new AlertInfo("Utstyret er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste utstyr. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnEquipmentItemClick(DataGridRowClickEventArgs<EquipmentItemDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.EquipmentItems.Detail(args.Item.Id));
+
 }

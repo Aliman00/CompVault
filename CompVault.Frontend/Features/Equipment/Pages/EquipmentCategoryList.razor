@@ -4,7 +4,7 @@
 @inject IEquipmentCategoryService EquipmentCategoryService
 @inject NavigationManager NavigationManager
 
-@* Side for liste visning av alle dokumenttyper *@
+@* Side for liste visning av alle utstyrskategorier *@
 
 <ListPage TItem="EquipmentCategoryDto"
           Items="_equipmentCategories"
@@ -23,16 +23,16 @@
     <Columns>
         @* Navn *@
         <PropertyColumn T="EquipmentCategoryDto" TProperty="string"
-                        Property="ct => ct.Name.Truncate(40)" Title="Navn"/>
+                        Property="ec => ec.Name.Truncate(40)" Title="Navn"/>
         
         @* Beskrivelse *@
         <PropertyColumn T="EquipmentCategoryDto" TProperty="string"
-                        Property="r => r.Description.Truncate(50)"
+                        Property="ec => ec.Description.Truncate(50)"
                         Title="Beskrivelse"
                         Sortable="true"/>
 
         <PropertyColumn T="EquipmentCategoryDto" TProperty="int"
-                        Property="ct => ct.ItemCount"
+                        Property="ec => ec.ItemCount"
                         Title="Antall utstyr"
                         Sortable="true"
                         HeaderStyle="width: 200px"/>
@@ -41,7 +41,7 @@
         <TemplateColumn T="EquipmentCategoryDto"
                         Title="Status"
                         Sortable="true"
-                        SortBy="@(ct => ct.IsActive)">
+                        SortBy="@(ec => ec.IsActive)">
             <CellTemplate>
                 <MudChip T="string"
                          Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
@@ -73,15 +73,15 @@
     {
         try
         {
-            var getCategoriesResult = await EquipmentCategoryService.GetAllAsync(Cts.Token);
+            var getEquipmentCategoriesResult = await EquipmentCategoryService.GetAllAsync(Cts.Token);
 
-            if (getCategoriesResult.IsFailure)
+            if (getEquipmentCategoriesResult.IsFailure)
             {
-                _alert = new AlertInfo(getCategoriesResult.Error!.ToString(), Severity.Error);
+                _alert = new AlertInfo(getEquipmentCategoriesResult.Error!.ToString(), Severity.Error);
                 return;
             }
 
-            _equipmentCategories = getCategoriesResult.Value!;
+            _equipmentCategories = getEquipmentCategoriesResult.Value!;
 
             if (Deleted)
                 _alert = new AlertInfo("Utstyrskategorien er slettet", Severity.Info);

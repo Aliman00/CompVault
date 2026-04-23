@@ -108,5 +108,6 @@ public static class ApiRoutes
         public const string Base = "api/equipment-issuances";
         public static string ById(Guid id) => $"{Base}/{id}";
         public static string ByUser(Guid userId) => $"{Base}/by-user/{userId}";
+        public static string ByItem(Guid itemId) => $"{Base}/by-item/{itemId}";
     }
 }

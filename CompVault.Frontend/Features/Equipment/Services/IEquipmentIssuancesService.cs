@@ -19,6 +19,11 @@ public interface IEquipmentIssuancesService
     /// Henter alle utleveringer for en bruker
     /// </summary>
     Task<Result<List<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, CancellationToken ct);
+    
+    /// <summary>
+    /// Henter alle utleveringer for et utstyr
+    /// </summary>
+    Task<Result<List<EquipmentIssuanceDto>>> GetByItemAsync(Guid userId, CancellationToken ct);
 
     /// <summary>
     /// Oppretter en ny utlevering

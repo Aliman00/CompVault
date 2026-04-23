@@ -5,7 +5,8 @@ namespace CompVault.Frontend.Features.Equipment.Models;
 
 public class CreateEquipmentItemModel
 {
-    public Guid CategoryId { get; set; }
+    [Required(ErrorMessage = "Kategori er påkrevd")]
+    public Guid? CategoryId { get; set; }
 
     [Required(ErrorMessage = EquipmentValidations.Errors.ItemNameRequired)]
     [StringLength(EquipmentValidations.ItemNameMaxLength, ErrorMessage = EquipmentValidations.Errors.ItemNameMaxLength)]
@@ -15,7 +16,7 @@ public class CreateEquipmentItemModel
 
     public CreateEquipmentItemRequest ToRequest() => new()
     {
-        CategoryId = CategoryId,
+        CategoryId = CategoryId ?? Guid.Empty,
         Name = Name,
         HasSize = HasSize
     };

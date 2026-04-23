@@ -6,7 +6,7 @@
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 
-@* Detalje visning av en kompetansetype med mulighet for oppdatering *@
+@* Detalje visning av en utstyrskategori med mulighet for oppdatering *@
 
 <AppAlert @bind-Alert="_alert"/>
 
@@ -157,8 +157,7 @@ else if (_equipmentCategory != null)
         try
         {
             _editContext = new EditContext(_editModel);
-
-            // Henter kompetansetypen og bevisene til denne typen
+            
             var equipmentCategoryTask = EquipmentCategoryService.GetByIdAsync(Id, Cts.Token);
             var equipmentItemTask = EquipmentItemService.GetByCategoryAsync(Id, Cts.Token);
             

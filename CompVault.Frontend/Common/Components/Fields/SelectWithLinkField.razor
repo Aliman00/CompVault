@@ -1,4 +1,5 @@
-﻿@* Select-felt for andre entiteter som kobles til en annen entitet. Med navigeringslenke til denne entiteten 
+﻿@using System.Linq.Expressions
+@* Select-felt for andre entiteter som kobles til en annen entitet. Med navigeringslenke til denne entiteten 
    Eks. avdelingen til en bruker *@
 @if (IsEditing)
 {
@@ -6,7 +7,8 @@
                ValueChanged="ValueChanged"
                Label="@Label"
                Variant="Variant.Outlined"
-               ToStringFunc="ToStringFunc">
+               ToStringFunc="ToStringFunc"
+               For="For">
         @Items
     </MudSelect>
 }
@@ -70,6 +72,8 @@ else
     /// </summary>
     [Parameter] public string? HelperText { get; set; }
     
-    
-    
+    /// <summary>
+    /// Kobler feltet til EditContext for validering
+    /// </summary>
+    [Parameter] public Expression<Func<Guid?>>? For { get; set; }
 }
