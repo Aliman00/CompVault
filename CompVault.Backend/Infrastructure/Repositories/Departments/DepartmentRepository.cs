@@ -27,6 +27,7 @@ public sealed class DepartmentRepository(AppDbContext dbContext) : BaseRepositor
             .Include(d => d.ParentDepartment)
             .Include(d => d.SubDepartments)
             .Include(d => d.CreatedBy)
+            .Include(d => d.Manager)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
