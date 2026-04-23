@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Departments;
@@ -23,20 +23,25 @@ public class DepartmentEditModel
 
     public bool IsActive { get; set; }
 
+    public Guid? ManagerId { get; set; }
+
     public static DepartmentEditModel FromDto(DepartmentDto dto) => new()
     {
         Name = dto.Name,
         Description = dto.Description,
         ParentDepartmentId = dto.ParentDepartmentId,
         IsActive = dto.IsActive,
+        ManagerId = dto.ManagerId,
     };
 
-    public UpdateDepartmentRequest ToRequest(bool clearParentDepartment) => new()
+    public UpdateDepartmentRequest ToRequest(bool clearParentDepartment, bool clearManagerId = false) => new()
     {
         Name = Name,
         Description = Description,
         ParentDepartmentId = ParentDepartmentId,
         ClearParentDepartment = clearParentDepartment,
+        ManagerId = ManagerId,
+        ClearManagerId = clearManagerId,
         IsActive = IsActive,
     };
 }

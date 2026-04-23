@@ -36,14 +36,14 @@ public static class DatabaseSeeder
         ("Fredrik","Magee",    "fredrik@magee.no",           ["Employee"]),
     ];
 
-    // JobTitles: stillingstitler som seedes i systemet
-    private static readonly string[] JobTitlesData =
+    // JobTitles: (Navn, IsLeader)
+    private static readonly (string Name, bool IsLeader)[] JobTitlesData =
     [
-        "System Administrator",
-        "IT-leder",
-        "Systemutvikler",
-        "Rådgiver",
-        "HR-konsulent",
+        ("System Administrator", true),
+        ("IT-leder",            true),
+        ("Systemutvikler",      false),
+        ("Rådgiver",            false),
+        ("HR-konsulent",        false),
     ];
 
     // User -> JobTitle mapping: (UserEmail, JobTitleName)
@@ -421,7 +421,7 @@ public static class DatabaseSeeder
 
     private static async Task SeedJobTitlesAsync(AppDbContext dbContext, ILogger logger)
     {
-        foreach (string name in JobTitlesData)
+        foreach ((string name, bool isLeader) in JobTitlesData)
         {
             bool exists = await dbContext.JobTitles.AnyAsync(jt => jt.Name == name);
             if (exists)
@@ -430,13 +430,14 @@ public static class DatabaseSeeder
             JobTitle jobTitle = new()
             {
                 Name = name,
+                IsLeader = isLeader,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true,
             };
 
             dbContext.JobTitles.Add(jobTitle);
             await dbContext.SaveChangesAsync();
-            logger.LogInformation("[DatabaseSeeder] Stillingstittel opprettet: {Name}", name);
+            logger.LogInformation("[DatabaseSeeder] Stillingstittel opprettet: {Name} (IsLeader={IsLeader})", name, isLeader);
         }
     }
 

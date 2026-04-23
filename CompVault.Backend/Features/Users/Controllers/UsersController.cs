@@ -69,6 +69,23 @@ public sealed class UsersController(
         return Ok(result.Value);
     }
 
+    /// <summary>
+    /// Henter alle brukere med leder-stillingstittel (IsLeader=true).
+    /// Brukes i frontend som dropdown for å velge brukers nærmeste leder (ManagerId).
+    /// </summary>
+    /// <response code="200">Liste med potensielle ledere.</response>
+    [HttpGet("managers")]
+    [ProducesResponseType(typeof(IReadOnlyList<UserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<UserDto>>> GetPotentialManagersAsync(CancellationToken cancellationToken)
+    {
+        Result<IReadOnlyList<UserDto>> result = await userService.GetPotentialManagersAsync(cancellationToken);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
+
     /// <summary>Oppretter en ny brukerkonto.</summary>
     /// <response code="201">Bruker opprettet.</response>
     /// <response code="400">Validering feilet.</response>

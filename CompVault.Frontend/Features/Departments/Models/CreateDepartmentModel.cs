@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Departments;
@@ -15,10 +15,13 @@ public class CreateDepartmentModel
 
     public Guid? ParentDepartmentId { get; set; }
 
+    public Guid? ManagerId { get; set; }
+
     public CreateDepartmentRequest ToRequest() => new()
     {
         Name = Name,
         Description = Description,
-        ParentDepartmentId = ParentDepartmentId
+        ParentDepartmentId = ParentDepartmentId,
+        ManagerId = ManagerId
     };
 }

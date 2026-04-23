@@ -282,6 +282,23 @@ public sealed class UserService(
     }
 
     /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserDto>>> GetPotentialManagersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<ApplicationUser> potentialManagers =
+            await userRepository.GetPotentialManagersAsync(cancellationToken);
+
+        var dtos = new List<UserDto>();
+        foreach (ApplicationUser manager in potentialManagers)
+        {
+            IList<string> roles = await userManager.GetRolesAsync(manager);
+            dtos.Add(UserMapper.ToDto(manager, roles));
+        }
+
+        return Result<IReadOnlyList<UserDto>>.Success(dtos);
+    }
+
+    /// <inheritdoc />
     public async Task<Result<bool>> DeleteUserAsync(
         Guid userId,
         CancellationToken cancellationToken = default)

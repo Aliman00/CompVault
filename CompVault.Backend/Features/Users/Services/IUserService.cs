@@ -21,6 +21,12 @@ public interface IUserService
     /// <summary>Oppdaterer profilfelter på en eksisterende bruker.</summary>
     Task<Result<UserDto>> UpdateUserAsync(Guid userId, UpdateUserRequest request, CancellationToken ct = default);
 
+    /// <summary>
+    /// Henter alle brukere som har en leder-stillingstittel (IsLeader=true).
+    /// Brukes som dropdown-kandidater for brukers nærmeste leder (ManagerId).
+    /// </summary>
+    Task<Result<IReadOnlyList<UserDto>>> GetPotentialManagersAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Soft-sletter brukeren ved å sette DeletedAt-tidsstempelet.</summary>
     Task<Result<bool>> DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default);
 }
