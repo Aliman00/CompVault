@@ -2,6 +2,7 @@ using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.JobTitles;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -23,13 +24,14 @@ public sealed class UsersController(
     IUserService userService,
     IJobTitleService jobTitleService) : BaseController
 {
-    /// <summary>Henter alle aktive brukere.</summary>
-    /// <response code="200">Liste med brukere.</response>
+    /// <summary>Henter paginerte aktive brukere.</summary>
+    /// <response code="200">Paginert liste med brukere.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<UserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<UserDto>>> GetAllAsync(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<UserDto>>> GetAllAsync(
+        [FromQuery] PagedQuery query, CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<UserDto>> result = await userService.GetAllUsersAsync(cancellationToken);
+        Result<PagedResult<UserDto>> result = await userService.GetAllUsersAsync(query, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

@@ -2,6 +2,7 @@ using CompVault.Backend.Domain.Entities.Audit;
 using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Shared.DTOs.Audit;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.Result;
 
 using FluentAssertions;

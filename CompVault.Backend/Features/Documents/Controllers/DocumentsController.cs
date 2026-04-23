@@ -2,6 +2,7 @@ using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
@@ -239,16 +240,16 @@ public sealed class DocumentsController(
         return Ok(result.Value);
     }
 
-    /// <summary>Henter alle dokumenter brukeren har signert.</summary>
+    /// <summary>Henter paginerte dokumenter brukeren har signert.</summary>
     [HttpGet("/api/documents/my/signed")]
-    [ProducesResponseType(typeof(IReadOnlyList<DocumentListDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(
-        CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResult<DocumentListDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<DocumentListDto>>> GetMySignedDocumentsAsync(
+        [FromQuery] PagedQuery query, CancellationToken cancellationToken)
     {
         Guid userId = User.GetUserId();
 
-        Result<IReadOnlyList<DocumentListDto>> result = await signatureService.GetMySignedDocumentsAsync(
-            userId, cancellationToken);
+        Result<PagedResult<DocumentListDto>> result = await signatureService.GetMySignedDocumentsAsync(
+            userId, query, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

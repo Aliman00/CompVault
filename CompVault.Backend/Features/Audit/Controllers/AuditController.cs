@@ -2,6 +2,7 @@ using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Audit.Services;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Audit;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authorization;

@@ -1,5 +1,6 @@
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Shared.DTOs.Audit;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.Result;
 
 using Microsoft.EntityFrameworkCore;
@@ -9,15 +10,10 @@ namespace CompVault.Backend.Features.Audit.Services;
 /// <inheritdoc />
 public sealed class AuditLogService(AppDbContext dbContext) : IAuditLogService
 {
-    private const int MaxPageSize = 100;
-
     /// <inheritdoc />
     public async Task<Result<PagedResult<AuditLogDto>>> GetAsync(
         AuditLogQueryParameters parameters, CancellationToken cancellationToken = default)
     {
-        int pageSize = Math.Min(Math.Max(parameters.PageSize, 1), MaxPageSize);
-        int page = Math.Max(parameters.Page, 1);
-
         IQueryable<Domain.Entities.Audit.AuditLog> query = dbContext.AuditLogs.AsNoTracking();
 
         // Filtrering
@@ -45,18 +41,12 @@ public sealed class AuditLogService(AppDbContext dbContext) : IAuditLogService
         // Paginering og sortering
         List<Domain.Entities.Audit.AuditLog> items = await query
             .OrderByDescending(a => a.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip(parameters.Skip)
+            .Take(parameters.PageSize)
             .ToListAsync(cancellationToken);
 
         var dtos = items.Select(AuditLogMapper.ToDto).ToList();
 
-        return Result<PagedResult<AuditLogDto>>.Success(new PagedResult<AuditLogDto>
-        {
-            Items = dtos,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize,
-        });
+        return Result<PagedResult<AuditLogDto>>.Success(PagedResult<AuditLogDto>.Create(dtos, totalCount, parameters));
     }
 }

@@ -8,6 +8,7 @@ using CompVault.Backend.Tests.Common;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Audit;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.Enums;
 
 using FluentAssertions;
@@ -136,7 +137,7 @@ public class AuditIntegrationTests : IAsyncLifetime
         PagedResult<AuditLogDto>? result = await response.Content.ReadFromJsonAsync<PagedResult<AuditLogDto>>();
         result.Should().NotBeNull();
         result!.Page.Should().Be(1);
-        result.PageSize.Should().Be(50);
+        result.PageSize.Should().Be(20);
     }
 
     // -------------------------------------------------------------------------

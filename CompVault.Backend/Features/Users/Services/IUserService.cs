@@ -1,3 +1,4 @@
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -8,8 +9,8 @@ namespace CompVault.Backend.Features.Users.Services;
 /// </summary>
 public interface IUserService
 {
-    /// <summary>Henter alle aktive brukere.</summary>
-    Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(CancellationToken cancellationToken = default);
+    /// <summary>Henter paginerte aktive brukere.</summary>
+    Task<Result<PagedResult<UserDto>>> GetAllUsersAsync(PagedQuery query, CancellationToken cancellationToken = default);
 
     /// <summary>Henter én bruker basert på ID.</summary>
     Task<Result<UserDto>> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default);
