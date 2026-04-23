@@ -78,7 +78,10 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
     /// <inheritdoc />
     public async Task<(int ExpiredCount, int ExpiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)> StatusChanges)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default)
     {
+        DateTime now = DateTime.UtcNow;
         int expiringSoonThresholdDays = CompetencyStatusCalculator.ExpiringSoonThresholdDays;
+        DateTime threshold = now.AddDays(expiringSoonThresholdDays);
+
         var statusChanges = new List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)>();
 
         // --- Expired: Finn kompetanser som vil bli satt til Expired ---
@@ -88,7 +91,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
                 && c.Status != CompetencyStatus.Expired
                 && c.CompetencyType!.RequiresExpiration
                 && c.ExpiryDate != null
-                && c.ExpiryDate < DateTime.UtcNow)
+                && c.ExpiryDate < now)
             .Select(c => new { c.Id, c.Status })
             .ToListAsync(cancellationToken);
 
@@ -98,19 +101,18 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
                 && c.Status != CompetencyStatus.Expired
                 && c.CompetencyType!.RequiresExpiration
                 && c.ExpiryDate != null
-                && c.ExpiryDate < DateTime.UtcNow)
+                && c.ExpiryDate < now)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, CompetencyStatus.Expired), cancellationToken);
 
         foreach (var item in toExpire)
             statusChanges.Add((item.Id, item.Status, CompetencyStatus.Expired));
 
         // --- ExpiringSoon: Finn kompetanser som vil bli satt til ExpiringSoon ---
-        DateTime threshold = DateTime.UtcNow.AddDays(expiringSoonThresholdDays);
         var toExpireSoon = await DbSet
             .Where(c => c.Status == CompetencyStatus.Valid
                 && c.CompetencyType!.RequiresExpiration
                 && c.ExpiryDate != null
-                && c.ExpiryDate >= DateTime.UtcNow
+                && c.ExpiryDate >= now
                 && c.ExpiryDate <= threshold)
             .Select(c => new { c.Id, c.Status })
             .ToListAsync(cancellationToken);
@@ -119,7 +121,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
             .Where(c => c.Status == CompetencyStatus.Valid
                 && c.CompetencyType!.RequiresExpiration
                 && c.ExpiryDate != null
-                && c.ExpiryDate >= DateTime.UtcNow
+                && c.ExpiryDate >= now
                 && c.ExpiryDate <= threshold)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, CompetencyStatus.ExpiringSoon), cancellationToken);
 

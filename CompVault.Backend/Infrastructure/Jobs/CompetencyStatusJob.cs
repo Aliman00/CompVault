@@ -44,7 +44,7 @@ public class CompetencyStatusJob(
 
         try
         {
-            (int expiredCount, int expiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)>? statusChanges) = await competencyRepository.UpdateExpiryStatusesAsync(ct);
+            (int expiredCount, int expiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)> statusChanges) = await competencyRepository.UpdateExpiryStatusesAsync(ct);
             int totalUpdated = expiredCount + expiringSoonCount;
 
             // Opprett AuditLog-entries manuelt for statusendringer fra bakgrunnsjobb

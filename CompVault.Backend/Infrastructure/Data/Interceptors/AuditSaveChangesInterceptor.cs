@@ -91,9 +91,19 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
             context.Set<AuditLog>().AddRange(auditEntries);
         }
 
+        return base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override ValueTask<int> SavedChangesAsync(
+        SaveChangesCompletedEventData eventData,
+        int result,
+        CancellationToken cancellationToken = default)
+    {
+        IAuditContext? auditContext = serviceProvider.GetService<IAuditContext>();
         auditContext?.Clear();
 
-        return base.SavingChangesAsync(eventData, result, cancellationToken);
+        return base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
     /// <summary>
