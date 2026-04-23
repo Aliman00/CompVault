@@ -15,14 +15,17 @@ public static class DisplayExtensions
     /// </summary>
     /// <param name="bytes">Størrelse i bytes</param>
     /// <returns>Antall bytes i enten B, KB, MB eller GB. Eks: 2.4 MB</returns>
-    public static string FormatFileSize(this long? bytes) => bytes switch
+    public static string FormatFileSize(this long bytes) => bytes switch
     {
-        null        => "Ukjent størrelse",
         < 1024      => $"{bytes} B",
         < 1048576   => $"{bytes / 1024.0:F1} KB",
         < 1073741824=> $"{bytes / 1048576.0:F1} MB",
         _           => $"{bytes / 1073741824.0:F1} GB"
     };
+    
+    // Overload ved long?
+    public static string FormatFileSize(this long? bytes) =>
+        bytes.HasValue ? bytes.Value.FormatFileSize() : "Ukjent størrelse";
     
     /// <summary>
     /// Viser et spesifikt ikon for en fil utifra mimetypen til filen

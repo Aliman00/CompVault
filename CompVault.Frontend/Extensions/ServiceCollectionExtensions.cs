@@ -9,6 +9,7 @@ using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Competencies.Services;
 using CompVault.Frontend.Features.Departments.Services;
 using CompVault.Frontend.Features.Documents.Services;
+using CompVault.Frontend.Features.Equipment.Services;
 using CompVault.Frontend.Features.JobTitle.Services;
 using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.Users.Services;
@@ -157,6 +158,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IDocumentTypeCategoryService, DocumentTypeCategoryService>();
         services.AddScoped<ISignatureService, SignatureService>();
+        services.AddScoped<IEquipmentCategoryService, EquipmentCategoryService>();
+        services.AddScoped<IEquipmentItemService, EquipmentItemService>();
+        services.AddScoped<IEquipmentIssuancesService, EquipmentIssuancesService>();
 
         return services;
     }

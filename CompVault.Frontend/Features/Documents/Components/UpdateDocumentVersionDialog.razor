@@ -23,8 +23,34 @@
             Alle som har signert eller skal signere, må gjøre det på nytt.
         </MudAlert>
 
+        @* Nåværende versjon *@
+        @if (CurrentFile != null)
+        {
+            <MudText Typo="Typo.body1" Class="mt-4">Nåværende fil:</MudText>
+            <MudPaper Outlined="true" Class="pa-4 ma-4 d-flex align-center gap-4">
+                @* Ikonet til filen - forskjellig fra forskjellige typer mimefiles*@
+                <MudIcon Icon="@(CurrentFile.MimeType.GetFileIcon())"
+                         Color="Color.Primary"
+                         Size="Size.Large"/>
+
+                @* Informasjon samlet over og under hverandre*@
+                <MudStack Spacing="0" Class="flex-grow-1">
+                    <MudText Typo="Typo.body1">@CurrentFile.FileName</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @(CurrentFile.FileSize.FormatFileSize()) - Versjon @CurrentFile.Version -
+                        Lastet opp av
+                        <MudLink Href="@PageRoutes.Users.Detail(CurrentFile.UploadedBy)">
+                            @CurrentFile.UploadedByName
+                        </MudLink>
+                        - @CurrentFile.UploadedAt.ToRelativeNorwegian()
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        }
+
         <MudItem xs="12">
-            <FileUploadField @bind-File="_selectedFile"
+            <FileUploadField File="_selectedFile"
+                             FileChanged="OnFileSelected"
                              AcceptedFileTypes="@AcceptedMimeTypes"
                              Disabled="_isSaving"/>
         </MudItem>
@@ -62,7 +88,7 @@
     public string Slug { get; set; } = string.Empty;
     
     /// <summary>
-    /// Nanvet på dokumenttypen
+    /// ID til dokumentet
     /// </summary>
     [Parameter, EditorRequired]
     public Guid DocumentId { get; set; }
@@ -84,6 +110,12 @@
     /// </summary>
     [Parameter, EditorRequired] 
     public string AcceptedMimeTypes { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Filinformasjon for nåværende versjon, vises før opplasting
+    /// </summary>
+    [Parameter]
+    public DocumentFileRecord? CurrentFile { get; set; }
 
     // ===================== PRIVATE FIELDS =====================
     private IBrowserFile? _selectedFile;
@@ -104,7 +136,7 @@
         
         try
         {
-            FileAttachment? file = await _selectedFile.ToFileAttachmentAsync(MaxFileSizeInBytes, Cts.Token);
+            FileAttachment file = await _selectedFile.ToFileAttachmentAsync(MaxFileSizeInBytes, Cts.Token);
              
             var updateVersionResult = await DocumentService.UpdateVersionAsync(Slug, DocumentId, file, Cts.Token);
             if (updateVersionResult.IsFailure)
@@ -120,6 +152,8 @@
             _isSaving = false;
         }
     }
-
+    
+    private void OnFileSelected(IBrowserFile? file) => _selectedFile = file;
+    
     private void Cancel() => MudDialog.Cancel();
 }

@@ -1,0 +1,260 @@
+﻿@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IEquipmentIssuancesService EquipmentIssuanceService
+@inject IEquipmentItemService EquipmentItemService
+@inject IUserService UserService
+
+@* Dialog for å utlevere utstyr til en bruker *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Utlever utstyr</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <AppAlert @bind-Alert="_alert"/>
+
+        @if (_isLoading)
+        {
+            <AppSpinner Class="pa-20"/>
+        }
+        else
+        {
+            <EditForm EditContext="_editContext" OnSubmit="HandleSubmit">
+                <DataAnnotationsValidator/>
+                <MudGrid>
+                    @* Bruker - kun redigeringsmodus hvis vi har navigert fra utstyr-siden *@
+                    <MudItem xs="12" sm="6">
+                        <SelectWithLinkField Value="_editModel.UserId"
+                                             ValueChanged="OnUserChanged"
+                                             Label="Bruker"
+                                             ToStringFunc="@(id => _users.FirstOrDefault(
+                                                               u => u.Id == id)?.FullName ?? string.Empty)"
+                                             IsEditing="@(PreselectedUserId == null)"
+                                             For="() => _editModel.UserId"
+                                             DisplayValue="@(_users.FirstOrDefault(
+                                                               u => u.Id == _editModel.UserId)?.FullName)">
+                            <Items>
+                                @foreach (var user in _users)
+                                {
+                                    <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
+                                }
+                            </Items>
+                        </SelectWithLinkField>
+                    </MudItem>
+
+                    @* Utstyr - kun redigeringsmodus hvis vi har navigert fra bruker-siden*@
+                    <MudItem xs="12" sm="6">
+                        <SelectWithLinkField Value="_editModel.ItemId"
+                                             ValueChanged="OnItemChanged"
+                                             Label="Utstyr"
+                                             ToStringFunc="@(id => _items.FirstOrDefault(
+                                                               i => i.Id == id)?.Name ?? string.Empty)"
+                                             IsEditing="@(PreselectedItemId == null)"
+                                             For="() => _editModel.ItemId"
+                                             DisplayValue="@(_items.FirstOrDefault(
+                                                               i => i.Id == _editModel.ItemId)?.Name)">
+                            <Items>
+                                @foreach (var item in ActiveItems)
+                                {
+                                    <MudSelectItem @key="item.Id" Value="(Guid?)item.Id">@item.Name</MudSelectItem>
+                                }
+                            </Items>
+                        </SelectWithLinkField>
+                    </MudItem>
+
+                    @* Dato *@
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker Label="Utleveringsdato"
+                                       Date="_editModel.IssuedDate"
+                                       DateChanged="d => _editModel.IssuedDate = d ?? DateTime.Today"
+                                       Variant="Variant.Outlined"
+                                       DateFormat="dd.MM.yyyy"
+                                       MaxDate="DateTime.Today"/>
+                    </MudItem>
+
+                    @* Antall *@
+                    <MudItem xs="12" sm="6">
+                        <NumberField T="int"
+                                     @bind-Value="_editModel.Quantity"
+                                     Label="Antall"
+                                     IsEditing="true"
+                                     Min="@EquipmentValidations.QuantityMin"
+                                     Max="@EquipmentValidations.QuantityMax"
+                                     For="() => _editModel.Quantity"/>
+                    </MudItem>
+
+                    @* Størrelse - kun hvis valgt utstyr har størrelse *@
+                    @if (_selectedItemHasSize)
+                    {
+                        <MudItem xs="12" sm="6">
+                            <TextField Value="@_editModel.Size"
+                                       ValueChanged="(string? v) => _editModel.Size = v"
+                                       Label="Størrelse"
+                                       IsEditing="true"
+                                       For="() => _editModel.Size"/>
+                        </MudItem>
+                    }
+
+                    @* Notater *@
+                    <MudItem xs="12">
+                        <TextField Value="@_editModel.Notes"
+                                   ValueChanged="(string? v) => _editModel.Notes = v"
+                                   Label="Notater (valgfritt)"
+                                   IsEditing="true"
+                                   For="() => _editModel.Notes"
+                                   Lines="3"/>
+                    </MudItem>
+                </MudGrid>
+            </EditForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" OnClick="Cancel">Avbryt</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="HandleSubmit"
+                   Disabled="_isLoading || _isSaving">
+            Utlever
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Ved åpning fra bruker-siden, så er brukeren allerede satt
+    /// </summary>
+    [Parameter] public Guid? PreselectedUserId { get; set; }
+
+    /// <summary>
+    /// Ved åpning fra utstyr-siden, så er utstyret allerede satt
+    /// </summary>
+    [Parameter] public Guid? PreselectedItemId { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private readonly CreateEquipmentIssuanceModel _editModel = new();
+
+    private List<UserDto> _users = [];
+    private List<EquipmentItemDto> _items = [];
+
+    private bool _selectedItemHasSize;
+
+    private AlertInfo? _alert;
+    private EditContext _editContext = null!;
+
+    private bool _isLoading = true;
+    private bool _isSaving;
+    
+    private List<EquipmentItemDto> ActiveItems => _items.Where(i => i.IsActive).ToList();
+
+    // ===================== LIFECYCLE =====================
+    
+    // Henter både brukere og utstyr samtidig
+    protected override async Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(_editModel);
+
+        try
+        {
+            var usersTask = UserService.GetAllAsync(Cts.Token);
+            var itemsTask = EquipmentItemService.GetAllAsync(Cts.Token);
+
+            await Task.WhenAll(usersTask, itemsTask);
+
+            var usersResult = await usersTask;
+            var itemsResult = await itemsTask;
+
+            if (usersResult.IsFailure)
+            {
+                _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            if (itemsResult.IsFailure)
+            {
+                _alert = new AlertInfo(itemsResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _users = usersResult.Value!;
+            _items = itemsResult.Value!;
+
+            // Setter ID-en til brukeren hvis vi kommer fra bruker-siden
+            if (PreselectedUserId.HasValue)
+            {
+                _editModel.UserId = PreselectedUserId;
+                _editContext.NotifyFieldChanged(_editContext.Field(nameof(_editModel.UserId)));
+            }
+            
+            // Setter ID-en til utstyret hvis vi kommer fra utstyr-siden
+            if (PreselectedItemId.HasValue)
+            {
+                _editModel.ItemId = PreselectedItemId ?? Guid.Empty;
+                _editModel.ItemHasSize = _items.FirstOrDefault(i => i.Id == PreselectedItemId)?.HasSize ?? false;
+                _selectedItemHasSize = _editModel.ItemHasSize;
+                _editContext.NotifyFieldChanged(_editContext.Field(nameof(_editModel.ItemId)));
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    
+    // Handlinger som utføres hvis bruker eller utstyr endres
+    private void OnUserChanged(Guid? v)
+    {
+        _editModel.UserId = v;
+        _editContext.NotifyFieldChanged(_editContext.Field(nameof(_editModel.UserId)));
+    }
+
+    private void OnItemChanged(Guid? v)
+    {
+        _editModel.ItemId = v ?? Guid.Empty;
+        _editModel.ItemHasSize = _items.FirstOrDefault(i => i.Id == v)?.HasSize ?? false;
+        _selectedItemHasSize = _editModel.ItemHasSize;
+        _editContext.NotifyFieldChanged(_editContext.Field(nameof(_editModel.ItemId)));
+        
+        // Nullstill størrelse hvis nytt utstyr ikke har størrelse
+        if (!_selectedItemHasSize)
+            _editModel.Size = null;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (!_editContext.Validate())
+            return;
+        
+        if (_selectedItemHasSize && string.IsNullOrWhiteSpace(_editModel.Size))
+        {
+            _alert = new AlertInfo("Størrelse er påkrevd for dette utstyret.", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            var request = _editModel.ToRequest();
+            var result = await EquipmentIssuanceService.CreateAsync(request, Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(result.Value));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

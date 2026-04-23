@@ -51,6 +51,7 @@ public static class EquipmentMapper
         CategoryName = issuance.Item?.Category?.Name,
         Quantity = issuance.Quantity,
         Size = issuance.Size,
+        HasSize = issuance.Item?.HasSize ?? false,
         IssuedById = issuance.IssuedById,
         IssuedByName = issuance.IssuedBy != null
             ? $"{issuance.IssuedBy.FirstName} {issuance.IssuedBy.LastName}".Trim()

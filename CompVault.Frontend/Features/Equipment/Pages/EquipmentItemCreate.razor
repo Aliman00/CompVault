@@ -1,0 +1,118 @@
+﻿@page "/equipment-items/create"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.EquipmentWrite)]
+@inject IEquipmentItemService EquipmentItemService
+@inject IEquipmentCategoryService EquipmentCategoryService
+@inject NavigationManager NavigationManager
+
+
+@* Side for å opprette et utstyr *@
+
+<CreateForm Title="Opprett utstyr"
+            EditContext="_editContext"
+            OnValidSubmit="CreateEquipmentItem"
+            @bind-Alert="_alert"
+            IsLoading="_isLoading">
+    <Fields>
+        @* Navn *@
+        <MudItem xs="12" sm="6">
+            <TextField Value="@_editModel.Name"
+                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                             Label="Navn"
+                             IsEditing="true"
+                             For="() => _editModel.Name"/>
+        </MudItem>
+        
+        @* Kategori *@
+        <MudItem xs="12" sm="6">
+            <SelectWithLinkField Value="_editModel.CategoryId"
+                                 ValueChanged="(Guid? v) => _editModel.CategoryId = v"
+                                 Label="Kategori"
+                                 ToStringFunc="@(id => _equipmentCategories.FirstOrDefault(
+                                                   d => d.Id == id)?.Name ?? string.Empty)"
+                                 IsEditing="true"
+                                 For="() => _editModel.CategoryId">
+                <Items>
+                    @foreach (var equipmentCategory in _equipmentCategories)
+                    {
+                        <MudSelectItem Value="(Guid?)equipmentCategory.Id">@equipmentCategory.Name</MudSelectItem>
+                    }
+                </Items>
+            </SelectWithLinkField>
+        </MudItem>
+
+        @* Har størrelse *@
+        <MudItem xs="12" sm="6">
+            <ToggleButton Label="Har utstyret størrelser?"
+                          @bind-Value="_editModel.HasSize"
+                          IsEditing="true">
+                <MudToggleItem Value="(bool?)true" Text="Har størrelse"/>
+                <MudToggleItem Value="(bool?)false" Text="Har ikke størrelse"/>
+            </ToggleButton>
+        </MudItem>
+        
+    </Fields>
+</CreateForm>
+
+@code {
+    // ===================== PRIVATE FELT =====================
+    private readonly CreateEquipmentItemModel _editModel = new();
+    
+    private List<EquipmentCategoryDto> _equipmentCategories = [];
+    
+    private AlertInfo? _alert;
+
+    private EditContext _editContext = null!;
+    
+    private bool _isLoading = true;
+
+    protected override async  Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(_editModel);
+        
+        try
+        {
+            var getEquipmentCategoriesResult = await EquipmentCategoryService.GetAllAsync(Cts.Token);
+
+            if (getEquipmentCategoriesResult.IsFailure)
+            {
+                _alert = new AlertInfo(getEquipmentCategoriesResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _equipmentCategories = getEquipmentCategoriesResult.Value!;
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste utstyrskategorier. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
+    // navigerer oss til detalje-siden
+    private async Task CreateEquipmentItem()
+    {
+        var request = _editModel.ToRequest();
+
+        var createResult = await EquipmentItemService.CreateAsync(request, Cts.Token);
+        if (createResult.IsFailure)
+        {
+            _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(
+            PageRoutes.EquipmentItems.Detail(createResult.Value!.Id) + "?created=true");
+    }
+}

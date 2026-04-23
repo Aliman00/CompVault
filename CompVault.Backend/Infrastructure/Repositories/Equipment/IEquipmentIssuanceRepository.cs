@@ -18,6 +18,9 @@ public interface IEquipmentIssuanceRepository : IRepository<EquipmentIssuance>
 
     /// <summary>Henter alle utleveringer for en bestemt bruker med navigasjonsdata.</summary>
     Task<IReadOnlyList<EquipmentIssuance>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    
+    /// <summary>Henter alle utleveringer for et bestemt utstyr med navigasjonsdata.</summary>
+    Task<IReadOnlyList<EquipmentIssuance>> GetByItemIdAsync(Guid itemId, CancellationToken ct = default);
 
     /// <summary>Soft-sletter utleveringen.</summary>
     Task SoftDeleteAsync(EquipmentIssuance issuance, CancellationToken cancellationToken = default);

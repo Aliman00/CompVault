@@ -57,6 +57,24 @@ public sealed class EquipmentIssuanceService(
 
         return Result<IReadOnlyList<EquipmentIssuanceDto>>.Success(dtos);
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<EquipmentIssuanceDto>>> GetByItemAsync(Guid equipmentItemId, 
+        CancellationToken ct = default)
+    {
+        bool itemExists = await itemRepository.ExistsAsync(u => u.Id == equipmentItemId, ct);
+
+        if (!itemExists)
+            return Result<IReadOnlyList<EquipmentIssuanceDto>>.Failure(
+                AppError.NotFound($"Utstyret ble ikke funnet"));
+
+        IReadOnlyList<Domain.Entities.Equipment.EquipmentIssuance> issuances =
+            await issuanceRepository.GetByItemIdAsync(equipmentItemId, ct);
+
+        var dtos = issuances.Select(EquipmentMapper.ToDto).ToList();
+
+        return Result<IReadOnlyList<EquipmentIssuanceDto>>.Success(dtos);
+    }
 
     /// <inheritdoc />
     public async Task<Result<EquipmentIssuanceDto>> CreateAsync(

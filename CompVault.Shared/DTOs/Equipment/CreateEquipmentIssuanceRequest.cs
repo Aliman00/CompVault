@@ -16,7 +16,8 @@ public sealed class CreateEquipmentIssuanceRequest
     public Guid ItemId { get; set; }
 
     /// <summary>Antall som utleveres. Standard er 1.</summary>
-    [Range(1, 100, ErrorMessage = EquipmentValidations.Errors.QuantityRange)]
+    [Range(EquipmentValidations.QuantityMin, EquipmentValidations.QuantityMax, ErrorMessage = 
+        EquipmentValidations.Errors.QuantityRange)]
     public int Quantity { get; set; } = 1;
 
     /// <summary>Størrelse, f.eks. "XL" eller "43".</summary>

@@ -550,7 +550,8 @@ else if (_document != null && _documentType != null)
             { nameof(UpdateDocumentVersionDialog.DocumentId), _document!.Id },
             { nameof(UpdateDocumentVersionDialog.Title), _document!.Title },
             { nameof(UpdateDocumentVersionDialog.MaxFileSizeInBytes), _documentType!.MaxFileSizeBytes },
-            { nameof(UpdateDocumentVersionDialog.AcceptedMimeTypes), string.Join(',', _documentType.AllowedMimeTypes) }
+            { nameof(UpdateDocumentVersionDialog.AcceptedMimeTypes), string.Join(',', _documentType.AllowedMimeTypes) },
+            { nameof(UpdateDocumentVersionDialog.CurrentFile), _document!.ToFileInfo() }
         };
 
         // Kaller dialogen
@@ -578,7 +579,7 @@ else if (_document != null && _documentType != null)
             { nameof(SignDocumentDialog.DocumentId), _document!.Id },
             { nameof(SignDocumentDialog.Title), _document!.Title },
             { nameof(SignDocumentDialog.HasFile), _document!.HasFile },
-            { nameof(SignDocumentDialog.MimeType), _document!.MimeType }
+            { nameof(SignDocumentDialog.MimeType), _document!.MimeType },
         };
         
         var options = new DialogOptions

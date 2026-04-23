@@ -61,6 +61,19 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
                 .ThenInclude(item => item!.Category)
             .Include(i => i.IssuedBy)
             .ToListAsync(cancellationToken);
+    
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EquipmentIssuance>> GetByItemIdAsync(
+        Guid itemId, CancellationToken ct = default) =>
+        await DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null && i.ItemId == itemId)
+            .AsNoTracking()
+            .Include(i => i.User)
+            .Include(i => i.Item!)
+            .ThenInclude(item => item!.Category)
+            .Include(i => i.IssuedBy)
+            .ToListAsync(ct);
 
     /// <inheritdoc />
     public Task SoftDeleteAsync(EquipmentIssuance issuance, CancellationToken cancellationToken = default)
