@@ -15,6 +15,7 @@ public static class JobTitleMapper
     {
         Id = jobTitle.Id,
         Name = jobTitle.Name,
+        IsLeader = jobTitle.IsLeader,
         IsActive = jobTitle.IsActive
     };
 }

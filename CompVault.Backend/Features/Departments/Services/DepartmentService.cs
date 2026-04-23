@@ -55,6 +55,7 @@ public sealed class DepartmentService(
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             ParentDepartmentId = request.ParentDepartmentId,
+            ManagerId = request.ManagerId,
             CreatedAt = DateTime.UtcNow,
             CreatedById = userId,
             IsActive = true
@@ -83,6 +84,11 @@ public sealed class DepartmentService(
 
         if (request.IsActive.HasValue)
             department.IsActive = request.IsActive.Value;
+
+        if (request.ManagerId.HasValue)
+            department.ManagerId = request.ManagerId;
+        else if (request.ClearManagerId)
+            department.ManagerId = null;
 
         if (request.ParentDepartmentId.HasValue)
         {

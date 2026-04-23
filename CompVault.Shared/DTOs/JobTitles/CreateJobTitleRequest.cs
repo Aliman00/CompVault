@@ -13,4 +13,7 @@ public sealed class CreateJobTitleRequest
     [Required(ErrorMessage = JobTitleValidations.Errors.NameRequired)]
     [MaxLength(JobTitleValidations.NameMaxLength, ErrorMessage = JobTitleValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>Om stillinger med denne tittelen skal regnes som ledere.</summary>
+    public bool IsLeader { get; set; } = false;
 }

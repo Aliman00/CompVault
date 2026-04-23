@@ -80,6 +80,21 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<ApplicationUser>> GetPotentialManagersAsync(
+        CancellationToken cancellationToken = default) =>
+        await DbSet
+            .AsNoTracking()
+            .Include(u => u.Department)
+            .Include(u => u.JobTitle)
+            .Where(u => u.IsActive
+                        && u.DeletedAt == null
+                        && u.JobTitle != null
+                        && u.JobTitle.IsLeader)
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
+            .ToListAsync(cancellationToken);
+
+    /// <inheritdoc />
     public Task SoftDeleteAsync(ApplicationUser user, CancellationToken cancellationToken = default)
     {
         user.DeletedAt = DateTime.UtcNow;
