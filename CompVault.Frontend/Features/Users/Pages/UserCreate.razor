@@ -163,11 +163,11 @@
     
     private async Task LoadUsersAsync()
     {
-        var result = await UserService.GetAllAsync(Cts.Token);
+        var result = await UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
         if (result.IsFailure)
             _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
-            _allUsers = result.Value!;
+            _allUsers = result.Value!.Items.ToList();
     }
     
     // Handlign som skjer når vi trykker på opprett bruker-knappen. Utfører et API-kall og
@@ -183,6 +183,7 @@
             return;
         }
         
-        NavigationManager.NavigateTo(PageRoutes.Users.Detail(createResult.Value!.Id) + "?created=true");
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(createResult.Value!.Id) + "?created=true", 
+            replace: true);
     }
 }

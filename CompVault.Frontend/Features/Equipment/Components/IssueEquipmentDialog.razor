@@ -159,7 +159,7 @@
 
         try
         {
-            var usersTask = UserService.GetAllAsync(Cts.Token);
+            var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
             var itemsTask = EquipmentItemService.GetAllAsync(Cts.Token);
 
             await Task.WhenAll(usersTask, itemsTask);
@@ -179,7 +179,7 @@
                 return;
             }
 
-            _users = usersResult.Value!;
+            _users = usersResult.Value!.Items.ToList();
             _items = itemsResult.Value!;
 
             // Setter ID-en til brukeren hvis vi kommer fra bruker-siden

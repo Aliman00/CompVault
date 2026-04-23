@@ -10,7 +10,6 @@
           Items="_equipmentCategories"
           IsLoading="_isLoading"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedEquipmentCategories = s)"
           RowClick="@(args => OnCategoryClick(args))">
     <Header>
         <ListHeader Title="Utstyrskategorier"
@@ -63,7 +62,6 @@
 
     // ===================== PRIVATE FELT =====================
     private List<EquipmentCategoryDto> _equipmentCategories = [];
-    private HashSet<EquipmentCategoryDto> _selectedEquipmentCategories = [];
 
     private bool _isLoading = true;
     private AlertInfo? _alert;

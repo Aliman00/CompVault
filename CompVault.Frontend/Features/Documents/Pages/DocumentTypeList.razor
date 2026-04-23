@@ -10,7 +10,6 @@
           Items="_documentTypes"
           IsLoading="_isLoading"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedDocumentTypes = s)"
           RowClick="@(args => OnDocumentTypeClick(args))">
     <Header>
         <ListHeader Title="Dokumentkategorier"
@@ -69,7 +68,6 @@
 
     // ===================== PRIVATE FELT =====================
     private List<DocumentTypeDto> _documentTypes = [];
-    private HashSet<DocumentTypeDto> _selectedDocumentTypes = [];
 
     private bool _isLoading = true;
     private AlertInfo? _alert;

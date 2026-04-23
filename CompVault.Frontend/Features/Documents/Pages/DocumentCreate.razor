@@ -219,6 +219,6 @@
         }
 
         NavigationManager.NavigateTo(
-            PageRoutes.Documents.Detail(Slug, createResult.Value!.Id) + "?created=true");
+            PageRoutes.Documents.Detail(Slug, createResult.Value!.Id) + "?created=true", replace: true);
     }
 }

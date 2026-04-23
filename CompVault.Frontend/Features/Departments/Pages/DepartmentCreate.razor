@@ -101,6 +101,6 @@
         }
 
         NavigationManager.NavigateTo(PageRoutes.Departments.Detail(createResult.Value!.Id) 
-                                     + "?created=true");
+                                     + "?created=true", replace: true);
     }
 }

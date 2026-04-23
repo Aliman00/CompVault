@@ -1,6 +1,7 @@
 ﻿using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -14,30 +15,31 @@ public class UserService(
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
 
     /// <inheritdoc />
-    public async Task<Result<List<UserDto>>> GetAllAsync(CancellationToken ct)
+    public async Task<Result<PagedResult<UserDto>>> GetAllAsync(PagedQuery query, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.User.Base, ct);
-
-            Result<List<UserDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<UserDto>>(response, ct);
-
+            string url = $"{ApiRoutes.User.Base}?page={query.Page}&pageSize={query.PageSize}";
+            HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
+            
+            Result<PagedResult<UserDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<PagedResult<UserDto>>(response, ct);
+            
             if (result.IsFailure)
-                return Result<List<UserDto>>.Failure(result.Error!);
+                return Result<PagedResult<UserDto>>.Failure(result.Error!);
 
-            return Result<List<UserDto>>.Success(result.Value!);
+            return Result<PagedResult<UserDto>>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av brukere");
-            return Result<List<UserDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+            return Result<PagedResult<UserDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av brukere");
-            return Result<List<UserDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+            return Result<PagedResult<UserDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }

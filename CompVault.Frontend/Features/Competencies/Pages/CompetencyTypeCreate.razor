@@ -78,6 +78,6 @@
         }
 
         NavigationManager.NavigateTo(
-            PageRoutes.CompetencyTypes.Detail(createResult.Value!.Id) + "?created=true");
+            PageRoutes.CompetencyTypes.Detail(createResult.Value!.Id) + "?created=true", replace: true);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Equipment;
 using CompVault.Shared.Result;
 namespace CompVault.Frontend.Features.Equipment.Services;
@@ -12,30 +13,31 @@ public class EquipmentIssuancesService(
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
 
     /// <inheritdoc />
-    public async Task<Result<List<EquipmentIssuanceDto>>> GetAllAsync(CancellationToken ct)
+    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetAllAsync(PagedQuery query, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.EquipmentIssuances.Base, ct);
+            string url = $"{ApiRoutes.EquipmentIssuances.Base}?page={query.Page}&pageSize={query.PageSize}";
+            HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
 
-            Result<List<EquipmentIssuanceDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<EquipmentIssuanceDto>>(response, ct);
+            Result<PagedResult<EquipmentIssuanceDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<PagedResult<EquipmentIssuanceDto>>(response, ct);
 
             if (result.IsFailure)
-                return Result<List<EquipmentIssuanceDto>>.Failure(result.Error!);
+                return Result<PagedResult<EquipmentIssuanceDto>>.Failure(result.Error!);
 
-            return Result<List<EquipmentIssuanceDto>>.Success(result.Value!);
+            return Result<PagedResult<EquipmentIssuanceDto>>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av alle utleveringer");
-            return Result<List<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av alle utleveringer");
-            return Result<List<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
@@ -71,31 +73,32 @@ public class EquipmentIssuancesService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, CancellationToken ct)
+    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, PagedQuery query, 
+        CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response =
-                await _httpClient.GetAsync(ApiRoutes.EquipmentIssuances.ByUser(userId), ct);
-            
-            Result<List<EquipmentIssuanceDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<EquipmentIssuanceDto>>(response, ct);
+            string url = $"{ApiRoutes.EquipmentIssuances.ByUser(userId)}?page={query.Page}&pageSize={query.PageSize}";
+            HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
+
+            Result<PagedResult<EquipmentIssuanceDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<PagedResult<EquipmentIssuanceDto>>(response, ct);
 
             if (result.IsFailure)
-                return Result<List<EquipmentIssuanceDto>>.Failure(result.Error!);
+                return Result<PagedResult<EquipmentIssuanceDto>>.Failure(result.Error!);
 
-            return Result<List<EquipmentIssuanceDto>>.Success(result.Value!);
+            return Result<PagedResult<EquipmentIssuanceDto>>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av utleveringer for bruker {UserId}", userId);
-            return Result<List<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av utleveringer for bruker {UserId}", userId);
-            return Result<List<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }

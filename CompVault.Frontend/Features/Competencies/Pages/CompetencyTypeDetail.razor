@@ -97,14 +97,14 @@ else if (_competencyType != null)
             <MudItem xs="12">
                 <MudText Typo="Typo.subtitle1">Kompetansebevis av type @_competencyType!.Name</MudText>
                 <MudDataGrid T="CompetencyDto"
-                             Items="_competenciesWithType"
+                             ServerData="LoadCompetenciesServerData"
                              Filterable="false"
                              Dense="true"
                              Hover="true"
                              Striped="true"
                              Square="true"
                              Bordered="true"
-                             SortMode="SortMode.Single"
+                             SortMode="SortMode.None"
                              RowClick="@((DataGridRowClickEventArgs<CompetencyDto> args)
                                            => NavigateToCompetency(args.Item.Id))">
                     <Columns>
@@ -128,6 +128,11 @@ else if (_competencyType != null)
                                             Title="Utløper"/>
                         }
                     </Columns>
+                    <PagerContent>
+                        <MudDataGridPager T="CompetencyDto"
+                                          RowsPerPageString="Rader pr side:"
+                                          PageSizeOptions="new[] { 10, 20, 50 }"/>
+                    </PagerContent>
                 </MudDataGrid>
             </MudItem>
         </Fields>
@@ -144,7 +149,6 @@ else if (_competencyType != null)
 
     // ===================== PRIVATE FELT =====================
     private CompetencyTypeDto? _competencyType;
-    private List<CompetencyDto> _competenciesWithType = [];
 
     private CompetencyTypeEditModel _editModel = new();
 
@@ -163,25 +167,14 @@ else if (_competencyType != null)
         // Resetter alle feltene ved oppdatering/navigering til siden
         _isLoading = true;
         _isEditing = false;
-        _competenciesWithType = [];
         _editModel = new();
 
         try
         {
             _editContext = new EditContext(_editModel);
             
-            // Filterer slik at vi henter kun kompetansebevis med typen til Detail-siden
-            var competencyFilterRequest = new CompetencyFilterRequest(null, null, Id);
-
             // Henter kompetansetypen og bevisene til denne typen
-            var competencyTypeTask = CompetencyTypeService.GetByIdAsync(Id, Cts.Token);
-            var competenciesTask = CompetencyService.GetAllAsync(competencyFilterRequest, Cts.Token);
-
-            await Task.WhenAll(competencyTypeTask, competenciesTask);
-
-            var competencyTypeResult = await competencyTypeTask;
-            var competenciesResult = await competenciesTask;
-
+            var competencyTypeResult = await CompetencyTypeService.GetByIdAsync(Id, Cts.Token);
             if (competencyTypeResult.IsFailure)
             {
                 _alert = new AlertInfo(competencyTypeResult.Error!.ToString(), Severity.Error);
@@ -189,11 +182,7 @@ else if (_competencyType != null)
             }
 
             _competencyType = competencyTypeResult.Value;
-
-            if (competenciesResult.IsFailure)
-                _alert = new AlertInfo(competenciesResult.Error!.ToString(), Severity.Error);
-            else
-                _competenciesWithType = competenciesResult.Value!;
+            
 
             ResetEditModel();
         }
@@ -285,5 +274,28 @@ else if (_competencyType != null)
         }
 
         NavigationManager.NavigateTo(PageRoutes.CompetencyTypes.List + "?deleted=true");
+    }
+    
+    private async Task<GridData<CompetencyDto>> LoadCompetenciesServerData(GridState<CompetencyDto> state, CancellationToken ct)
+    {
+        var filter = new CompetencyFilterRequest
+        {
+            CompetencyTypeId = Id,
+            Page = state.Page + 1,
+            PageSize = state.PageSize
+        };
+        var result = await CompetencyService.GetAllAsync(filter, ct);
+
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<CompetencyDto>();
+        }
+
+        return new GridData<CompetencyDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
     }
 }
