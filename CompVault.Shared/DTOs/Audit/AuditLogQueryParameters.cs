@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CompVault.Shared.DTOs.Audit;
 
 /// <summary>
@@ -24,8 +26,10 @@ public class AuditLogQueryParameters
     public DateTime? To { get; set; }
 
     /// <summary>Side (1-basert, default 1).</summary>
+    [Range(1, int.MaxValue)]
     public int Page { get; set; } = 1;
 
     /// <summary>Antall per side (default 50, max 100).</summary>
+    [Range(1, 100)]
     public int PageSize { get; set; } = 50;
 }

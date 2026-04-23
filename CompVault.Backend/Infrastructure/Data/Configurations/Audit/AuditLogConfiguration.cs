@@ -45,5 +45,8 @@ internal sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
         builder.HasIndex(a => new { a.EntityType, a.EntityId });
         builder.HasIndex(a => a.UserId);
         builder.HasIndex(a => a.CreatedAt).IsDescending();
+        // Sammensatt indeks for den vanligste spørringen: historikk per entitet, nyeste først
+        builder.HasIndex(a => new { a.EntityType, a.EntityId, a.CreatedAt })
+            .IsDescending(false, false, true);
     }
 }

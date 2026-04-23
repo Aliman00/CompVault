@@ -18,8 +18,6 @@ namespace CompVault.Backend.Infrastructure.Data.Interceptors;
 /// </summary>
 public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider) : SaveChangesInterceptor
 {
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
-
     private static readonly HashSet<string> IgnoredEntities = new(StringComparer.OrdinalIgnoreCase)
     {
         "OtpCode",
@@ -59,17 +57,9 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
         if (context is null)
             return base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        IAuditContext? auditContext = null;
-        try
-        {
-            auditContext = _serviceProvider.GetService<IAuditContext>();
-        }
-        catch
-        {
-            // IAuditContext kan være utilgjengelig i noen kontekster
-        }
+        IAuditContext? auditContext = serviceProvider.GetService<IAuditContext>();
 
-        IHttpContextAccessor? httpContextAccessor = _serviceProvider.GetService<IHttpContextAccessor>();
+        IHttpContextAccessor? httpContextAccessor = serviceProvider.GetService<IHttpContextAccessor>();
         (Guid? userId, string? userEmail, string? userName) = ResolveCurrentUser(httpContextAccessor);
 
         var auditEntries = new List<AuditLog>();
@@ -139,7 +129,7 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
     /// <summary>
     /// Bygger en AuditLog for en endret entitet.
     /// </summary>
-    private static AuditLog BuildModifiedEntry(
+    private static AuditLog? BuildModifiedEntry(
         EntityEntry entry, string entityType, Guid? userId, string? userEmail, string? userName,
         IAuditContext? auditContext)
     {
@@ -198,6 +188,11 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
         {
             action = $"{ToSnakeCase(entityType)}.update";
         }
+
+        // Hopp over vanlige .update-entries som ikke har noe å rapportere
+        // (soft-delete og action overrides er alltid meningsfulle selv med tomme details)
+        if (details.Count == 0 && !isSoftDelete && auditContext?.ActionOverride is null)
+            return null;
 
         return new AuditLog
         {
@@ -293,6 +288,7 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
 
     /// <summary>
     /// Løser den nåværende brukeren fra HttpContext.
+    /// JWT bruker custom "firstName"/"lastName" claims, ikke ClaimTypes.Name.
     /// </summary>
     private static (Guid? userId, string? email, string? name) ResolveCurrentUser(IHttpContextAccessor? httpContextAccessor)
     {
@@ -300,19 +296,26 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
             return (null, null, "System");
 
         Claim? nameClaim = httpContextAccessor.HttpContext.User.FindFirst(
-            System.Security.Claims.ClaimTypes.NameIdentifier);
+            ClaimTypes.NameIdentifier);
 
         if (nameClaim is null || !Guid.TryParse(nameClaim.Value, out Guid userId))
             return (null, null, "System");
 
         Claim? emailClaim = httpContextAccessor.HttpContext.User.FindFirst(
-            System.Security.Claims.ClaimTypes.Email);
+            ClaimTypes.Email);
         string? email = emailClaim?.Value;
 
-        string? nameClaimValue = httpContextAccessor.HttpContext.User.FindFirst(
-            System.Security.Claims.ClaimTypes.Name)?.Value;
+        // JWT bruker custom "firstName"/"lastName" claims, ikke ClaimTypes.Name
+        string? firstName = httpContextAccessor.HttpContext.User.FindFirst("firstName")?.Value;
+        string? lastName = httpContextAccessor.HttpContext.User.FindFirst("lastName")?.Value;
 
-        return (userId, email, nameClaimValue ?? "System");
+        string name;
+        if (!string.IsNullOrEmpty(firstName) && !string.IsNullOrEmpty(lastName))
+            name = $"{firstName} {lastName}";
+        else
+            name = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+
+        return (userId, email, name);
     }
 
     /// <summary>
@@ -332,8 +335,11 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
     private static Guid GetEntityId(EntityEntry entry)
     {
         PropertyEntry? pk = entry.Properties.FirstOrDefault(p => p.Metadata.IsPrimaryKey());
-        if (pk?.CurrentValue is Guid guid)
-            return guid;
+        if (pk?.CurrentValue is Guid g1)
+            return g1;
+        // For deleted entries er CurrentValue null — fall back til OriginalValue
+        if (pk?.OriginalValue is Guid g2)
+            return g2;
 
         return Guid.Empty;
     }

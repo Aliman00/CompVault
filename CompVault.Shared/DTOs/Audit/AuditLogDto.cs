@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace CompVault.Shared.DTOs.Audit;
 
 /// <summary>
@@ -12,6 +14,6 @@ public class AuditLogDto
     public Guid? UserId { get; set; }
     public string? UserName { get; set; }
     public string? UserEmail { get; set; }
-    public object? Details { get; set; }
+    public JsonElement? Details { get; set; }
     public DateTime CreatedAt { get; set; }
 }

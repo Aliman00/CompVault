@@ -82,8 +82,10 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
         var statusChanges = new List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)>();
 
         // --- Expired: Finn kompetanser som vil bli satt til Expired ---
+        // Ekskluderer allerede Expired for å unngå duplikate audit-entries
         var toExpire = await DbSet
             .Where(c => c.Status != CompetencyStatus.Revoked
+                && c.Status != CompetencyStatus.Expired
                 && c.CompetencyType!.RequiresExpiration
                 && c.ExpiryDate != null
                 && c.ExpiryDate < DateTime.UtcNow)
@@ -93,6 +95,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
         // Sett Expired via ExecuteUpdateAsync
         int expiredCount = await DbSet
             .Where(c => c.Status != CompetencyStatus.Revoked
+                && c.Status != CompetencyStatus.Expired
                 && c.CompetencyType!.RequiresExpiration
                 && c.ExpiryDate != null
                 && c.ExpiryDate < DateTime.UtcNow)

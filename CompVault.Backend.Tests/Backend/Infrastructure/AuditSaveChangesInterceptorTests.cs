@@ -1,6 +1,7 @@
 using System.Text.Json;
 
 using CompVault.Backend.Domain.Entities.Audit;
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
@@ -14,7 +15,6 @@ using FluentAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using Moq;
 
@@ -43,7 +43,7 @@ public class AuditSaveChangesInterceptorTests
 
     private AppDbContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
+        DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .AddInterceptors(new AuditSaveChangesInterceptor(_serviceProviderMock.Object))
             .Options;
@@ -59,7 +59,7 @@ public class AuditSaveChangesInterceptorTests
     public async Task SavingChangesAsync_AddedEntity_CreatesAuditLogWithCreateAction()
     {
         // Arrange
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
         var department = new Department
         {
@@ -88,7 +88,7 @@ public class AuditSaveChangesInterceptorTests
     public async Task SavingChangesAsync_ModifiedEntity_CreatesAuditLogWithChangedFields()
     {
         // Arrange
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
         var department = new Department
         {
@@ -117,9 +117,9 @@ public class AuditSaveChangesInterceptorTests
             .ToListAsync();
 
         auditLogs.Should().Contain(a => a.Action == "department.update");
-        var updateLog = auditLogs.First(a => a.Action == "department.update");
+        AuditLog updateLog = auditLogs.First(a => a.Action == "department.update");
         updateLog.Details.Should().NotBeNull();
-        var details = JsonSerializer.Deserialize<Dictionary<string, object>>(updateLog.Details!);
+        Dictionary<string, object>? details = JsonSerializer.Deserialize<Dictionary<string, object>>(updateLog.Details!);
         details.Should().ContainKey("changed_fields");
     }
 
@@ -131,7 +131,7 @@ public class AuditSaveChangesInterceptorTests
     public async Task SavingChangesAsync_SoftDelete_CreatesAuditLogWithDeleteAction()
     {
         // Arrange
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
         var competencyType = new CompetencyType
         {
@@ -170,7 +170,7 @@ public class AuditSaveChangesInterceptorTests
     public async Task SavingChangesAsync_HardDelete_CreatesAuditLogWithDeleteAction()
     {
         // Arrange
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
         var role = new ApplicationRole
         {
@@ -210,24 +210,66 @@ public class AuditSaveChangesInterceptorTests
     public async Task SavingChangesAsync_IgnoredEntity_DoesNotCreateAuditLog(string ignoredEntityType)
     {
         // Arrange
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
-        // OtpCode is an ignored entity — adding it should not create an AuditLog
-        var otpCode = new CompVault.Backend.Domain.Entities.Auth.OtpCode
+        // Opprett faktisk entitet av riktig type — InMemory hånddhever ikke FK-constraints
+        switch (ignoredEntityType)
         {
-            Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
-            Code = "hash",
-            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
-            CreatedAt = DateTime.UtcNow
-        };
+            case "OtpCode":
+                context.Set<OtpCode>().Add(new OtpCode
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = Guid.NewGuid(),
+                    Code = "hash",
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                    CreatedAt = DateTime.UtcNow
+                });
+                break;
 
-        context.Set<CompVault.Backend.Domain.Entities.Auth.OtpCode>().Add(otpCode);
+            case "RefreshToken":
+                context.Set<RefreshToken>().Add(new RefreshToken
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = Guid.NewGuid(),
+                    Token = "test-token",
+                    CreatedAt = DateTime.UtcNow
+                });
+                break;
+
+            case "AuditLog":
+                context.Set<AuditLog>().Add(new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    Action = "test.action",
+                    EntityType = "Test",
+                    EntityId = Guid.NewGuid(),
+                    CreatedAt = DateTime.UtcNow
+                });
+                break;
+
+            case "DocumentVersion":
+                context.Set<DocumentVersion>().Add(new DocumentVersion
+                {
+                    Id = Guid.NewGuid(),
+                    DocumentId = Guid.NewGuid(),
+                    Version = 1
+                });
+                break;
+
+            case "RolePermission":
+                context.Set<RolePermission>().Add(new RolePermission
+                {
+                    RoleId = Guid.NewGuid(),
+                    PermissionId = Guid.NewGuid(),
+                    GrantedAt = DateTime.UtcNow
+                });
+                break;
+        }
 
         // Act
         await context.SaveChangesAsync();
 
-        // Assert — no AuditLog created for the OtpCode
+        // Assert — ingen AuditLog generert for den ignorerte entitetstypen
         List<AuditLog> auditLogs = await context.AuditLogs
             .Where(a => a.EntityType == ignoredEntityType)
             .ToListAsync();
@@ -245,7 +287,7 @@ public class AuditSaveChangesInterceptorTests
         _auditContextMock.SetupGet(ac => ac.ActionOverride).Returns("competency.revoke");
         _auditContextMock.SetupGet(ac => ac.Reason).Returns("Sikkerhetsbrudd");
 
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
         var competency = new Competency
         {
@@ -287,7 +329,7 @@ public class AuditSaveChangesInterceptorTests
         // Arrange
         _auditContextMock.SetupGet(ac => ac.Reason).Returns("Sikkerhetsbrudd ved truckkjøring");
 
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
         var competency = new Competency
         {
@@ -315,7 +357,7 @@ public class AuditSaveChangesInterceptorTests
             .FirstOrDefaultAsync(a => a.EntityId == competency.Id && a.Action != "competency.create");
 
         auditLog.Should().NotBeNull();
-        var details = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(auditLog!.Details!);
+        Dictionary<string, JsonElement>? details = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(auditLog!.Details!);
         details.Should().ContainKey("reason");
         details!["reason"].GetString().Should().Be("Sikkerhetsbrudd ved truckkjøring");
     }
@@ -330,7 +372,7 @@ public class AuditSaveChangesInterceptorTests
         // Arrange — no authenticated user
         _httpContextAccessorMock.SetupGet(h => h.HttpContext).Returns((HttpContext?)null);
 
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
         var department = new Department
         {
@@ -365,7 +407,7 @@ public class AuditSaveChangesInterceptorTests
         // Arrange
         _auditContextMock.SetupGet(ac => ac.Reason).Returns("Test reason");
 
-        using var context = CreateContext();
+        using AppDbContext context = CreateContext();
 
         var department = new Department
         {

@@ -16,16 +16,16 @@ public static class AuditLogMapper
     /// </summary>
     public static AuditLogDto ToDto(AuditLog auditLog)
     {
-        object? details = null;
+        JsonElement? details = null;
         if (!string.IsNullOrEmpty(auditLog.Details))
         {
             try
             {
-                details = JsonSerializer.Deserialize<object>(auditLog.Details);
+                details = JsonSerializer.Deserialize<JsonElement>(auditLog.Details);
             }
             catch
             {
-                details = auditLog.Details;
+                // Details er alltid skrevet av vår egen kode — parse-feil ignoreres stille
             }
         }
 

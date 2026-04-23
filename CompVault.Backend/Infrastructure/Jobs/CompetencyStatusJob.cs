@@ -3,8 +3,7 @@ using System.Text.Json;
 using CompVault.Backend.Domain.Entities.Audit;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
-
-using Microsoft.EntityFrameworkCore;
+using CompVault.Shared.Enums;
 
 namespace CompVault.Backend.Infrastructure.Jobs;
 
@@ -45,7 +44,7 @@ public class CompetencyStatusJob(
 
         try
         {
-            (int expiredCount, int expiringSoonCount, var statusChanges) = await competencyRepository.UpdateExpiryStatusesAsync(ct);
+            (int expiredCount, int expiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)>? statusChanges) = await competencyRepository.UpdateExpiryStatusesAsync(ct);
             int totalUpdated = expiredCount + expiringSoonCount;
 
             // Opprett AuditLog-entries manuelt for statusendringer fra bakgrunnsjobb
