@@ -23,7 +23,7 @@ public interface IEquipmentIssuancesService
     /// <summary>
     /// Henter alle utleveringer for et utstyr
     /// </summary>
-    Task<Result<List<EquipmentIssuanceDto>>> GetByItemAsync(Guid userId, CancellationToken ct);
+    Task<Result<List<EquipmentIssuanceDto>>> GetByItemAsync(Guid itemId, CancellationToken ct);
 
     /// <summary>
     /// Oppretter en ny utlevering

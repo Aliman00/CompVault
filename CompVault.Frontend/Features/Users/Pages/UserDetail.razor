@@ -233,7 +233,7 @@ else if (_user != null)
                         @* Brukeren *@
                         <TemplateColumn T="EquipmentIssuanceDto" Title="Utstyr">
                             <CellTemplate>
-                                <MudLink Href="@PageRoutes.Users.Detail(context.Item.UserId)">
+                                <MudLink Href="@PageRoutes.EquipmentItems.Detail(context.Item.ItemId)">
                                     @context.Item.ItemName
                                 </MudLink>
                             </CellTemplate>

@@ -341,7 +341,7 @@ else if (_equipmentItem != null)
 
         await RefreshIssuancesAsync();
         
-        // Er resultatet fra dialogen Guid så er den oppdatert, eller så er den da slettet
+        // Er resultatet fra dialogen Guid så er den slettet, ellers er den oppdatert
         _alert = dialogResult.Data is Guid
             ? new AlertInfo("Utleveringen ble slettet", Severity.Info)
             : new AlertInfo("Utleveringen ble oppdatert", Severity.Success);

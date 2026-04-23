@@ -38,7 +38,7 @@ else if (_equipmentCategory != null)
                         <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                      IconColor="Color.Default"
                                      Disabled="true">
-                            <MudText>Slett kompetansetype</MudText>
+                            <MudText>Slett utstyrskategori</MudText>
                         </MudMenuItem>
                     </MudTooltip>
                 </NotAuthorized>
@@ -195,7 +195,7 @@ else if (_equipmentCategory != null)
             _isLoading = false;
 
             if (Created)
-                _alert = new AlertInfo("Utstyrskategorier ble opprettet", Severity.Success);
+                _alert = new AlertInfo("Utstyrskategorien ble opprettet", Severity.Success);
         }
     }
 
