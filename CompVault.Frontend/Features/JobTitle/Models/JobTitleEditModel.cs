@@ -12,15 +12,19 @@ public class JobTitleEditModel
 
     public bool IsActive { get; set; }
 
+    public bool IsLeader { get; set; }
+
     public static JobTitleEditModel FromDto(JobTitleDto dto) => new()
     {
         Name = dto.Name,
-        IsActive = dto.IsActive
+        IsActive = dto.IsActive,
+        IsLeader = dto.IsLeader
     };
 
     public UpdateJobTitleRequest ToRequest() => new()
     {
         Name = Name,
-        IsActive = IsActive
+        IsActive = IsActive,
+        IsLeader = IsLeader
     };
 }

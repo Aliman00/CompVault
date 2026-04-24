@@ -93,6 +93,14 @@
 </CreateForm>
 
 @code {
+    // ===================== PARAMETERS ===================== 
+    
+    /// <summary>
+    /// Optional ID til en bruker ved naviginer fra User-siden
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "userId")]
+    public Guid? UserId { get; set; }
+    
     // ===================== PRIVATE FELT =====================
     private readonly CreateCompetencyModel _editModel = new();
     private List<UserDto> _allUsers = [];
@@ -110,7 +118,7 @@
             : null;
     
     // ===================== LIFECYCLE =====================
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
         _editContext = new EditContext(_editModel);
 
@@ -118,7 +126,7 @@
         {
             // Utfører begge kall samtidig
             var tasks = new List<Task>();
-
+            
             if (_allCompetencyTypes.Count == 0)
                 tasks.Add(LoadCompetencyTypes());
 
@@ -126,6 +134,9 @@
                 tasks.Add(LoadUsersAsync());
 
             await Task.WhenAll(tasks);
+
+            if (UserId.HasValue && _editModel.UserId is null)
+                _editModel.UserId = UserId;
         }
         finally
         {

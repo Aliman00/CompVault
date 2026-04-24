@@ -1,0 +1,140 @@
+﻿@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IEquipmentIssuancesService EquipmentIssuanceService
+@inject IDialogService DialogService
+
+@* Utstyr-fanen med visning av det brukeren har fått utdelt *@
+<ListHeader Title="@($"Utstyr ({_totalCount})")"
+            PageIcon="@Icons.Material.Filled.Headset">
+    <Actions>
+        <AuthorizeView Policy="@Permissions.EquipmentWrite">
+            <Authorized>
+                <ResponsiveButton Label="Utlever"
+                                  Icon="@Icons.Material.Filled.Add"
+                                  OnClick="IssueEquipment"/>
+            </Authorized>
+        </AuthorizeView>
+    </Actions>
+</ListHeader>
+
+<MudDataGrid T="EquipmentIssuanceDto"
+             @ref="_grid"
+             ServerData="LoadServerData"
+             Dense="true"
+             Hover="true"
+             Striped="true"
+             Square="true"
+             Bordered="true"
+             RowClick="OnRowClick"
+             RowsPerPage="20">
+    <Columns>
+
+        @* Utstyret *@
+        <TemplateColumn T="EquipmentIssuanceDto" Title="Utstyr">
+            <CellTemplate Context="cell">
+                <MudLink Href="@PageRoutes.EquipmentItems.Detail(cell.Item.ItemId)">
+                    @cell.Item.ItemName
+                </MudLink>
+            </CellTemplate>
+        </TemplateColumn>
+
+        @* Antall *@
+        <PropertyColumn T="EquipmentIssuanceDto" TProperty="int"
+                        Property="i => i.Quantity" Title="Antall"/>
+
+        @* Størrelse *@
+        <PropertyColumn T="EquipmentIssuanceDto" TProperty="string?"
+                        Property="i => i.Size" Title="Størrelse"/>
+
+        @* Utlevert av *@
+        <TemplateColumn T="EquipmentIssuanceDto" Title="Utlevert av">
+            <CellTemplate Context="cell">
+                <MudLink Href="@PageRoutes.Users.Detail(cell.Item.IssuedById)">
+                    @cell.Item.IssuedByName
+                </MudLink>
+            </CellTemplate>
+        </TemplateColumn>
+
+        @* Utlevert dato *@
+        <TemplateColumn T="EquipmentIssuanceDto" Title="Dato" SortBy="i => i.IssuedDate">
+            <CellTemplate Context="cell">
+                <MudTooltip Text="@cell.Item.IssuedDate.ToString("dd.MM.yyyy HH:mm")">
+                    @cell.Item.IssuedDate.ToRelativeNorwegian()
+                </MudTooltip>
+            </CellTemplate>
+        </TemplateColumn>
+
+        @* Notat *@
+        <PropertyColumn T="EquipmentIssuanceDto" TProperty="string?"
+                        Property="i => i.Notes" Title="Notater"/>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="EquipmentIssuanceDto"
+                          RowsPerPageString="Rader pr side:"
+                          PageSizeOptions="new[] { 10, 20, 50 }"/>
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    
+    // ===================== PARAMETER =====================
+    
+    /// <summary>
+    /// Brukeren vi ser på utstyret til
+    /// </summary>
+    [Parameter, EditorRequired] public Guid UserId { get; set; }
+    
+    // ===================== PRIVATE FIELDS =====================
+    private MudDataGrid<EquipmentIssuanceDto> _grid = null!;
+    private int _totalCount;
+    
+    // ===================== PRVIATE METHODS =====================
+    private async Task<GridData<EquipmentIssuanceDto>> LoadServerData(GridState<EquipmentIssuanceDto> state, 
+        CancellationToken ct)
+    {
+        var query = new PagedQuery { Page = state.Page + 1, PageSize = state.PageSize };
+        var result = await EquipmentIssuanceService.GetByUserAsync(UserId, query, ct);
+
+        if (result.IsFailure)
+            return new GridData<EquipmentIssuanceDto>();
+
+        _totalCount = result.Value!.TotalCount;
+        StateHasChanged();
+        
+        return new GridData<EquipmentIssuanceDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
+    }
+
+    private async Task OnRowClick(DataGridRowClickEventArgs<EquipmentIssuanceDto> args)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(EditEquipmentIssuanceDialog.Issuance), args.Item },
+            { nameof(EditEquipmentIssuanceDialog.HasSize), args.Item.HasSize }
+        };
+
+        var dialog = await DialogService.ShowAsync<EditEquipmentIssuanceDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        await _grid.ReloadServerData();
+    }
+
+    private async Task IssueEquipment()
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(IssueEquipmentDialog.PreselectedUserId), UserId }
+        };
+
+        var dialog = await DialogService.ShowAsync<IssueEquipmentDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        await _grid.ReloadServerData();
+    }
+}

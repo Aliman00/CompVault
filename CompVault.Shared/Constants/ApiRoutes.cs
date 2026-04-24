@@ -25,6 +25,8 @@ public static class ApiRoutes
     {
         public const string Base = "api/users";
         public static string ById(Guid id) => $"{Base}/{id}";
+        public const string JobTitles = $"{Base}/job-titles";
+        public const string Managers = $"{Base}/managers";
     }
 
     public static class Department

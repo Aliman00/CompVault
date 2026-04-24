@@ -1,0 +1,118 @@
+﻿@* Dialog for å en entitet fra AuditLoggen litt mer detaljert *@
+
+<MudDialog>
+    
+    @* Headeren *@
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.History" Class="mr-2"/>
+            @Log.Action.ToNorwegianAction()
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid>
+
+            @* Opprettet/CreatedAt *@
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Tidspunkt</MudText>
+                <MudText>@Log.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss")</MudText>
+            </MudItem>
+
+            @* Action *@
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Handling</MudText>
+                <MudText>@Log.Action.ToNorwegianAction()</MudText>
+            </MudItem>
+
+            @* Hvilke type entitet *@
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Entitetstype</MudText>
+                <MudText>@Log.EntityType.ToNorwegian()</MudText>
+            </MudItem>
+
+            @* Trenger vi denne? *@
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Entitets-ID</MudText>
+                <MudText Typo="Typo.body2" Style="word-break: break-all;">@Log.EntityId</MudText>
+            </MudItem>
+
+            @* Hvem som utførte handlingen *@
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Utført av</MudText>
+                @if (Log.UserName is not null)
+                {
+                    <MudText>@Log.UserName</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Log.UserEmail</MudText>
+                }
+                else
+                {
+                    <MudText Color="Color.Secondary">System</MudText>
+                }
+            </MudItem>
+
+            @* Detalje delen litt mer oversiktelig *@
+            @if (Log.Details.HasValue)
+            {
+                <MudItem xs="12">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Detaljer</MudText>
+                    <MudSimpleTable Dense="true" Outlined="true">
+                        <tbody>
+                        @foreach (var prop in Log.Details.Value.EnumerateObject())
+                        {
+                            <tr>
+                                <td Class="audit-text-closer">@prop.Name.ToLower().ToNorwegianAuditKey()</td>
+                                <td>@RenderValue(prop.Name, prop.Value)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" OnClick="@(() => MudDialog.Cancel())">Lukk</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    
+    // ===================== PARAMETERS =====================
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    /// <summary>
+    /// AuditLog-entiteten vi viser litt mer detaljer om
+    /// </summary>
+    [Parameter, EditorRequired] public AuditLogDto Log { get; set; } = null!;
+    
+    // ===================== PRIVATE METHODS =====================
+    
+    /// <summary>
+    /// Endrer visning av bool-verdier i detalje feltet. Istedenfor true/false så blir det mer tilpassede values
+    /// </summary>
+    /// <param name="key">Nøkkelen til en detalje</param>
+    /// <param name="element">JSON-elementet</param>
+    /// <returns>Ord på norsk og mer forståerlig</returns>
+    private string RenderValue(string key, JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.True or JsonValueKind.False => (key.ToLower(), element.GetBoolean()) switch
+        {
+            ("isactive", true)   => "Aktiv",
+            ("isactive", false)  => "Inaktiv",
+            ("isleader", true)   => "Leder",
+            ("isleader", false)  => "Ikke leder",
+            ("isrevoked", true)  => "Tilbakekalt",
+            ("isrevoked", false) => "Ikke tilbakekalt",
+            (_, true)            => "Ja",
+            (_, false)           => "Nei",
+        },
+        JsonValueKind.Array  => string.Join(", ", element.EnumerateArray()
+            .Select(e => RenderValue(key, e))),
+        JsonValueKind.Null   => "—",
+        _                    => element.ToString()
+    };
+    
+    
+}

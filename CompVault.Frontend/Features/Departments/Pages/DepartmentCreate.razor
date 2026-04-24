@@ -3,6 +3,7 @@
 @attribute [Authorize(Policy = Permissions.DepartmentsWrite)]
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
+@inject IUserService UserService
 
 @* Side for å opprette en avdeling *@
 
@@ -32,16 +33,34 @@
         @* Overordnet avdeling *@
         <MudItem xs="12" sm="6">
             <SelectWithLinkField Value="_editModel.ParentDepartmentId"
-                                       ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
-                                       Label="Overordnet avdeling"
-                                       ToStringFunc="@(id => _departments.FirstOrDefault(
-                                                         d => d.Id == id)?.Name ?? string.Empty)"
-                                       IsEditing="true">
+                                 ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
+                                 Label="Overordnet avdeling"
+                                 ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                   d => d.Id == id)?.Name ?? string.Empty)"
+                                 IsEditing="true">
                 <Items>
                     <MudSelectItem Value="(Guid?)null">Ingen (toppnivå)</MudSelectItem>
                     @foreach (var department in _departments)
                     {
                         <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                    }
+                </Items>
+            </SelectWithLinkField>
+        </MudItem>
+
+        @* Leder av avdelingen *@
+        <MudItem xs="12" sm="6">
+            <SelectWithLinkField Value="_editModel.ManagerId"
+                                 ValueChanged="(Guid? v) => _editModel.ManagerId = v"
+                                 Label="Avdelingsleder"
+                                 ToStringFunc="@(id => _potentialManagers.FirstOrDefault(
+                                                   u => u.Id == id)?.FullName ?? string.Empty)"
+                                 IsEditing="true">
+                <Items>
+                    <MudSelectItem Value="(Guid?)null">Ingen leder</MudSelectItem>
+                    @foreach (var user in _potentialManagers)
+                    {
+                        <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
                     }
                 </Items>
             </SelectWithLinkField>
@@ -55,6 +74,7 @@
     // ===================== PRIVATE FELT =====================
     private readonly CreateDepartmentModel _editModel = new();
     private List<DepartmentDto> _departments = [];
+    private List<UserDto> _potentialManagers = [];
 
     private bool _isLoading = true;
 
@@ -69,11 +89,23 @@
         {
             _editContext = new EditContext(_editModel);
 
-            var departmentResults = await DepartmentService.GetAllAsync(Cts.Token);
-            if (departmentResults.IsFailure)
-                _alert = new AlertInfo(departmentResults.Error!.ToString(), Severity.Error);
+            var departmentTask = DepartmentService.GetAllAsync(Cts.Token);
+            var managersTask = UserService.GetPotentialManagersAsync(Cts.Token);
+
+            await Task.WhenAll(departmentTask, managersTask);
+
+            if (departmentTask.Result.IsFailure)
+            {
+                _alert = new AlertInfo(departmentTask.Result.Error!.ToString(), Severity.Error);
+                return;
+            }
+            
+            _departments = departmentTask.Result.Value!.Where(d => d.IsActive).ToList();
+
+            if (managersTask.Result.IsFailure)
+                _alert = new AlertInfo(managersTask.Result.Error!.ToString(), Severity.Error);
             else
-                _departments = departmentResults.Value!.Where(d => d.IsActive).ToList();
+                _potentialManagers = managersTask.Result.Value!.ToList();
         }
         catch (OperationCanceledException)
         {

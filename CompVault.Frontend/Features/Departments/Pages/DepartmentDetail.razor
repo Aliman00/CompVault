@@ -70,20 +70,42 @@ else if (_department != null)
                     </MudAlert>
                 }
                 <SelectWithLinkField Value="_editModel.ParentDepartmentId"
-                                           ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
-                                           Label="Overordnet avdeling"
-                                           ToStringFunc="@(id => _departments.FirstOrDefault(
-                                                             d => d.Id == id)?.Name ?? string.Empty)"
-                                           IsEditing="_isEditing"
-                                           ShowLink="_department!.ParentDepartmentId.HasValue"
-                                           DisplayValue="@_department!.ParentDepartmentName"
-                                           OnNavigate="NavigateToDepartment"
-                                           HelperText="Trykk på knappen for å gå til avdelingen">
+                                     ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
+                                     Label="Overordnet avdeling"
+                                     ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                       d => d.Id == id)?.Name ?? string.Empty)"
+                                     IsEditing="_isEditing"
+                                     ShowLink="_department!.ParentDepartmentId.HasValue"
+                                     DisplayValue="@_department!.ParentDepartmentName"
+                                     OnNavigate="NavigateToDepartment"
+                                     HelperText="Trykk på knappen for å gå til avdelingen">
                     <Items>
                         <MudSelectItem Value="(Guid?)null">Ingen (toppnivå)</MudSelectItem>
                         @foreach (var department in _departments)
                         {
                             <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                        }
+                    </Items>
+                </SelectWithLinkField>
+            </MudItem>
+
+            @* Leder av avdelingen *@
+            <MudItem xs="12" sm="6">
+                <SelectWithLinkField Value="_editModel.ManagerId"
+                                     ValueChanged="(Guid? v) => _editModel.ManagerId = v"
+                                     Label="Avdelingsleder"
+                                     ToStringFunc="@(id => _potentialManagers.FirstOrDefault(
+                                                       u => u.Id == id)?.FullName ?? string.Empty)"
+                                     IsEditing="_isEditing"
+                                     ShowLink="_department!.ManagerId.HasValue"
+                                     DisplayValue="@_department!.ManagerName"
+                                     OnNavigate="@(() => NavigateToUser(_department!.ManagerId!.Value))"
+                                     HelperText="Trykk på knappen for å gå til manageren">
+                    <Items>
+                        <MudSelectItem Value="(Guid?)null">Ingen leder</MudSelectItem>
+                        @foreach (var user in _potentialManagers)
+                        {
+                            <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
                         }
                     </Items>
                 </SelectWithLinkField>
@@ -165,6 +187,7 @@ else if (_department != null)
     private List<UserDto> _departmentUsers = [];
     private List<DepartmentDto> _departments = [];
     private List<DepartmentDto> _subDepartments = [];
+    private List<UserDto> _potentialManagers = [];
 
     private DepartmentEditModel _editModel = new();
 
@@ -192,6 +215,7 @@ else if (_department != null)
         _isEditing = false;
         _departmentUsers = [];
         _departments = [];
+        _potentialManagers = [];
         _editModel = new();
 
         try
@@ -201,8 +225,9 @@ else if (_department != null)
             // Hentr alle avdelinger og brukere for å vise en oversikt - Utfører begge kall parallelt
             var departmentsTask = DepartmentService.GetAllAsync(Cts.Token);
             var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
+            var managersTask = UserService.GetPotentialManagersAsync(Cts.Token);
 
-            await Task.WhenAll(departmentsTask, usersTask);
+            await Task.WhenAll(departmentsTask, usersTask, managersTask);
 
             var departmentsResult = await departmentsTask;
             var usersResult = await usersTask;
@@ -220,6 +245,11 @@ else if (_department != null)
                 NavigationManager.NavigateTo(PageRoutes.Errors.NotFound);
                 return;
             }
+            
+            if (managersTask.Result.IsFailure)
+                _alert = new AlertInfo(managersTask.Result.Error!.ToString(), Severity.Error);
+            else
+                _potentialManagers = managersTask.Result.Value!.ToList();
             
             // Filterer bort inaktive avdelinger 
             _departments = departmentsResult.Value!.Where(d => d.IsActive && d.Id != Id).ToList();

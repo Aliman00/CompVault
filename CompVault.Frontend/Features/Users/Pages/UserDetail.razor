@@ -6,7 +6,6 @@
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 @inject IJobTitleService JobTitleService
-@inject IEquipmentIssuancesService EquipmentIssuanceService
 
 @* Detalje visning av en bruker med mulighet for oppdatering *@
 
@@ -145,7 +144,7 @@ else if (_user != null)
                 <SelectWithLinkField Value="_editModel.ManagerId"
                                      ValueChanged="(Guid? v) => _editModel.ManagerId = v"
                                      Label="Nærmeste leder"
-                                     ToStringFunc="@(id => _allUsers.FirstOrDefault(
+                                     ToStringFunc="@(id => _potentialManagers.FirstOrDefault(
                                                        u => u.Id == id)?.FullName ?? string.Empty)"
                                      IsEditing="_isEditing"
                                      DisplayValue="@_user!.ManagerName"
@@ -154,7 +153,7 @@ else if (_user != null)
                                      HelperText="Trykk på knappen for å gå til brukeren til nærmeste leder">
                     <Items>
                         <MudSelectItem Value="(Guid?)null">Ingen leder</MudSelectItem>
-                        @foreach (var user in _allUsers.Where(u => u.Id != Id))
+                        @foreach (var user in _potentialManagers.Where(u => u.Id != Id))
                         {
                             <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
                         }
@@ -201,134 +200,116 @@ else if (_user != null)
                     <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
                 </ToggleButton>
             </MudItem>
-
-            @* Utstyr brukeren har fått tildelt *@
+            
+            @* Fanevisning av tabeller *@
             <MudItem xs="12">
-                <ListHeader Title="@($"Utstyr ({_issuancesTotalCount})")"
-                            PageIcon="@Icons.Material.Filled.Headset">
-                    <Actions>
-                        <AuthorizeView Policy="@Permissions.EquipmentWrite">
-                            <Authorized>
-                                <ResponsiveButton Label="Utlever"
-                                                  Icon="@Icons.Material.Filled.Add"
-                                                  OnClick="IssueEquipment"/>
-                            </Authorized>
-                        </AuthorizeView>
-                    </Actions>
-                </ListHeader>
-
-                <MudDataGrid T="EquipmentIssuanceDto"
-                             @ref="_issuancesGrid"
-                             ServerData="LoadIssuancesServerData"
-                             Dense="true"
-                             Hover="true"
-                             Striped="true"
-                             Square="true"
-                             Bordered="true"
-                             RowClick="OnIssuanceClick"
-                             RowsPerPage="20">
-                    <Columns>
-                        @* Brukeren *@
-                        <TemplateColumn T="EquipmentIssuanceDto" Title="Utstyr">
-                            <CellTemplate>
-                                <MudLink Href="@PageRoutes.EquipmentItems.Detail(context.Item.ItemId)">
-                                    @context.Item.ItemName
-                                </MudLink>
-                            </CellTemplate>
-                        </TemplateColumn>
-
-                        @* Antall *@
-                        <PropertyColumn T="EquipmentIssuanceDto" TProperty="int"
-                                        Property="i => i.Quantity" Title="Antall"/>
-
-                        @* Størrelse *@
-                        <PropertyColumn T="EquipmentIssuanceDto" TProperty="string?"
-                                        Property="i => i.Size" Title="Størrelse"/>
-
-                        @* Utlevert av *@
-                        <TemplateColumn T="EquipmentIssuanceDto" Title="Utlevert av">
-                            <CellTemplate>
-                                <MudLink Href="@PageRoutes.Users.Detail(context.Item.IssuedById)">
-                                    @context.Item.IssuedByName
-                                </MudLink>
-                            </CellTemplate>
-                        </TemplateColumn>
-
-                        @* Utlevert dato *@
-                        <TemplateColumn T="EquipmentIssuanceDto"
-                                        Title="Dato"
-                                        SortBy="i => i.IssuedDate">
-                            <CellTemplate>
-                                <MudTooltip Text="@context.Item.IssuedDate.ToString("dd.MM.yyyy HH:mm")">
-                                    @context.Item.IssuedDate.ToRelativeNorwegian()
-                                </MudTooltip>
-                            </CellTemplate>
-                        </TemplateColumn>
-
-                        @* Notat *@
-                        <PropertyColumn T="EquipmentIssuanceDto" TProperty="string?"
-                                        Property="i => i.Notes" Title="Notater"/>
-                    </Columns>
-                    <PagerContent>
-                        <MudDataGridPager T="EquipmentIssuanceDto"
-                                          RowsPerPageString="Rader pr side:"
-                                          PageSizeOptions="new[] { 10, 20, 50 }"/>
-                    </PagerContent>
-                </MudDataGrid>
+                <MudTabs Elevation="0"
+                         Rounded="false"
+                         ActivePanelIndexChanged="OnTabChanged">
+                    @if (_canReadCompetencies)
+                    {
+                        <MudTabPanel Text="Kompetanse" Icon="@Icons.Material.Filled.WorkspacePremium">
+                            @if (_showKompetanse)
+                            {
+                                <UserCompetencyTab UserId="Id"/>
+                            }
+                        </MudTabPanel>
+                    }
+                    @if (_canReadEquipment)
+                    {
+                        <MudTabPanel Text="Utstyr" Icon="@Icons.Material.Filled.Headset">
+                            @if (_showUtstyr)
+                            {
+                                <UserEquipmentTab UserId="Id"/>
+                            }
+                        </MudTabPanel>
+                    }
+                    @if (_canReadDocuments)
+                    {
+                        <MudTabPanel Text="Dokumenter" Icon="@Icons.Material.Filled.Description">
+                            @if (_showDokumenter)
+                            {
+                                @* Dokumenter *@
+                            }
+                        </MudTabPanel>
+                    }
+                    @if (_canReadAudit)
+                    {
+                        <MudTabPanel Text="Revisjonslogg" Icon="@Icons.Material.Filled.History">
+                            @if (_showAudit)
+                            {
+                                <UserAuditTab UserId="Id"/>
+                            }
+                        </MudTabPanel>
+                    }
+                </MudTabs>
             </MudItem>
         </Fields>
     </DetailForm>
 }
 
 @code {
-    
+
     // ===================== PARAMETER =====================
-    [Parameter, EditorRequired]
-    public Guid Id { get; set; }
-    
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
     [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting av en bruker
     public bool Created { get; set; }
-    
+
+    // Henter ut permissions for å skjule faner deretter
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = null!;
+
     // ===================== PRIVATE FELT =====================
     private UserDto? _user;
-    private List<UserDto> _allUsers = [];
+    private IReadOnlyList<UserDto> _potentialManagers = [];
     private List<DepartmentDto> _departments = [];
     private List<JobTitleDto> _jobTitles = [];
-    
-    private MudDataGrid<EquipmentIssuanceDto> _issuancesGrid = null!;
-    private int _issuancesTotalCount;
-    
+
     private UserEditModel _editModel = new();
-    
+
     private bool _isLoading = true;
-    
+    private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
+
     // Forskjellige feilmeldinger for forkjellige beskjeder
     private AlertInfo? _alert;
-    
+
     private EditContext _editContext = null!;
 
-    private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
-    
-    // Sjekker om den overordnete avdeling er inaktiv
+    // Sjekker om den overordnete avdeling eller stillingstittelen er inaktiv
     private bool ParentIsInactive => _user?.DepartmentId.HasValue == true && _user.DepartmentIsActive == false;
-    
     private bool JobTitleIsInactive => _user?.JobTitleId.HasValue == true && _user.JobTitleIsActive == false;
-    
+
+    // Visning av faner
+    private bool _showUtstyr;
+    private bool _showKompetanse;
+    private bool _showDokumenter;
+    private bool _showAudit;
+
+    // Tilattelse for visning av fane
+    private bool _canReadAudit;
+    private bool _canReadEquipment;
+    private bool _canReadCompetencies;
+    private bool _canReadDocuments;
+
+
     // ===================== LIFECYCLE =====================
     protected override async Task OnParametersSetAsync()
     {
         // Resetter alle feltene ved oppdatering/navigering til siden - feks ved navigering til en annen bruker
         _isLoading = true;
         _isEditing = false;
-        _allUsers = [];
+        _potentialManagers = [];
         _departments = [];
         _jobTitles = [];
         _editModel = new();
+        await GetPermissions();
         
+        OnTabChanged(0);
+
         try
         {
             _editContext = new EditContext(_editModel);
-            
+
             // Hent brukeren og listene paralelelt
             var userTask = UserService.GetByIdAsync(Id, Cts.Token);
 
@@ -364,14 +345,14 @@ else if (_user != null)
         finally
         {
             _isLoading = false;
-            
+
             if (Created)
                 _alert = new AlertInfo("Brukeren ble opprettet", Severity.Success);
         }
     }
-    
+
     // ===================== PRIVATE METHODS =====================
-    
+
     // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger, laster avdelinger og
     // alle brukere for å så sette oss i redigerings-modus
     private async Task StartEdit()
@@ -383,15 +364,15 @@ else if (_user != null)
 
         if (_departments.Count == 0)
             tasks.Add(LoadDepartmentsAsync());
-        
+
         if (_jobTitles.Count == 0)
             tasks.Add(LoadJobTitlesAsync());
 
-        if (_allUsers.Count == 0)
-            tasks.Add(LoadUsersAsync());
-        
+        if (_potentialManagers.Count == 0)
+            tasks.Add(LoadManagersAsync());
+
         await Task.WhenAll(tasks);
-        
+
         // Tilatter kun redigeringsmodus hvis API-kall er vellykket
         bool loadedSuccessfully = _alert == null && _alert == null;
         if (loadedSuccessfully)
@@ -400,7 +381,7 @@ else if (_user != null)
             _isEditing = true;
         }
     }
-    
+
     private async Task LoadDepartmentsAsync()
     {
         var departmentResults = await DepartmentService.GetAllAsync(Cts.Token);
@@ -409,7 +390,7 @@ else if (_user != null)
         else
             _departments = departmentResults.Value!.Where(d => d.IsActive).ToList();
     }
-    
+
     private async Task LoadJobTitlesAsync()
     {
         var jobTitleResult = await JobTitleService.GetAllAsync(Cts.Token);
@@ -418,42 +399,40 @@ else if (_user != null)
         else
             _jobTitles = jobTitleResult.Value!.Where(j => j.IsActive).ToList();
     }
-    
+
     // Henter brukere for å legge til avdeling
-    private async Task LoadUsersAsync()
+    private async Task LoadManagersAsync()
     {
-        var result = await UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
+        var result = await UserService.GetPotentialManagersAsync(Cts.Token);
         if (result.IsFailure)
             _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
-            _allUsers = result.Value!.Items.Where(u => u.IsActive).ToList();
+            _potentialManagers = result.Value!;
     }
-    
-    private async Task ReloadEquipmentIssuances() => await _issuancesGrid.ReloadServerData();
-    
+
     // Handling når vi avbryter redigering - Resetter modellene og fjerner redigeringsmodus
     private void CancelEdit()
     {
         ResetEditModel();
         _isEditing = false;
     }
-    
+
     // Resetter redigeringsmodellen og editcontexten med data fra user-objektet
     private void ResetEditModel()
     {
         _editModel = UserEditModel.FromDto(_user!);
-        
+
         // Setter verdiene til null siden vi filterer bort brukeren sin verdi når vi bytter til redigeringsmodus
         // og brukeren har inaktive verdier
         if (ParentIsInactive)
             _editModel.DepartmentId = null;
-    
+
         if (JobTitleIsInactive)
             _editModel.JobTitleId = null;
-        
+
         _editContext = new EditContext(_editModel);
     }
-    
+
     // Handling som utføres når vi trykker på lagring - Bygger en request og utfører kall til backend
     private async Task SaveEdit()
     {
@@ -465,73 +444,73 @@ else if (_user != null)
             _alert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
             return;
         }
-        
+
         // Resetter feltene kun hvis det var vellykket
         _user = updateResult.Value;
         ResetEditModel();
         _isEditing = false;
         _alert = new AlertInfo("Brukeren ble oppdatert", Severity.Success);
     }
-    
+
     private void NavigateToDepartment()
     {
         if (_user?.DepartmentId.HasValue == true)
             NavigationManager.NavigateTo(PageRoutes.Departments.Detail(_user.DepartmentId.Value));
     }
-    
+
     private void NavigateToJobTitle()
     {
         if (_user?.JobTitleId.HasValue == true)
             NavigationManager.NavigateTo(PageRoutes.JobTitles.Detail(_user.JobTitleId.Value));
     }
 
-    
+
     private void NavigateToManager()
     {
         if (_user?.ManagerId.HasValue == true)
             NavigationManager.NavigateTo(PageRoutes.Users.Detail(_user.ManagerId.Value));
     }
-    
+
     // TODO: Må sende med rolleId for å kunne navigere til en rolle
     private EventCallback NavigateToRole(Guid roleId) =>
         EventCallback.Factory.Create(this, () =>
             NavigationManager.NavigateTo(PageRoutes.Roles.Detail(roleId)));
-    
+
     // Viser en dialog som brukeren må godkjenne for å kunne slette en bruker. Navigerer til UserList etter sletting
     private async Task DeleteUser()
     {
         // Oppretter parameterne for dialogen
         var parameters = new DialogParameters
         {
-            { nameof(ConfirmDeleteDialog.Title), "Slett bruker"},
-            { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette {_user!.FullName}?"},
+            { nameof(ConfirmDeleteDialog.Title), "Slett bruker" },
+            { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette {_user!.FullName}?" },
         };
-        
+
         // Kaller dialogen
         var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters);
         var dialogResult = await dialog.Result;
-        if (dialogResult!.Canceled) 
+        if (dialogResult!.Canceled)
             return;
-        
+
         var updateResult = await UserService.DeleteAsync(Id, Cts.Token);
         if (updateResult.IsFailure)
         {
             _alert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
             return;
         }
-        
+
         NavigationManager.NavigateTo(PageRoutes.Users.List + "?deleted=true");
     }
-    
+
     private async Task OpenAssignRolesDialog()
     {
         // Oppretter parameterne for dialogen
         var parameters = new DialogParameters
         {
-            { nameof(AssignRoleDialog.UserId), Id},
-            { nameof(AssignRoleDialog.CurrentRoles), _user!.Roles}
+            { nameof(AssignRoleDialog.UserId), Id },
+            { nameof(AssignRoleDialog.CurrentRoles), _user!.Roles }
         };
-        
+
         // Kaller dialogen
         var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", parameters, new DialogOptions
         {
@@ -539,71 +518,37 @@ else if (_user != null)
             FullWidth = true
         });
         var dialogResult = await dialog.Result;
-        if (dialogResult!.Canceled) 
+        if (dialogResult!.Canceled)
             return;
-        
+
         if (dialogResult.Data is not UserDto updatedUser)
         {
             _alert = new AlertInfo("Noe gikk galt ved oppdatering av roller.", Severity.Error);
             return;
         }
-        
+
         _user = updatedUser;
         _alert = new AlertInfo("Brukerens roller er oppdatert", Severity.Success);
     }
     
-    private async Task IssueEquipment()
+    // Henter permisisons fra claim for å sjekke hvilke faner brukeren har lov til å se
+    private async Task GetPermissions()
     {
-        var parameters = new DialogParameters
-        {
-            { nameof(IssueEquipmentDialog.PreselectedUserId), Id },
-        };
-
-        var dialog = await DialogService.ShowAsync<IssueEquipmentDialog>("", parameters);
-        var dialogResult = await dialog.Result;
-        if (dialogResult!.Canceled)
-            return;
-
-        await ReloadEquipmentIssuances();
-        _alert = new AlertInfo("Utstyret ble utlevert", Severity.Success);
-    }
-
-    private async Task OnIssuanceClick(DataGridRowClickEventArgs<EquipmentIssuanceDto> args)
-    {
-        var parameters = new DialogParameters
-        {
-            { nameof(EditEquipmentIssuanceDialog.Issuance), args.Item },
-            { nameof(EditEquipmentIssuanceDialog.HasSize), args.Item.HasSize }
-        };
-
-        var dialog = await DialogService.ShowAsync<EditEquipmentIssuanceDialog>("", parameters);
-        var dialogResult = await dialog.Result;
-        if (dialogResult!.Canceled)
-            return;
-
-        await ReloadEquipmentIssuances();
-        _alert = dialogResult.Data is Guid
-            ? new AlertInfo("Utleveringen ble slettet", Severity.Info)
-            : new AlertInfo("Utleveringen ble oppdatert", Severity.Success);
+        var auth = await AuthState;
+        _canReadAudit = auth.User.HasClaim("permission", Permissions.AuditRead);
+        _canReadEquipment = auth.User.HasClaim("permission", Permissions.EquipmentRead);
+        _canReadCompetencies = auth.User.HasClaim("permission", Permissions.CompetenciesRead);
+        _canReadDocuments = auth.User.HasClaim("permission", Permissions.DocumentsRead);
     }
     
-    private async Task<GridData<EquipmentIssuanceDto>> LoadIssuancesServerData(GridState<EquipmentIssuanceDto> state, 
-        CancellationToken ct)
+    // Endrer hvilken tab som er synlig
+    private void OnTabChanged(int index)
     {
-        var query = new PagedQuery { Page = state.Page + 1, PageSize = state.PageSize };
-        var result = await EquipmentIssuanceService.GetByUserAsync(Id, query, ct);
-
-        if (result.IsFailure)
-        {
-            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
-            return new GridData<EquipmentIssuanceDto>();
-        }
-
-        _issuancesTotalCount = result.Value!.TotalCount;
-        return new GridData<EquipmentIssuanceDto>
-        {
-            Items = result.Value!.Items,
-            TotalItems = result.Value!.TotalCount
-        };
+        int i = 0;
+        _showKompetanse = _canReadCompetencies && index == i++;
+        _showUtstyr     = _canReadEquipment    && index == i++;
+        _showDokumenter = _canReadDocuments    && index == i++;
+        _showAudit      = _canReadAudit        && index == i;
     }
+    
 }

@@ -205,3 +205,10 @@ h1:focus {
         flex: 1;
     }
 }
+
+/* ============================= AUDIT LOG ============================= */
+.audit-text-closer
+{
+    width: 40%;
+    font-weight: 500;
+}

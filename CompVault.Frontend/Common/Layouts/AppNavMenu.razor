@@ -96,6 +96,15 @@
         </Authorized>
     </AuthorizeView>
 
+    <AuthorizeView Policy="@Permissions.EquipmentRead">
+        <Authorized>
+            <MudNavLink Href="@PageRoutes.Audit.List"
+                        Icon="@Icons.Material.Filled.History">
+                Revisjonslogg
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
     <AuthorizeView Policy="@Permissions.AdminAccess">
         <Authorized>
             <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">

@@ -45,6 +45,7 @@ public static class PageRoutes
         public const string List = "/competencies";
         public static string Detail(Guid id) => $"/competencies/{id}";
         public const string Create = "/competencies/create";
+        public static string CreateForUser(Guid userId) => $"/competencies/create?userId={userId}";
     }
 
     public static class CompetencyTypes
@@ -92,6 +93,11 @@ public static class PageRoutes
     {
         public const string NotFound = "/not-found";
         public const string NotAuthorized = "/not-authorized";
+    }
+    
+    public static class Audit
+    {
+        public const string List = "/audit-log";
     }
 
     public static class Dev
