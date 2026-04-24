@@ -1,5 +1,7 @@
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Shared.DTOs.Documents;
+using CompVault.Shared.Enums;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -108,6 +110,60 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
+    
+    public async Task<int> CountDocumentsForUserAsync(
+        Guid userId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        DocumentSignatureFilter signatureFilter,
+        CancellationToken ct = default)
+    {
+        IQueryable<Document> query = ApplyTargetingFilter(DbSet.Where(d => d.IsActive),
+            departmentId, jobTitleId);
+
+        query = ApplySignatureFilter(query, userId, signatureFilter);
+
+        return await query.CountAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Document>> GetDocumentsForUserPagedAsync(
+        Guid userId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        DocumentQueryParameters parameters,
+        CancellationToken ct = default)
+    {      
+        // Henter alle hvis vi har tilattelse
+        IQueryable<Document> query = ApplyTargetingFilter(DbSet.Where(d => d.IsActive), 
+            departmentId, jobTitleId);
+        
+        // Filterer bort utifra om vi har valgt alle, signatuerer eller ikke signaturer
+        query = ApplySignatureFilter(query, userId, parameters.SignatureFilter);
+
+        IOrderedQueryable<Document> sorted = parameters.SortBy switch
+        {
+            DocumentSortField.Title => parameters.SortDescending
+                ? query.OrderByDescending(d => d.Title)
+                : query.OrderBy(d => d.Title),
+            DocumentSortField.Version => parameters.SortDescending
+                ? query.OrderByDescending(d => d.Version)
+                : query.OrderBy(d => d.Version),
+            _ => parameters.SortDescending
+                ? query.OrderByDescending(d => d.UploadedAt)
+                : query.OrderBy(d => d.UploadedAt)
+        };
+
+        return await sorted
+            .Include(d => d.DocumentType) 
+            .Include(d => d.Category)
+            .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
+            .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
+            .Include(d => d.Uploader)
+            .Skip(parameters.Skip)
+            .Take(parameters.PageSize)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
 
     public async Task<DocumentVersion> AddVersionAsync(
         DocumentVersion version, CancellationToken cancellationToken = default)
@@ -129,8 +185,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     /// Dokumenter uten målgruppe er synlige for alle.
     /// Når både avdeling og jobbtittel er satt, kreves match på begge (AND-logikk).
     /// </summary>
-    private static IQueryable<Document> ApplyTargetingFilter(
-        IQueryable<Document> query, Guid? departmentId, Guid? jobTitleId)
+    private static IQueryable<Document> ApplyTargetingFilter(IQueryable<Document> query, Guid? departmentId,
+        Guid? jobTitleId)
     {
         return query.Where(d =>
             (!d.DocumentDepartments.Any() && !d.DocumentJobTitles.Any()) ||
@@ -142,4 +198,27 @@ public sealed class DocumentRepository(AppDbContext dbContext)
              d.DocumentDepartments.Any(dd => dd.DepartmentId == departmentId) &&
              d.DocumentJobTitles.Any(dj => dj.JobTitleId == jobTitleId)));
     }
+    
+    /// <summary>
+    /// Vi filtrerer dokumenter utifra om vi ønsker å hente signerte, ikke-signerte eller alle.
+    /// Pending: dokumentet krever signatur, og brukeren har ikke signert gjeldende versjon.
+    /// Signed: brukeren har signert gjeldende versjon.
+    /// </summary>
+    private IQueryable<Document> ApplySignatureFilter(
+        IQueryable<Document> query,
+        Guid userId,
+        DocumentSignatureFilter signatureFilter) => signatureFilter switch
+    {
+        DocumentSignatureFilter.Signed => query
+            .Where(d => DbContext.Set<DocumentSignature>()
+                .Any(s => s.DocumentId == d.Id && s.UserId == userId
+                          && s.SignatureVersion == d.Version)),
+        DocumentSignatureFilter.Pending => query
+            .Where(d =>
+                d.RequiresSignature &&
+                !DbContext.Set<DocumentSignature>()
+                    .Any(s => s.DocumentId == d.Id && s.UserId == userId
+                              && s.SignatureVersion == d.Version)),
+        _ => query
+    };
 }

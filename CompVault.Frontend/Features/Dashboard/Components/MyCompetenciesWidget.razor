@@ -1,0 +1,88 @@
+﻿@* Viser oppsummering av brukerens kompetanser: gyldige, snart-utløpende, utløpte *@
+@inject ICompetencyService CompetencyService
+@inject CircuitUserContext UserContext
+
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid #2d7a4f;" Elevation="4">
+    <section class="widget-header">
+        <div class="statistic-header-left-section">
+            <SmallIcon Icon="@Icons.Material.Filled.WorkspacePremium"
+                       AccentColor="#2d7a4f"
+                       IconBackgroundColor="#e8f5ee"/>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@DashboardConstants.MyCompetencies</MudText>
+        </div>
+        <WidgetMenu OnHide="OnHide"/>
+    </section>
+
+    @if (_loading)
+    {
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="60%" Class="mt-2"/>
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="80%" Class="mt-1"/>
+    }
+    else if (_error is not null)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">@_error</MudText>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mt-1">@_total</MudText>
+        <MudStack Row="true" Spacing="2" Class="mt-2" Wrap="Wrap.Wrap">
+            <MudChip T="string" Color="Color.Success" Size="Size.Small"
+                     Icon="@Icons.Material.Filled.CheckCircle">
+                @_valid gyldige
+            </MudChip>
+            @if (_expiringSoon > 0)
+            {
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small"
+                         Icon="@Icons.Material.Filled.Warning">
+                    @_expiringSoon snart utløper
+                </MudChip>
+            }
+            @if (_expired > 0)
+            {
+                <MudChip T="string" Color="Color.Error" Size="Size.Small"
+                         Icon="@Icons.Material.Filled.Cancel">
+                    @_expired utløpt
+                </MudChip>
+            }
+        </MudStack>
+        <MudLink Href="@PageRoutes.UserCompetencies.List" Typo="Typo.caption" Class="mt-2 d-block">
+            Se alle kompetanser →
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    private bool   _loading = true;
+    private string? _error;
+    private int    _total, _valid, _expiringSoon, _expired;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserContext.UserId is null)
+        {
+            _error   = "Kunne ikke hente bruker-ID.";
+            _loading = false;
+            return;
+        }
+
+        var filter = new CompetencyFilterRequest { UserId = UserContext.UserId, PageSize = 100 };
+        var result = await CompetencyService.GetAllAsync(filter, CancellationToken.None);
+
+        if (result.IsFailure)
+        {
+            _error   = result.Error?.Message ?? "Noe gikk galt.";
+            _loading = false;
+            return;
+        }
+
+        var items    = result.Value!.Items;
+        _total       = items.Count;
+        _valid       = items.Count(c => c.Status == CompetencyStatus.Valid);
+        _expiringSoon = items.Count(c => c.Status == CompetencyStatus.ExpiringSoon);
+        _expired     = items.Count(c => c.Status == CompetencyStatus.Expired);
+        _loading     = false;
+    }
+}

@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @inject IThemeService ThemeService
+@inject CircuitUserContext UserContext
 
 @* Layout for Admin-panelet *@
 
@@ -18,14 +19,28 @@
         <Authorized>
             
             @* Top baren/headeren *@
-            <AppBar ShowMenuButton="true"
-                    OnMenuButtonClick="ToggleDrawer"
-                    @bind-IsDarkMode="_isDarkMode"/>
-
+            <AppBar ShowMenuButton="true" OnMenuButtonClick="ToggleDrawer">
+                <RightContent>
+                    <MudAvatar Color="Color.Primary"
+                               Size="Size.Medium"
+                               Class="cv-pointer"
+                               @onclick="OnProfileButtonClick">
+                        @UserContext.FullName.ToInitials()
+                    </MudAvatar>
+                </RightContent>
+            </AppBar>
+            
             @* Sidebaren *@
             <AppDrawer @bind-IsOpen="_drawerOpen">
                 <AdminNavMenu/>
             </AppDrawer>
+
+            <UserProfileDrawer IsOpen="_profileDrawerOpen"
+                               IsOpenChanged="val => _profileDrawerOpen = val"
+                               IsDarkMode="@_isDarkMode"
+                               IsDarkModeChanged="OnDarkModeChanged"
+                               FullName="@UserContext.FullName"
+                               JobTitle="Utvikler"/>
 
             <!-- Hovedcontent med Body - tilpasser seg MudDrawer automatisk -->
             <MudMainContent>
@@ -55,6 +70,7 @@
     // Variabel for sidebar og mørkemodus
     private bool _drawerOpen = true;
     private bool _isDarkMode;
+    private bool _profileDrawerOpen;
     
     // Referansen til ThemeProvider komponenten for å endre tema
     private MudThemeProvider _mudThemeProvider = null!;
@@ -74,6 +90,12 @@
     }
     
     // ======================== Private metoder ========================
-    
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+    private void OnProfileButtonClick() => _profileDrawerOpen = !_profileDrawerOpen;
+    
+    private Task OnDarkModeChanged(bool value)
+    {
+        _isDarkMode = value;
+        return Task.CompletedTask;
+    }
 }

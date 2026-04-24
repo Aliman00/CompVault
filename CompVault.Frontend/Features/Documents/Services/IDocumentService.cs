@@ -1,4 +1,5 @@
 ﻿using CompVault.Frontend.Common.Models;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 namespace CompVault.Frontend.Features.Documents.Services;
@@ -9,6 +10,13 @@ public interface IDocumentService
     /// Henter alle dokumenter for en dokumenttype-slug
     /// </summary>
     Task<Result<List<DocumentListDto>>> GetAllAsync(string slug, CancellationToken ct);
+
+    /// <summary>
+    /// Henter alle dokumenter for innlogget bruker eller en spesifisert bruker
+    /// Støtter filtrering på signeringsstatus og paginering.
+    /// </summary>
+    Task<Result<PagedResult<DocumentListDto>>> GetUserDocumentsAsync(
+        DocumentQueryParameters query, CancellationToken ct);
 
     /// <summary>
     /// Henter et dokument fra backend. Krever slug og ID

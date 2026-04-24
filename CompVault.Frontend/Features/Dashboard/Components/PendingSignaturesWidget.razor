@@ -1,0 +1,87 @@
+﻿@* Widget som lister dokumenter innlogget bruker ikke har signert ennå, med lenke til detaljside *@
+@inject IDocumentService DocumentService
+@inject NavigationManager NavigationManager
+
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid #1e3a5f;" Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.PendingSignatures" OnHide="OnHide"/>
+
+    @if (_loading)
+    {
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Class="mt-2"/>
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Class="mt-1"/>
+    }
+    else if (_error is not null)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">@_error</MudText>
+    }
+    else if (!_documents.Any())
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen ventende signeringer.</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1 mb-2">
+            @_documents.Count dokument@(_documents.Count == 1 ? "" : "er") venter på din signatur
+        </MudText>
+        <MudList T="DocumentListDto" Dense="true" DisablePadding="true">
+            @foreach (var doc in _documents)
+            {
+                <MudListItem T="DocumentListDto"
+                             Dense="true"
+                             Class="px-0"
+                             OnClick="() => NavigationManager.NavigateTo(PageRoutes.UserDocuments.Detail(doc.Slug, doc.Id))">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body2">@doc.Title.Truncate(40)</MudText>
+                            @if (!string.IsNullOrWhiteSpace(doc.CategoryName))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@doc.CategoryName</MudText>
+                            }
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">v@(doc.Version)</MudText>
+                        </MudStack>
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight"
+                                 Color="Color.Secondary" Size="Size.Small"/>
+                    </MudStack>
+                </MudListItem>
+                <MudDivider/>
+            }
+        </MudList>
+        <MudLink Href="@PageRoutes.UserDocuments.List" Typo="Typo.caption" Class="mt-2 d-block">
+            Se alle mine dokumenter →
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+    private List<DocumentListDto> _documents = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = new DocumentQueryParameters
+        {
+            SignatureFilter = DocumentSignatureFilter.Pending,
+            PageSize = 5,
+            Page = 1
+        };
+
+        var result = await DocumentService.GetUserDocumentsAsync(query, CancellationToken.None);
+
+        if (result.IsFailure)
+        {
+            _error = result.Error?.Message ?? "Noe gikk galt.";
+            _loading = false;
+            return;
+        }
+
+        _documents = result.Value!.Items.ToList();
+        _loading = false;
+    }
+}

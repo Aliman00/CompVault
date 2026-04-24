@@ -1,3 +1,4 @@
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
@@ -20,10 +21,17 @@ public interface IDocumentService
         CancellationToken cancellationToken = default);
 
     /// <summary>Henter ett dokument basert på ID.</summary>
-    Task<Result<DocumentDto>> GetByIdAsync(
-        Guid id, Guid? currentUserId = null, bool bypassTargeting = false,
+    Task<Result<DocumentDto>> GetByIdAsync(Guid id, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Henter alle dokumenter paginert for en spesifikk bruker,
+    /// filtert utifra status hvis ønskelig</summary>
+    Task<Result<PagedResult<DocumentListDto>>> GetDocumentsForUserAsync(
+        Guid userId,
+        DocumentQueryParameters query,
+        bool hasPermission,
+        CancellationToken ct = default);
+    
     /// <summary>Oppretter et nytt dokument med valgfri filopplasting.</summary>
     Task<Result<DocumentDto>> CreateAsync(
         string documentTypeSlug,

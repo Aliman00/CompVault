@@ -87,12 +87,34 @@ else if (_equipmentItem != null)
                 <ListHeader Title="@($"Utleveringer ({_equipmentIssuances.Count} antall utleveringer)")"
                             PageIcon="@Icons.Material.Filled.Headset">
                     <Actions>
+                        
+                        @* Ikke lov å leverfe ut utstyr hvis den er inaktive, eller bruker ikke har tilattelse *@
                         <AuthorizeView Policy="@Permissions.EquipmentWrite">
                             <Authorized>
-                                <ResponsiveButton Label="Utlever"
-                                                  Icon="@Icons.Material.Filled.Add"
-                                                  OnClick="IssueEquipment"/>
+                                @if (_equipmentItem!.IsActive)
+                                {
+                                    <ResponsiveButton Label="Utlever"
+                                                      Icon="@Icons.Material.Filled.Add"
+                                                      OnClick="IssueEquipment"/>
+                                }
+                                else
+                                {
+                                    <MudTooltip Text="Utstyret er inaktivt og kan ikke utleveres">
+                                        <ResponsiveButton Label="Utlever"
+                                                          Icon="@Icons.Material.Filled.Add"
+                                                          Disabled="true"/>
+                                    </MudTooltip>
+                                }
                             </Authorized>
+                            <NotAuthorized>
+                                <MudTooltip Text="@(_equipmentItem!.IsActive
+                                                      ? "Du har ikke tilgang til å utlevere utstyr"
+                                                      : "Utstyret er inaktivt og kan ikke utleveres")">
+                                    <ResponsiveButton Label="Utlever"
+                                                      Icon="@Icons.Material.Filled.Add"
+                                                      Disabled="true"/>
+                                </MudTooltip>
+                            </NotAuthorized>
                         </AuthorizeView>
                     </Actions>
                 </ListHeader>

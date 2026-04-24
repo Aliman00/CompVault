@@ -11,14 +11,33 @@
     <AppSpinner Class="pa-20"/>
 }
 else
-{
+{   
+    @* Header *@
     <MudPaper Elevation="1" Square="true" Class="p-2 mt-4">
         <MudToolBar Dense="true">
             <MudIcon Icon="@Icons.Material.Filled.Article" Class="mr-2" Color="Color.Primary"/>
             <MudText Typo="Typo.h6">Dokument kategorier</MudText>
             <MudSpacer/>
+            
+            @* Knapp for administeringer av types/kategorier *@
+            <AuthorizeView Policy="@Permissions.DocumentTypesRead">
+                <Authorized>
+                    <ResponsiveButton Label="Administrer dokumentkategorier"
+                                      Icon="@Icons.Material.Filled.Settings"
+                                      OnClick="@(() => NavigationManager.NavigateTo(
+                                                   PageRoutes.DocumentTypes.List))"/>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å administrere dokumentkategorier">
+                        <ResponsiveButton Label="Administrer dokumentkategorier"
+                                          Icon="@Icons.Material.Filled.Settings"
+                                          Disabled="true"/>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
         </MudToolBar>
-
+        
+        @* Liste med dokumenttypes/dokumentkategorier*@
         <MudList T="DocumentTypeDto" Dense="true" Class="pa-2">
             @foreach (var documentType in _documentTypes)
             {

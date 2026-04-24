@@ -1,0 +1,108 @@
+@page "/my-equipment"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize]
+@inject IEquipmentIssuancesService EquipmentIssuancesService
+@inject NavigationManager NavigationManager
+@inject CircuitUserContext CircuitUserContext
+
+
+@* Side for å vise utstyret innlogget bruker har fått utlevert *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+<MudPaper Class="pa-4 mb-4" Square="true" Elevation="0" Outlined="true">
+
+    @* Header *@
+    <MudToolBar Dense="true" Class="pa-4 mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.Headphones" Class="mr-2" Color="Color.Primary"/>
+        <MudText Typo="Typo.h6">Mitt utstyr</MudText>
+    </MudToolBar>
+
+    @* Tabell *@
+    <MudDataGrid T="EquipmentIssuanceDto"
+                 ServerData="LoadServerData"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Square="true"
+                 Bordered="true"
+                 RowsPerPage="20"
+                 RowClick="OnRowClick">
+        <Columns>
+            @* Utstyrsnavn *@
+            <PropertyColumn T="EquipmentIssuanceDto" TProperty="string"
+                            Property='x => x.ItemName.Truncate(40)'
+                            Title="Utstyr"/>
+
+            @* Kategori *@
+            <PropertyColumn T="EquipmentIssuanceDto" TProperty="string"
+                            Property='x => x.CategoryName.Truncate(40)'
+                            Title="Kategori"/>
+
+            @* Antall *@
+            <PropertyColumn T="EquipmentIssuanceDto" TProperty="int"
+                            Property="x => x.Quantity"
+                            Title="Antall"/>
+
+            @* Størrelse *@
+            <TemplateColumn T="EquipmentIssuanceDto" Title="Størrelse">
+                <CellTemplate Context="cell">
+                    @if (cell.Item.HasSize && !string.IsNullOrWhiteSpace(cell.Item.Size))
+                    {
+                        <MudText Typo="Typo.body2">@cell.Item.Size</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Default">—</MudText>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+
+            @* Utlevert dato *@
+            <PropertyColumn T="EquipmentIssuanceDto" TProperty="string"
+                            Property='x => x.IssuedDate.ToString("dd.MM.yyyy")'
+                            Title="Utlevert"/>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="EquipmentIssuanceDto"
+                              RowsPerPageString="Rader pr side:"
+                              PageSizeOptions="new[] { 10, 20, 50, 100 }"/>
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+
+    // ===================== PRIVATE FELT =====================
+    private AlertInfo? _alert;
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnRowClick(DataGridRowClickEventArgs<EquipmentIssuanceDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.UserEquipment.Detail(args.Item.Id));
+
+    private async Task<GridData<EquipmentIssuanceDto>> LoadServerData(GridState<EquipmentIssuanceDto> state, 
+        CancellationToken ct)
+    {
+        Guid? userId = CircuitUserContext.UserId;
+        
+        var query = new PagedQuery
+        {
+            Page = state.Page + 1,
+            PageSize = state.PageSize
+        };
+
+        var result = await EquipmentIssuancesService.GetByUserAsync(userId!.Value, query, ct);
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<EquipmentIssuanceDto>();
+        }
+
+        return new GridData<EquipmentIssuanceDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
+    }
+}

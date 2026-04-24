@@ -24,9 +24,6 @@
     </MudPaper>
 </EditForm>
 
-  
-
-
 @code {
 
     // ===================== INNHOLD =====================
@@ -56,21 +53,21 @@
     // ===================== FORM =====================
 
     /// <summary>
-    /// EditContext som må opprettes i foreldrekomponenten
+    /// EditContext som må opprettes i foreldrekomponenten - Valgfritt for lesemodus
     /// </summary>
-    [Parameter, EditorRequired] public EditContext EditContext { get; set; } = null!;
+    [Parameter] public EditContext EditContext { get; set; } = null!;
 
     /// <summary>
-    /// Handling som utføres ved innsending av skjemaet
+    /// Handling som utføres ved innsending av skjemaet - Valgfritt for lesemodus
     /// </summary>
-    [Parameter, EditorRequired] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
 
     // ===================== REDIGERING =====================
 
     /// <summary>
-    /// Policy som kreves for å aktivere redigeringsmodus. Eks : User:Write
+    /// Policy som kreves for å aktivere redigeringsmodus. Eks : User:Write - Valgfritt for lesemodus
     /// </summary>
-    [Parameter, EditorRequired] public string EditPolicy { get; set; } = string.Empty;
+    [Parameter] public string EditPolicy { get; set; } = string.Empty;
 
     /// <summary>
     /// Handling ved trykk på Rediger-knappen
