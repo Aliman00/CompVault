@@ -137,9 +137,6 @@
         await ThemeService.SaveDarkModeAsync(mørktTema);
     }
     
-    private async Task LogOutAsync()
-    {
-        await JsRuntime.InvokeVoidAsync("eval",
-            "document.getElementById('profile-drawer-logout-form').submit()");
-    }
+    private async Task LogOutAsync() => await JsRuntime.InvokeVoidAsync("logoutFormSubmit");
+    
 }

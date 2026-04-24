@@ -1,6 +1,7 @@
 ﻿@page "/login-otp"
 @layout AuthLayout
 @inject IJSRuntime Js
+@inject AntiforgeryStateProvider AntiforgeryStateProvider
 
 
 @* -- Route: localhost:5020/login-otp?email=test@... *@
@@ -37,6 +38,7 @@
 
             @* Skjult form for å legge tokens i nettleseren ved innloging *@
             <form id="login-form" method="post" action="/login-callback">
+                <AntiforgeryToken/>
                 <input type="hidden" name="OtpRequest.Email" value="@Email" />
                 <input type="hidden" name="OtpRequest.OtpCode" id="otp-code-input" value="" />
             </form>
@@ -48,8 +50,7 @@
 
     // Hent e-post fra URL: /login-otp?email=test@example.com
     [Parameter] [SupplyParameterFromQuery] public string? Email { get; set; } = "";
-
-
+    
     private string code = ""; // Two-way binding til input
 
     private async Task VerifyOtpAsync()
@@ -75,7 +76,7 @@
     
     private async Task SubmitAsync()
     {
-        await Js.InvokeVoidAsync("loginFormSubmit", code);
+        var token = AntiforgeryStateProvider.GetAntiforgeryToken();
+        await Js.InvokeVoidAsync("loginFormSubmit", code, token?.Value);
     }
-
 }

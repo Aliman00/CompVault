@@ -81,7 +81,7 @@ h1:focus {
 /* Sikrer at status-mudchips ikke blir for store */
 .cv-status
 {
-    width: fit-content
+    width: fit-content;
 }
 
 
