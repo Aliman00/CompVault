@@ -535,10 +535,10 @@ else if (_user != null)
     private async Task GetPermissions()
     {
         var auth = await AuthState;
-        _canReadAudit = auth.User.HasClaim("permission", Permissions.AuditRead);
-        _canReadEquipment = auth.User.HasClaim("permission", Permissions.EquipmentRead);
-        _canReadCompetencies = auth.User.HasClaim("permission", Permissions.CompetenciesRead);
-        _canReadDocuments = auth.User.HasClaim("permission", Permissions.DocumentsRead);
+        _canReadAudit = auth.User.HasClaim(Permissions.ClaimType, Permissions.AuditRead);
+        _canReadEquipment = auth.User.HasClaim(Permissions.ClaimType, Permissions.EquipmentRead);
+        _canReadCompetencies = auth.User.HasClaim(Permissions.ClaimType, Permissions.CompetenciesRead);
+        _canReadDocuments = auth.User.HasClaim(Permissions.ClaimType, Permissions.DocumentsRead);
     }
     
     // Endrer hvilken tab som er synlig

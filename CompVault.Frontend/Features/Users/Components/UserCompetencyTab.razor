@@ -7,6 +7,9 @@
 @inject NavigationManager NavigationManager
 
 @* Kompetanse-fanen med visning av alle kompetansebevis for brukeren *@
+
+<AppAlert @bind-Alert="_alert"/>
+
 <ListHeader Title="@($"Kompetansebevis ({_totalCount})")"
             PageIcon="@Icons.Material.Filled.WorkspacePremium">
     <Actions>
@@ -97,6 +100,7 @@
     // ===================== PRIVATE FIELDS =====================
     private MudDataGrid<CompetencyDto> _grid = null!;
     private int _totalCount;
+    private AlertInfo? _alert;
 
     // ===================== PRIVATE METHODS =====================
     private async Task<GridData<CompetencyDto>> LoadServerData(GridState<CompetencyDto> state, CancellationToken ct)
@@ -111,8 +115,11 @@
         var result = await CompetencyService.GetAllAsync(filter, ct);
 
         if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
             return new GridData<CompetencyDto>();
-
+        }
+        
         _totalCount = result.Value!.TotalCount;
         StateHasChanged();
         

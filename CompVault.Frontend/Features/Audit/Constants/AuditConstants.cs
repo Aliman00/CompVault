@@ -1,7 +1,7 @@
 ﻿namespace CompVault.Frontend.Features.Audit.Constants;
 
 /// <summary>
-/// Lister for å gjøre det nkelere å kunne fitlrere etter action og entitetstype i Auditlog
+/// Lister for å gjøre det enklere å kunne filtrere etter action og entitetstype i Auditlog
 /// </summary>
 public static class AuditConstants
 {

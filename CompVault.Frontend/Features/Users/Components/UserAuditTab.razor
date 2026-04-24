@@ -63,7 +63,11 @@
         var result = await AuditService.GetAsync(parameters, ct);
 
         if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
             return new GridData<AuditLogDto>();
+        }
+            
 
         return new GridData<AuditLogDto>
         {

@@ -2,10 +2,8 @@
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
-using CompVault.Shared.DTOs.JobTitles;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
-
 namespace CompVault.Frontend.Features.Users.Services;
 
 public class UserService(

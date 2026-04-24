@@ -103,7 +103,7 @@
 
             @* Entitetstype *@
             <PropertyColumn T="AuditLogDto" TProperty="string"
-                            Property="x => x.EntityType"
+                            Property="x => x.EntityType.ToNorwegian()"
                             Title="Entitet"/>
 
             @* Utført av *@

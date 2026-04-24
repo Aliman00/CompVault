@@ -61,7 +61,7 @@
                         @foreach (var prop in Log.Details.Value.EnumerateObject())
                         {
                             <tr>
-                                <td Class="audit-text-closer">@prop.Name.ToLower().ToNorwegianAuditKey()</td>
+                                <td Class="audit-text-closer">@prop.Name.ToLowerInvariant().ToNorwegianAuditKey()</td>
                                 <td>@RenderValue(prop.Name, prop.Value)</td>
                             </tr>
                         }
@@ -97,7 +97,7 @@
     /// <returns>Ord på norsk og mer forståerlig</returns>
     private string RenderValue(string key, JsonElement element) => element.ValueKind switch
     {
-        JsonValueKind.True or JsonValueKind.False => (key.ToLower(), element.GetBoolean()) switch
+        JsonValueKind.True or JsonValueKind.False => (key.ToLowerInvariant(), element.GetBoolean()) switch
         {
             ("isactive", true)   => "Aktiv",
             ("isactive", false)  => "Inaktiv",

@@ -3,6 +3,9 @@
 @inject IDialogService DialogService
 
 @* Utstyr-fanen med visning av det brukeren har fått utdelt *@
+
+<AppAlert @bind-Alert="_alert"/>
+
 <ListHeader Title="@($"Utstyr ({_totalCount})")"
             PageIcon="@Icons.Material.Filled.Headset">
     <Actions>
@@ -86,6 +89,7 @@
     // ===================== PRIVATE FIELDS =====================
     private MudDataGrid<EquipmentIssuanceDto> _grid = null!;
     private int _totalCount;
+    private AlertInfo? _alert;
     
     // ===================== PRVIATE METHODS =====================
     private async Task<GridData<EquipmentIssuanceDto>> LoadServerData(GridState<EquipmentIssuanceDto> state, 
@@ -95,7 +99,10 @@
         var result = await EquipmentIssuanceService.GetByUserAsync(UserId, query, ct);
 
         if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
             return new GridData<EquipmentIssuanceDto>();
+        }
 
         _totalCount = result.Value!.TotalCount;
         StateHasChanged();

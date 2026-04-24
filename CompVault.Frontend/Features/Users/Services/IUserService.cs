@@ -1,5 +1,4 @@
 ﻿using CompVault.Shared.DTOs.Common.Pagination;
-using CompVault.Shared.DTOs.JobTitles;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
