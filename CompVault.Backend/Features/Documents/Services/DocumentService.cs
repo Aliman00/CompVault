@@ -2,6 +2,7 @@ using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -77,6 +78,52 @@ public sealed class DocumentService(
             return Result<DocumentDto>.Failure(accessResult.Error!);
 
         return Result<DocumentDto>.Success(DocumentMapper.ToDto(document));
+    }
+    
+    /// <inheritdoc />
+    public async Task<Result<PagedResult<DocumentListDto>>> GetDocumentsForUserAsync(
+        Guid userId, 
+        DocumentQueryParameters query,
+        bool hasPermission,
+        CancellationToken ct = default)
+    {
+        if (query.UserId.HasValue && query.UserId.Value != userId && !hasPermission)
+        {
+            logger.LogWarning("Bruker med ID {RequestingUserId} prøver å hente dokumenter for " +
+                              "bruker {TargetUserId} uten tilattelse", userId, query.UserId);
+            return Result<PagedResult<DocumentListDto>>.Failure(AppError.Create(ErrorCode.Forbidden, 
+                    "Du har ikke tilgang til å hente dokumenter for andre brukere."));
+        }
+        
+        ApplicationUser? user = await userRepository.GetByIdAsync(userId, ct);
+        if (user is null)
+        {
+            logger.LogWarning("Bruker med ID {UserId} ble ikke funnet ved henting av dokumenter", userId);
+            return Result<PagedResult<DocumentListDto>>.Failure(
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        }
+        
+        // Setter enten vår egen UserId eller brukeren sin UserId hvis vi har tilattelse
+        if (query.UserId.HasValue && hasPermission)
+            userId = query.UserId.Value;
+        
+        // Henter antall dokumenter
+        int totalCount = await documentRepository.CountDocumentsForUserAsync(
+            userId, user.DepartmentId, user.JobTitleId, query.SignatureFilter, ct);
+        
+        // Henter alle dokumentene med for brukeren
+        IReadOnlyList<Document> documents = await documentRepository.GetDocumentsForUserPagedAsync(
+            userId, user.DepartmentId, user.JobTitleId, query, ct);
+        
+        // Henter ut de signerte dokumentene og henter DocumentSignature for å kunne bygge med MapToListDtos
+        var signedDocumentIds = documents.Select(d => d.Id).ToList();
+        IReadOnlyList<DocumentSignature> signatures = await signatureRepository.GetByDocumentIdsAsync(
+            signedDocumentIds, ct);
+
+        List<DocumentListDto> dtos = DocumentMapper.MapToListDtos(documents, signatures, currentUserId: userId);
+
+        return Result<PagedResult<DocumentListDto>>.Success(
+            PagedResult<DocumentListDto>.Create(dtos, totalCount, query));
     }
 
     /// <inheritdoc />

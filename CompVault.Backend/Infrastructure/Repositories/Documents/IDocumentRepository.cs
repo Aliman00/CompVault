@@ -1,4 +1,6 @@
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Shared.DTOs.Documents;
+using CompVault.Shared.Enums;
 
 namespace CompVault.Backend.Infrastructure.Repositories.Documents;
 
@@ -44,6 +46,24 @@ public interface IDocumentRepository : IRepository<Document>
     /// <summary>Henter dokumenter basert på en liste med IDer.</summary>
     Task<IReadOnlyList<Document>> GetByIdsAsync(
         IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
+    
+    /// <summary>Teller dokumenter for en bruker basert på filtrering av status</summary>
+    Task<int> CountDocumentsForUserAsync(
+        Guid userId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        DocumentSignatureFilter signatureFilter,
+        CancellationToken ct = default);
+
+    /// <summary>Henter alle dokumentene for en bruker med paginering og fitlering.
+    /// Sjekker at brukeren har tilattelse til å hente ut dokumetnene ved at det er enten brukeren
+    /// selv som henter eller at brukeren er like høyt eller høyere i hierarkiet</summary>
+    Task<IReadOnlyList<Document>> GetDocumentsForUserPagedAsync(
+        Guid userId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        DocumentQueryParameters parameters,
+        CancellationToken ct = default);
 
     /// <summary>Legger til en versjonsrecord.</summary>
     Task<DocumentVersion> AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default);

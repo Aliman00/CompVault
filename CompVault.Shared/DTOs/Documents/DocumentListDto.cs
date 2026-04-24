@@ -10,6 +10,9 @@ public sealed class DocumentListDto
 
     /// <summary>Dokumenttittel.</summary>
     public string Title { get; set; } = string.Empty;
+    
+    /// <summary>Slug til dokumenttypen</summary>
+    public string Slug { get; set; } = string.Empty;
 
     /// <summary>Beskrivelse.</summary>
     public string? Description { get; set; }

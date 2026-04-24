@@ -82,6 +82,8 @@ public static class ApiRoutes
         public static string ById(string slug, Guid id) => $"api/documents/{slug}/{id}";
         public static string UploadVersion(string slug, Guid id) => $"api/documents/{slug}/{id}/upload";
         
+        public const string MyDocuments = "api/documents/user";
+        
         // ================= Signaturer =================
         public static string Signatures(string slug, Guid id) => $"api/documents/{slug}/{id}/signatures";
         public static string Sign(string slug, Guid id) => $"api/documents/{slug}/{id}/sign";

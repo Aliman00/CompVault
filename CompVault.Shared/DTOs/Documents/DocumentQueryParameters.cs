@@ -1,21 +1,15 @@
 using CompVault.Shared.DTOs.Common.Pagination;
+using CompVault.Shared.Enums;
 
 namespace CompVault.Shared.DTOs.Documents;
 
 /// <summary>
-/// Query-parametere for filtrering og paginering av dokumenter for innlogget bruker.
+/// Query-parametere for filtrering, sortering og paginering av dokumenter for en bruker
 /// </summary>
-public sealed record MyDocumentQueryParameters : PagedQuery
+public sealed record DocumentQueryParameters : PagedQuery
 {
-    /// <summary>Filtrer på signeringsstatus. Null = alle.</summary>
-    public MyDocumentStatus? Status { get; init; }
-}
-
-/// <summary>
-/// Signeringsstatus-filter for brukers dokumenter.
-/// </summary>
-public enum MyDocumentStatus
-{
-    Signed,
-    Pending
+    public Guid? UserId { get; init; }
+    public DocumentSignatureFilter SignatureFilter { get; init; } = DocumentSignatureFilter.All;
+    public DocumentSortField SortBy { get; init; } = DocumentSortField.UploadedAt;
+    public bool SortDescending { get; init; } = true;
 }

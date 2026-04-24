@@ -51,6 +51,7 @@ public static class DocumentMapper
         return new DocumentListDto
         {
             Id = document.Id,
+            Slug = document.DocumentType?.Slug ?? string.Empty,
             Title = document.Title,
             Description = document.Description,
             DocumentTypeCategoryId = document.DocumentTypeCategoryId,
