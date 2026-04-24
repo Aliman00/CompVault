@@ -278,7 +278,7 @@ else if (_document != null && _documentType != null)
                                             Title="Versjon"
                                             SortBy="x => x.SignatureVersion">
                                 <CellTemplate>
-                                    @(context.Item.SignatureVersion.HasValue ? $"v{context.Item.SignatureVersion}" : "—")
+                                    @(context.Item.SignatureVersion.HasValue ? $"{context.Item.SignatureVersion}" : "—")
                                 </CellTemplate>
                             </TemplateColumn>
 

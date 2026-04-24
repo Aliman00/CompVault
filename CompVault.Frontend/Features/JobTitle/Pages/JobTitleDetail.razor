@@ -47,10 +47,20 @@ else if (_jobTitle != null)
             @* Stillingstittel *@
             <MudItem xs="12" sm="6">
                 <TextField Value="@_editModel.Name"
-                                 ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                                 Label="Stillingstittel"
-                                 IsEditing="_isEditing"
-                                 For="() => _editModel.Name"/>
+                           ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                           Label="Stillingstittel"
+                           IsEditing="_isEditing"
+                           For="() => _editModel.Name"/>
+            </MudItem>
+
+            @* Er stillingen for en leder? *@
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Lederrolle"
+                              @bind-Value="_editModel.IsLeader"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Leder"/>
+                    <MudToggleItem Value="(bool?)false" Text="Ikke leder"/>
+                </ToggleButton>
             </MudItem>
             
             @* Aktiv/inaktiv *@
