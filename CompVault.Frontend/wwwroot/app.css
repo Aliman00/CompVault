@@ -73,6 +73,17 @@ h1:focus {
     border-radius: 4px !important;
 }
 
+/* Gir et ikon/mudavatar peke-knapp med musa */
+.cv-pointer {
+    cursor: pointer;
+}
+
+/* Sikrer at status-mudchips ikke blir for store */
+.cv-status
+{
+    width: fit-content
+}
+
 
 /* ============================= SWITCH BUTTONS ============================= */
 

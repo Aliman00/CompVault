@@ -1,5 +1,6 @@
 ﻿@inject CircuitUserContext CircuitUserContext
 @inject IHttpContextAccessor HttpContextAccessor
+@inject IAntiforgery Antiforgery
 
 <!DOCTYPE html>
 <html lang="en">
@@ -18,12 +19,14 @@
     <ImportMap/>
     <link rel="icon" type="image/png" href="favicon.png"/>
     <HeadOutlet/>
+    <meta name="af-token" content="@Antiforgery.GetAndStoreTokens(HttpContextAccessor.HttpContext!).RequestToken" />
 </head>
 
 <body>
 <Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
 <ReconnectModal/>
 <script src="@Assets["_framework/blazor.web.js"]"></script>
+<script src="js/auth.js"></script>
 <!-- MudBlazor JS -->
 <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 </body>

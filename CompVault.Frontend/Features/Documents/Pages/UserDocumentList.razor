@@ -1,0 +1,162 @@
+@page "/my-documents"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize]
+@inject IDocumentService DocumentService
+@inject NavigationManager NavigationManager
+
+@* Side for innlogget bruker – viser egne dokumenter med signeringsstatus *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+<MudPaper Class="pa-4 mb-4" Square="true" Elevation="0" Outlined="true">
+
+    @* Header *@
+    <MudToolBar Dense="true" Class="pa-4 mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.Description" Class="mr-2" Color="Color.Primary"/>
+        <MudText Typo="Typo.h6">Mine dokumenter</MudText>
+    </MudToolBar>
+
+    @* Filter *@
+    <MudGrid Class="px-4 pb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="DocumentSignatureFilter"
+                       Value="_statusFilter"
+                       ValueChanged="OnStatusFilterChanged"
+                       Label="Status"
+                       Clearable="true">
+                <MudSelectItem T="DocumentSignatureFilter" 
+                               Value="DocumentSignatureFilter.All">Alle</MudSelectItem>
+                <MudSelectItem T="DocumentSignatureFilter" 
+                               Value="DocumentSignatureFilter.Signed">Signert</MudSelectItem>
+                <MudSelectItem T="DocumentSignatureFilter" 
+                               Value="DocumentSignatureFilter.Pending">Venter signering</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+
+    @* Tabell *@
+    <MudDataGrid T="DocumentListDto"
+                 @ref="_grid"
+                 ServerData="LoadServerData"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Square="true"
+                 Bordered="true"
+                 RowsPerPage="20"
+                 RowClick="OnRowClick">
+        <Columns>
+            @* Tittel *@
+            <PropertyColumn T="DocumentListDto" TProperty="string"
+                            Property='x => x.Title.Truncate(50)'
+                            Title="Tittel"/>
+
+            @* Kategori *@
+            <TemplateColumn T="DocumentListDto" Title="Kategori">
+                <CellTemplate Context="cell">
+                    @if (!string.IsNullOrWhiteSpace(cell.Item.CategoryName))
+                    {
+                        <MudText Typo="Typo.body2">@cell.Item.CategoryName</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Default">—</MudText>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+
+            @* Signering *@
+            <TemplateColumn T="DocumentListDto" Title="Signering">
+                <CellTemplate Context="cell">
+                    @if (!cell.Item.RequiresSignature)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Default">—</MudText>
+                    }
+                    else if (cell.Item.SignedByCurrentUser)
+                    {
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small" Class="cv-rounded">
+                            Signert
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="cv-rounded">
+                            Venter signering
+                        </MudChip>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+
+            @* Versjon *@
+            <PropertyColumn T="DocumentListDto" TProperty="int"
+                            Property="x => x.Version"
+                            Title="Versjon"/>
+
+            @* Lastet opp *@
+            <PropertyColumn T="DocumentListDto" TProperty="string"
+                            Property='x => x.UploadedAt.ToString("dd.MM.yyyy")'
+                            Title="Lastet opp"/>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="DocumentListDto"
+                              RowsPerPageString="Rader pr side:"
+                              PageSizeOptions="new[] { 10, 20, 50, 100 }"/>
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+
+    // ===================== PRIVATE FELT =====================
+    private AlertInfo? _alert;
+    private DocumentSignatureFilter _statusFilter;
+    private MudDataGrid<DocumentListDto> _grid = null!;
+    private DocumentSortField _sortBy = DocumentSortField.UploadedAt;
+    private bool _sortDescending = true;
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnRowClick(DataGridRowClickEventArgs<DocumentListDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.UserDocuments.Detail(args.Item.Slug, args.Item.Id));
+
+    private async Task OnStatusFilterChanged(DocumentSignatureFilter status)
+    {
+        _statusFilter = status;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task<GridData<DocumentListDto>> LoadServerData(GridState<DocumentListDto> state, CancellationToken ct)
+    {
+        var sortDef = state.SortDefinitions.FirstOrDefault();
+        _sortBy = sortDef?.SortBy switch
+        {
+            nameof(DocumentListDto.Title) => DocumentSortField.Title,
+            nameof(DocumentListDto.Version) => DocumentSortField.Version,
+            _ => DocumentSortField.UploadedAt
+        };
+        _sortDescending = sortDef?.Descending ?? true;
+        
+        var query = new DocumentQueryParameters
+        {
+            SignatureFilter = _statusFilter,
+            SortBy = _sortBy,
+            SortDescending = _sortDescending,
+            Page = state.Page + 1,
+            PageSize = state.PageSize
+        };
+        
+        Result<PagedResult<DocumentListDto>> result = await DocumentService.GetUserDocumentsAsync(query, ct);
+
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<DocumentListDto>();
+        }
+
+        return new GridData<DocumentListDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
+    }
+} 

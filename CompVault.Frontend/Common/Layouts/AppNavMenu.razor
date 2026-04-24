@@ -4,112 +4,100 @@
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
         Hjem
     </MudNavLink>
-    <MudNavLink Href="@PageRoutes.Auth.LoginEmail" Icon="@Icons.Material.Filled.Login">
-        Logg inn
+    <MudNavLink Href="@PageRoutes.UserCompetencies.List" Icon="@Icons.Material.Filled.WorkspacePremium">
+        Min kompetanse
     </MudNavLink>
-    <MudNavLink Href="@PageRoutes.Auth.LoginOtp" Icon="@Icons.Material.Filled.Pin">
-        OTP
+    <MudNavLink Href="@PageRoutes.UserDocuments.List" Icon="@Icons.Material.Filled.Description">
+        Mine dokumenter
     </MudNavLink>
-
-    <AuthorizeView Policy="@Permissions.UsersRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.Users.List" Icon="@Icons.Material.Filled.People">
-                Brukere
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
-
-    <AuthorizeView Policy="@Permissions.JobTitlesRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.JobTitles.List" Icon="@Icons.Material.Filled.Work">
-                Stillingstitler
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
-
-    <AuthorizeView Policy="@Permissions.DepartmentsRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.Departments.List" Icon="@Icons.Material.Filled.Business">
-                Avdelinger
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
-
-    <AuthorizeView Policy="@Permissions.RolesRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.Roles.List" Icon="@Icons.Material.Filled.Shield">
-                Roller
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+    <MudNavLink Href="@PageRoutes.UserEquipment.List" Icon="@Icons.Material.Filled.Headphones">
+        Mitt utstyr
+    </MudNavLink>
     
-    <AuthorizeView Policy="@Permissions.CompetenciesRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.CompetencyTypes.List" Icon="@Icons.Material.Filled.Category">
-                Kompetansetyper
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+    
+    <MudNavGroup Title="Admin" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true">
+        <AuthorizeView Policy="@Permissions.UsersRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.Users.List" Icon="@Icons.Material.Filled.People">
+                    Brukere
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
 
-    <AuthorizeView Policy="@Permissions.CompetenciesRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.Competencies.List"
-                        Icon="@Icons.Material.Filled.WorkspacePremium">
-                Ansattkompetanser
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+        <AuthorizeView Policy="@Permissions.JobTitlesRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.JobTitles.List" Icon="@Icons.Material.Filled.Work">
+                    Stillingstitler
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
 
-    <AuthorizeView Policy="@Permissions.DocumentTypesRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.DocumentTypes.List"
-                        Icon="@Icons.Material.Filled.Topic">
-                Dokumentkategorier
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+        <AuthorizeView Policy="@Permissions.DepartmentsRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.Departments.List" Icon="@Icons.Material.Filled.Business">
+                    Avdelinger
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
 
-    <AuthorizeView Policy="@Permissions.DocumentsRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.Documents.Overview"
-                        Icon="@Icons.Material.Filled.Article">
-                Dokumenter
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+        <AuthorizeView Policy="@Permissions.RolesRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.Roles.List" Icon="@Icons.Material.Filled.Shield">
+                    Roller
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
+        
+        <AuthorizeView Policy="@Permissions.CompetenciesRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.CompetencyTypes.List" Icon="@Icons.Material.Filled.Category">
+                    Kompetansetyper
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
 
-    <AuthorizeView Policy="@Permissions.EquipmentRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.EquipmentCategories.List"
-                        Icon="@Icons.Material.Filled.Storage">
-                Utstyrskategori
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+        <AuthorizeView Policy="@Permissions.CompetenciesRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.Competencies.List"
+                            Icon="@Icons.Material.Filled.WorkspacePremium">
+                    Ansattkompetanser
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
 
-    <AuthorizeView Policy="@Permissions.EquipmentRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.EquipmentItems.List"
-                        Icon="@Icons.Material.Filled.Headset">
-                Utstyr
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+        <AuthorizeView Policy="@Permissions.DocumentsRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.Documents.Overview"
+                            Icon="@Icons.Material.Filled.Article">
+                    Dokumenter
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
 
-    <AuthorizeView Policy="@Permissions.AuditRead">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.Audit.List"
-                        Icon="@Icons.Material.Filled.History">
-                Revisjonslogg
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+        <AuthorizeView Policy="@Permissions.EquipmentRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.EquipmentCategories.List"
+                            Icon="@Icons.Material.Filled.Headset">
+                    Utstyr
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
 
-    <AuthorizeView Policy="@Permissions.AdminAccess">
-        <Authorized>
-            <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">
-                Admin-panel
-            </MudNavLink>
-        </Authorized>
-    </AuthorizeView>
+        <AuthorizeView Policy="@Permissions.AuditRead">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.Audit.List"
+                            Icon="@Icons.Material.Filled.History">
+                    Revisjonslogg
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Policy="@Permissions.AdminAccess">
+            <Authorized>
+                <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">
+                    Admin-panel
+                </MudNavLink>
+            </Authorized>
+        </AuthorizeView>
+    </MudNavGroup>
 </MudNavMenu>

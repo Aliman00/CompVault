@@ -12,7 +12,7 @@
           @bind-Alert="_alert"
           RowClick="@(args => OnCategoryClick(args))">
     <Header>
-        <ListHeader Title="Utstyrskategorier"
+        <ListHeader Title="Utstyr"
                     PageIcon="@Icons.Material.Filled.Storage"
                     CreateHref="@PageRoutes.EquipmentCategories.Create"
                     CreateLabel="Opprett utstyrskategori"
@@ -38,16 +38,25 @@
 
         @* Er kategorien aktiv *@
         <TemplateColumn T="EquipmentCategoryDto"
-                        Title="Status"
-                        Sortable="true"
-                        SortBy="@(ec => ec.IsActive)">
+                        Title=""
+                        Sortable="false"
+                        HeaderStyle="width: 120px">
             <CellTemplate>
-                <MudChip T="string"
-                         Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
-                         Size="Size.Small"
-                         Class="cv-rounded">
-                    @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
-                </MudChip>
+                <AuthorizeView Policy="@Permissions.EquipmentWrite">
+                    <Authorized Context="_">
+                        <ResponsiveButton Label="Rediger"
+                                          Icon="@Icons.Material.Filled.Edit"
+                                          OnClick="@(() => NavigationManager.NavigateTo(
+                                                       PageRoutes.EquipmentCategories.Detail(context.Item.Id)))"/>
+                    </Authorized>
+                    <NotAuthorized Context="_">
+                        <MudTooltip Text="Du har ikke tilgang til å redigere utstyrskategorier">
+                            <ResponsiveButton Label="Rediger"
+                                              Icon="@Icons.Material.Filled.Edit"
+                                              Disabled="true"/>
+                        </MudTooltip>
+                    </NotAuthorized>
+                </AuthorizeView>
             </CellTemplate>
         </TemplateColumn>
     </Columns>
@@ -101,5 +110,5 @@
 
     // ===================== PRIVATE METHODS =====================
     private void OnCategoryClick(DataGridRowClickEventArgs<EquipmentCategoryDto> args) =>
-        NavigationManager.NavigateTo(PageRoutes.EquipmentCategories.Detail(args.Item.Id));
+        NavigationManager.NavigateTo(PageRoutes.EquipmentItems.List);
 }

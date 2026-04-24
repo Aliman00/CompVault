@@ -17,6 +17,7 @@ namespace CompVault.Frontend.Common.Pages;
 /// Modellen til en SSR-side som lar oss legge til token i nettlesere - JS-scriptet submitter som gjør at
 /// OnPostAsync blir kjørt
 /// </summary>
+[IgnoreAntiforgeryToken]
 public class LoginCallback(IAuthService authService, AuthSettings authSettings, IWebHostEnvironment env) : PageModel
 {
     [BindProperty]

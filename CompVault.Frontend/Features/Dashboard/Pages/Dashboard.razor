@@ -1,0 +1,115 @@
+﻿@page "/"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize]
+@inject IJSRuntime JsRuntime
+@inject CircuitUserContext UserContext
+
+@* Dashboard for vanlig brukere. Widgets slik at brukere kan fjerne det de mener er støy *@
+<section class="dashboard-header">
+    <MudText Typo="Typo.h5">Hei, @UserContext.FirstName</MudText>
+
+    @if (HiddenWidgets.Any())
+    {
+        <MudMenu StartIcon="@Icons.Material.Filled.VisibilityOff"
+                 EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                 Label="@($"Skjulte widgets ({HiddenWidgets.Count()})")"
+                 Variant="Variant.Outlined"
+                 Size="Size.Small"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight"
+                 Dense="true">
+            @foreach (var widget in HiddenWidgets)
+            {
+                <MudMenuItem OnClick="() => ToggleWidget(widget)">
+                    Vis @widget
+                </MudMenuItem>
+            }
+        </MudMenu>
+    }
+</section>
+
+<MudGrid Class="mb-4">
+    @if (_widgetVisibility[DashboardConstants.MyCompetencies])
+    {
+        <MudItem xs="12" sm="4">
+            <MyCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.MyCompetencies)"/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[DashboardConstants.NextExpiry])
+    {
+        <MudItem xs="12" sm="4">
+            <NextExpiryWidget OnHide="() => ToggleWidget(DashboardConstants.NextExpiry)"/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[DashboardConstants.UserShortcuts])
+    {
+        <MudItem xs="12" sm="4">
+            <UserShortcutWidget OnHide="() => ToggleWidget(DashboardConstants.UserShortcuts)"/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[DashboardConstants.PendingSignatures])
+    {
+        <MudItem xs="12" sm="4">
+            <PendingSignaturesWidget OnHide="() => ToggleWidget(DashboardConstants.PendingSignatures)"/>
+        </MudItem>
+    }
+    @if (_widgetVisibility[DashboardConstants.RecentCompetencies])
+    {
+        <MudItem xs="12" sm="4">
+            <RecentCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.RecentCompetencies)"/>
+        </MudItem>
+    }
+    
+</MudGrid>
+
+@code {
+    // ======================== Private felt ========================
+    private IEnumerable<string> HiddenWidgets =>
+        _widgetVisibility.Where(kv => !kv.Value).Select(kv => kv.Key);
+
+    private readonly Dictionary<string, bool> _widgetVisibility = new()
+    {
+        [DashboardConstants.MyCompetencies] = true,
+        [DashboardConstants.NextExpiry] = true,
+        [DashboardConstants.PendingSignatures] = true,
+        [DashboardConstants.UserShortcuts] = true,
+        [DashboardConstants.RecentCompetencies] = true,
+    };
+
+    // ======================== Lifecycle ========================
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        await LoadPreferencesAsync();
+        StateHasChanged();
+    }
+
+    // ======================== Private metoder ========================
+    private async Task ToggleWidget(string widgetName)
+    {
+        _widgetVisibility[widgetName] = !_widgetVisibility[widgetName];
+        await SavePreferencesAsync();
+    }
+
+    private async Task SavePreferencesAsync()
+    {
+        var hidden = string.Join(",", HiddenWidgets);
+        await JsRuntime.SetItemAsync(DashboardConstants.StorageKey, hidden);
+    }
+
+    private async Task LoadPreferencesAsync()
+    {
+        var saved = await JsRuntime.GetItemAsync(DashboardConstants.StorageKey);
+        if (string.IsNullOrWhiteSpace(saved))
+            return;
+
+        foreach (var widgetName in saved.Split(',', StringSplitOptions.RemoveEmptyEntries |
+                                                    StringSplitOptions.TrimEntries))
+        {
+            if (_widgetVisibility.ContainsKey(widgetName))
+                _widgetVisibility[widgetName] = false;
+        }
+    }
+}

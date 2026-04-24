@@ -3,6 +3,7 @@ using CompVault.Frontend.Common.Extensions;
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Models;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 namespace CompVault.Frontend.Features.Documents.Services;
@@ -39,6 +40,37 @@ public class DocumentService(
         {
             logger.LogError(ex, "Uventet feil ved henting av dokumenter for {Slug}", slug);
             return Result<List<DocumentListDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<PagedResult<DocumentListDto>>> GetUserDocumentsAsync(
+        DocumentQueryParameters query, CancellationToken ct)
+    {
+        try
+        {
+            string url = BuildFilterUrl(ApiRoutes.Documents.MyDocuments, query);
+            HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
+
+            Result<PagedResult<DocumentListDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<PagedResult<DocumentListDto>>(response, ct);
+
+            if (result.IsFailure)
+                return Result<PagedResult<DocumentListDto>>.Failure(result.Error!);
+
+            return Result<PagedResult<DocumentListDto>>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved henting av mine dokumenter");
+            return Result<PagedResult<DocumentListDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved henting av mine dokumenter");
+            return Result<PagedResult<DocumentListDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
@@ -225,5 +257,24 @@ public class DocumentService(
             return Result<FileAttachment>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
+    }
+    
+    // Bygger base-urlen med query-filtering
+    private static string BuildFilterUrl(string baseUrl, DocumentQueryParameters query)
+    {
+        var queryParams = new Dictionary<string, string?>
+        {
+            ["page"] = query.Page.ToString(),
+            ["pageSize"] = query.PageSize.ToString(),
+            ["signatureFilter"] = ((int)query.SignatureFilter).ToString()
+        };
+
+        if (query.UserId.HasValue)
+            queryParams["userId"] = query.UserId.ToString();
+        
+        queryParams["sortBy"] = ((int)query.SortBy).ToString();
+        queryParams["sortDescending"] = query.SortDescending.ToString().ToLower();
+
+        return baseUrl.AddQueryFilter(queryParams);
     }
 }

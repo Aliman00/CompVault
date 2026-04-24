@@ -2,12 +2,12 @@
    MainLayout og AdminLayout kan bruke sin egen navigasjon *@
 
 <MudDrawer Open="_isOpen" OpenChanged="OnDrawerOpenChanged" Elevation="2" ClipMode="DrawerClipMode.Always">
-    <!-- Headeren til sidebaren -->
+    @* Headeren til sidebaren *@
     @ChildContent
 </MudDrawer>
 
 @code {
-    // ======================== Parametere ========================
+    // ======================== PARAMETERS ========================
     // Bool som bestemmer om Draweren er åpen
     [Parameter]
     public bool IsOpen { get; set; }
@@ -20,14 +20,14 @@
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
     
-    // ======================== Private felt ========================
+    // ======================== PRIVATE FIELD ========================
     private bool _isOpen;
     
     
-    // ======================== Lifecycle ========================
+    // ======================== LIFECYCLE ========================
     protected override void OnParametersSet() => _isOpen = IsOpen;
     
-    // ======================== Private metoder ========================
+    // ======================== PRIVATE METHODS ========================
     
     private async Task OnDrawerOpenChanged(bool verdi)
     {

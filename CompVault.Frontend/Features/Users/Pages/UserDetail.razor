@@ -229,7 +229,7 @@ else if (_user != null)
                         <MudTabPanel Text="Dokumenter" Icon="@Icons.Material.Filled.Description">
                             @if (_showDokumenter)
                             {
-                                @* Dokumenter *@
+                                <UserDocumentTab UserId="Id"/>
                             }
                         </MudTabPanel>
                     }

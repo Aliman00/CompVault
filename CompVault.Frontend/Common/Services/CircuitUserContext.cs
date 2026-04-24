@@ -9,6 +9,15 @@ public class CircuitUserContext
 {
     public ClaimsPrincipal User { get; private set; } = new(new ClaimsIdentity());
     public string? RefreshToken { get; private set; }
+    
+    /// <summary>Fornavn til innlogget bruker</summary>
+    public string FirstName => User.FindFirst("firstName")?.Value ?? string.Empty;
+
+    /// <summary>Etternavn til innlogget bruker</summary>
+    public string LastName => User.FindFirst("lastName")?.Value ?? string.Empty;
+
+    /// <summary>Fullt navn til innlogget bruker</summary>
+    public string FullName => $"{FirstName} {LastName}".Trim();
 
     /// <summary>
     /// Bruker ID-en til innlogget bruker

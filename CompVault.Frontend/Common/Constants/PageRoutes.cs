@@ -6,12 +6,39 @@
 /// </summary>
 public static class PageRoutes
 {
+    // =============================== AUTH =============================== 
     public static class Auth
     {
         public const string LoginEmail = "/login-email";
         public const string LoginOtp = "/login-otp";
     }
-
+    
+    // =============================== EMPLOYEES =============================== 
+    public static class Dashboard
+    {
+        public const string Home = "/";
+    }
+    
+    public static class UserCompetencies
+    {
+        public const string List = "/my-competencies";
+        public static string Detail(Guid id) => $"/my-competencies/{id}";
+    }
+    
+    public static class UserEquipment
+    {
+        public const string List = "/my-equipment";
+        public static string Detail(Guid id) => $"/my-equipment/{id}";
+    }
+    
+    public static class UserDocuments
+    {
+        public const string List = "/my-documents";
+        public static string Detail(string slug, Guid id) => $"/my-documents/{slug}/{id}";
+    }
+    
+    // =============================== ADMIN =============================== 
+    
     public static class Users
     {
         public const string List = "/users";
@@ -39,6 +66,7 @@ public static class PageRoutes
         public static string Detail(Guid id) => $"/roles/{id}";
         public const string Create = "/roles/create";
     }
+    
 
     public static class Competencies
     {

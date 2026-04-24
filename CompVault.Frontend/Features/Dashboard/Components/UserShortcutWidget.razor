@@ -1,0 +1,39 @@
+﻿@* Widget med shortcuts for vanlige brukere *@
+
+<MudPaper Class="pa-4 mb-4" Elevation="4" Style="border-top: 3px solid #7b5ea7;">
+    <WidgetHeader Title="@DashboardConstants.UserShortcuts" OnHide="OnHide"/>
+    
+    <MudGrid>
+        @foreach (var shortcut in _shortcuts)
+        {
+            <MudItem xs="6" sm="4">
+                <MudButton FullWidth="true"
+                           Href="@shortcut.Url"
+                           Class="shortcut-item"
+                           Variant="Variant.Text">
+                    <SmallIcon Icon="@shortcut.Icon"
+                               AccentColor="@shortcut.AccentColor"
+                               IconBackgroundColor="@shortcut.IconBackgroundColor"/>
+                    <MudText Typo="Typo.caption" Align="Align.Center">@shortcut.Label</MudText>
+                </MudButton>
+            </MudItem>
+        }
+    </MudGrid>
+    
+</MudPaper>
+
+
+@code {
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    private record Shortcut(string Label, string Icon, string Url, string AccentColor, string IconBackgroundColor);
+    private readonly List<Shortcut> _shortcuts =
+    [
+        new("Mine kompetanser", Icons.Material.Filled.School, PageRoutes.UserCompetencies.List,
+            "#2d7a4f", "#e8f5ee"),
+        new("Mine dokumenter", Icons.Material.Filled.Description, PageRoutes.UserDocuments.List,
+            "#1e3a5f", "#e4eaf2"),
+        new("Mitt utstyr", Icons.Material.Filled.Handyman, PageRoutes.UserEquipment.List,
+            "#c9a84c", "#faf3e0"),
+    ];
+}

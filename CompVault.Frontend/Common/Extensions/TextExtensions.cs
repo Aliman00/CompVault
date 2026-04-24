@@ -2,7 +2,7 @@
 
 namespace CompVault.Frontend.Common.Extensions;
 
-public static class TextHelper
+public static class TextExtensions
 {
     /// <summary>
     /// Trimmer en tekst til ønsket lengde. Brukes gjerne til descriptions som kan bli for lange i listevisning
@@ -15,6 +15,19 @@ public static class TextHelper
         text is null ? string.Empty : text.Length > maxLength
             ? text[..maxLength] + "…"
             : text;
+    
+    /// <summary>
+    /// Gjør om et fullName til å returnere initialene til brukeren
+    /// </summary>
+    /// <param name="fullName">FullName fra CircuitUserContext</param>
+    /// <returns>Initialene</returns>
+    public static string ToInitials(this string? fullName) =>
+        string.Concat(
+            (fullName ?? string.Empty)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(w => w[0])
+        );
 
     /// <summary>
     /// Oversetter data fra backend til norsk. Alternativt til localization da vi ikke har implementert det enda
