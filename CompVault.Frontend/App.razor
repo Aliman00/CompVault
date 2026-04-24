@@ -1,6 +1,6 @@
 ﻿@inject CircuitUserContext CircuitUserContext
 @inject IHttpContextAccessor HttpContextAccessor
-@inject IAntiforgery Antiforgery
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -19,7 +19,6 @@
     <ImportMap/>
     <link rel="icon" type="image/png" href="favicon.png"/>
     <HeadOutlet/>
-    <meta name="af-token" content="@Antiforgery.GetAndStoreTokens(HttpContextAccessor.HttpContext!).RequestToken" />
 </head>
 
 <body>
