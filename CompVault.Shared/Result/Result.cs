@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CompVault.Shared.Result;
 
 /// <summary>
@@ -8,9 +10,13 @@ namespace CompVault.Shared.Result;
 public sealed class Result<T>
 {
     /// <summary>True hvis alt gikk bra.</summary>
+    [MemberNotNullWhen(true, nameof(Value))]
+    [MemberNotNullWhen(false, nameof(Error))]
     public bool IsSuccess { get; }
 
     /// <summary>True hvis noe gikk galt.</summary>
+    [MemberNotNullWhen(false, nameof(Value))]
+    [MemberNotNullWhen(true, nameof(Error))]
     public bool IsFailure => !IsSuccess;
 
     /// <summary>Verdien ved suksess. Bare gyldig når <see cref="IsSuccess"/> er true.</summary>
@@ -45,9 +51,11 @@ public sealed class Result<T>
 public sealed class Result
 {
     /// <summary>True hvis alt gikk bra.</summary>
+    [MemberNotNullWhen(false, nameof(Error))]
     public bool IsSuccess { get; }
 
     /// <summary>True hvis noe gikk galt.</summary>
+    [MemberNotNullWhen(true, nameof(Error))]
     public bool IsFailure => !IsSuccess;
 
 
