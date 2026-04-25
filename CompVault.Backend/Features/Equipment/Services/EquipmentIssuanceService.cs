@@ -175,7 +175,7 @@ public sealed class EquipmentIssuanceService(
         await issuanceRepository.AddAsync(issuance, cancellationToken);
         await issuanceRepository.SaveChangesAsync(cancellationToken);
 
-        Domain.Entities.Equipment.EquipmentIssuance created =
+        Domain.Entities.Equipment.EquipmentIssuance? created =
             await issuanceRepository.GetByIdWithDetailsAsync(issuance.Id, cancellationToken);
         if (created is null)
         {

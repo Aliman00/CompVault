@@ -96,7 +96,7 @@ public sealed class EquipmentItemService(
         await itemRepository.AddAsync(item, cancellationToken);
         await itemRepository.SaveChangesAsync(cancellationToken);
 
-        Domain.Entities.Equipment.EquipmentItem created =
+        Domain.Entities.Equipment.EquipmentItem? created =
             await itemRepository.GetByIdWithCategoryAsync(item.Id, cancellationToken);
         if (created is null)
         {
@@ -146,7 +146,7 @@ public sealed class EquipmentItemService(
 
         await itemRepository.SaveChangesAsync(cancellationToken);
 
-        Domain.Entities.Equipment.EquipmentItem updated =
+        Domain.Entities.Equipment.EquipmentItem? updated =
             await itemRepository.GetByIdWithCategoryAsync(id, cancellationToken);
         if (updated is null)
         {
