@@ -273,7 +273,13 @@ public sealed class UserService(
             await userRepository.UpdateAsync(user, ct);
             await userRepository.SaveChangesAsync(ct);
 
-            ApplicationUser updatedUser = (await userRepository.GetByIdWithDetailsAsync(userId, ct))!;
+            ApplicationUser? updatedUser = await userRepository.GetByIdWithDetailsAsync(userId, ct);
+            if (updatedUser is null)
+            {
+                logger.LogError("Bruker {UserId} forsvant etter oppdatering", userId);
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.InternalError, "Brukeren ble ikke funnet etter oppdatering."));
+            }
 
             logger.LogInformation("Bruker {UserId} oppdatert", userId);
             IList<string> roles = await userManager.GetRolesAsync(updatedUser);

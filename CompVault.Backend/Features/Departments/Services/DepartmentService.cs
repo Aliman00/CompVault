@@ -15,7 +15,8 @@ namespace CompVault.Backend.Features.Departments.Services;
 public sealed class DepartmentService(
     IDepartmentRepository departmentRepository,
     IUserRepository userRepository,
-    IJobTitleRepository jobTitleRepository) : IDepartmentService
+    IJobTitleRepository jobTitleRepository,
+    ILogger<DepartmentService> logger) : IDepartmentService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<DepartmentDto>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -137,8 +138,15 @@ public sealed class DepartmentService(
         await departmentRepository.SaveChangesAsync(cancellationToken);
 
         Department? updatedDepartment = await departmentRepository.GetByIdWithHierarchyAsync(id, cancellationToken);
+        if (updatedDepartment is null)
+        {
+            logger.LogError("Avdeling {DepartmentId} forsvant etter oppdatering", id);
+            return Result<DepartmentDto>.Failure(
+                AppError.Create(ErrorCode.InternalError, "Avdelingen ble ikke funnet etter oppdatering."));
+        }
+
         return Result<DepartmentDto>.Success(
-            DepartmentMapper.ToDto(updatedDepartment!, updatedDepartment!.SubDepartments.Count));
+            DepartmentMapper.ToDto(updatedDepartment, updatedDepartment.SubDepartments.Count));
     }
 
     /// <inheritdoc />

@@ -13,6 +13,8 @@ using FluentAssertions;
 
 using Moq;
 
+using Microsoft.Extensions.Logging;
+
 namespace CompVault.Backend.Tests.Backend.Features.Departments.Services;
 
 public class DepartmentServiceTests
@@ -30,7 +32,8 @@ public class DepartmentServiceTests
         _sut = new DepartmentService(
             _departmentRepositoryMock.Object,
             _userRepositoryMock.Object,
-            _jobTitleRepositoryMock.Object);
+            _jobTitleRepositoryMock.Object,
+            Mock.Of<ILogger<DepartmentService>>());
     }
 
     [Fact]
