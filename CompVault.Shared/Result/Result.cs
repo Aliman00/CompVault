@@ -10,8 +10,6 @@ namespace CompVault.Shared.Result;
 public sealed class Result<T>
 {
     /// <summary>True hvis alt gikk bra.</summary>
-    [MemberNotNullWhen(true, nameof(Value))]
-    [MemberNotNullWhen(false, nameof(Error))]
     public bool IsSuccess { get; }
 
     /// <summary>True hvis noe gikk galt.</summary>
@@ -51,11 +49,9 @@ public sealed class Result<T>
 public sealed class Result
 {
     /// <summary>True hvis alt gikk bra.</summary>
-    [MemberNotNullWhen(false, nameof(Error))]
     public bool IsSuccess { get; }
 
     /// <summary>True hvis noe gikk galt.</summary>
-    [MemberNotNullWhen(true, nameof(Error))]
     public bool IsFailure => !IsSuccess;
 
 
