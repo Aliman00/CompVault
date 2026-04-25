@@ -36,15 +36,15 @@ public sealed class CompetencyTypeService(
     /// <inheritdoc />
     public async Task<Result<CompetencyTypeDto>> CreateAsync(CreateCompetencyTypeRequest request, CancellationToken cancellationToken = default)
     {
-        CompetencyType? existing = await competencyTypeRepository.GetByNameAsync(request.Name, cancellationToken);
+        CompetencyType? existing = await competencyTypeRepository.GetByNameAsync(request.Name.Trim(), cancellationToken);
 
         if (existing is not null)
             return Result<CompetencyTypeDto>.Failure(
-                AppError.Create(ErrorCode.Validation, $"Kompetansetype med navn '{request.Name}' finnes allerede."));
+                AppError.Create(ErrorCode.Validation, $"Kompetansetype med navn '{request.Name.Trim()}' finnes allerede."));
 
         var type = new CompetencyType
         {
-            Name = request.Name,
+            Name = request.Name.Trim(),
             Description = request.Description,
             Category = request.Category,
             RequiresExpiration = request.RequiresExpiration,
