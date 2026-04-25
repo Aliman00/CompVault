@@ -8,7 +8,8 @@ namespace CompVault.Backend.Features.Equipment.Services;
 /// Implementerer administrasjon av utstyrskategorier.
 /// </summary>
 public sealed class EquipmentCategoryService(
-    IEquipmentCategoryRepository categoryRepository) : IEquipmentCategoryService
+    IEquipmentCategoryRepository categoryRepository,
+    ILogger<EquipmentCategoryService> logger) : IEquipmentCategoryService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<EquipmentCategoryDto>>> GetAllAsync(
@@ -60,8 +61,13 @@ public sealed class EquipmentCategoryService(
         await categoryRepository.SaveChangesAsync(cancellationToken);
 
         Domain.Entities.Equipment.EquipmentCategory? created =
-            await categoryRepository.GetByIdWithItemsAsync(category.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Kategori med ID '{category.Id}' ble ikke funnet etter opprettelse.");
+            await categoryRepository.GetByIdWithItemsAsync(category.Id, cancellationToken);
+        if (created is null)
+        {
+            logger.LogError("Kategori {CategoryId} forsvant etter opprettelse", category.Id);
+            return Result<EquipmentCategoryDto>.Failure(
+                AppError.Create(ErrorCode.InternalError, "Kategorien ble ikke funnet etter opprettelse."));
+        }
 
         return Result<EquipmentCategoryDto>.Success(EquipmentMapper.ToDto(created));
     }
@@ -104,8 +110,13 @@ public sealed class EquipmentCategoryService(
         await categoryRepository.SaveChangesAsync(cancellationToken);
 
         Domain.Entities.Equipment.EquipmentCategory? updated =
-            await categoryRepository.GetByIdWithItemsAsync(category.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Kategori med ID '{category.Id}' ble ikke funnet etter oppdatering.");
+            await categoryRepository.GetByIdWithItemsAsync(category.Id, cancellationToken);
+        if (updated is null)
+        {
+            logger.LogError("Kategori {CategoryId} forsvant etter oppdatering", category.Id);
+            return Result<EquipmentCategoryDto>.Failure(
+                AppError.Create(ErrorCode.InternalError, "Kategorien ble ikke funnet etter oppdatering."));
+        }
 
         return Result<EquipmentCategoryDto>.Success(EquipmentMapper.ToDto(updated));
     }

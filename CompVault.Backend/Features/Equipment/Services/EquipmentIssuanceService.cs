@@ -15,7 +15,8 @@ namespace CompVault.Backend.Features.Equipment.Services;
 public sealed class EquipmentIssuanceService(
     IEquipmentIssuanceRepository issuanceRepository,
     IEquipmentItemRepository itemRepository,
-    IUserRepository userRepository) : IEquipmentIssuanceService
+    IUserRepository userRepository,
+    ILogger<EquipmentIssuanceService> logger) : IEquipmentIssuanceService
 {
     /// <inheritdoc />
     public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetAllAsync(
@@ -175,8 +176,13 @@ public sealed class EquipmentIssuanceService(
         await issuanceRepository.SaveChangesAsync(cancellationToken);
 
         Domain.Entities.Equipment.EquipmentIssuance created =
-            await issuanceRepository.GetByIdWithDetailsAsync(issuance.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Utlevering med ID '{issuance.Id}' ble ikke funnet etter opprettelse.");
+            await issuanceRepository.GetByIdWithDetailsAsync(issuance.Id, cancellationToken);
+        if (created is null)
+        {
+            logger.LogError("Utlevering {IssuanceId} forsvant etter opprettelse", issuance.Id);
+            return Result<EquipmentIssuanceDto>.Failure(
+                AppError.Create(ErrorCode.InternalError, "Utleveringen ble ikke funnet etter opprettelse."));
+        }
 
         return Result<EquipmentIssuanceDto>.Success(EquipmentMapper.ToDto(created));
     }
