@@ -92,8 +92,9 @@ public class OtpCodeService(
         }
 
         // Sjekker at koden er korrekt
-        bool codeMatches = CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(hashedInput),
-            Encoding.UTF8.GetBytes(otpCode.Code));
+        bool codeMatches = CryptographicOperations.FixedTimeEquals(
+            Convert.FromHexString(hashedInput),
+            Convert.FromHexString(otpCode.Code));
 
         // Koden eksisterer, men er ikke korrekt
         if (!codeMatches)

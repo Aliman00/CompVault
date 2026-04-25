@@ -67,8 +67,7 @@ public sealed class AuthService(
                 {
                     // Oppretter en EmailBody med ferdig template
                     // codeResult.Value er garantert å eksistere siden IsFailure er false
-                    string otpCode = codeResult.Value ?? throw new InvalidOperationException(
-                        "OTP-kode er null til tross for at genereringen var vellykket.");
+                    string otpCode = codeResult.Value;
                     EmailBody emailBody = EmailTemplates.OtpCode(otpCode);
 
                     // Sender epost og sjekker at det er ingen feil med epost sending
@@ -79,8 +78,7 @@ public sealed class AuthService(
                         // i produksjon. Denne returnen bryr seg ikke om stopwatch
                         logger.LogError("OTP delivery failed for UserId: {UserId}", user.Id);
                         return Result.Failure(
-                            deliverCodeResult.Error ?? throw new InvalidOperationException(
-                                "E-postlevering feilet uten feilmelding."));
+                            deliverCodeResult.Error!);
                     }
                 }
                 // else
@@ -123,9 +121,7 @@ public sealed class AuthService(
             // Verifiserer OTP og markerer koden som brukt
             Result<OtpCode> otpResult = await otpCodeService.VerifyOtpCodeAsync(user.Id, request.OtpCode, ct);
             if (otpResult.IsFailure)
-                return Result<TokenResponse>.Failure(
-                    otpResult.Error ?? throw new InvalidOperationException(
-                        "OTP-verifisering feilet uten feilmelding."));
+                return Result<TokenResponse>.Failure(otpResult.Error);
 
             // Oppretter en transaksjon som rollbacker eller lagrer til slutt
             return await unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -152,6 +148,10 @@ public sealed class AuthService(
 
                 return Result<TokenResponse>.Success(BuildRefreshTokenResponse(user, roles, permissions, rawRefreshToken));
             }, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -211,6 +211,10 @@ public sealed class AuthService(
 
                 return Result<TokenResponse>.Success(BuildRefreshTokenResponse(user, roles, permissions, rawRefreshToken));
             }, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
