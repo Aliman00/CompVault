@@ -17,7 +17,7 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.Property(r => r.ExpiresAt).IsRequired();
         builder.Property(r => r.IsRevoked).IsRequired();
 
-        // Soft-delete filter — ikke vis tokens tilhørende slettede brukere
+        // Standardverdi for CreatedAt slik at nye tokens alltid har en gyldig tidsstempel
         builder.Property(r => r.CreatedAt)
             .HasDefaultValueSql("NOW()");
 
