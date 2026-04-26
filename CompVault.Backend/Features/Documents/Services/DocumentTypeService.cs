@@ -39,17 +39,18 @@ public sealed class DocumentTypeService(
     public async Task<Result<DocumentTypeDto>> CreateAsync(
         CreateDocumentTypeRequest request, Guid createdById, CancellationToken cancellationToken = default)
     {
-        string slug = SlugUtility.GenerateSlug(request.Name);
+        string name = request.Name.Trim();
+        string slug = SlugUtility.GenerateSlug(name);
 
         // Sjekk at slug er unik
         bool slugExists = await documentTypeRepository.SlugExistsAsync(slug, cancellationToken: cancellationToken);
         if (slugExists)
             return Result<DocumentTypeDto>.Failure(
-                AppError.Conflict($"Dokumenttype med navn '{request.Name}' kunne ikke opprettes — slug '{slug}' er allerede i bruk."));
+                AppError.Conflict($"Dokumenttype med navn '{name}' kunne ikke opprettes — slug '{slug}' er allerede i bruk."));
 
         var documentType = new DocumentType
         {
-            Name = request.Name,
+            Name = name,
             Slug = slug,
             Description = request.Description,
             TargetMode = request.TargetMode,
@@ -173,19 +174,20 @@ public sealed class DocumentTypeService(
             return Result<DocumentTypeCategoryDto>.Failure(
                 AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
 
-        string slug = SlugUtility.GenerateSlug(request.Name);
+        string name = request.Name.Trim();
+        string slug = SlugUtility.GenerateSlug(name);
 
         bool slugExists = await categoryRepository.SlugExistsAsync(
             documentType.Id, slug, cancellationToken: cancellationToken);
 
         if (slugExists)
             return Result<DocumentTypeCategoryDto>.Failure(
-                AppError.Conflict($"Kategori med navn '{request.Name}' kunne ikke opprettes — slug '{slug}' finnes allerede for denne dokumenttypen."));
+                AppError.Conflict($"Kategori med navn '{name}' kunne ikke opprettes — slug '{slug}' finnes allerede for denne dokumenttypen."));
 
         var category = new DocumentTypeCategory
         {
             DocumentTypeId = documentType.Id,
-            Name = request.Name,
+            Name = name,
             Slug = slug
         };
 

@@ -9,7 +9,8 @@ namespace CompVault.Backend.Features.Equipment.Services;
 /// </summary>
 public sealed class EquipmentItemService(
     IEquipmentItemRepository itemRepository,
-    IEquipmentCategoryRepository categoryRepository) : IEquipmentItemService
+    IEquipmentCategoryRepository categoryRepository,
+    ILogger<EquipmentItemService> logger) : IEquipmentItemService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<EquipmentItemDto>>> GetAllAsync(
@@ -95,9 +96,14 @@ public sealed class EquipmentItemService(
         await itemRepository.AddAsync(item, cancellationToken);
         await itemRepository.SaveChangesAsync(cancellationToken);
 
-        Domain.Entities.Equipment.EquipmentItem created =
-            await itemRepository.GetByIdWithCategoryAsync(item.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Utstyr med ID '{item.Id}' ble ikke funnet etter opprettelse.");
+        Domain.Entities.Equipment.EquipmentItem? created =
+            await itemRepository.GetByIdWithCategoryAsync(item.Id, cancellationToken);
+        if (created is null)
+        {
+            logger.LogError("Utstyr {ItemId} forsvant etter opprettelse", item.Id);
+            return Result<EquipmentItemDto>.Failure(
+                AppError.Create(ErrorCode.InternalError, "Utstyret ble ikke funnet etter opprettelse."));
+        }
 
         return Result<EquipmentItemDto>.Success(EquipmentMapper.ToDto(created));
     }
@@ -140,9 +146,14 @@ public sealed class EquipmentItemService(
 
         await itemRepository.SaveChangesAsync(cancellationToken);
 
-        Domain.Entities.Equipment.EquipmentItem updated =
-            await itemRepository.GetByIdWithCategoryAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException($"Utstyr med ID '{id}' ble ikke funnet etter oppdatering.");
+        Domain.Entities.Equipment.EquipmentItem? updated =
+            await itemRepository.GetByIdWithCategoryAsync(id, cancellationToken);
+        if (updated is null)
+        {
+            logger.LogError("Utstyr {ItemId} forsvant etter oppdatering", id);
+            return Result<EquipmentItemDto>.Failure(
+                AppError.Create(ErrorCode.InternalError, "Utstyret ble ikke funnet etter oppdatering."));
+        }
 
         return Result<EquipmentItemDto>.Success(EquipmentMapper.ToDto(updated));
     }

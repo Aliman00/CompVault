@@ -153,6 +153,10 @@ public sealed class AuthService(
                 return Result<TokenResponse>.Success(BuildRefreshTokenResponse(user, roles, permissions, rawRefreshToken));
             }, ct);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error in {MethodName}", nameof(VerifyOtpAsync));
@@ -211,6 +215,10 @@ public sealed class AuthService(
 
                 return Result<TokenResponse>.Success(BuildRefreshTokenResponse(user, roles, permissions, rawRefreshToken));
             }, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

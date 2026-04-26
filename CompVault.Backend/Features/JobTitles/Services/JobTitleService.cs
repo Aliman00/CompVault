@@ -41,7 +41,7 @@ public sealed class JobTitleService(
     /// <inheritdoc />
     public async Task<Result<JobTitleDto>> CreateAsync(CreateJobTitleRequest request, CancellationToken ct)
     {
-        bool nameExists = await jobTitleRepository.NameExistsAsync(request.Name, ct);
+        bool nameExists = await jobTitleRepository.NameExistsAsync(request.Name.Trim(), ct);
 
         if (nameExists)
         {

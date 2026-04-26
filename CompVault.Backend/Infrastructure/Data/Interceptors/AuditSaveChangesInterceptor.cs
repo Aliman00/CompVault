@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 
 using CompVault.Backend.Domain.Entities.Audit;
@@ -368,29 +369,34 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
 
     /// <summary>
     /// Konverterer PascalCase til snake_case, f.eks. "CompetencyType" → "competency_type".
+    /// Håndterer tall riktig (f.eks. "OtpCode2" → "otp_code2").
     /// </summary>
+    private const int MaxSnakeCaseLength = 128; // PostgreSQL NAMEDATALEN er 63, men buffer på 128 gir plass for evt. prefiks/suffiks
     private static string ToSnakeCase(string name)
     {
         if (string.IsNullOrEmpty(name))
-            return name;
+            return name ?? string.Empty;
 
-        var result = new System.Text.StringBuilder(name.Length + 8);
+        var result = new StringBuilder(Math.Min(name.Length + 8, MaxSnakeCaseLength));
+        bool wasUpper = false;
 
         for (int i = 0; i < name.Length; i++)
         {
             char c = name[i];
             if (char.IsUpper(c))
             {
-                if (i > 0)
+                if (i > 0 && (!wasUpper || (i + 1 < name.Length && char.IsLower(name[i + 1]))))
                     result.Append('_');
                 result.Append(char.ToLowerInvariant(c));
+                wasUpper = true;
             }
             else
             {
                 result.Append(c);
+                wasUpper = char.IsDigit(c);
             }
         }
 
-        return result.ToString();
+        return result.Length > MaxSnakeCaseLength ? result.ToString(0, MaxSnakeCaseLength) : result.ToString();
     }
 }

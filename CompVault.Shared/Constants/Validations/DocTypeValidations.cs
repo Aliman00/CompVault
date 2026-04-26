@@ -9,10 +9,12 @@ public static class DocTypeValidations
     public const int NameMaxLength = 100;
     public const int DescMaxLength = 500;
     
+    // 1 byte til 100 MB
     public const int MaxFileSizeMinBytes = 1;
-    public const int MaxFileSizeMaxBytes = 100 * 1024 * 1024;
-    
-    // Lik validering som de over, men i Megabytes og ikke bytes
+    public const long MaxFileSizeMaxBytes = 100L * 1024 * 1024;
+
+    // NB: Disse to konstantene er avledet fra MaxFileSizeMaxBytes.
+    // Ved endring der oppe MÅ både den og MaxFileSizeRange-feilmeldingen oppdateres.
     public const int MaxFileSizeMinMb = 1;
     public const int MaxFileSizeMaxMb = 100;
 
