@@ -272,6 +272,9 @@ public class DocumentService(
         if (query.UserId.HasValue)
             queryParams["userId"] = query.UserId.ToString();
         
+        if (query.DocumentTypeSlug is not null)
+            queryParams["documentTypeSlug"] = query.DocumentTypeSlug;
+        
         queryParams["sortBy"] = ((int)query.SortBy).ToString();
         queryParams["sortDescending"] = query.SortDescending.ToString().ToLower();
 

@@ -109,10 +109,10 @@ public sealed class DocumentService(
         
         // Henter antall dokumenter
         int totalCount = await documentRepository.CountDocumentsForUserAsync(
-            userId, user.DepartmentId, user.JobTitleId, query.SignatureFilter, ct);
+            userId, user.DepartmentId, user.JobTitleId, query, ct);
         
         // Henter alle dokumentene med for brukeren
-        IReadOnlyList<Document> documents = await documentRepository.GetDocumentsForUserPagedAsync(
+        IReadOnlyList<Document> documents = await documentRepository.GetDocumentsForUserAsync(
             userId, user.DepartmentId, user.JobTitleId, query, ct);
         
         // Henter ut de signerte dokumentene og henter DocumentSignature for å kunne bygge med MapToListDtos

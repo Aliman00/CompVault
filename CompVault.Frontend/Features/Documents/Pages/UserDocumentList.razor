@@ -1,10 +1,10 @@
-@page "/my-documents"
+@page "/my-documents/{DocumentTypeSlug}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize]
 @inject IDocumentService DocumentService
 @inject NavigationManager NavigationManager
 
-@* Side for innlogget bruker – viser egne dokumenter med signeringsstatus *@
+@* Side for innlogget bruker – viser egne dokumenter til en dokumentkategori /slug  *@
 
 <AppAlert @bind-Alert="_alert"/>
 
@@ -107,7 +107,12 @@
 </MudPaper>
 
 @code {
-
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Ved navigering så viser vi alle dokumentene til en bruker i en spesifikk slug
+    /// </summary>
+    [Parameter] public string? DocumentTypeSlug { get; set; }
+    
     // ===================== PRIVATE FELT =====================
     private AlertInfo? _alert;
     private DocumentSignatureFilter _statusFilter;
@@ -139,6 +144,7 @@
         var query = new DocumentQueryParameters
         {
             SignatureFilter = _statusFilter,
+            DocumentTypeSlug = DocumentTypeSlug, 
             SortBy = _sortBy,
             SortDescending = _sortDescending,
             Page = state.Page + 1,

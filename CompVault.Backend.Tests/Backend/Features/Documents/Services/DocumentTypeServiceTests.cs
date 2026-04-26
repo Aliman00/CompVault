@@ -1,29 +1,37 @@
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
-
 using FluentAssertions;
-
+using Microsoft.Extensions.Logging;
 using Moq;
-
 namespace CompVault.Backend.Tests.Backend.Features.Documents.Services;
 
 public class DocumentTypeServiceTests
 {
     private readonly Mock<IDocumentTypeRepository> _documentTypeRepositoryMock;
     private readonly Mock<IDocumentTypeCategoryRepository> _categoryRepositoryMock;
+    private readonly Mock<IDocumentRepository> _documentRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly DocumentTypeService _sut;
 
     public DocumentTypeServiceTests()
     {
         _documentTypeRepositoryMock = new Mock<IDocumentTypeRepository>();
         _categoryRepositoryMock = new Mock<IDocumentTypeCategoryRepository>();
+        _documentRepositoryMock = new Mock<IDocumentRepository>();
+        _userRepositoryMock = new Mock<IUserRepository>();
+        var loggerMock = new Mock<ILogger<DocumentTypeService>>();
+
         _sut = new DocumentTypeService(
             _documentTypeRepositoryMock.Object,
-            _categoryRepositoryMock.Object);
+            _categoryRepositoryMock.Object,
+            loggerMock.Object,
+            _userRepositoryMock.Object,
+            _documentRepositoryMock.Object);
     }
 
     // -------------------------------------------------------------------------

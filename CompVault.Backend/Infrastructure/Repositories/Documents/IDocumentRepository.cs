@@ -47,24 +47,30 @@ public interface IDocumentRepository : IRepository<Document>
     Task<IReadOnlyList<Document>> GetByIdsAsync(
         IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
     
+    /// <summary>Henter alle dokumenttyper hvor brukeren har dokumenter.
+    /// Henter dokumentene og grupperer de, deretter henter ut det vi trenger for DTO-en,
+    /// sorteret etter navn</summary>
+    Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId, 
+        Guid? jobTitleId, CancellationToken ct = default);
+    
     /// <summary>Teller dokumenter for en bruker basert på filtrering av status</summary>
     Task<int> CountDocumentsForUserAsync(
-        Guid userId,
-        Guid? departmentId,
-        Guid? jobTitleId,
-        DocumentSignatureFilter signatureFilter,
-        CancellationToken ct = default);
-
-    /// <summary>Henter alle dokumentene for en bruker med paginering og fitlering.
-    /// Sjekker at brukeren har tilattelse til å hente ut dokumetnene ved at det er enten brukeren
-    /// selv som henter eller at brukeren er like høyt eller høyere i hierarkiet</summary>
-    Task<IReadOnlyList<Document>> GetDocumentsForUserPagedAsync(
         Guid userId,
         Guid? departmentId,
         Guid? jobTitleId,
         DocumentQueryParameters parameters,
         CancellationToken ct = default);
 
+    /// <summary>Henter alle dokumentene for en bruker med paginering og fitlering.
+    /// Sjekker at brukeren har tilattelse til å hente ut dokumetnene ved at det er enten brukeren
+    /// selv som henter eller at brukeren er like høyt eller høyere i hierarkiet</summary>
+    Task<IReadOnlyList<Document>> GetDocumentsForUserAsync(
+        Guid userId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        DocumentQueryParameters parameters,
+        CancellationToken ct = default);
+    
     /// <summary>Legger til en versjonsrecord.</summary>
     Task<DocumentVersion> AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default);
 
