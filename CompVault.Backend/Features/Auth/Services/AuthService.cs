@@ -124,8 +124,8 @@ public sealed class AuthService(
             Result<OtpCode> otpResult = await otpCodeService.VerifyOtpCodeAsync(user.Id, request.OtpCode, ct);
             if (otpResult.IsFailure)
                 return Result<TokenResponse>.Failure(
-                            otpResult.Error ?? throw new InvalidOperationException(
-                                "OTP-verifisering feilet uten feilmelding."));
+                    otpResult.Error ?? throw new InvalidOperationException(
+                        "OTP-verifisering feilet uten feilmelding."));
 
             // Oppretter en transaksjon som rollbacker eller lagrer til slutt
             return await unitOfWork.ExecuteInTransactionAsync(async () =>

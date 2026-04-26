@@ -17,10 +17,6 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.Property(r => r.ExpiresAt).IsRequired();
         builder.Property(r => r.IsRevoked).IsRequired();
 
-        // Standardverdi for CreatedAt slik at nye tokens alltid har en gyldig tidsstempel
-        builder.Property(r => r.CreatedAt)
-            .HasDefaultValueSql("NOW()");
-
         // Relasjon: en bruker kan ha mange refresh tokens
         builder.HasOne(r => r.User)
             .WithMany(u => u.RefreshTokens)

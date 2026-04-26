@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace CompVault.Shared.Result;
 
 /// <summary>
@@ -13,8 +11,6 @@ public sealed class Result<T>
     public bool IsSuccess { get; }
 
     /// <summary>True hvis noe gikk galt.</summary>
-    [MemberNotNullWhen(false, nameof(Value))]
-    [MemberNotNullWhen(true, nameof(Error))]
     public bool IsFailure => !IsSuccess;
 
     /// <summary>Verdien ved suksess. Bare gyldig når <see cref="IsSuccess"/> er true.</summary>

@@ -371,7 +371,7 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
     /// Konverterer PascalCase til snake_case, f.eks. "CompetencyType" → "competency_type".
     /// Håndterer tall riktig (f.eks. "OtpCode2" → "otp_code2").
     /// </summary>
-    private const int MaxSnakeCaseLength = 128;
+    private const int MaxSnakeCaseLength = 128; // PostgreSQL NAMEDATALEN er 63, men buffer på 128 gir plass for evt. prefiks/suffiks
     private static string ToSnakeCase(string name)
     {
         if (string.IsNullOrEmpty(name))
