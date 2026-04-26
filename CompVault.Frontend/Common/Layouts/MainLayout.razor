@@ -1,95 +1,133 @@
 ﻿@inherits LayoutComponentBase
 @inject IThemeService ThemeService
-@inject CircuitUserContext UserContext
 
 @* Layout for alle sider til CompVault som ikke er admin *@
 
-@* Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema *@
-<MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
-@* Popup: Håndterer alle popover-elementer. Eks: Dropdowns, Tooltips, Menyer *@
+<!-- =========================
+     THEME SYSTEM
+     Setter aktivt tema og styrer mørk/lys-modus for hele appen.
+     Bruker MudBlazor ThemeProvider + egen ThemeService for persistens
+========================= -->
+<MudThemeProvider @ref="_mudThemeProvider"
+                  Theme="_theme"
+                  @bind-IsDarkMode="_isDarkMode" />
+
+<!-- Popovers: Dropdowns, tooltips, menus -->
 <MudPopoverProvider />
-@* Dialog/Modal: Håndterer alle DialogerModaler. Sikrer at vi kan bruke MudBlazor sine egne komponenter *@
+
+<!-- Dialog system: modaler og dialogs -->
 <MudDialogProvider />
-@* Toasts: Gir oss mulighet til å implementere toasts med Mudblazor *@
+
+<!-- Snackbar system: toast notifications -->
 <MudSnackbarProvider />
 
-@* MainLayout med Mudblazor *@
+<!-- =========================
+     APP LAYOUT (GLOBAL STRUCTURE)
+     Wrapper hele applikasjonen
+========================= -->
 <MudLayout>
-    <AuthorizeView>
-        <Authorized>
-            <AppBar ShowMenuButton="true" OnMenuButtonClick="ToggleDrawer">
-                <RightContent>
-                    <MudAvatar Color="Color.Primary"
-                               Size="Size.Medium"
-                               Class="cv-pointer"
-                               @onclick="OnProfileButtonClick">
-                        @UserContext.FullName.ToInitials()
-                    </MudAvatar>
-                </RightContent>
-            </AppBar>
-            
-            <AppDrawer @bind-IsOpen="_drawerOpen">
-                <AppNavMenu/>
-            </AppDrawer>
-                
-            <UserProfileDrawer IsOpen="_profileDrawerOpen"
-                               IsOpenChanged="val => _profileDrawerOpen = val"
-                               IsDarkMode="@_isDarkMode"
-                               IsDarkModeChanged="OnDarkModeChanged"
-                               FullName="@UserContext.FullName"
-                               JobTitle="TODO: Hente i Claim? Eller bare drite i det"/>
 
-            @* Hovedcontent med Body - tilpasser seg MudDrawer automatisk *@
-            <MudMainContent>
-                @* Hovedcontent med Body - MaxWidth senterer inneholdet på store skjermer. pa-4 mt-4 er padding/margin *@
-                <MudContainer MaxWidth="MaxWidth.Large" Class="pa-4 mt-4">
-                    @Body
-                </MudContainer>
+    <AuthorizeView>
+
+        <Authorized>
+
+            <!-- =========================
+                 TOP BAR (APPBAR)
+                 - Menu button for sidebar
+                 - Theme toggle (dark/light)
+                 - Global actions kan legges her senere (search, notifications, user menu)
+            ========================== -->
+            <AppBar ShowMenuButton="true"
+                    OnMenuButtonClick="ToggleDrawer"
+                    @bind-IsDarkMode="_isDarkMode" />
+
+            <!-- =========================
+                 SIDE NAVIGATION (DRAWER)
+                 - Navigasjon for hele appen
+                 - Komponentbasert (AppNavMenu)
+                 - Kan gjøres collapsible / mini mode senere
+            ========================== -->
+            <AppDrawer @bind-IsOpen="_drawerOpen">
+                <AppNavMenu />
+            </AppDrawer>
+
+            <!-- =========================
+                 MAIN CONTENT AREA
+                 - @Body = alle sider rendres her
+                 - Padding flyttet hit for moderne SaaS layout
+                 - Full kontroll over spacing per app i stedet for global container
+            ========================== -->
+            <MudMainContent Class="main-content">
+
+                @Body
+
             </MudMainContent>
+
         </Authorized>
 
+        <!-- =========================
+             AUTH GUARD
+             Hvis bruker ikke er logget inn → redirect til login
+        ========================== -->
         <NotAuthorized>
-            <RedirectTo Href="@PageRoutes.Auth.LoginEmail"/>
+            <RedirectTo Href="@PageRoutes.Auth.LoginEmail" />
         </NotAuthorized>
+
     </AuthorizeView>
+
 </MudLayout>
 
+<!-- =========================
+     CODE BEHIND (STATE + LOGIC)
+========================= -->
 @code {
-    
-    // ======================== Private felt ========================
-    // Variabel for sidebar og mørkemodus
-    private bool _drawerOpen = true;
-    private bool _profileDrawerOpen;
+
+    // ========================
+    // UI STATE
+    // ========================
+
+    // Drawer state (sidebar open/close)
+    private bool _drawerOpen = false;
+
+    // Dark mode state (bindes til MudThemeProvider)
     private bool _isDarkMode;
-    
-    // Referansen til ThemeProvider komponenten for å endre tema
+
+    // Reference til MudBlazor theme system
     private MudThemeProvider _mudThemeProvider = null!;
-    
-    // Aktivt tema - Default på MainTheme
+
+    // Aktivt theme (custom CompVault theme)
     private readonly MudTheme _theme = CompVaultMainTheme.Theme;
-    
-    // ======================== Lifecycle ========================
-    
+
+    // ========================
+    // LIFECYCLE
+    // ========================
+
     /// <summary>
-    /// Ved første render så henter vi lokalt lagret tema, eller så bruker vi nettleserens modus
+    /// Kjøres første gang komponenten rendres.
+    /// Henter lagret theme preference fra ThemeService
+    /// og setter dark/light mode basert på brukerinnstilling eller system.
     /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            // Hent initial dark mode (persistert eller system default)
             _isDarkMode = await ThemeService.GetInitialDarkModeAsync(_mudThemeProvider);
+
+            // Oppdater UI etter async load
             StateHasChanged();
         }
     }
-    
-    // ======================== Private metoder ========================
-    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
-    private void OnProfileButtonClick() => _profileDrawerOpen = !_profileDrawerOpen;
-    
-    private Task OnDarkModeChanged(bool value)
-    {
-        _isDarkMode = value;
-        return Task.CompletedTask;
-    }
-    
+
+    // ========================
+    // ACTIONS / EVENTS
+    // ========================
+
+    /// <summary>
+    /// Toggle sidebar (drawer open/close)
+    /// Brukes av AppBar menu button
+    /// </summary>
+    private void ToggleDrawer()
+        => _drawerOpen = !_drawerOpen;
+
 }
