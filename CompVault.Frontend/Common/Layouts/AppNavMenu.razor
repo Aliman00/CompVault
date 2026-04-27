@@ -7,10 +7,10 @@
     <MudNavLink Href="@PageRoutes.UserCompetencies.List" Icon="@Icons.Material.Filled.WorkspacePremium">
         Min kompetanse
     </MudNavLink>
-    <MudNavLink Href="@PageRoutes.UserDocuments.List" Icon="@Icons.Material.Filled.Description">
+    <MudNavLink Href="@PageRoutes.UserDocuments.Overview" Icon="@Icons.Material.Filled.Description">
         Mine dokumenter
     </MudNavLink>
-    <MudNavLink Href="@PageRoutes.UserEquipment.List" Icon="@Icons.Material.Filled.Headphones">
+    <MudNavLink Href="@PageRoutes.UserEquipment.Overview" Icon="@Icons.Material.Filled.Headphones">
         Mitt utstyr
     </MudNavLink>
     
@@ -51,7 +51,7 @@
         <AuthorizeView Policy="@Permissions.CompetenciesRead">
             <Authorized>
                 <MudNavLink Href="@PageRoutes.CompetencyTypes.List" Icon="@Icons.Material.Filled.Category">
-                    Kompetansetyper
+                    Kompetanser
                 </MudNavLink>
             </Authorized>
         </AuthorizeView>

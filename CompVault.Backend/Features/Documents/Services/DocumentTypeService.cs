@@ -1,6 +1,8 @@
 using CompVault.Backend.Common.Utils;
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
@@ -11,7 +13,10 @@ namespace CompVault.Backend.Features.Documents.Services;
 /// <inheritdoc />
 public sealed class DocumentTypeService(
     IDocumentTypeRepository documentTypeRepository,
-    IDocumentTypeCategoryRepository categoryRepository) : IDocumentTypeService
+    IDocumentTypeCategoryRepository categoryRepository,
+    ILogger<DocumentTypeService> logger,
+    IUserRepository userRepository,
+    IDocumentRepository documentRepository) : IDocumentTypeService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<DocumentTypeDto>>> GetAllAsync(
@@ -33,6 +38,24 @@ public sealed class DocumentTypeService(
                 AppError.NotFound($"Dokumenttype med slug '{slug}' ble ikke funnet."));
 
         return Result<DocumentTypeDto>.Success(DocumentMapper.ToTypeDto(documentType));
+    }
+    
+    /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetDocumentTypesForUserAsync(Guid userId, 
+        CancellationToken ct = default)
+    {
+        ApplicationUser? user = await userRepository.GetByIdAsync(userId, ct);
+        if (user is null)
+        {
+            logger.LogWarning("Bruker med ID {UserId} ble ikke funnet ved henting av dokumenttyper", userId);
+            return Result<IReadOnlyList<UserDocumentTypeDto>>.Failure(
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        }
+        
+        IReadOnlyList<UserDocumentTypeDto> result = 
+            await documentRepository.GetDocumentTypesForUserAsync(user.DepartmentId, user.JobTitleId, ct);
+
+        return Result<IReadOnlyList<UserDocumentTypeDto>>.Success(result);
     }
 
     /// <inheritdoc />

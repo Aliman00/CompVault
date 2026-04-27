@@ -1,3 +1,4 @@
+using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Infrastructure.Repositories.Equipment;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.Constants.Validations;
@@ -95,6 +96,45 @@ public sealed class EquipmentIssuanceService(
         var dtos = issuances.Select(EquipmentMapper.ToDto).ToList();
 
         return Result<IReadOnlyList<EquipmentIssuanceDto>>.Success(dtos);
+    }
+    
+    /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserEquipmentCategoryDto>>> GetCategoriesForUserAsync(Guid userId, 
+        CancellationToken ct = default)
+    {
+        bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, ct);
+        if (!userExists)
+        {
+            logger.LogWarning("Bruker med ID {UserId} ble ikke funnet ved henting av utstyrskategorier", userId);
+            return Result<IReadOnlyList<UserEquipmentCategoryDto>>.Failure(
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        }
+
+        IReadOnlyList<UserEquipmentCategoryDto> result =
+            await issuanceRepository.GetCategoriesForUserAsync(userId, ct);
+
+        return Result<IReadOnlyList<UserEquipmentCategoryDto>>.Success(result);
+    }
+    
+    /// <inheritdoc />
+    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(Guid userId, Guid? categoryId, 
+        PagedQuery query, CancellationToken ct = default)
+    {
+        bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, ct);
+        if (!userExists)
+        {
+            logger.LogWarning("Bruker med ID {UserId} ble ikke funnet ved henting av utstyr", userId);
+            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        }
+
+        (IReadOnlyList<EquipmentIssuance> items, int totalCount) = 
+            await issuanceRepository.GetByUserIdPagedAsync(userId, categoryId, query, ct);
+
+        var equipmentIssuanceDtos = items.Select(EquipmentMapper.ToDto).ToList();
+
+        return Result<PagedResult<EquipmentIssuanceDto>>.Success(
+            PagedResult<EquipmentIssuanceDto>.Create(equipmentIssuanceDtos, totalCount, query));
     }
 
     /// <inheritdoc />

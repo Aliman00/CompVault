@@ -69,6 +69,35 @@ public class DocumentTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<List<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.DocumentTypes.My, ct);
+
+            Result<List<UserDocumentTypeDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<List<UserDocumentTypeDto>>(response, ct);
+
+            if (result.IsFailure)
+                return Result<List<UserDocumentTypeDto>>.Failure(result.Error!);
+
+            return Result<List<UserDocumentTypeDto>>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved henting av dokumenttyper for bruker");
+            return Result<List<UserDocumentTypeDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved henting av dokumenttyper for bruker");
+            return Result<List<UserDocumentTypeDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
 
     /// <inheritdoc />
     public async Task<Result<DocumentTypeDto>> CreateAsync(CreateDocumentTypeRequest request, CancellationToken ct)

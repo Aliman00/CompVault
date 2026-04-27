@@ -1,10 +1,10 @@
-@page "/my-documents"
+@page "/my-documents/{DocumentTypeSlug}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize]
 @inject IDocumentService DocumentService
 @inject NavigationManager NavigationManager
 
-@* Side for innlogget bruker – viser egne dokumenter med signeringsstatus *@
+@* Side for innlogget bruker – viser egne dokumenter til en dokumentkategori /slug  *@
 
 <AppAlert @bind-Alert="_alert"/>
 
@@ -13,7 +13,14 @@
     @* Header *@
     <MudToolBar Dense="true" Class="pa-4 mb-4">
         <MudIcon Icon="@Icons.Material.Filled.Description" Class="mr-2" Color="Color.Primary"/>
-        <MudText Typo="Typo.h6">Mine dokumenter</MudText>
+        @if (string.IsNullOrEmpty(_documentTypeName))
+        {
+            <AppSpinner Class="pa-20"/>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6">@_documentTypeName</MudText>
+        }
     </MudToolBar>
 
     @* Filter *@
@@ -24,11 +31,11 @@
                        ValueChanged="OnStatusFilterChanged"
                        Label="Status"
                        Clearable="true">
-                <MudSelectItem T="DocumentSignatureFilter" 
+                <MudSelectItem T="DocumentSignatureFilter"
                                Value="DocumentSignatureFilter.All">Alle</MudSelectItem>
-                <MudSelectItem T="DocumentSignatureFilter" 
+                <MudSelectItem T="DocumentSignatureFilter"
                                Value="DocumentSignatureFilter.Signed">Signert</MudSelectItem>
-                <MudSelectItem T="DocumentSignatureFilter" 
+                <MudSelectItem T="DocumentSignatureFilter"
                                Value="DocumentSignatureFilter.Pending">Venter signering</MudSelectItem>
             </MudSelect>
         </MudItem>
@@ -105,10 +112,16 @@
     </MudDataGrid>
 
 </MudPaper>
-
+    
 @code {
-
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Ved navigering så viser vi alle dokumentene til en bruker i en spesifikk slug
+    /// </summary>
+    [Parameter] public string? DocumentTypeSlug { get; set; }
+    
     // ===================== PRIVATE FELT =====================
+    private string _documentTypeName = string.Empty;
     private AlertInfo? _alert;
     private DocumentSignatureFilter _statusFilter;
     private MudDataGrid<DocumentListDto> _grid = null!;
@@ -135,16 +148,17 @@
             _ => DocumentSortField.UploadedAt
         };
         _sortDescending = sortDef?.Descending ?? true;
-        
+
         var query = new DocumentQueryParameters
         {
             SignatureFilter = _statusFilter,
+            DocumentTypeSlug = DocumentTypeSlug,
             SortBy = _sortBy,
             SortDescending = _sortDescending,
             Page = state.Page + 1,
             PageSize = state.PageSize
         };
-        
+
         Result<PagedResult<DocumentListDto>> result = await DocumentService.GetUserDocumentsAsync(query, ct);
 
         if (result.IsFailure)
@@ -152,11 +166,20 @@
             _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
             return new GridData<DocumentListDto>();
         }
-
+        
+        // Henter ut en DTO fra GridData for å kunne hente ut SlugName for visning i UI-en
+        var documentListDto = result.Value!.Items.FirstOrDefault();
+        if (string.IsNullOrEmpty(_documentTypeName))
+        {
+            _documentTypeName = documentListDto?.SlugName ?? DocumentTypeSlug ?? string.Empty;
+            StateHasChanged();
+        }
+    
         return new GridData<DocumentListDto>
         {
             Items = result.Value!.Items,
             TotalItems = result.Value!.TotalCount
         };
     }
+
 } 

@@ -2,7 +2,6 @@ using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
-
 using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Infrastructure.Repositories.Documents;
@@ -111,22 +110,46 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
     
+    public async Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid? departmentId, 
+        Guid? jobTitleId, CancellationToken ct = default) => 
+        await ApplyTargetingFilter(DbSet.Where(d => d.IsActive), departmentId, jobTitleId)
+            .GroupBy(d => new {  // Henter ut det vi trenger for DTO-en
+                d.DocumentTypeId, 
+                d.DocumentType!.Name,
+                d.DocumentType.Slug,
+                d.DocumentType.Description })
+            .Select(g => new UserDocumentTypeDto
+            {
+                Id = g.Key.DocumentTypeId,
+                Name = g.Key.Name,
+                Slug = g.Key.Slug,
+                Description = g.Key.Description,
+                DocumentCount = g.Count() // Teller antall dokumenter til hver type
+            })
+            .OrderBy(x => x.Name)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    
+    
     public async Task<int> CountDocumentsForUserAsync(
         Guid userId,
         Guid? departmentId,
         Guid? jobTitleId,
-        DocumentSignatureFilter signatureFilter,
+        DocumentQueryParameters parameters,
         CancellationToken ct = default)
     {
         IQueryable<Document> query = ApplyTargetingFilter(DbSet.Where(d => d.IsActive),
             departmentId, jobTitleId);
 
-        query = ApplySignatureFilter(query, userId, signatureFilter);
+        query = ApplySignatureFilter(query, userId, parameters.SignatureFilter);
+        
+        if (parameters.DocumentTypeSlug is not null)
+            query = query.Where(d => d.DocumentType!.Slug == parameters.DocumentTypeSlug);
 
         return await query.CountAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Document>> GetDocumentsForUserPagedAsync(
+    public async Task<IReadOnlyList<Document>> GetDocumentsForUserAsync(
         Guid userId,
         Guid? departmentId,
         Guid? jobTitleId,
@@ -139,6 +162,10 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         
         // Filterer bort utifra om vi har valgt alle, signatuerer eller ikke signaturer
         query = ApplySignatureFilter(query, userId, parameters.SignatureFilter);
+        
+        // Filtrerer etter dokumenttype
+        if (parameters.DocumentTypeSlug is not null)
+            query = query.Where(d => d.DocumentType!.Slug == parameters.DocumentTypeSlug);
 
         IOrderedQueryable<Document> sorted = parameters.SortBy switch
         {

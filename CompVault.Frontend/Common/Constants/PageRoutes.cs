@@ -27,13 +27,15 @@ public static class PageRoutes
     
     public static class UserEquipment
     {
-        public const string List = "/my-equipment";
-        public static string Detail(Guid id) => $"/my-equipment/{id}";
+        public const string Overview = "/my-equipment";
+        public static string List(Guid categoryId) => $"/my-equipment/{categoryId}";
+        public static string Detail(Guid id) => $"/my-equipment/detail/{id}";
     }
     
     public static class UserDocuments
     {
-        public const string List = "/my-documents";
+        public const string Overview = "/my-documents";
+        public static string List(string slug) => $"/my-documents/{slug}";
         public static string Detail(string slug, Guid id) => $"/my-documents/{slug}/{id}";
     }
     

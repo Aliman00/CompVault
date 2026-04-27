@@ -71,6 +71,42 @@ public sealed class EquipmentIssuancesController(IEquipmentIssuanceService issua
         
         return Ok(result.Value);
     }
+    
+    /// <summary>
+    /// Henter utstyrskategorier med antall utstyr for innlogget bruker
+    /// </summary>
+    [HttpGet("my/categories")]
+    [ProducesResponseType(typeof(IReadOnlyList<UserEquipmentCategoryDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<UserEquipmentCategoryDto>>> GetMyCategoriesAsync(
+        CancellationToken ct)
+    {
+        Guid userId = User.GetUserId();
+        Result<IReadOnlyList<UserEquipmentCategoryDto>> result =
+            await issuanceService.GetCategoriesForUserAsync(userId, ct);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
+    
+    /// <summary>
+    /// Henter utleveringer med filteringer og paginering for innlogget bruker
+    /// </summary>
+    [HttpGet("my")]
+    [ProducesResponseType(typeof(PagedResult<EquipmentIssuanceDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(
+        [FromQuery] Guid? categoryId, [FromQuery] PagedQuery query, CancellationToken ct)
+    {
+        Guid userId = User.GetUserId();
+        Result<PagedResult<EquipmentIssuanceDto>> result =
+            await issuanceService.GetMyEquipmentAsync(userId, categoryId, query, ct);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
 
     [HttpPost]
     [Authorize(Policy = Permissions.EquipmentWrite)]

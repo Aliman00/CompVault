@@ -104,6 +104,70 @@ public class EquipmentIssuancesService(
     }
     
     /// <inheritdoc />
+    public async Task<Result<List<UserEquipmentCategoryDto>>> GetMyCategoriesAsync(CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response =
+                await _httpClient.GetAsync(ApiRoutes.EquipmentIssuances.MyCategories, ct);
+
+            Result<List<UserEquipmentCategoryDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<List<UserEquipmentCategoryDto>>(response, ct);
+
+            if (result.IsFailure)
+                return Result<List<UserEquipmentCategoryDto>>.Failure(result.Error!);
+
+            return Result<List<UserEquipmentCategoryDto>>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved henting av utstyrskategorier for bruker");
+            return Result<List<UserEquipmentCategoryDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved henting av utstyrskategorier for bruker");
+            return Result<List<UserEquipmentCategoryDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
+    
+    /// <inheritdoc />
+    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(
+        Guid? categoryId, PagedQuery query, CancellationToken ct)
+    {
+        try
+        {
+            string url = $"{ApiRoutes.EquipmentIssuances.My}?page={query.Page}&pageSize={query.PageSize}";
+            if (categoryId.HasValue)
+                url += $"&categoryId={categoryId.Value}";
+
+            HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
+
+            Result<PagedResult<EquipmentIssuanceDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<PagedResult<EquipmentIssuanceDto>>(response, ct);
+
+            if (result.IsFailure)
+                return Result<PagedResult<EquipmentIssuanceDto>>.Failure(result.Error!);
+
+            return Result<PagedResult<EquipmentIssuanceDto>>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved henting av utstyr for bruker");
+            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved henting av utstyr for bruker");
+            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
+    
+    /// <inheritdoc />
     public async Task<Result<List<EquipmentIssuanceDto>>> GetByItemAsync(Guid itemId, CancellationToken ct)
     {
         try

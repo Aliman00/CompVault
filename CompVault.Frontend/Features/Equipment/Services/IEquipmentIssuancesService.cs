@@ -20,6 +20,17 @@ public interface IEquipmentIssuancesService
     /// Henter alle utleveringer for en bruker
     /// </summary>
     Task<Result<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, PagedQuery query, CancellationToken ct);
+        
+    /// <summary>
+    /// Henter alle kategoriene en bruker har utlevert utstyr i, med antall
+    /// </summary>
+    Task<Result<List<UserEquipmentCategoryDto>>> GetMyCategoriesAsync(CancellationToken ct);
+    
+    /// <summary>
+    /// Henter alt utstyr for innlogget bruker. Med filtrering på kategori
+    /// </summary>
+    Task<Result<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(Guid? categoryId, PagedQuery query, 
+        CancellationToken ct);
     
     /// <summary>
     /// Henter alle utleveringer for et utstyr
