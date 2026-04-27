@@ -72,7 +72,7 @@ public sealed class DocumentsController(
         IFormFile? file,
         CancellationToken cancellationToken)
     {
-        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAllDepartments);
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAll);
 
         if (file is not null && file.Length == 0)
             return BadRequest("Filen er tom.");
@@ -109,7 +109,7 @@ public sealed class DocumentsController(
         CancellationToken cancellationToken)
     {
         Guid userId = User.GetUserId();
-        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAllDepartments);
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAll);
         Result<DocumentDto> result = await documentService.UpdateAsync(id, userId, request, bypassTargeting,
             cancellationToken);
 

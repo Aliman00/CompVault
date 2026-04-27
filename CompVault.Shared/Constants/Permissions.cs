@@ -16,6 +16,7 @@ public static class Permissions
     public const string UsersRead = "users:read";
     public const string UsersWrite = "users:write";
     public const string UsersDelete = "users:delete";
+    public const string UsersAll = "users:read:all";
 
     // Roles
     public const string RolesRead = "roles:read";
@@ -26,11 +27,13 @@ public static class Permissions
     public const string DepartmentsRead = "departments:read";
     public const string DepartmentsWrite = "departments:write";
     public const string DepartmentsDelete = "departments:delete";
+    public const string DepartmentsAll = "departments:read:all";
 
     // Competencies
     public const string CompetenciesRead = "competencies:read";
     public const string CompetenciesWrite = "competencies:write";
     public const string CompetenciesDelete = "competencies:delete";
+    public const string CompetenciesAll = "competencies:read:all";
 
     // AdminAccess
     public const string AdminAccess = "admin:access";
@@ -45,7 +48,7 @@ public static class Permissions
     public const string DocumentsWrite = "documents:write";
     public const string DocumentsDelete = "documents:delete";
     public const string DocumentsSign = "documents:sign";
-    public const string DocumentsAllDepartments = "documents:all_departments";
+    public const string DocumentsAll = "documents:all:departments";
 
     // Job Titles
     public const string JobTitlesRead = "job_titles:read";
@@ -56,6 +59,7 @@ public static class Permissions
     public const string EquipmentRead = "equipment:read";
     public const string EquipmentWrite = "equipment:write";
     public const string EquipmentDelete = "equipment:delete";
+    public const string EquipmentAll = "equipment:read:all";
 
     // Audit
     public const string AuditRead = "audit:read";
