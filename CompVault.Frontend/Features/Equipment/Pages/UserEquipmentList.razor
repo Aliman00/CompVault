@@ -1,12 +1,11 @@
-@page "/my-equipment"
+@page "/my-equipment/{CategoryId:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize]
 @inject IEquipmentIssuancesService EquipmentIssuancesService
 @inject NavigationManager NavigationManager
-@inject CircuitUserContext CircuitUserContext
 
 
-@* Side for å vise utstyret innlogget bruker har fått utlevert *@
+@* Side for å vise utstyret innlogget bruker har fått utlevert i en kategori *@
 
 <AppAlert @bind-Alert="_alert"/>
 
@@ -15,11 +14,19 @@
     @* Header *@
     <MudToolBar Dense="true" Class="pa-4 mb-4">
         <MudIcon Icon="@Icons.Material.Filled.Headphones" Class="mr-2" Color="Color.Primary"/>
-        <MudText Typo="Typo.h6">Mitt utstyr</MudText>
+        @if (string.IsNullOrEmpty(_categoryName))
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true"/>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6">@_categoryName</MudText>
+        }
     </MudToolBar>
 
     @* Tabell *@
     <MudDataGrid T="EquipmentIssuanceDto"
+                 @ref="_grid"
                  ServerData="LoadServerData"
                  Dense="true"
                  Hover="true"
@@ -33,11 +40,6 @@
             <PropertyColumn T="EquipmentIssuanceDto" TProperty="string"
                             Property='x => x.ItemName.Truncate(40)'
                             Title="Utstyr"/>
-
-            @* Kategori *@
-            <PropertyColumn T="EquipmentIssuanceDto" TProperty="string"
-                            Property='x => x.CategoryName.Truncate(40)'
-                            Title="Kategori"/>
 
             @* Antall *@
             <PropertyColumn T="EquipmentIssuanceDto" TProperty="int"
@@ -73,9 +75,14 @@
 </MudPaper>
 
 @code {
-
+    // ===================== PARAMETERS =====================
+    [Parameter]
+    public Guid CategoryId { get; set; }
+    
     // ===================== PRIVATE FELT =====================
+    private string _categoryName = string.Empty;
     private AlertInfo? _alert;
+    private MudDataGrid<EquipmentIssuanceDto> _grid = null!;
 
     // ===================== PRIVATE METHODS =====================
     private void OnRowClick(DataGridRowClickEventArgs<EquipmentIssuanceDto> args) =>
@@ -84,19 +91,25 @@
     private async Task<GridData<EquipmentIssuanceDto>> LoadServerData(GridState<EquipmentIssuanceDto> state, 
         CancellationToken ct)
     {
-        Guid? userId = CircuitUserContext.UserId;
-        
         var query = new PagedQuery
         {
             Page = state.Page + 1,
             PageSize = state.PageSize
         };
 
-        var result = await EquipmentIssuancesService.GetByUserAsync(userId!.Value, query, ct);
+        var result = await EquipmentIssuancesService.GetMyEquipmentAsync(CategoryId, query, ct);
         if (result.IsFailure)
         {
             _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
             return new GridData<EquipmentIssuanceDto>();
+        }
+        
+        // Henter ut en for å hente kategorinavn
+        var equipmentIssuanceDto = result.Value!.Items.FirstOrDefault();
+        if (string.IsNullOrEmpty(_categoryName) && equipmentIssuanceDto is not null)
+        {
+            _categoryName = equipmentIssuanceDto.CategoryName ?? string.Empty;
+            StateHasChanged();
         }
 
         return new GridData<EquipmentIssuanceDto>

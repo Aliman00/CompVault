@@ -27,8 +27,9 @@ public static class PageRoutes
     
     public static class UserEquipment
     {
-        public const string List = "/my-equipment";
-        public static string Detail(Guid id) => $"/my-equipment/{id}";
+        public const string Overview = "/my-equipment";
+        public static string List(Guid categoryId) => $"/my-equipment/{categoryId}";
+        public static string Detail(Guid id) => $"/my-equipment/detail/{id}";
     }
     
     public static class UserDocuments

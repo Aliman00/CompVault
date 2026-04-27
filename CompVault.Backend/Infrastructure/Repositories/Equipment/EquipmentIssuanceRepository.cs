@@ -1,5 +1,7 @@
 using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Shared.DTOs.Common.Pagination;
+using CompVault.Shared.DTOs.Equipment;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -58,9 +60,34 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
             .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
-                .ThenInclude(item => item!.Category)
+                .ThenInclude(item => item.Category)
             .Include(i => i.IssuedBy)
             .ToListAsync(cancellationToken);
+    
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<EquipmentIssuance> Items, int TotalCount)> GetByUserIdPagedAsync(
+        Guid userId, Guid? categoryId, PagedQuery query, CancellationToken ct = default)
+    {
+        IQueryable<EquipmentIssuance> q = DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null && i.IsActive && i.UserId == userId);
+
+        if (categoryId.HasValue)
+            q = q.Where(i => i.Item!.CategoryId == categoryId.Value);
+
+        int totalCount = await q.CountAsync(ct);
+
+        List<EquipmentIssuance> items = await q
+            .OrderByDescending(i => i.IssuedDate)
+            .Skip(query.Skip)
+            .Take(query.PageSize)
+            .Include(i => i.Item!).ThenInclude(item => item!.Category)
+            .Include(i => i.IssuedBy)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
     
     /// <inheritdoc />
     public async Task<IReadOnlyList<EquipmentIssuance>> GetByItemIdAsync(
@@ -73,6 +100,23 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
             .Include(i => i.Item!)
             .ThenInclude(item => item!.Category)
             .Include(i => i.IssuedBy)
+            .ToListAsync(ct);
+    
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<UserEquipmentCategoryDto>> GetCategoriesForUserAsync(
+        Guid userId, CancellationToken ct = default) =>
+        await DbSet
+            .IgnoreQueryFilters()
+            .Where(i => i.DeletedAt == null && i.IsActive && i.UserId == userId)
+            .GroupBy(i => new { i.Item!.CategoryId, i.Item.Category!.Name })
+            .Select(g => new UserEquipmentCategoryDto
+            {
+                Id = g.Key.CategoryId,
+                Name = g.Key.Name,
+                ItemCount = g.Select(i => i.ItemId).Distinct().Count()
+            })
+            .OrderBy(x => x.Name)
+            .AsNoTracking()
             .ToListAsync(ct);
 
     /// <inheritdoc />

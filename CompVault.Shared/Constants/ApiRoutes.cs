@@ -114,6 +114,8 @@ public static class ApiRoutes
         public static string ById(Guid id) => $"{Base}/{id}";
         public static string ByUser(Guid userId) => $"{Base}/by-user/{userId}";
         public static string ByItem(Guid itemId) => $"{Base}/by-item/{itemId}";
+        public const string MyCategories = $"{Base}/my/categories";
+        public const string My = $"{Base}/my";
     }
 
     public static class Audit
