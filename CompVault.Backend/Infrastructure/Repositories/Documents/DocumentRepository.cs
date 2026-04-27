@@ -110,8 +110,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
     
-    public async Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(
-        Guid userId, Guid? departmentId, Guid? jobTitleId, CancellationToken ct = default) => 
+    public async Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid? departmentId, 
+        Guid? jobTitleId, CancellationToken ct = default) => 
         await ApplyTargetingFilter(DbSet.Where(d => d.IsActive), departmentId, jobTitleId)
             .GroupBy(d => new {  // Henter ut det vi trenger for DTO-en
                 d.DocumentTypeId, 

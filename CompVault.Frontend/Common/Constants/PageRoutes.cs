@@ -33,7 +33,8 @@ public static class PageRoutes
     
     public static class UserDocuments
     {
-        public const string List = "/my-documents";
+        public const string Overview = "/my-documents";
+        public static string List(string slug) => $"/my-documents/{slug}";
         public static string Detail(string slug, Guid id) => $"/my-documents/{slug}/{id}";
     }
     

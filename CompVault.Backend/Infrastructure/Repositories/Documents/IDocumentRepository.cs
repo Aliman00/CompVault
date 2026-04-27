@@ -1,7 +1,5 @@
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Shared.DTOs.Documents;
-using CompVault.Shared.Enums;
-
 namespace CompVault.Backend.Infrastructure.Repositories.Documents;
 
 /// <summary>
@@ -50,7 +48,7 @@ public interface IDocumentRepository : IRepository<Document>
     /// <summary>Henter alle dokumenttyper hvor brukeren har dokumenter.
     /// Henter dokumentene og grupperer de, deretter henter ut det vi trenger for DTO-en,
     /// sorteret etter navn</summary>
-    Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId, 
+    Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid? departmentId, 
         Guid? jobTitleId, CancellationToken ct = default);
     
     /// <summary>Teller dokumenter for en bruker basert på filtrering av status</summary>

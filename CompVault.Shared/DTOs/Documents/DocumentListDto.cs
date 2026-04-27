@@ -13,6 +13,9 @@ public sealed class DocumentListDto
     
     /// <summary>Slug til dokumenttypen</summary>
     public string Slug { get; set; } = string.Empty;
+    
+    /// <summary>Navn for å vise i UI-en til dokumenttypen</summary>
+    public string SlugName { get; set; } = string.Empty;
 
     /// <summary>Beskrivelse.</summary>
     public string? Description { get; set; }

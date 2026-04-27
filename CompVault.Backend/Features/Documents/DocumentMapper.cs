@@ -52,6 +52,7 @@ public static class DocumentMapper
         {
             Id = document.Id,
             Slug = document.DocumentType?.Slug ?? string.Empty,
+            SlugName = document.DocumentType?.Name ?? string.Empty,  
             Title = document.Title,
             Description = document.Description,
             DocumentTypeCategoryId = document.DocumentTypeCategoryId,

@@ -53,7 +53,7 @@ public sealed class DocumentTypeService(
         }
         
         IReadOnlyList<UserDocumentTypeDto> result = 
-            await documentRepository.GetDocumentTypesForUserAsync(userId, user.DepartmentId, user.JobTitleId, ct);
+            await documentRepository.GetDocumentTypesForUserAsync(user.DepartmentId, user.JobTitleId, ct);
 
         return Result<IReadOnlyList<UserDocumentTypeDto>>.Success(result);
     }

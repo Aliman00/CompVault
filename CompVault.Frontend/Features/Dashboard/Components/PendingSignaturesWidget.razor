@@ -33,7 +33,8 @@
                 <MudListItem T="DocumentListDto"
                              Dense="true"
                              Class="px-0"
-                             OnClick="() => NavigationManager.NavigateTo(PageRoutes.UserDocuments.Detail(doc.Slug, doc.Id))">
+                             OnClick="() => NavigationManager.NavigateTo(
+                             PageRoutes.UserDocuments.Detail(doc.Slug, doc.Id))">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                         <MudStack Spacing="0">
                             <MudText Typo="Typo.body2">@doc.Title.Truncate(40)</MudText>
@@ -50,7 +51,7 @@
                 <MudDivider/>
             }
         </MudList>
-        <MudLink Href="@PageRoutes.UserDocuments.List" Typo="Typo.caption" Class="mt-2 d-block">
+        <MudLink Href="@PageRoutes.UserDocuments.Overview" Typo="Typo.caption" Class="mt-2 d-block">
             Se alle mine dokumenter →
         </MudLink>
     }

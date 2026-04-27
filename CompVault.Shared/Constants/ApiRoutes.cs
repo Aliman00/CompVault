@@ -66,6 +66,7 @@ public static class ApiRoutes
     {
         public const string Base = "api/document-types";
         public static string BySlug(string slug) => $"{Base}/{slug}";
+        public const string My = $"{Base}/my"; 
     }
 
     public static class DocumentTypeCategories // Base brukes ikke her siden det ligger inne i DocumentType, bruker All
