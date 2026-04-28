@@ -3,6 +3,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
@@ -75,7 +76,7 @@ public class DocumentSignatureServiceTests
             FirstName = "Test",
             LastName = "Bruker",
             Email = "test@test.no",
-            DepartmentId = departmentId,
+            DepartmentId = departmentId ?? TestConstants.Departments.DefaultDepartmentId,
             JobTitleId = jobTitleId
         };
     }

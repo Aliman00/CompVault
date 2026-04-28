@@ -22,10 +22,9 @@ public static class ClaimsPrincipalExtensions
     /// <summary>
     /// Sjekker om brukeren har en spesifikk permission.
     /// </summary>
-    public static bool HasPermission(this ClaimsPrincipal user, string permission)
-    {
-        return user.HasClaim(Permissions.ClaimType, permission);
-    }
+    public static bool HasPermission(this ClaimsPrincipal user, string permission) => 
+        user.HasClaim(Permissions.ClaimType, permission);
+    
 
     /// <summary>
     /// Henter alle permissions fra brukerens claims.
@@ -36,5 +35,16 @@ public static class ClaimsPrincipalExtensions
             .Where(c => c.Type == Permissions.ClaimType)
             .Select(c => c.Value)
             .ToList();
+    }
+    
+    /// <summary>
+    /// Henter brukerens avdeling fra token. Null hvis brukeren ikke har blitt tildelt en avdeling
+    /// </summary>
+    public static Guid? GetDepartmentId(this ClaimsPrincipal user)
+    {
+        string? value = user.FindFirstValue("department_id");
+        return Guid.TryParse(value, out Guid id) 
+            ? id 
+            : null;
     }
 }

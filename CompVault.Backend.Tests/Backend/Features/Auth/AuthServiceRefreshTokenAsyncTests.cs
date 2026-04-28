@@ -6,6 +6,7 @@ using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Tests.Common;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
@@ -23,6 +24,7 @@ namespace CompVault.Backend.Tests.Backend.Features.Auth;
 public class AuthServiceRefreshTokenAsyncTests
 {
     private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepositoryMock;
     private readonly Mock<IRefreshTokenService> _refreshTokenServiceMock;
     private readonly Mock<IJwtService> _jwtServiceMock;
@@ -45,6 +47,7 @@ public class AuthServiceRefreshTokenAsyncTests
         _refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _permissionServiceMock = new Mock<IPermissionService>();
+        _userRepositoryMock = new Mock<IUserRepository>();
 
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
         _unitOfWorkMock
@@ -67,6 +70,7 @@ public class AuthServiceRefreshTokenAsyncTests
 
         _sut = new AuthService(
             _userManagerMock.Object,
+            _userRepositoryMock.Object,
             loggerMock.Object,
             _jwtServiceMock.Object,
             otpCodeServiceMock.Object,
@@ -107,8 +111,8 @@ public class AuthServiceRefreshTokenAsyncTests
             .Setup(x => x.GetValidTokenAsync(storedToken.Token, It.IsAny<CancellationToken>()))
             .ReturnsAsync(storedToken);
 
-        _userManagerMock
-            .Setup(x => x.FindByIdAsync(user.Id.ToString()))
+        _userRepositoryMock
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _userManagerMock
@@ -234,8 +238,8 @@ public class AuthServiceRefreshTokenAsyncTests
             .Setup(x => x.GetValidTokenAsync(storedToken.Token, It.IsAny<CancellationToken>()))
             .ReturnsAsync(storedToken);
 
-        _userManagerMock
-            .Setup(x => x.FindByIdAsync(inactiveUser.Id.ToString()))
+        _userRepositoryMock
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(inactiveUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inactiveUser);
 
         // Act
@@ -274,8 +278,8 @@ public class AuthServiceRefreshTokenAsyncTests
             .Setup(x => x.GetValidTokenAsync(storedToken.Token, It.IsAny<CancellationToken>()))
             .ReturnsAsync(storedToken);
 
-        _userManagerMock
-            .Setup(x => x.FindByIdAsync(user.Id.ToString()))
+        _userRepositoryMock
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _userManagerMock

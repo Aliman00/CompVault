@@ -13,9 +13,16 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
     /// <inheritdoc />
     public async Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         await DbSet
+            .IgnoreQueryFilters()
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
-
+            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant() && u.DeletedAt == null, cancellationToken);
+    
+    /// <inheritdoc />
+    public async Task<ApplicationUser?> GetByIdIgnoringFiltersAsync(Guid id, CancellationToken ct = default) =>
+        await DbSet
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null, ct);
+    
     /// <inheritdoc />
     public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>>
         GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default)
@@ -49,8 +56,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .AsNoTracking()
             .Include(u => u.Department)
             .Include(u => u.JobTitle)
-            .Where(u => departmentIds.Count == 0 ||
-                        (u.DepartmentId.HasValue && departmentIds.Contains(u.DepartmentId.Value)))
+            .Where(u => departmentIds.Count == 0 || departmentIds.Contains(u.DepartmentId))
             .Where(u => jobTitleIds.Count == 0 ||
                         (u.JobTitleId.HasValue && jobTitleIds.Contains(u.JobTitleId.Value)))
             .ToListAsync(ct);
@@ -135,4 +141,18 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
 
         return result.Select(x => (x.User, x.Roles)).ToList();
     }
+    
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ApplicationUser>> GetLookupAsync(IReadOnlyList<Guid> allowedDepartmentIds,
+        bool bypass, CancellationToken ct = default) =>
+        await DbSet
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Include(u => u.Department)
+            .Include(u => u.JobTitle)
+            .Where(u => u.IsActive && u.DeletedAt == null)
+            .Where(u => bypass || allowedDepartmentIds.Contains(u.DepartmentId))
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
+            .ToListAsync(ct);
 }

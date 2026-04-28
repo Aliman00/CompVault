@@ -29,6 +29,9 @@ public sealed class JwtService(IOptions<JwtSettings> settings, ILogger<JwtServic
             new Claim("firstName", user.FirstName),
             new Claim("lastName", user.LastName)
         ];
+        
+        // Legger til avadelingsID i claim for å enkelt sjekke brukerens tilattelse i hierarkiet
+        claims.Add(new Claim("department_id", user.DepartmentId.ToString()));
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
         claims.AddRange(permissions.Select(p => new Claim(Permissions.ClaimType, p)));

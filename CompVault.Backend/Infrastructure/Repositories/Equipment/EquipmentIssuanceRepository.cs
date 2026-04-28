@@ -1,5 +1,7 @@
 using CompVault.Backend.Domain.Entities.Equipment;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Equipment;
 
@@ -10,7 +12,9 @@ namespace CompVault.Backend.Infrastructure.Repositories.Equipment;
 /// <summary>
 /// EF Core-implementasjon av <see cref="IEquipmentIssuanceRepository"/>.
 /// </summary>
-public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
+public sealed class EquipmentIssuanceRepository(
+    AppDbContext dbContext, 
+    IDepartmentScopeService departmentScope) 
     : BaseRepository<EquipmentIssuance>(dbContext), IEquipmentIssuanceRepository
 {
     /// <inheritdoc />
@@ -28,29 +32,36 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
 
     /// <inheritdoc />
     public async Task<EquipmentIssuance?> GetByIdWithDetailsAsync(
-        Guid id, CancellationToken cancellationToken = default) =>
-        await DbSet
+        Guid id, CancellationToken cancellationToken = default)
+    {
+        IQueryable<EquipmentIssuance> query = DbSet
             .IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null)
             .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
-                .ThenInclude(item => item!.Category)
-            .Include(i => i.IssuedBy)
+            .ThenInclude(item => item!.Category)
+            .Include(i => i.IssuedBy);
+
+        return await ApplyDepartmentFilter(query)
             .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+    }
 
     /// <inheritdoc />
     public async Task<EquipmentIssuance?> GetForUpdateAsync(
-        Guid id, CancellationToken cancellationToken = default) =>
-        await DbSet
+        Guid id, CancellationToken cancellationToken = default)
+    {
+        IQueryable<EquipmentIssuance> query = DbSet
             .IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null)
             .Include(i => i.Item!)
-                .ThenInclude(item => item!.Category)
+            .ThenInclude(item => item!.Category)
             .Include(i => i.User)
-            .Include(i => i.IssuedBy)
-            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+            .Include(i => i.IssuedBy);
 
+        return await ApplyDepartmentFilter(query)
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+    }
     /// <inheritdoc />
     public async Task<IReadOnlyList<EquipmentIssuance>> GetByUserIdAsync(
         Guid userId, CancellationToken cancellationToken = default) =>
@@ -81,7 +92,7 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
             .OrderByDescending(i => i.IssuedDate)
             .Skip(query.Skip)
             .Take(query.PageSize)
-            .Include(i => i.Item!).ThenInclude(item => item!.Category)
+            .Include(i => i.Item!).ThenInclude(item => item.Category)
             .Include(i => i.IssuedBy)
             .AsNoTracking()
             .ToListAsync(ct);
@@ -91,16 +102,19 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
     
     /// <inheritdoc />
     public async Task<IReadOnlyList<EquipmentIssuance>> GetByItemIdAsync(
-        Guid itemId, CancellationToken ct = default) =>
-        await DbSet
+        Guid itemId, CancellationToken ct = default)
+    {
+        IQueryable<EquipmentIssuance> query = DbSet
             .IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null && i.ItemId == itemId)
             .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
-            .ThenInclude(item => item!.Category)
-            .Include(i => i.IssuedBy)
-            .ToListAsync(ct);
+            .ThenInclude(item => item.Category)
+            .Include(i => i.IssuedBy);
+
+        return await ApplyDepartmentFilter(query).ToListAsync(ct);
+    }
     
     /// <inheritdoc />
     public async Task<IReadOnlyList<UserEquipmentCategoryDto>> GetCategoriesForUserAsync(
@@ -120,15 +134,18 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
             .ToListAsync(ct);
 
     /// <inheritdoc />
-    public IQueryable<EquipmentIssuance> QueryWithDetails() =>
-        DbSet
+    public IQueryable<EquipmentIssuance> QueryWithDetails()
+    {
+        IQueryable<EquipmentIssuance> query = DbSet
             .IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null)
-            .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
-                .ThenInclude(item => item!.Category)
+            .ThenInclude(item => item.Category)
             .Include(i => i.IssuedBy);
+
+        return ApplyDepartmentFilter(query);
+    }
 
     /// <inheritdoc />
     public async Task<int> CountByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
@@ -144,14 +161,23 @@ public sealed class EquipmentIssuanceRepository(AppDbContext dbContext)
         issuance.IsActive = false;
         return Task.CompletedTask;
     }
-
-    /// <inheritdoc />
-    public async Task<int> SoftDeleteByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    
+    /// <summary>
+    /// Filtrerer vekk utleveringer brukeren ikke har tilattelse til å se/endre
+    /// </summary>
+    private IQueryable<EquipmentIssuance> ApplyDepartmentFilter(IQueryable<EquipmentIssuance> query)
     {
-        return await DbSet
-            .Where(i => i.Id == id)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(i => i.DeletedAt, DateTime.UtcNow)
-                .SetProperty(i => i.IsActive, false), cancellationToken);
+        if (departmentScope.HasBypass(Permissions.EquipmentAll))
+            return query;
+
+        IReadOnlyList<Guid> allowedIds =
+            departmentScope.GetAllowedDepartmentIds(Permissions.EquipmentReadSub);
+
+        IQueryable<Guid> allowedUserIds = DbContext.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.DeletedAt == null && allowedIds.Contains(u.DepartmentId))
+            .Select(u => u.Id);
+
+        return query.Where(i => allowedUserIds.Contains(i.UserId));
     }
 }

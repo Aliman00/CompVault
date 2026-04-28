@@ -127,11 +127,10 @@ else if (_user != null)
                                                        d => d.Id == id)?.Name ?? string.Empty)"
                                      IsEditing="_isEditing"
                                      DisplayValue="@_user!.DepartmentName"
-                                     ShowLink="_user!.DepartmentId.HasValue"
+                                     ShowLink="true"
                                      OnNavigate="NavigateToDepartment"
                                      HelperText="Trykk på knappen for å gå til avdelingen">
                     <Items>
-                        <MudSelectItem Value="(Guid?)null">Ingen avdeling</MudSelectItem>
                         @foreach (var department in _departments)
                         {
                             <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
@@ -276,7 +275,7 @@ else if (_user != null)
     private EditContext _editContext = null!;
 
     // Sjekker om den overordnete avdeling eller stillingstittelen er inaktiv
-    private bool ParentIsInactive => _user?.DepartmentId.HasValue == true && _user.DepartmentIsActive == false;
+    private bool ParentIsInactive => _user?.DepartmentIsActive == false;
     private bool JobTitleIsInactive => _user?.JobTitleId.HasValue == true && _user.JobTitleIsActive == false;
 
     // Visning av faner
@@ -303,7 +302,7 @@ else if (_user != null)
         _jobTitles = [];
         _editModel = new();
         await GetPermissions();
-        
+
         OnTabChanged(0);
 
         try
@@ -422,11 +421,6 @@ else if (_user != null)
     {
         _editModel = UserEditModel.FromDto(_user!);
 
-        // Setter verdiene til null siden vi filterer bort brukeren sin verdi når vi bytter til redigeringsmodus
-        // og brukeren har inaktive verdier
-        if (ParentIsInactive)
-            _editModel.DepartmentId = null;
-
         if (JobTitleIsInactive)
             _editModel.JobTitleId = null;
 
@@ -454,8 +448,8 @@ else if (_user != null)
 
     private void NavigateToDepartment()
     {
-        if (_user?.DepartmentId.HasValue == true)
-            NavigationManager.NavigateTo(PageRoutes.Departments.Detail(_user.DepartmentId.Value));
+        if (_user != null)
+            NavigationManager.NavigateTo(PageRoutes.Departments.Detail(_user.DepartmentId));
     }
 
     private void NavigateToJobTitle()
@@ -530,7 +524,7 @@ else if (_user != null)
         _user = updatedUser;
         _alert = new AlertInfo("Brukerens roller er oppdatert", Severity.Success);
     }
-    
+
     // Henter permisisons fra claim for å sjekke hvilke faner brukeren har lov til å se
     private async Task GetPermissions()
     {
@@ -540,15 +534,15 @@ else if (_user != null)
         _canReadCompetencies = auth.User.HasClaim(Permissions.ClaimType, Permissions.CompetenciesRead);
         _canReadDocuments = auth.User.HasClaim(Permissions.ClaimType, Permissions.DocumentsRead);
     }
-    
+
     // Endrer hvilken tab som er synlig
     private void OnTabChanged(int index)
     {
         int i = 0;
         _showKompetanse = _canReadCompetencies && index == i++;
-        _showUtstyr     = _canReadEquipment    && index == i++;
-        _showDokumenter = _canReadDocuments    && index == i++;
-        _showAudit      = _canReadAudit        && index == i;
+        _showUtstyr = _canReadEquipment && index == i++;
+        _showDokumenter = _canReadDocuments && index == i++;
+        _showAudit = _canReadAudit && index == i;
     }
-    
+
 }

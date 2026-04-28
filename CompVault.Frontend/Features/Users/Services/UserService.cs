@@ -71,6 +71,37 @@ public class UserService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserLookupDto>>> LookupUsersAsync(string readPermission,
+        string bypassPermission, string subPermission, CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync(
+                ApiRoutes.User.Lookup(readPermission, bypassPermission, subPermission), ct);
+            
+            Result<IReadOnlyList<UserLookupDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<IReadOnlyList<UserLookupDto>>(response, ct);
+            
+            if (result.IsFailure)
+                return Result<IReadOnlyList<UserLookupDto>>.Failure(result.Error!);
+
+            return Result<IReadOnlyList<UserLookupDto>>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved henting av brukere");
+            return Result<IReadOnlyList<UserLookupDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved henting av brukere");
+            return Result<IReadOnlyList<UserLookupDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
 
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<UserDto>>> GetPotentialManagersAsync(CancellationToken ct)

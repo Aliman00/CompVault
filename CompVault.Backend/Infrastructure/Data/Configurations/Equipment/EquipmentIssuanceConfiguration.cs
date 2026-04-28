@@ -29,23 +29,19 @@ internal sealed class EquipmentIssuanceConfiguration : IEntityTypeConfiguration<
         builder.HasIndex(i => i.DeletedAt);
 
         builder.HasQueryFilter(i => i.DeletedAt == null);
-
+        
         // Relasjon: Issuance → ApplicationUser (UserId — hvem fikk utstyret)
         builder.HasOne(i => i.User)
             .WithMany()
             .HasForeignKey(i => i.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // Relasjon: Issuance → EquipmentItem (ItemId — hva slags utstyr)
-        builder.HasOne(i => i.Item)
-            .WithMany(ei => ei.Issuances)
-            .HasForeignKey(i => i.ItemId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Relasjon: Issuance → ApplicationUser (IssuedById — hvem delte ut)
         builder.HasOne(i => i.IssuedBy)
             .WithMany()
             .HasForeignKey(i => i.IssuedById)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

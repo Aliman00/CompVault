@@ -65,11 +65,12 @@
         @* Avdeling *@
         <MudItem xs="12" sm="6">
             <SelectWithLinkField Value="_editModel.DepartmentId"
-                                       ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
-                                       Label="Avdeling"
-                                       ToStringFunc="@(id => _departments.FirstOrDefault(
+                                 ValueChanged="(Guid? v) => _editModel.DepartmentId = v ?? Guid.Empty"
+                                 Label="Avdeling"
+                                 ToStringFunc="@(id => _departments.FirstOrDefault(
                                                          d => d.Id == id)?.Name ?? string.Empty)"
-                                       IsEditing="true">
+                                 IsEditing="true"
+                                 For="() => _editModel.DepartmentId">
                 <Items>
                     @foreach (var department in _departments)
                     {

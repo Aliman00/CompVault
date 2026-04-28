@@ -6,6 +6,7 @@ using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Tests.Common;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Enums;
@@ -35,7 +36,8 @@ public class CompetencyServiceTests
             _competencyRepositoryMock.Object,
             _competencyTypeRepositoryMock.Object,
             _userRepositoryMock.Object,
-            _auditContextMock.Object);
+            _auditContextMock.Object,
+            new BypassDepartmentScopeService());
     }
 
     // -------------------------------------------------------------------------
@@ -63,8 +65,8 @@ public class CompetencyServiceTests
             .ReturnsAsync(type);
 
         _userRepositoryMock
-            .Setup(x => x.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(request.UserId!.Value, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ApplicationUser?)null);
 
         // Act
         Result<CompetencyDto> result = await _sut.CreateAsync(request);
@@ -145,14 +147,20 @@ public class CompetencyServiceTests
         };
 
         CompetencyType type = new() { Id = competencyTypeId, Name = "Requires Expiry", IsActive = true, RequiresExpiration = true };
-
+        var targetUser = new ApplicationUser
+        {
+            Id = request.UserId!.Value, 
+            IsActive = true, 
+            DepartmentId = Guid.NewGuid()
+        };
+        
         _competencyTypeRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
-
+        
         _userRepositoryMock
-            .Setup(x => x.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(request.UserId.Value, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(targetUser);
 
         // Act
         Result<CompetencyDto> result = await _sut.CreateAsync(request);
@@ -179,14 +187,21 @@ public class CompetencyServiceTests
         };
 
         CompetencyType type = new() { Id = competencyTypeId, Name = "Test", IsActive = true, RequiresExpiration = true };
-
+        var targetUser = new ApplicationUser
+        {
+            Id = request.UserId!.Value, 
+            IsActive = true, 
+            DepartmentId = Guid.NewGuid()
+        };
+        
         _competencyTypeRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
+       
         _userRepositoryMock
-            .Setup(x => x.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(request.UserId.Value, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(targetUser);
 
         // Act
         Result<CompetencyDto> result = await _sut.CreateAsync(request);
@@ -219,14 +234,22 @@ public class CompetencyServiceTests
             IsActive = true,
             RequiresExpiration = true
         };
+        
+        // Bruker med avdeling for å sjekke tilattelse
+        var targetUser = new ApplicationUser
+        {
+            Id = request.UserId.Value,
+            IsActive = true,
+            DepartmentId = Guid.NewGuid()
+        };
 
         _competencyTypeRepositoryMock
             .Setup(x => x.GetByIdAsync(request.CompetencyTypeId.Value, It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
         _userRepositoryMock
-            .Setup(x => x.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(request.UserId.Value, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(targetUser);
 
         _competencyRepositoryMock
             .Setup(x => x.AddAsync(It.IsAny<Competency>(), It.IsAny<CancellationToken>()))
@@ -307,12 +330,15 @@ public class CompetencyServiceTests
         };
 
         CompetencyType type = new() { Id = Guid.NewGuid(), Name = "Test", RequiresExpiration = true };
+        var user = new ApplicationUser { Id = Guid.NewGuid(), DepartmentId = Guid.NewGuid() };
+        
         Competency competency = new()
         {
             Id = id,
             UserId = Guid.NewGuid(),
             CompetencyTypeId = type.Id,
             CompetencyType = type,
+            ApplicationUser = user, 
             IssuedDate = DateTime.UtcNow.AddDays(-5),
             ExpiryDate = DateTime.UtcNow.AddDays(100)
         };
@@ -343,12 +369,15 @@ public class CompetencyServiceTests
         };
 
         CompetencyType type = new() { Id = Guid.NewGuid(), Name = "Test", RequiresExpiration = true };
+        var user = new ApplicationUser { Id = Guid.NewGuid(), DepartmentId = Guid.NewGuid() };
+        
         Competency competency = new()
         {
             Id = id,
             UserId = Guid.NewGuid(),
             CompetencyTypeId = type.Id,
             CompetencyType = type,
+            ApplicationUser = user,
             IssuedDate = DateTime.UtcNow.AddDays(-5),
             ExpiryDate = DateTime.UtcNow.AddDays(100),
             Status = CompetencyStatus.Valid
@@ -381,12 +410,17 @@ public class CompetencyServiceTests
         };
 
         CompetencyType type = new() { Id = Guid.NewGuid(), Name = "Test", RequiresExpiration = true };
+        
+        // Bruker med avdeling for å sjekke hierarkiet
+        var user = new ApplicationUser { Id = Guid.NewGuid(), DepartmentId = Guid.NewGuid() };
+        
         Competency competency = new()
         {
             Id = id,
             UserId = Guid.NewGuid(),
             CompetencyTypeId = type.Id,
             CompetencyType = type,
+            ApplicationUser = user, 
             IssuedDate = DateTime.UtcNow.AddDays(-5),
             ExpiryDate = DateTime.UtcNow.AddDays(100),
             Status = CompetencyStatus.Valid
@@ -437,11 +471,16 @@ public class CompetencyServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        Competency competency = new() { Id = id, UserId = Guid.NewGuid() };
+        var user = new ApplicationUser { Id = Guid.NewGuid(), DepartmentId = Guid.NewGuid() };
+        Competency competency = new() { Id = id, UserId = user.Id }; 
 
         _competencyRepositoryMock
             .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(competency);
+        
+        _userRepositoryMock
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
 
         // Act
         Result<bool> result = await _sut.DeleteAsync(id);

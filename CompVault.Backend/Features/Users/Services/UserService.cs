@@ -1,8 +1,10 @@
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -20,6 +22,7 @@ public sealed class UserService(
     IJobTitleRepository jobTitleRepository,
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
+    IDepartmentScopeService departmentScope,
     ILogger<UserService> logger,
     IUnitOfWork unitOfWork) : IUserService
 {
@@ -28,7 +31,6 @@ public sealed class UserService(
         PagedQuery query, CancellationToken cancellationToken = default)
     {
         int totalCount = await userRepository.CountActiveAsync(cancellationToken);
-
         IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles =
             await userRepository.GetActiveUsersWithRolesPagedAsync(query.Skip, query.PageSize, cancellationToken);
 
@@ -54,6 +56,21 @@ public sealed class UserService(
         IList<string> roles = await userManager.GetRolesAsync(user);
         return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserLookupDto>>> LookupAllowedUsersAsync(
+        string bypassPermission = Permissions.UsersAll,
+        string subPermission = Permissions.UsersReadSub,
+        CancellationToken ct = default)
+    {
+        // Sjekker om brukeren kan hente brukere i underavdelinger, kun fra sin egen eller alle brukere
+        bool bypass = departmentScope.HasBypass(bypassPermission);
+        IReadOnlyList<Guid> allowedIds = departmentScope.GetAllowedDepartmentIds(subPermission);
+
+        IReadOnlyList<ApplicationUser> users = await userRepository.GetLookupAsync(allowedIds, bypass, ct);
+        return Result<IReadOnlyList<UserLookupDto>>.Success(users.Select(u => u.ToLookupDto()).ToList());
+    }
+    
 
     /// <inheritdoc />
     public async Task<Result<UserDto>> CreateUserAsync(
@@ -71,31 +88,34 @@ public sealed class UserService(
         }
 
         // Valider at avdelingen eksisterer hvis DepartmentId er angitt
-        if (request.DepartmentId.HasValue)
+        bool departmentExists = await departmentRepository.ExistsAsync(
+            d => d.Id == request.DepartmentId && d.IsActive && d.DeletedAt == null, cancellationToken);
+        if (!departmentExists)
         {
-            bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
-
-            if (!departmentExists)
-            {
-                logger.LogWarning("Kunne ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet", request.DepartmentId.Value);
-                return Result<UserDto>.Failure(
-                    AppError.NotFound($"Avdeling med ID '{request.DepartmentId.Value}' ble ikke funnet."));
-            }
+            logger.LogWarning("Kunde ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet", 
+                request.DepartmentId);
+            return Result<UserDto>.Failure(
+                AppError.NotFound($"Avdeling med ID '{request.DepartmentId}' ble ikke funnet."));
         }
 
         // Valider at lederen eksisterer og er aktiv hvis ManagerId er angitt
         if (request.ManagerId.HasValue)
         {
-            bool managerExists = await userRepository.ExistsAsync(
-                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
+            ApplicationUser? manager = await userRepository.GetByIdIgnoringFiltersAsync(
+                request.ManagerId.Value, cancellationToken);
 
-            if (!managerExists)
+            if (manager is null || !manager.IsActive)
             {
-                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", request.ManagerId.Value);
+                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", 
+                    request.ManagerId.Value);
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
             }
+
+            if (!departmentScope.IsAllowed(manager.DepartmentId, Permissions.UsersAll, Permissions.UsersReadSub))
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Forbidden, 
+                        "Du har ikke tilgang til å sette denne brukeren som leder."));
         }
 
         // Valider at stillingstittelen eksisterer hvis JobTitleId er angitt
@@ -204,11 +224,17 @@ public sealed class UserService(
 
         if (request.ManagerId.HasValue)
         {
-            bool managerExists = await userRepository.ExistsAsync(
-                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, ct);
-            if (!managerExists)
+            ApplicationUser? manager = await userRepository.GetByIdIgnoringFiltersAsync(
+                request.ManagerId.Value, ct);
+
+            if (manager is null || !manager.IsActive)
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
+
+            if (!departmentScope.IsAllowed(manager.DepartmentId, Permissions.UsersAll, Permissions.UsersReadSub))
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Validation, 
+                        "Du har ikke tilgang til å sette denne brukeren som leder."));
         }
 
         // Valider at stillingstittelen eksisterer hvis JobTitleId er angitt
@@ -241,9 +267,7 @@ public sealed class UserService(
             user.JobTitleId = null;
 
         if (request.DepartmentId.HasValue)
-            user.DepartmentId = request.DepartmentId;
-        else if (request.ClearDepartmentId)
-            user.DepartmentId = null;
+            user.DepartmentId = request.DepartmentId.Value;
 
         if (request.ManagerId.HasValue)
             user.ManagerId = request.ManagerId;

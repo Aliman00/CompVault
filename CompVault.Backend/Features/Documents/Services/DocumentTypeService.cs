@@ -41,10 +41,10 @@ public sealed class DocumentTypeService(
     }
     
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetDocumentTypesForUserAsync(Guid userId, 
+    public async Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(Guid userId, 
         CancellationToken ct = default)
     {
-        ApplicationUser? user = await userRepository.GetByIdAsync(userId, ct);
+        ApplicationUser? user = await userRepository.GetByIdIgnoringFiltersAsync(userId, ct);
         if (user is null)
         {
             logger.LogWarning("Bruker med ID {UserId} ble ikke funnet ved henting av dokumenttyper", userId);

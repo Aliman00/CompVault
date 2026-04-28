@@ -17,7 +17,7 @@ public static class UserMapper
         EmploymentType = user.EmploymentType,
         IsActive = user.IsActive,
         DepartmentId = user.DepartmentId,
-        DepartmentName = user.Department?.Name,
+        DepartmentName = user.Department?.Name ?? string.Empty,
         DepartmentIsActive = user.Department?.IsActive,
         ManagerId = user.ManagerId,
         ManagerName = user.Manager != null
@@ -25,5 +25,13 @@ public static class UserMapper
             : null,
         CreatedAt = user.CreatedAt,
         Roles = roles.ToList()
+    };
+    
+    public static UserLookupDto ToLookupDto(this ApplicationUser user) => new()
+    {
+        Id = user.Id,
+        FullName = $"{user.FirstName} {user.LastName}",
+        JobTitleName = user.JobTitle?.Name,
+        DepartmentName = user.Department?.Name,
     };
 }

@@ -3,17 +3,18 @@ using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Services;
-using CompVault.Backend.Features.Users.Services;
+using CompVault.Backend.Features.Users;
 using CompVault.Backend.Infrastructure.Auth;
+using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Shared.DTOs.Auth;
-using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.Dev;
 
@@ -32,7 +33,7 @@ public sealed class DevAuthController(
     IRefreshTokenService refreshTokenService,
     IOtpCodeRepository otpCodeRepository,
     IPermissionService permissionService,
-    IUserService userService) : BaseController
+    AppDbContext dbContext) : BaseController
 {
     /// <summary>
     /// Logger inn med e-post og passord. Returnerer JWT identisk med OTP-flyten.
@@ -43,13 +44,15 @@ public sealed class DevAuthController(
     [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<TokenResponse>> DevLoginAsync(
-        [FromBody] DevLoginRequest request)
+    public async Task<ActionResult<TokenResponse>> DevLoginAsync([FromBody] DevLoginRequest request)
     {
         if (!env.IsDevelopment())
             return NotFound();
 
-        ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
+        ApplicationUser? user = await dbContext.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
+
         if (user is null)
             return Unauthorized(new { message = "Ugyldig e-post eller passord." });
 
@@ -88,14 +91,27 @@ public sealed class DevAuthController(
         if (!env.IsDevelopment())
             return NotFound();
 
-        ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
+        ApplicationUser? user = await dbContext.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
+
         if (user is null)
             return Unauthorized(new { message = "Ugyldig e-post eller passord." });
+        
+        OtpCode? existing = await dbContext.OtpCodes
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(o => o.UserId == user.Id);
+
+        if (existing is not null)
+        {
+            dbContext.OtpCodes.Remove(existing);
+            await dbContext.SaveChangesAsync(); // <- lagre slettingen før vi oppretter ny
+        }
 
         var otpCode = new OtpCode
         {
             UserId = user.Id,
-            Code = OtpHasher.HashCode("123456"), // Hasher koden for lagring
+            Code = OtpHasher.HashCode("123456"),
             ExpiresAt = DateTime.UtcNow.AddMinutes(15),
         };
 
@@ -109,12 +125,21 @@ public sealed class DevAuthController(
     [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<UserDto>>> GetAllAsync(CancellationToken cancellationToken)
     {
-        var query = new PagedQuery { Page = 1, PageSize = 100 };
-        Result<PagedResult<UserDto>> result = await userService.GetAllUsersAsync(query, cancellationToken);
+        List<ApplicationUser> users = await dbContext.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.Department)
+            .Include(u => u.Manager)
+            .Include(u => u.JobTitle)
+            .Where(u => u.IsActive && u.DeletedAt == null)
+            .ToListAsync(cancellationToken);
 
-        if (result.IsFailure)
-            return HandleFailure(result);
+        var dtos = new List<UserDto>();
+        foreach (ApplicationUser user in users)
+        {
+            IList<string> roles = await userManager.GetRolesAsync(user);
+            dtos.Add(UserMapper.ToDto(user, roles));
+        }
 
-        return Ok(result.Value!.Items);
+        return Ok(dtos);
     }
 }

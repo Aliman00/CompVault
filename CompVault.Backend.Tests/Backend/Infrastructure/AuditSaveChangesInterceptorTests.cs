@@ -9,6 +9,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Data.Interceptors;
+using CompVault.Backend.Tests.Common;
 using CompVault.Shared.Enums;
 
 using FluentAssertions;
@@ -48,7 +49,7 @@ public class AuditSaveChangesInterceptorTests
             .AddInterceptors(new AuditSaveChangesInterceptor(_serviceProviderMock.Object))
             .Options;
 
-        return new AppDbContext(options);
+        return new AppDbContext(options, new BypassDepartmentScopeService());
     }
 
     // -------------------------------------------------------------------------

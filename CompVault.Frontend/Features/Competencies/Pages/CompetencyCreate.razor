@@ -103,7 +103,7 @@
     
     // ===================== PRIVATE FELT =====================
     private readonly CreateCompetencyModel _editModel = new();
-    private List<UserDto> _allUsers = [];
+    private List<UserLookupDto> _allUsers = [];
     private List<CompetencyTypeDto> _allCompetencyTypes = [];
     
     private bool _isLoading = true;
@@ -165,11 +165,15 @@
     
     private async Task LoadUsersAsync()
     {
-        var result = await UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
+        var result = await UserService.LookupUsersAsync(
+            Permissions.CompetenciesRead,
+            Permissions.CompetenciesAll,
+            Permissions.CompetenciesReadSub,
+            Cts.Token);
         if (result.IsFailure)
             _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
-            _allUsers = result.Value!.Items.ToList();
+            _allUsers = result.Value!.ToList();
     }
     
     private async Task LoadCompetencyTypes()
