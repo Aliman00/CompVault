@@ -37,6 +37,9 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 
     // Vi mocker EmailService for å mocke email kall
     public Mock<IEmailService> EmailServiceMock { get; } = new();
+    
+    // Lar oss hente tilkobling til databasen fra test-klasser
+    public string GetConnectionString() => _postgres.GetConnectionString();
 
     /// <summary>
     /// Overstyrer tjenester i Program.cs før applikasjonen starter.

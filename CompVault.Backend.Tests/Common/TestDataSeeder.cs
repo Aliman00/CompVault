@@ -49,11 +49,12 @@ public static class TestDataSeeder
     /// <param name="id">ID til en bruker hvis man trenger å slå opp ID for testing</param>
     /// <param name="email">Optional string med Epost for å opprette forskjellige brukere</param>
     /// <param name="deletedAt">DateTime som bestemmer om brukeren er aktive/slettet</param>
-    /// <param name="role"></param>
+    /// <param name="role">Rollen til brukeren. Default rolle. Ikke en liste</param>
+    /// <param name="departmentId">Avdelingen til brukeren. Default </param>
     /// <returns>En opprettet ApplicationUser som er seedet i databasen</returns>
     public static async Task<ApplicationUser> SeedUserAsync(IServiceProvider serviceProvider, Guid? id = null,
         string email = TestConstants.Users.DefaultEmailForActiveUser, DateTime? deletedAt = null,
-        string role = TestConstants.Roles.Default)
+        string role = TestConstants.Roles.Default, Guid? departmentId = null)
     {
         using IServiceScope scope = serviceProvider.CreateScope();
         UserManager<ApplicationUser> userManager = scope.ServiceProvider
@@ -66,10 +67,10 @@ public static class TestDataSeeder
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
         
         // Opprett en department hvis den ikke eksisterer
-        Department department = await SeedDepartmentAsync(serviceProvider);
+        departmentId ??= (await SeedDepartmentAsync(serviceProvider)).Id;
 
         ApplicationUser user = TestDataFactory.CreateApplicationUser(id: id, email: email, deletedAt: deletedAt, 
-            departmentId: department.Id);
+            departmentId: departmentId);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
 
@@ -321,11 +322,7 @@ public static class TestDataSeeder
     {
         using IServiceScope scope = serviceProvider.CreateScope();
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        Department? existing = await context.Departments.FirstOrDefaultAsync();
-        if (existing is not null)
-            return existing;
-
+        
         Department department = TestDataFactory.CreateDepartment(id, name, description, parentDepartmentId, 
             isActive, createdAt, deletedAt);
 
