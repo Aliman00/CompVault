@@ -5,7 +5,6 @@ using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Enums;
 namespace CompVault.Frontend.Features.Users.Models;
 
-
 /// <summary>
 /// Modellen for å endre en bruker
 /// </summary>

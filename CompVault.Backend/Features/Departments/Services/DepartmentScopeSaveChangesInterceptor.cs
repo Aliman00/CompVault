@@ -21,14 +21,9 @@ public sealed class DepartmentScopeSaveChangesInterceptor(IServiceProvider servi
         if (departmentScopeService == null)
             return base.SavingChangesAsync(eventData, result, ct);
         
-        if (!departmentScopeService.HasBypass(Permissions.UsersAll) && 
-            departmentScopeService.GetAllowedDepartmentIds(Permissions.UsersReadSub).Count == 0)
-        {
-            // Sjekk om vi har en innlogget bruker
-            IHttpContextAccessor? http = serviceProvider.GetService<IHttpContextAccessor>();
-            if (http?.HttpContext?.User.Identity?.IsAuthenticated != true)
-                return base.SavingChangesAsync(eventData, result, ct);
-        }
+        IHttpContextAccessor? http = serviceProvider.GetService<IHttpContextAccessor>();
+        if (http?.HttpContext?.User.Identity?.IsAuthenticated != true)
+            return base.SavingChangesAsync(eventData, result, ct);
 
         foreach (EntityEntry<ApplicationUser> entry in eventData.Context.ChangeTracker
                      .Entries<ApplicationUser>()

@@ -31,7 +31,6 @@ public sealed class UserService(
         PagedQuery query, CancellationToken cancellationToken = default)
     {
         int totalCount = await userRepository.CountActiveAsync(cancellationToken);
-
         IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles =
             await userRepository.GetActiveUsersWithRolesPagedAsync(query.Skip, query.PageSize, cancellationToken);
 
