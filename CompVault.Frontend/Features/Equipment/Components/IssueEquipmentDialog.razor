@@ -137,7 +137,7 @@
     // ===================== PRIVATE FELT =====================
     private readonly CreateEquipmentIssuanceModel _editModel = new();
 
-    private List<UserDto> _users = [];
+    private List<UserLookupDto> _users = [];
     private List<EquipmentItemDto> _items = [];
 
     private bool _selectedItemHasSize;
@@ -159,7 +159,11 @@
 
         try
         {
-            var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
+            var usersTask = UserService.LookupUsersAsync(
+                Permissions.EquipmentRead,
+                Permissions.EquipmentAll,
+                Permissions.EquipmentReadSub,
+                Cts.Token);
             var itemsTask = EquipmentItemService.GetAllAsync(Cts.Token);
 
             await Task.WhenAll(usersTask, itemsTask);
@@ -179,7 +183,7 @@
                 return;
             }
 
-            _users = usersResult.Value!.Items.ToList();
+            _users = usersResult.Value!.ToList();
             _items = itemsResult.Value!;
 
             // Setter ID-en til brukeren hvis vi kommer fra bruker-siden

@@ -76,8 +76,14 @@ public sealed class DocumentService(
         Result accessResult = await targetingService.CheckAccessAsync(document, currentUserId, bypassTargeting, cancellationToken);
         if (accessResult.IsFailure)
             return Result<DocumentDto>.Failure(accessResult.Error!);
+        
+        // Sjekker om brukeren har signert nyeste versjon
+        bool hasSigned = false;
+        if (document.RequiresSignature && currentUserId.HasValue)
+            hasSigned = await signatureRepository.HasUserSignedVersionAsync(document.Id, currentUserId.Value,
+                document.Version, cancellationToken);
 
-        return Result<DocumentDto>.Success(DocumentMapper.ToDto(document));
+        return Result<DocumentDto>.Success(DocumentMapper.ToDtoWithUserSignature(document, hasSigned));
     }
     
     /// <inheritdoc />

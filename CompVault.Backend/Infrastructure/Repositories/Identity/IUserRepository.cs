@@ -9,6 +9,9 @@ public interface IUserRepository : IRepository<ApplicationUser>
 {
     /// <summary>Finner en bruker basert på e-postadressen.</summary>
     Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+    
+    /// <summary>Finner en bruker basert på ID uten filteret som sjekker avdeling.</summary>
+    Task<ApplicationUser?> GetByIdIgnoringFiltersAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>Bruker ID til å hente en bruker, med Department og Manager-tabellene</summary>
     Task<ApplicationUser?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
@@ -41,4 +44,11 @@ public interface IUserRepository : IRepository<ApplicationUser>
     /// <summary>Henter en paginert side med aktive brukere inkludert rollene sine.</summary>
     Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesPagedAsync(
         int skip, int take, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Henter alle brukere en bruker har tilattelse til å se med avdeling og stillinge. Vi lar brukeren hente
+    /// underavdelinger hvis de har tilattelse eller permissions til det. Sortert etter etternavn
+    /// </summary>
+    Task<IReadOnlyList<ApplicationUser>> GetLookupAsync(IReadOnlyList<Guid> allowedDepartmentIds, bool bypass,
+        CancellationToken ct = default);
 }

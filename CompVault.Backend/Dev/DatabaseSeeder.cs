@@ -214,7 +214,7 @@ public static class DatabaseSeeder
             await SeedRolesAsync(roleManager, logger);
             await SeedPermissionsAsync(dbContext, logger);
             await SeedRolePermissionsAsync(roleManager, dbContext, logger);
-            await SeedUsersAsync(userManager, logger);
+            await SeedUsersAsync(userManager, dbContext, logger);
             await SeedDepartmentsAsync(dbContext, logger);
             await SeedUserDepartmentsAsync(userManager, dbContext, logger);
             await SeedJobTitlesAsync(dbContext, logger);
@@ -261,11 +261,14 @@ public static class DatabaseSeeder
         }
     }
 
-    private static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, ILogger logger)
+    private static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, AppDbContext dbContext, ILogger logger)
     {
         foreach ((string firstName, string lastName, string email, string[] roles) in Users)
         {
-            if (await userManager.FindByEmailAsync(email) is not null)
+            bool exists = await dbContext.Users
+                .IgnoreQueryFilters()
+                .AnyAsync(u => u.Email == email);
+            if (exists)
                 continue;
 
             ApplicationUser user = new()
@@ -298,19 +301,23 @@ public static class DatabaseSeeder
         }
     }
 
-    private static async Task SeedDepartmentsAsync(AppDbContext dbContext, ILogger logger)
+   private static async Task SeedDepartmentsAsync(AppDbContext dbContext, ILogger logger)
     {
-        // First pass: create all top-level departments
         foreach ((string name, string description, string? parentName) in Departments)
         {
             if (parentName is not null)
-                continue; // Will be created in second pass
+                continue;
 
-            bool exists = await dbContext.Departments.AnyAsync(d => d.Name == name);
+            bool exists = await dbContext.Departments
+                .IgnoreQueryFilters()
+                .AnyAsync(d => d.Name == name);
             if (exists)
                 continue;
 
-            ApplicationUser? admin = await dbContext.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+            ApplicationUser? admin = await dbContext.Users
+                .IgnoreQueryFilters()
+                .OrderBy(u => u.CreatedAt)
+                .FirstOrDefaultAsync();
 
             Department dept = new()
             {
@@ -326,24 +333,30 @@ public static class DatabaseSeeder
             logger.LogInformation("[DatabaseSeeder] Avdeling opprettet: {Name}", name);
         }
 
-        // Second pass: create child departments
         foreach ((string name, string description, string? parentName) in Departments)
         {
             if (parentName is null)
                 continue;
 
-            bool exists = await dbContext.Departments.AnyAsync(d => d.Name == name);
+            bool exists = await dbContext.Departments
+                .IgnoreQueryFilters()
+                .AnyAsync(d => d.Name == name);
             if (exists)
                 continue;
 
-            Department? parent = await dbContext.Departments.FirstOrDefaultAsync(d => d.Name == parentName);
+            Department? parent = await dbContext.Departments
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(d => d.Name == parentName);
             if (parent is null)
             {
                 logger.LogWarning("[DatabaseSeeder] Kunne ikke finne parent-avdeling {Parent} for {Name}", parentName, name);
                 continue;
             }
 
-            ApplicationUser? admin = await dbContext.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+            ApplicationUser? admin = await dbContext.Users
+                .IgnoreQueryFilters()
+                .OrderBy(u => u.CreatedAt)
+                .FirstOrDefaultAsync();
 
             Department dept = new()
             {
@@ -360,22 +373,22 @@ public static class DatabaseSeeder
             logger.LogInformation("[DatabaseSeeder] Avdeling opprettet: {Name} (under {Parent})", name, parentName);
         }
     }
-
-    private static async Task SeedUserDepartmentsAsync(
-        UserManager<ApplicationUser> userManager,
-        AppDbContext dbContext,
-        ILogger logger)
+    private static async Task SeedUserDepartmentsAsync(UserManager<ApplicationUser> userManager, AppDbContext dbContext, ILogger logger)
     {
         foreach ((string email, string deptName) in UserDepartments)
         {
-            ApplicationUser? user = await userManager.FindByEmailAsync(email);
+            ApplicationUser? user = await dbContext.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email == email);
             if (user is null)
             {
                 logger.LogWarning("[DatabaseSeeder] Bruker ikke funnet for avdelingskobling: {Email}", email);
                 continue;
             }
 
-            Department? dept = await dbContext.Departments.FirstOrDefaultAsync(d => d.Name == deptName);
+            Department? dept = await dbContext.Departments
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(d => d.Name == deptName);
             if (dept is null)
             {
                 logger.LogWarning("[DatabaseSeeder] Avdeling ikke funnet for kobling: {Dept}", deptName);
@@ -383,7 +396,7 @@ public static class DatabaseSeeder
             }
 
             if (user.DepartmentId == dept.Id)
-                continue; // Already linked
+                continue;
 
             user.DepartmentId = dept.Id;
             IdentityResult result = await userManager.UpdateAsync(user);
@@ -441,21 +454,21 @@ public static class DatabaseSeeder
         }
     }
 
-    private static async Task SeedUserJobTitlesAsync(
-        UserManager<ApplicationUser> userManager,
-        AppDbContext dbContext,
-        ILogger logger)
+    private static async Task SeedUserJobTitlesAsync(UserManager<ApplicationUser> userManager, AppDbContext dbContext, ILogger logger)
     {
         foreach ((string email, string jobTitleName) in UserJobTitles)
         {
-            ApplicationUser? user = await userManager.FindByEmailAsync(email);
+            ApplicationUser? user = await dbContext.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email == email);
             if (user is null)
             {
                 logger.LogWarning("[DatabaseSeeder] Bruker ikke funnet for stillingstittel-kobling: {Email}", email);
                 continue;
             }
 
-            JobTitle? jobTitle = await dbContext.JobTitles.FirstOrDefaultAsync(jt => jt.Name == jobTitleName);
+            JobTitle? jobTitle = await dbContext.JobTitles
+                .FirstOrDefaultAsync(jt => jt.Name == jobTitleName);
             if (jobTitle is null)
             {
                 logger.LogWarning("[DatabaseSeeder] Stillingstittel ikke funnet for kobling: {JobTitleName}", jobTitleName);
@@ -463,7 +476,7 @@ public static class DatabaseSeeder
             }
 
             if (user.JobTitleId == jobTitle.Id)
-                continue; // Allerede koblet
+                continue;
 
             user.JobTitleId = jobTitle.Id;
             IdentityResult result = await userManager.UpdateAsync(user);
@@ -481,7 +494,9 @@ public static class DatabaseSeeder
 
         foreach ((string email, string typeName, int issuedOffsetDays, int? expiryOffsetDays, string? certNumber) in Competencies)
         {
-            ApplicationUser? user = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+            ApplicationUser? user = await dbContext.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email == email);
             if (user is null)
             {
                 logger.LogWarning("[DatabaseSeeder] Bruker ikke funnet: {Email}", email);
@@ -495,17 +510,14 @@ public static class DatabaseSeeder
                 continue;
             }
 
-            // Check if this competency already exists (user + type combination)
-            bool exists = await dbContext.Competencies.AnyAsync(
-                c => c.UserId == user.Id && c.CompetencyTypeId == ct.Id);
+            bool exists = await dbContext.Competencies
+                .IgnoreQueryFilters()
+                .AnyAsync(c => c.UserId == user.Id && c.CompetencyTypeId == ct.Id);
             if (exists)
                 continue;
 
             DateTime issuedDate = today.AddDays(issuedOffsetDays);
-            DateTime? expiryDate = expiryOffsetDays.HasValue
-                ? today.AddDays(expiryOffsetDays.Value)
-                : null;
-
+            DateTime? expiryDate = expiryOffsetDays.HasValue ? today.AddDays(expiryOffsetDays.Value) : null;
             CompetencyStatus status = CompetencyStatusCalculator.Calculate(expiryDate);
 
             Competency competency = new()
@@ -522,8 +534,7 @@ public static class DatabaseSeeder
 
             dbContext.Competencies.Add(competency);
             await dbContext.SaveChangesAsync();
-            logger.LogInformation("[DatabaseSeeder] Kompetanse opprettet: {User} - {Type} ({Status})",
-                email, typeName, status);
+            logger.LogInformation("[DatabaseSeeder] Kompetanse opprettet: {User} - {Type} ({Status})", email, typeName, status);
         }
     }
 
@@ -534,30 +545,46 @@ public static class DatabaseSeeder
             (Permissions.UsersRead, "Se brukere", "Users"),
             (Permissions.UsersWrite, "Opprett/endre brukere", "Users"),
             (Permissions.UsersDelete, "Slett brukere", "Users"),
+            (Permissions.UsersAll, "Se brukere i alle avdelinger", "Users"),
+            (Permissions.UsersReadSub, "Se brukere i underavdelinger", "Users"),
+
             (Permissions.RolesRead, "Se roller", "Roles"),
             (Permissions.RolesWrite, "Opprett/endre roller", "Roles"),
             (Permissions.RolesDelete, "Slett roller", "Roles"),
+
             (Permissions.DepartmentsRead, "Se avdelinger", "Departments"),
             (Permissions.DepartmentsWrite, "Opprett/endre avdelinger", "Departments"),
             (Permissions.DepartmentsDelete, "Slett avdelinger", "Departments"),
+            (Permissions.DepartmentsAll, "Se alle avdelinger", "Departments"),
+            (Permissions.DepartmentsReadSub, "Se underavdelinger", "Departments"),
+
             (Permissions.CompetenciesRead, "Se kompetanser", "Competencies"),
             (Permissions.CompetenciesWrite, "Opprett/endre kompetanser", "Competencies"),
             (Permissions.CompetenciesDelete, "Slett kompetanser", "Competencies"),
+            (Permissions.CompetenciesAll, "Se kompetanser i alle avdelinger", "Competencies"),
+            (Permissions.CompetenciesReadSub, "Se kompetanser i underavdelinger", "Competencies"),
+
             (Permissions.DocumentTypesRead, "Se dokumenttyper", "DocumentTypes"),
             (Permissions.DocumentTypesWrite, "Opprett/endre dokumenttyper", "DocumentTypes"),
             (Permissions.DocumentTypesDelete, "Slett dokumenttyper", "DocumentTypes"),
+
             (Permissions.DocumentsRead, "Se dokumenter", "Documents"),
             (Permissions.DocumentsWrite, "Opprett/endre dokumenter", "Documents"),
             (Permissions.DocumentsDelete, "Slett dokumenter", "Documents"),
             (Permissions.DocumentsSign, "Signere dokumenter", "Documents"),
-            (Permissions.DocumentsAll, "Overstyrer avdelingvalidering i " +
-                                                    "oppretting og oppdatering av dokumenter", "Documents"),
+            (Permissions.DocumentsAll, "Se dokumenter i alle avdelinger", "Documents"),
+            (Permissions.DocumentsReadSub, "Se dokumenter i underavdelinger", "Documents"),
+
             (Permissions.JobTitlesRead, "Se stillingstitler", "JobTitles"),
             (Permissions.JobTitlesWrite, "Opprett/endre stillingstitler", "JobTitles"),
             (Permissions.JobTitlesDelete, "Slett stillingstitler", "JobTitles"),
+
             (Permissions.EquipmentRead, "Se utstyr", "Equipment"),
             (Permissions.EquipmentWrite, "Opprett/endre utstyr", "Equipment"),
             (Permissions.EquipmentDelete, "Slett utstyr", "Equipment"),
+            (Permissions.EquipmentAll, "Se utstyr i alle avdelinger", "Equipment"),
+            (Permissions.EquipmentReadSub, "Se utstyr i underavdelinger", "Equipment"),
+
             (Permissions.AdminAccess, "Se administratorpanel", "Admins"),
             (Permissions.AuditRead, "Tilgang til revisjonslogg", "Audit"),
         ];
@@ -683,7 +710,10 @@ public static class DatabaseSeeder
             if (exists)
                 continue;
 
-            ApplicationUser? admin = await dbContext.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+            ApplicationUser? admin = await dbContext.Users
+                .IgnoreQueryFilters()
+                .OrderBy(u => u.CreatedAt)
+                .FirstOrDefaultAsync();
 
             var documentType = new DocumentType
             {
@@ -759,25 +789,30 @@ public static class DatabaseSeeder
             Guid? targetDeptId = null;
             if (targetDeptName is not null)
             {
-                Department? dept = await dbContext.Departments.FirstOrDefaultAsync(d => d.Name == targetDeptName);
+                Department? dept = await dbContext.Departments
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(d => d.Name == targetDeptName);
                 targetDeptId = dept?.Id;
             }
 
             Guid? targetJobTitleId = null;
             if (targetJobTitleName is not null)
             {
-                JobTitle? jobTitle = await dbContext.JobTitles.FirstOrDefaultAsync(jt => jt.Name == targetJobTitleName);
+                JobTitle? jobTitle = await dbContext.JobTitles
+                    .FirstOrDefaultAsync(jt => jt.Name == targetJobTitleName);
                 targetJobTitleId = jobTitle?.Id;
             }
 
-            // Unngå duplikater ved seeding — sjekk tittel og dokumenttype
-            bool documentExists = await dbContext.Documents.AnyAsync(d =>
-                d.Title == title &&
-                d.DocumentTypeId == documentType.Id);
+            bool documentExists = await dbContext.Documents
+                .IgnoreQueryFilters()
+                .AnyAsync(d => d.Title == title && d.DocumentTypeId == documentType.Id);
             if (documentExists)
                 continue;
 
-            ApplicationUser? admin = await dbContext.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+            ApplicationUser? admin = await dbContext.Users
+                .IgnoreQueryFilters()
+                .OrderBy(u => u.CreatedAt)
+                .FirstOrDefaultAsync();
             if (admin is null)
             {
                 logger.LogWarning("[DatabaseSeeder] Ingen admin funnet — dokument {Title} hoppes over.", title);
@@ -786,15 +821,11 @@ public static class DatabaseSeeder
 
             var documentDepartments = new List<DocumentDepartment>();
             if (targetDeptId.HasValue)
-            {
                 documentDepartments.Add(new DocumentDepartment { DepartmentId = targetDeptId.Value });
-            }
 
             var documentJobTitles = new List<DocumentJobTitle>();
             if (targetJobTitleId.HasValue)
-            {
                 documentJobTitles.Add(new DocumentJobTitle { JobTitleId = targetJobTitleId.Value });
-            }
 
             var document = new Document
             {
@@ -816,9 +847,8 @@ public static class DatabaseSeeder
         }
     }
 
-    private static async Task SeedEquipmentAsync(AppDbContext dbContext, ILogger logger)
+   private static async Task SeedEquipmentAsync(AppDbContext dbContext, ILogger logger)
     {
-        // Equipment Categories: (Name, Description)
         var categories = new (string Name, string Description)[]
         {
             ("Uniform", "Standard arbeidsuniform"),
@@ -851,7 +881,6 @@ public static class DatabaseSeeder
             logger.LogInformation("[DatabaseSeeder] Utstyrskategori opprettet: {Name}", name);
         }
 
-        // Equipment Items: (CategoryName, Name, HasSize)
         var items = new (string CategoryName, string Name, bool HasSize)[]
         {
             ("Uniform", "Sko", true),
@@ -891,9 +920,13 @@ public static class DatabaseSeeder
             logger.LogInformation("[DatabaseSeeder] Utstyr opprettet: {Name} (kategori: {Category})", name, categoryName);
         }
 
-        // Equipment Issuances for the first test user (lars.hansen)
-        ApplicationUser? lars = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == "lars.hansen@compvault.no");
-        ApplicationUser? admin = await dbContext.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+        ApplicationUser? lars = await dbContext.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == "lars.hansen@compvault.no");
+        ApplicationUser? admin = await dbContext.Users
+            .IgnoreQueryFilters()
+            .OrderBy(u => u.CreatedAt)
+            .FirstOrDefaultAsync();
 
         if (lars is not null && admin is not null)
         {
@@ -911,8 +944,8 @@ public static class DatabaseSeeder
                 if (!itemIds.TryGetValue(itemName, out Guid itemId))
                     continue;
 
-                bool exists = await dbContext.EquipmentIssuances.AnyAsync(
-                    i => i.UserId == lars.Id && i.ItemId == itemId);
+                bool exists = await dbContext.EquipmentIssuances
+                    .AnyAsync(i => i.UserId == lars.Id && i.ItemId == itemId);
                 if (exists)
                     continue;
 

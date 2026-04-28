@@ -1,6 +1,7 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Tests.Common;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -43,7 +44,7 @@ public class UserRepositoryTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        _dbContext = new AppDbContext(options);
+        _dbContext = new AppDbContext(options, new BypassDepartmentScopeService());
         _sut = new UserRepository(_dbContext);
 
         // Seeder testdata

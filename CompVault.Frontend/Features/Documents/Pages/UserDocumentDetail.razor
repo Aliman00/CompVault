@@ -2,11 +2,8 @@
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize]
 @inject IDocumentService DocumentService
-@inject ISignatureService SignatureService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
-@inject CircuitUserContext CircuitUser
-@inject IJSRuntime Js
 
 @* Readonly detaljside for innlogget bruker – viser ett dokument *@
 
@@ -31,7 +28,7 @@ else if (_document != null)
             </header>
 
             @* Signeringsknapp i header hvis dokumentet krever signatur og brukeren ikke har signert *@
-            @if (_document.RequiresSignature && _mustSign && !_hasSigned)
+            @if (_document.RequiresSignature && MustSign && !HasSigned)
             {
                 <MudButton Color="Color.Primary"
                            Variant="Variant.Filled"
@@ -43,11 +40,11 @@ else if (_document != null)
         </section>
 
         @* Signeringsstatus-alert under headeren *@
-        @if (_document.RequiresSignature && _mustSign)
+        @if (_document.RequiresSignature && MustSign)
         {
-            <DocumentSignatureStatusAlert CurrentUserMustSign="_mustSign"
-                                          CurrentUserHasSigned="_hasSigned"
-                                          SignatureVersion="_currentUserSignature?.SignatureVersion"
+            <DocumentSignatureStatusAlert CurrentUserMustSign="MustSign"
+                                          CurrentUserHasSigned="HasSigned"
+                                          SignatureVersion="SignatureVersion"
                                           DocumentVersion="_document.Version"/>
         }
 
@@ -113,7 +110,7 @@ else if (_document != null)
                     <MudStack Spacing="0">
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Signering</MudText>
                         <div style="width: fit-content">
-                            @if (_hasSigned)
+                            @if (HasSigned)
                             {
                                 <MudChip T="string" Color="Color.Success" Size="Size.Medium" Class="cv-rounded">
                                     Signert
@@ -163,13 +160,10 @@ else if (_document != null)
 
     // ===================== PRIVATE FELT =====================
     private DocumentDto? _document;
-    private List<UserSignatureStatusDto> _signatures = [];
-    
-    private UserSignatureStatusDto? _currentUserSignature =>
-        _signatures.FirstOrDefault(s => s.UserId == CircuitUser.UserId);
 
-    private bool _mustSign => _currentUserSignature != null;
-    private bool _hasSigned => _currentUserSignature?.HasSigned == true;
+    private bool MustSign => _document?.RequiresSignature == true;
+    private bool HasSigned => _document?.CurrentUserHasSigned == true;
+    private int? SignatureVersion => _document?.CurrentUserSignatureVersion;
     
     private bool _isLoading = true;
     private AlertInfo? _alert;
@@ -178,16 +172,10 @@ else if (_document != null)
     protected override async Task OnParametersSetAsync()
     {
         _isLoading = true;
-        _signatures = [];
 
         try
         {
-            var documentTask = DocumentService.GetByIdAsync(Slug, Id, Cts.Token);
-            var signaturesTask = SignatureService.GetSignaturesAsync(Slug, Id, Cts.Token);
-
-            await Task.WhenAll(documentTask, signaturesTask);
-
-            var documentResult = await documentTask;
+            var documentResult = await DocumentService.GetByIdAsync(Slug, Id, Cts.Token);
             if (documentResult.IsFailure)
             {
                 _alert = new AlertInfo(documentResult.Error!.ToString(), Severity.Error);
@@ -195,12 +183,6 @@ else if (_document != null)
             }
             
             _document = documentResult.Value;
-
-            var signaturesResult = await signaturesTask;
-            if (signaturesResult.IsFailure)
-                _alert = new AlertInfo(signaturesResult.Error!.ToString(), Severity.Error);
-            else
-                _signatures = signaturesResult.Value!;
         }
         catch (OperationCanceledException)
         {
@@ -247,15 +229,16 @@ else if (_document != null)
             return;
         }
 
-        // Oppdater signaturer etter vellykket signering
-        var signaturesResult = await SignatureService.GetSignaturesAsync(Slug, Id, Cts.Token);
-        if (signaturesResult.IsFailure)
+        // Oppdater dokumentet etter signering
+        var documentResult = await DocumentService.GetByIdAsync(Slug, Id, Cts.Token);
+        if (documentResult.IsFailure)
         {
-            _alert = new AlertInfo(signaturesResult.Error!.ToString(), Severity.Error);
+            _alert = new AlertInfo(documentResult.Error!.ToString(), Severity.Error);
             return;
         }
-
-        _signatures = signaturesResult.Value!;
+        
+        _document = documentResult.Value;
+        
         _alert = new AlertInfo("Dokumentet ble signert", Severity.Success);
     }
 }

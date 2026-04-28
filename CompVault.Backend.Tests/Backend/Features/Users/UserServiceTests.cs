@@ -8,6 +8,7 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Backend.Tests.Common;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -78,6 +79,7 @@ public class UserServiceTests
             _jobTitleRepositoryMock.Object,
             _userManagerMock.Object,
             roleManagerMock.Object,
+            new BypassDepartmentScopeService(),
             loggerMock.Object,
             unitOfWorkMock.Object);
     }

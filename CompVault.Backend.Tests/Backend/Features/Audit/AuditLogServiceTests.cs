@@ -1,6 +1,7 @@
 using CompVault.Backend.Domain.Entities.Audit;
 using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Tests.Common;
 using CompVault.Shared.DTOs.Audit;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.Result;
@@ -25,7 +26,7 @@ public class AuditLogServiceTests : IAsyncLifetime
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        _context = new AppDbContext(options);
+        _context = new AppDbContext(options, new BypassDepartmentScopeService());
         _sut = new AuditLogService(_context);
 
         // Seed testdata

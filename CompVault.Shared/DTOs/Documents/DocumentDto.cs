@@ -67,4 +67,10 @@ public sealed class DocumentDto
 
     /// <summary>Når dokumentet ble lastet opp (UTC).</summary>
     public DateTime UploadedAt { get; set; }
+    
+    /// <summary>Om innlogget bruker har signert denne versjonen.</summary>
+    public bool? CurrentUserHasSigned { get; set; }
+
+    /// <summary>Versjonen innlogget bruker signerte.</summary>
+    public int? CurrentUserSignatureVersion { get; set; }
 }

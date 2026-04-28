@@ -6,6 +6,7 @@ using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Tests.Common;
 using CompVault.Shared.Result;
 
@@ -41,6 +42,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
         _refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         Mock<IUnitOfWork> unitOfWorkMock = new();
         _permissionServiceMock = new Mock<IPermissionService>();
+        var userRepositoryMock = new Mock<IUserRepository>();
 
         IOptions<OtpOptions> otpOptions = Options.Create(new OtpOptions
         {
@@ -55,6 +57,7 @@ public class AuthServiceRevokeRefreshTokenAsyncTests
 
         _sut = new AuthService(
             _userManagerMock.Object,
+            userRepositoryMock.Object,
             loggerMock.Object,
             jwtServiceMock.Object,
             otpCodeServiceMock.Object,

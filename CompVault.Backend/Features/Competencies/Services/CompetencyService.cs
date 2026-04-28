@@ -1,7 +1,10 @@
 using CompVault.Backend.Domain.Entities.Competencies;
+using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Audit.Services;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Enums;
@@ -16,7 +19,8 @@ public sealed class CompetencyService(
     ICompetencyRepository competencyRepository,
     ICompetencyTypeRepository competencyTypeRepository,
     IUserRepository userRepository,
-    IAuditContext auditContext) : ICompetencyService
+    IAuditContext auditContext,
+    IDepartmentScopeService departmentScope) : ICompetencyService
 {
     /// <inheritdoc />
     public async Task<Result<PagedResult<CompetencyDto>>> GetAllAsync(
@@ -68,12 +72,19 @@ public sealed class CompetencyService(
             return Result<CompetencyDto>.Failure(
                 AppError.Create(ErrorCode.Validation,
                     $"Kompetansetypen '{type.Name}' er inaktiv og kan ikke brukes."));
-
-        bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, cancellationToken);
-
-        if (!userExists)
+        
+        // Bruker sjekk
+        ApplicationUser? targetUser = await userRepository.GetByIdIgnoringFiltersAsync(userId, cancellationToken);
+        if (targetUser is null || !targetUser.IsActive || targetUser.DeletedAt is not null)
+            return Result<CompetencyDto>.Failure(AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        
+        // Sjekker om brukeren som kaller CreateAsync har tilattelse til å legge til kompetanse på targetUser
+        if (targetUser.DepartmentId is null ||
+            !departmentScope.IsAllowed(targetUser.DepartmentId.Value, Permissions.CompetenciesAll, 
+                Permissions.CompetenciesReadSub))
             return Result<CompetencyDto>.Failure(
-                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+                AppError.Create(ErrorCode.Forbidden,
+                    "Du har ikke tilgang til å opprette kompetansebevis for brukere i denne avdelingen."));
 
         // Validering av ExpiryDate basert på typens RequiresExpiration
         if (type.RequiresExpiration && request.ExpiryDate is null)
@@ -118,6 +129,15 @@ public sealed class CompetencyService(
         if (competency is null)
             return Result<CompetencyDto>.Failure(
                 AppError.NotFound($"Kompetansebevis med ID '{id}' ble ikke funnet."));
+        
+        // Sjekker om brukeren som kaller UpdateAsync har tilattelse til å endre kompetansen satt på targetUser
+        ApplicationUser? targetUser = competency.ApplicationUser;
+        if (targetUser is null || targetUser.DepartmentId is null ||
+            !departmentScope.IsAllowed(targetUser.DepartmentId.Value, Permissions.CompetenciesAll, 
+                Permissions.CompetenciesReadSub))
+            return Result<CompetencyDto>.Failure(
+                AppError.Create(ErrorCode.Forbidden,
+                    "Du har ikke tilgang til å oppdatere kompetansebevis for brukere i denne avdelingen."));
 
         // Validering før mutasjon — CompetencyType er lastet via GetForUpdateAsync
         DateTime? effectiveExpiry = request.ExpiryDate ?? competency.ExpiryDate;
@@ -144,7 +164,7 @@ public sealed class CompetencyService(
                 return Result<CompetencyDto>.Failure(
                     AppError.Create(ErrorCode.Validation,
                         "Årsak til tilbakekalling (RevokedReason) er påkrevd når status settes til Revoked."));
-
+            
             competency.Status = CompetencyStatus.Revoked;
             competency.RevokedAt = DateTime.UtcNow;
             competency.RevokedReason = request.RevokedReason;
@@ -183,11 +203,20 @@ public sealed class CompetencyService(
     public async Task<Result<bool>> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         Competency? competency = await competencyRepository.GetByIdAsync(id, cancellationToken);
-
+        
         if (competency is null)
             return Result<bool>.Failure(
                 AppError.NotFound($"Kompetansebevis med ID '{id}' ble ikke funnet."));
-
+        
+        ApplicationUser? targetUser = await userRepository.GetByIdIgnoringFiltersAsync(competency.UserId, 
+            cancellationToken);
+        if (targetUser is null || targetUser.DepartmentId is null ||
+            !departmentScope.IsAllowed(targetUser.DepartmentId.Value, Permissions.CompetenciesAll, 
+                Permissions.CompetenciesReadSub))
+            return Result<bool>.Failure(
+                AppError.Create(ErrorCode.Forbidden,
+                    "Du har ikke tilgang til å slette kompetansebevis for brukere i denne avdelingen."));
+        
         await competencyRepository.SoftDeleteAsync(competency, cancellationToken);
         await competencyRepository.SaveChangesAsync(cancellationToken);
 

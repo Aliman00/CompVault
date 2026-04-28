@@ -6,6 +6,8 @@ using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Domain.Entities.JobTitles;
+using CompVault.Backend.Features.Departments.Services;
+using Perms = CompVault.Shared.Constants.Permissions;
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +18,9 @@ namespace CompVault.Backend.Infrastructure.Data;
 /// Hoved-DbContext for appen. Arver Identity sin DbContext så vi får
 /// alle Identity-tabellene gratis, pluss våre egne domenetabeller.
 /// </summary>
-public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
+public sealed class AppDbContext(
+    DbContextOptions<AppDbContext> options,
+    IDepartmentScopeService scope) : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
 {
     // ============= IDENTITY ==============
     public DbSet<Department> Departments => Set<Department>();
@@ -57,5 +61,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
         // Plukker automatisk opp alle IEntityTypeConfiguration-klasser i assembly-et.
         // Ingen grunn til å registrere dem manuelt når du legger til nye entiteter.
         builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        
+        // Legger til query-filter på hver bruker
+        builder.Entity<ApplicationUser>().HasQueryFilter(u =>
+            u.DeletedAt == null &&
+            (scope.HasBypass(Perms.UsersAll) ||
+             (u.DepartmentId != null &&
+              scope.GetAllowedDepartmentIds(Perms.UsersReadSub).Contains(u.DepartmentId.Value))));
     }
 }

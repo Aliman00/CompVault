@@ -181,7 +181,7 @@ public sealed class DepartmentService(
     /// </summary>
     private async Task<bool> IsValidManagerAsync(Guid userId, CancellationToken ct)
     {
-        ApplicationUser? user = await userRepository.GetByIdAsync(userId, ct);
+        ApplicationUser? user = await userRepository.GetByIdIgnoringFiltersAsync(userId, ct);
         if (user is null || user.DeletedAt is not null || !user.IsActive)
             return false;
 

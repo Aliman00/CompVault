@@ -1,3 +1,4 @@
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -14,6 +15,10 @@ public interface IUserService
 
     /// <summary>Henter én bruker basert på ID.</summary>
     Task<Result<UserDto>> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    
+    /// <summary>Henter alle brukere innlogget bruker har lov til å hente</summary>
+    Task<Result<IReadOnlyList<UserLookupDto>>> LookupAllowedUsersAsync(string bypassPermission = Permissions.UsersAll,
+        string subPermission = Permissions.UsersReadSub, CancellationToken ct = default);
 
     /// <summary>Oppretter en ny brukerkonto.</summary>
     Task<Result<UserDto>> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default);

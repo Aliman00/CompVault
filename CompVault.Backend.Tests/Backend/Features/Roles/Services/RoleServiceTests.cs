@@ -41,7 +41,7 @@ public class RoleServiceTests
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        AppDbContext dbContext = new(options);
+        AppDbContext dbContext = new(options, new BypassDepartmentScopeService());
 
         _sut = new RoleService(
             _roleManagerMock.Object,

@@ -15,7 +15,7 @@ public interface IDocumentTypeService
     Task<Result<DocumentTypeDto>> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
     
     /// <summary> Henter alle dokumentertyper for en bruker</summary>
-    Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetDocumentTypesForUserAsync(Guid userId,
+    Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(Guid userId,
         CancellationToken ct = default);
 
     /// <summary>Oppretter en ny dokumenttype.</summary>

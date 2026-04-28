@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
@@ -55,14 +56,20 @@ public static class TestDataSeeder
         string role = TestConstants.Roles.Default)
     {
         using IServiceScope scope = serviceProvider.CreateScope();
-        UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        RoleManager<ApplicationRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+        UserManager<ApplicationUser> userManager = scope.ServiceProvider
+            .GetRequiredService<UserManager<ApplicationUser>>();
+        RoleManager<ApplicationRole> roleManager = scope.ServiceProvider
+            .GetRequiredService<RoleManager<ApplicationRole>>();
 
         // Opprett rollen hvis den ikke eksisterer
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
+        
+        // Opprett en department hvis den ikke eksisterer
+        Department department = await SeedDepartmentAsync(serviceProvider);
 
-        ApplicationUser user = TestDataFactory.CreateApplicationUser(id: id, email: email, deletedAt: deletedAt);
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(id: id, email: email, deletedAt: deletedAt, 
+            departmentId: department.Id);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
 
@@ -284,6 +291,48 @@ public static class TestDataSeeder
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         return client;
+    }
+    
+    // -------------------------------------------------------------------------
+    // Department
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Seeder en department inn i databasen. Alle parametere valgfrie for å kunne enkelt endre i testene
+    /// </summary>
+    /// <param name="serviceProvider">For å hente DBContext</param>
+    /// <param name="id">Guid ID, default null</param>
+    /// <param name="name">Default Test Department</param>
+    /// <param name="description">Default null</param>
+    /// <param name="parentDepartmentId">Default null</param>
+    /// <param name="isActive">Default true</param>
+    /// <param name="createdAt">Default null som blir da UtcNow ved opprettelse</param>
+    /// <param name="deletedAt">Default null</param>
+    /// <returns></returns>
+    public static async Task<Department> SeedDepartmentAsync(
+        IServiceProvider serviceProvider, 
+        Guid? id = null,
+        string name = "Test Department",
+        string? description = null,
+        Guid? parentDepartmentId = null,
+        bool isActive = true,
+        DateTime? createdAt = null,
+        DateTime? deletedAt = null)
+    {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        Department? existing = await context.Departments.FirstOrDefaultAsync();
+        if (existing is not null)
+            return existing;
+
+        Department department = TestDataFactory.CreateDepartment(id, name, description, parentDepartmentId, 
+            isActive, createdAt, deletedAt);
+
+        context.Departments.Add(department);
+        await context.SaveChangesAsync();
+
+        return department;
     }
 
     // -------------------------------------------------------------------------

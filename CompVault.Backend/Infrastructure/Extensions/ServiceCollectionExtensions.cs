@@ -66,7 +66,9 @@ public static class ServiceCollectionExtensions
                 options.UseNpgsql(
                     dbSettings.BuildConnectionString(),
                     npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
-                options.AddInterceptors(new AuditSaveChangesInterceptor(sp));
+                options.AddInterceptors(
+                    new AuditSaveChangesInterceptor(sp),
+                    new DepartmentScopeSaveChangesInterceptor(sp));
             });
         }
 
@@ -282,6 +284,9 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        // Hierarki-sjekk
+        services.AddScoped<IDepartmentScopeService, DepartmentScopeService>();
+        
         // Audit
         services.AddScoped<IAuditContext, AuditContext>();
         services.AddScoped<IAuditLogService, AuditLogService>();

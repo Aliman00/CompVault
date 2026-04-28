@@ -44,6 +44,22 @@ public static class DocumentMapper
             UploadedAt = document.UploadedAt
         };
     }
+    
+    /// <summary>
+    /// Oppretter et DocumentDto, men vi viser om brukeren har signert denne versjonen eller ikke
+    /// </summary>
+    public static DocumentDto ToDtoWithUserSignature(Document document, bool hasSigned)
+    {
+        DocumentDto dto = ToDto(document);
+
+        if (document.RequiresSignature)
+        {
+            dto.CurrentUserHasSigned = hasSigned;
+            dto.CurrentUserSignatureVersion = hasSigned ? document.Version : null;
+        }
+
+        return dto;
+    }
 
     public static DocumentListDto ToListDto(
         Document document, int totalSignatures, bool signedByCurrentUser)

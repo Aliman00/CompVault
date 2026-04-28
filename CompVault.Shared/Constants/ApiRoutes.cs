@@ -27,6 +27,10 @@ public static class ApiRoutes
         public static string ById(Guid id) => $"{Base}/{id}";
         public const string JobTitles = $"{Base}/job-titles";
         public const string Managers = $"{Base}/managers";
+        public static string Lookup(string readPermission, string bypassPermission, string subPermission) =>
+            $"{Base}/lookup?readPermission={readPermission}" +
+            $"&bypassPermission={bypassPermission}" +
+            $"&subPermission={subPermission}";
     }
 
     public static class Department

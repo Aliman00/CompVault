@@ -1,3 +1,4 @@
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Data.Interceptors;
 using CompVault.Backend.Infrastructure.Email;
@@ -61,10 +62,16 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 
             foreach (ServiceDescriptor? descriptor in descriptors)
                 services.Remove(descriptor);
-
+            
+            // Fjerner filterene slik at tester kan tester ikke trenger å tenke på DepartmentScopeService og hierarkiet
             services.AddDbContext<AppDbContext>((sp, options) =>
                 options.UseNpgsql(_postgres.GetConnectionString())
-                    .AddInterceptors(new AuditSaveChangesInterceptor(sp)));
+                    .AddInterceptors(new AuditSaveChangesInterceptor(sp),
+                        new DepartmentScopeSaveChangesInterceptor(sp)));
+
+            // Bytt ut ekte scope-service med bypass i alle integrasjonstester
+            services.RemoveAll<IDepartmentScopeService>();
+            services.AddScoped<IDepartmentScopeService, BypassDepartmentScopeService>();
 
             // Bytter ut den ekte EmailService med mocken
             services.RemoveAll<IEmailService>();

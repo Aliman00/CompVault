@@ -13,9 +13,16 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
     /// <inheritdoc />
     public async Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         await DbSet
+            .IgnoreQueryFilters()
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
-
+            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant() && u.DeletedAt == null, cancellationToken);
+    
+    /// <inheritdoc />
+    public async Task<ApplicationUser?> GetByIdIgnoringFiltersAsync(Guid id, CancellationToken ct = default) =>
+        await DbSet
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null, ct);
+    
     /// <inheritdoc />
     public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>>
         GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default)
@@ -135,4 +142,19 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
 
         return result.Select(x => (x.User, x.Roles)).ToList();
     }
+    
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ApplicationUser>> GetLookupAsync(IReadOnlyList<Guid> allowedDepartmentIds,
+        bool bypass, CancellationToken ct = default) =>
+        await DbSet
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Include(u => u.Department)
+            .Include(u => u.JobTitle)
+            .Where(u => u.IsActive && u.DeletedAt == null)
+            .Where(u => bypass ||
+                        (u.DepartmentId.HasValue && allowedDepartmentIds.Contains(u.DepartmentId.Value)))
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
+            .ToListAsync(ct);
 }

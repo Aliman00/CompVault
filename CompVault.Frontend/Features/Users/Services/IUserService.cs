@@ -17,6 +17,13 @@ public interface IUserService
     Task<Result<UserDto?>> GetByIdAsync(Guid id, CancellationToken ct);
     
     /// <summary>
+    /// Henter alle brukere innlogget bruker har tilattelse til å se og utføre handlinger mot. Vi sender inn
+    /// hvilken tilattelse er påkrevd til de forskjellige featurene. Eks: equipment:read for utlevering av utstyr
+    /// </summary>
+    Task<Result<IReadOnlyList<UserLookupDto>>> LookupUsersAsync(string readPermission, string bypassPermission,
+        string subPermission, CancellationToken ct);
+    
+    /// <summary>
     /// Henter alle brukere med leder-stillingstittel (IsLeader=true)
     /// </summary>
     Task<Result<IReadOnlyList<UserDto>>> GetPotentialManagersAsync(CancellationToken ct);

@@ -5,10 +5,8 @@ using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 namespace CompVault.Backend.Features.Documents.Controllers;
 
 /// <summary>
@@ -44,7 +42,7 @@ public sealed class DocumentsController(
 
     /// <summary>Henter ett dokument.</summary>
     [HttpGet("{id:guid}", Name = "GetDocumentById")]
-    [Authorize(Policy = Permissions.DocumentsRead)]
+    [Authorize]
     [ProducesResponseType(typeof(DocumentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DocumentDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)

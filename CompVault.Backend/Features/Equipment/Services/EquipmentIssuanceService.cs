@@ -1,6 +1,9 @@
 using CompVault.Backend.Domain.Entities.Equipment;
+using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Repositories.Equipment;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.Constants;
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Equipment;
@@ -17,17 +20,18 @@ public sealed class EquipmentIssuanceService(
     IEquipmentIssuanceRepository issuanceRepository,
     IEquipmentItemRepository itemRepository,
     IUserRepository userRepository,
+    IDepartmentScopeService departmentScope,
     ILogger<EquipmentIssuanceService> logger) : IEquipmentIssuanceService
 {
     /// <inheritdoc />
     public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetAllAsync(
         PagedQuery query, CancellationToken cancellationToken = default)
     {
-        IQueryable<Domain.Entities.Equipment.EquipmentIssuance> baseQuery = issuanceRepository.QueryWithDetails();
+        IQueryable<EquipmentIssuance> baseQuery = issuanceRepository.QueryWithDetails();
 
         int totalCount = await baseQuery.CountAsync(cancellationToken);
 
-        var issuances = await baseQuery
+        List<EquipmentIssuance> issuances = await baseQuery
             .OrderByDescending(i => i.IssuedDate)
             .Skip(query.Skip)
             .Take(query.PageSize)
@@ -43,7 +47,7 @@ public sealed class EquipmentIssuanceService(
     public async Task<Result<EquipmentIssuanceDto>> GetByIdAsync(
         Guid id, CancellationToken cancellationToken = default)
     {
-        Domain.Entities.Equipment.EquipmentIssuance? issuance =
+       EquipmentIssuance? issuance =
             await issuanceRepository.GetByIdWithDetailsAsync(id, cancellationToken);
 
         if (issuance is null)
@@ -57,18 +61,11 @@ public sealed class EquipmentIssuanceService(
     public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(
         Guid userId, PagedQuery query, CancellationToken cancellationToken = default)
     {
-        bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, cancellationToken);
-
-        if (!userExists)
-            return Result<PagedResult<EquipmentIssuanceDto>>.Failure(
-                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
-
-        IQueryable<Domain.Entities.Equipment.EquipmentIssuance> baseQuery = issuanceRepository.QueryWithDetails()
+        IQueryable<EquipmentIssuance> baseQuery = issuanceRepository.QueryWithDetails()
             .Where(i => i.UserId == userId);
-
         int totalCount = await baseQuery.CountAsync(cancellationToken);
 
-        var issuances = await baseQuery
+        List<EquipmentIssuance> issuances = await baseQuery
             .OrderByDescending(i => i.IssuedDate)
             .Skip(query.Skip)
             .Take(query.PageSize)
@@ -90,7 +87,7 @@ public sealed class EquipmentIssuanceService(
             return Result<IReadOnlyList<EquipmentIssuanceDto>>.Failure(
                 AppError.NotFound($"Utstyret ble ikke funnet"));
 
-        IReadOnlyList<Domain.Entities.Equipment.EquipmentIssuance> issuances =
+        IReadOnlyList<EquipmentIssuance> issuances =
             await issuanceRepository.GetByItemIdAsync(equipmentItemId, ct);
 
         var dtos = issuances.Select(EquipmentMapper.ToDto).ToList();
@@ -167,14 +164,21 @@ public sealed class EquipmentIssuanceService(
                 AppError.Create(ErrorCode.Validation, "Utleveringsdato kan ikke være mer enn 1 år tilbake i tid."));
 
         // Valider bruker
-        bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, cancellationToken);
-
-        if (!userExists)
+        ApplicationUser? recipient = await userRepository.GetByIdIgnoringFiltersAsync(userId, cancellationToken);
+        if (recipient is null)
             return Result<EquipmentIssuanceDto>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        
+        // Sjekker at brukeren har tilattelse for å opprette en utlevering for denne brukeren
+        if (recipient.DepartmentId is null ||
+            !departmentScope.IsAllowed(recipient.DepartmentId.Value, Permissions.EquipmentAll, 
+                Permissions.EquipmentReadSub))
+            return Result<EquipmentIssuanceDto>.Failure(
+                AppError.Create(ErrorCode.Forbidden, 
+                    "Du har ikke tilgang til å opprette utleveringer for denne brukeren."));
 
         // Valider utstyr
-        Domain.Entities.Equipment.EquipmentItem? item =
+        EquipmentItem? item =
             await itemRepository.GetByIdWithCategoryAsync(itemId, cancellationToken);
 
         if (item is null)
@@ -200,7 +204,7 @@ public sealed class EquipmentIssuanceService(
             return Result<EquipmentIssuanceDto>.Failure(
                 AppError.NotFound($"Utsteder med ID '{issuedById}' ble ikke funnet."));
 
-        var issuance = new Domain.Entities.Equipment.EquipmentIssuance
+        var issuance = new EquipmentIssuance
         {
             UserId = userId,
             ItemId = itemId,
@@ -215,7 +219,7 @@ public sealed class EquipmentIssuanceService(
         await issuanceRepository.AddAsync(issuance, cancellationToken);
         await issuanceRepository.SaveChangesAsync(cancellationToken);
 
-        Domain.Entities.Equipment.EquipmentIssuance? created =
+        EquipmentIssuance? created =
             await issuanceRepository.GetByIdWithDetailsAsync(issuance.Id, cancellationToken);
         if (created is null)
         {
@@ -236,7 +240,7 @@ public sealed class EquipmentIssuanceService(
     public async Task<Result<EquipmentIssuanceDto>> UpdateAsync(
         Guid id, UpdateEquipmentIssuanceRequest request, CancellationToken cancellationToken = default)
     {
-        Domain.Entities.Equipment.EquipmentIssuance? issuance =
+        EquipmentIssuance? issuance =
             await issuanceRepository.GetForUpdateAsync(id, cancellationToken);
 
         if (issuance is null)
@@ -269,10 +273,12 @@ public sealed class EquipmentIssuanceService(
     /// <inheritdoc />
     public async Task<Result<bool>> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        int rowsAffected = await issuanceRepository.SoftDeleteByIdAsync(id, cancellationToken);
-        if (rowsAffected == 0)
-            return Result<bool>.Failure(
-                AppError.NotFound($"Utlevering med ID '{id}' ble ikke funnet."));
+        EquipmentIssuance? issuance = await issuanceRepository.GetForUpdateAsync(id, cancellationToken);
+        if (issuance is null)
+            return Result<bool>.Failure(AppError.NotFound($"Utlevering med ID '{id}' ble ikke funnet."));
+
+        await issuanceRepository.SoftDeleteAsync(issuance, cancellationToken);
+        await issuanceRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);
     }

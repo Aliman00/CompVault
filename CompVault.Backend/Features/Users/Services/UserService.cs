@@ -1,8 +1,10 @@
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -20,6 +22,7 @@ public sealed class UserService(
     IJobTitleRepository jobTitleRepository,
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
+    IDepartmentScopeService departmentScope,
     ILogger<UserService> logger,
     IUnitOfWork unitOfWork) : IUserService
 {
@@ -54,6 +57,21 @@ public sealed class UserService(
         IList<string> roles = await userManager.GetRolesAsync(user);
         return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserLookupDto>>> LookupAllowedUsersAsync(
+        string bypassPermission = Permissions.UsersAll,
+        string subPermission = Permissions.UsersReadSub,
+        CancellationToken ct = default)
+    {
+        // Sjekker om brukeren kan hente brukere i underavdelinger, kun fra sin egen eller alle brukere
+        bool bypass = departmentScope.HasBypass(bypassPermission);
+        IReadOnlyList<Guid> allowedIds = departmentScope.GetAllowedDepartmentIds(subPermission);
+
+        IReadOnlyList<ApplicationUser> users = await userRepository.GetLookupAsync(allowedIds, bypass, ct);
+        return Result<IReadOnlyList<UserLookupDto>>.Success(users.Select(u => u.ToLookupDto()).ToList());
+    }
+    
 
     /// <inheritdoc />
     public async Task<Result<UserDto>> CreateUserAsync(
@@ -87,15 +105,21 @@ public sealed class UserService(
         // Valider at lederen eksisterer og er aktiv hvis ManagerId er angitt
         if (request.ManagerId.HasValue)
         {
-            bool managerExists = await userRepository.ExistsAsync(
-                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
+            ApplicationUser? manager = await userRepository.GetByIdIgnoringFiltersAsync(
+                request.ManagerId.Value, cancellationToken);
 
-            if (!managerExists)
+            if (manager is null || !manager.IsActive)
             {
                 logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", request.ManagerId.Value);
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
             }
+
+            if (manager.DepartmentId is null ||
+                !departmentScope.IsAllowed(manager.DepartmentId.Value, Permissions.UsersAll, Permissions.UsersReadSub))
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Forbidden, 
+                        "Du har ikke tilgang til å sette denne brukeren som leder."));
         }
 
         // Valider at stillingstittelen eksisterer hvis JobTitleId er angitt
@@ -204,11 +228,18 @@ public sealed class UserService(
 
         if (request.ManagerId.HasValue)
         {
-            bool managerExists = await userRepository.ExistsAsync(
-                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, ct);
-            if (!managerExists)
+            ApplicationUser? manager = await userRepository.GetByIdIgnoringFiltersAsync(
+                request.ManagerId.Value, ct);
+
+            if (manager is null || !manager.IsActive)
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
+
+            if (manager.DepartmentId is null ||
+                !departmentScope.IsAllowed(manager.DepartmentId.Value, Permissions.UsersAll, Permissions.UsersReadSub))
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Validation, 
+                        "Du har ikke tilgang til å sette denne brukeren som leder."));
         }
 
         // Valider at stillingstittelen eksisterer hvis JobTitleId er angitt
