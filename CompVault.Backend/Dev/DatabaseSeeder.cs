@@ -214,9 +214,8 @@ public static class DatabaseSeeder
             await SeedRolesAsync(roleManager, logger);
             await SeedPermissionsAsync(dbContext, logger);
             await SeedRolePermissionsAsync(roleManager, dbContext, logger);
-            await SeedUsersAsync(userManager, dbContext, logger);
-            await SeedDepartmentsAsync(dbContext, logger);
-            await SeedUserDepartmentsAsync(userManager, dbContext, logger);
+            List<Guid> departmentIds = await SeedDepartmentsAsync(dbContext, logger);
+            await SeedUsersAsync(userManager, dbContext, logger, departmentIds);
             await SeedJobTitlesAsync(dbContext, logger);
             await SeedUserJobTitlesAsync(userManager, dbContext, logger);
             await SeedCompetencyTypesAsync(dbContext, logger);
@@ -261,8 +260,14 @@ public static class DatabaseSeeder
         }
     }
 
-    private static async Task SeedUsersAsync(UserManager<ApplicationUser> userManager, AppDbContext dbContext, ILogger logger)
+    private static async Task SeedUsersAsync(
+        UserManager<ApplicationUser> userManager,
+        AppDbContext dbContext,
+        ILogger logger,
+        List<Guid> departmentIds)
     {
+        Random random = new();
+        
         foreach ((string firstName, string lastName, string email, string[] roles) in Users)
         {
             bool exists = await dbContext.Users
@@ -270,7 +275,7 @@ public static class DatabaseSeeder
                 .AnyAsync(u => u.Email == email);
             if (exists)
                 continue;
-
+            
             ApplicationUser user = new()
             {
                 UserName = email,
@@ -281,6 +286,7 @@ public static class DatabaseSeeder
                 EmploymentType = EmploymentType.Permanent,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
+                DepartmentId = departmentIds[random.Next(departmentIds.Count)],
             };
 
             IdentityResult createResult = await userManager.CreateAsync(user, DefaultPassword);
@@ -301,7 +307,7 @@ public static class DatabaseSeeder
         }
     }
 
-   private static async Task SeedDepartmentsAsync(AppDbContext dbContext, ILogger logger)
+    private static async Task<List<Guid>> SeedDepartmentsAsync(AppDbContext dbContext, ILogger logger)
     {
         foreach ((string name, string description, string? parentName) in Departments)
         {
@@ -372,40 +378,11 @@ public static class DatabaseSeeder
             await dbContext.SaveChangesAsync();
             logger.LogInformation("[DatabaseSeeder] Avdeling opprettet: {Name} (under {Parent})", name, parentName);
         }
-    }
-    private static async Task SeedUserDepartmentsAsync(UserManager<ApplicationUser> userManager, AppDbContext dbContext, ILogger logger)
-    {
-        foreach ((string email, string deptName) in UserDepartments)
-        {
-            ApplicationUser? user = await dbContext.Users
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(u => u.Email == email);
-            if (user is null)
-            {
-                logger.LogWarning("[DatabaseSeeder] Bruker ikke funnet for avdelingskobling: {Email}", email);
-                continue;
-            }
-
-            Department? dept = await dbContext.Departments
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(d => d.Name == deptName);
-            if (dept is null)
-            {
-                logger.LogWarning("[DatabaseSeeder] Avdeling ikke funnet for kobling: {Dept}", deptName);
-                continue;
-            }
-
-            if (user.DepartmentId == dept.Id)
-                continue;
-
-            user.DepartmentId = dept.Id;
-            IdentityResult result = await userManager.UpdateAsync(user);
-            if (result.Succeeded)
-                logger.LogInformation("[DatabaseSeeder] Bruker {Email} koblet til avdeling {Dept}", email, deptName);
-            else
-                logger.LogWarning("[DatabaseSeeder] Feil ved kobling av {Email} til {Dept}: {Errors}",
-                    email, deptName, string.Join(", ", result.Errors.Select(e => e.Description)));
-        }
+        
+        return await dbContext.Departments
+            .IgnoreQueryFilters()
+            .Select(d => d.Id)
+            .ToListAsync();
     }
 
     private static async Task SeedCompetencyTypesAsync(AppDbContext dbContext, ILogger logger)

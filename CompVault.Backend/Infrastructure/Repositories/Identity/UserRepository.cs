@@ -56,8 +56,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .AsNoTracking()
             .Include(u => u.Department)
             .Include(u => u.JobTitle)
-            .Where(u => departmentIds.Count == 0 ||
-                        (u.DepartmentId.HasValue && departmentIds.Contains(u.DepartmentId.Value)))
+            .Where(u => departmentIds.Count == 0 || departmentIds.Contains(u.DepartmentId))
             .Where(u => jobTitleIds.Count == 0 ||
                         (u.JobTitleId.HasValue && jobTitleIds.Contains(u.JobTitleId.Value)))
             .ToListAsync(ct);
@@ -152,8 +151,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .Include(u => u.Department)
             .Include(u => u.JobTitle)
             .Where(u => u.IsActive && u.DeletedAt == null)
-            .Where(u => bypass ||
-                        (u.DepartmentId.HasValue && allowedDepartmentIds.Contains(u.DepartmentId.Value)))
+            .Where(u => bypass || allowedDepartmentIds.Contains(u.DepartmentId))
             .OrderBy(u => u.LastName)
             .ThenBy(u => u.FirstName)
             .ToListAsync(ct);

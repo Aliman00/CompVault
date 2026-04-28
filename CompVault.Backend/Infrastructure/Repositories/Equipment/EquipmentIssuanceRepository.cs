@@ -92,7 +92,7 @@ public sealed class EquipmentIssuanceRepository(
             .OrderByDescending(i => i.IssuedDate)
             .Skip(query.Skip)
             .Take(query.PageSize)
-            .Include(i => i.Item!).ThenInclude(item => item!.Category)
+            .Include(i => i.Item!).ThenInclude(item => item.Category)
             .Include(i => i.IssuedBy)
             .AsNoTracking()
             .ToListAsync(ct);
@@ -110,7 +110,7 @@ public sealed class EquipmentIssuanceRepository(
             .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
-            .ThenInclude(item => item!.Category)
+            .ThenInclude(item => item.Category)
             .Include(i => i.IssuedBy);
 
         return await ApplyDepartmentFilter(query).ToListAsync(ct);
@@ -141,7 +141,7 @@ public sealed class EquipmentIssuanceRepository(
             .Where(i => i.DeletedAt == null)
             .Include(i => i.User)
             .Include(i => i.Item!)
-            .ThenInclude(item => item!.Category)
+            .ThenInclude(item => item.Category)
             .Include(i => i.IssuedBy);
 
         return ApplyDepartmentFilter(query);
@@ -175,8 +175,7 @@ public sealed class EquipmentIssuanceRepository(
 
         IQueryable<Guid> allowedUserIds = DbContext.Users
             .IgnoreQueryFilters()
-            .Where(u => u.DeletedAt == null && u.DepartmentId != null
-                                            && allowedIds.Contains(u.DepartmentId.Value))
+            .Where(u => u.DeletedAt == null && allowedIds.Contains(u.DepartmentId))
             .Select(u => u.Id);
 
         return query.Where(i => allowedUserIds.Contains(i.UserId));

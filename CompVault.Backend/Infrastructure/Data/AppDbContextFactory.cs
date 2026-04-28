@@ -41,7 +41,7 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 file sealed class DesignTimeDepartmentScope : IDepartmentScopeService
 {
     public bool HasBypass(string readAllPermissions) => true;
-        
+    
     public IReadOnlyList<Guid> GetAllowedDepartmentIds(string? readSubPermission = null) 
         => [];
 

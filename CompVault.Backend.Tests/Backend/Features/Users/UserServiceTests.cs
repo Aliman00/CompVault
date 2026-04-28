@@ -9,6 +9,7 @@ using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Backend.Tests.Common;
+using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
@@ -138,7 +139,8 @@ public class UserServiceTests
             Email = "ny@example.com",
             FirstName = "Ny",
             LastName = "Bruker",
-            Roles = []
+            Roles = [],
+            DepartmentId = TestConstants.Departments.DefaultDepartmentId
         };
 
         _userRepositoryMock
@@ -153,6 +155,11 @@ public class UserServiceTests
         _userManagerMock
             .Setup(m => m.GetRolesAsync(It.IsAny<ApplicationUser>()))
             .ReturnsAsync(new List<string>());
+        
+        _departmentRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<Department, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         // Act
         Result<UserDto> result = await _sut.CreateUserAsync(request);

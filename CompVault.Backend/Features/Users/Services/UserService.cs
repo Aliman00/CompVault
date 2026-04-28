@@ -89,17 +89,14 @@ public sealed class UserService(
         }
 
         // Valider at avdelingen eksisterer hvis DepartmentId er angitt
-        if (request.DepartmentId.HasValue)
+        bool departmentExists = await departmentRepository.ExistsAsync(
+            d => d.Id == request.DepartmentId && d.IsActive && d.DeletedAt == null, cancellationToken);
+        if (!departmentExists)
         {
-            bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
-
-            if (!departmentExists)
-            {
-                logger.LogWarning("Kunne ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet", request.DepartmentId.Value);
-                return Result<UserDto>.Failure(
-                    AppError.NotFound($"Avdeling med ID '{request.DepartmentId.Value}' ble ikke funnet."));
-            }
+            logger.LogWarning("Kunde ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet", 
+                request.DepartmentId);
+            return Result<UserDto>.Failure(
+                AppError.NotFound($"Avdeling med ID '{request.DepartmentId}' ble ikke funnet."));
         }
 
         // Valider at lederen eksisterer og er aktiv hvis ManagerId er angitt
@@ -110,13 +107,13 @@ public sealed class UserService(
 
             if (manager is null || !manager.IsActive)
             {
-                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", request.ManagerId.Value);
+                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", 
+                    request.ManagerId.Value);
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
             }
 
-            if (manager.DepartmentId is null ||
-                !departmentScope.IsAllowed(manager.DepartmentId.Value, Permissions.UsersAll, Permissions.UsersReadSub))
+            if (!departmentScope.IsAllowed(manager.DepartmentId, Permissions.UsersAll, Permissions.UsersReadSub))
                 return Result<UserDto>.Failure(
                     AppError.Create(ErrorCode.Forbidden, 
                         "Du har ikke tilgang til å sette denne brukeren som leder."));
@@ -235,8 +232,7 @@ public sealed class UserService(
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
 
-            if (manager.DepartmentId is null ||
-                !departmentScope.IsAllowed(manager.DepartmentId.Value, Permissions.UsersAll, Permissions.UsersReadSub))
+            if (!departmentScope.IsAllowed(manager.DepartmentId, Permissions.UsersAll, Permissions.UsersReadSub))
                 return Result<UserDto>.Failure(
                     AppError.Create(ErrorCode.Validation, 
                         "Du har ikke tilgang til å sette denne brukeren som leder."));
@@ -272,9 +268,7 @@ public sealed class UserService(
             user.JobTitleId = null;
 
         if (request.DepartmentId.HasValue)
-            user.DepartmentId = request.DepartmentId;
-        else if (request.ClearDepartmentId)
-            user.DepartmentId = null;
+            user.DepartmentId = request.DepartmentId.Value;
 
         if (request.ManagerId.HasValue)
             user.ManagerId = request.ManagerId;

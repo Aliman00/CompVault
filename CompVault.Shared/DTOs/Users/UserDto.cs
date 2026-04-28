@@ -38,10 +38,10 @@ public sealed class UserDto
     public bool IsActive { get; set; }
 
     /// <summary>Avdelings-ID (hvis satt).</summary>
-    public Guid? DepartmentId { get; set; }
+    public Guid DepartmentId { get; set; }
 
     /// <summary>Avdelingsnavn (hvis satt).</summary>
-    public string? DepartmentName { get; set; }
+    public string DepartmentName { get; set; } = string.Empty;
 
     /// <summary>Er avdeling aktiv (standard som true hvis satt).</summary>
     public bool? DepartmentIsActive { get; set; } = true;

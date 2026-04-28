@@ -79,8 +79,7 @@ public sealed class CompetencyService(
             return Result<CompetencyDto>.Failure(AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
         
         // Sjekker om brukeren som kaller CreateAsync har tilattelse til å legge til kompetanse på targetUser
-        if (targetUser.DepartmentId is null ||
-            !departmentScope.IsAllowed(targetUser.DepartmentId.Value, Permissions.CompetenciesAll, 
+        if (!departmentScope.IsAllowed(targetUser.DepartmentId, Permissions.CompetenciesAll, 
                 Permissions.CompetenciesReadSub))
             return Result<CompetencyDto>.Failure(
                 AppError.Create(ErrorCode.Forbidden,
@@ -132,8 +131,8 @@ public sealed class CompetencyService(
         
         // Sjekker om brukeren som kaller UpdateAsync har tilattelse til å endre kompetansen satt på targetUser
         ApplicationUser? targetUser = competency.ApplicationUser;
-        if (targetUser is null || targetUser.DepartmentId is null ||
-            !departmentScope.IsAllowed(targetUser.DepartmentId.Value, Permissions.CompetenciesAll, 
+        if (targetUser is null || 
+            !departmentScope.IsAllowed(targetUser.DepartmentId, Permissions.CompetenciesAll, 
                 Permissions.CompetenciesReadSub))
             return Result<CompetencyDto>.Failure(
                 AppError.Create(ErrorCode.Forbidden,
@@ -210,8 +209,8 @@ public sealed class CompetencyService(
         
         ApplicationUser? targetUser = await userRepository.GetByIdIgnoringFiltersAsync(competency.UserId, 
             cancellationToken);
-        if (targetUser is null || targetUser.DepartmentId is null ||
-            !departmentScope.IsAllowed(targetUser.DepartmentId.Value, Permissions.CompetenciesAll, 
+        if (targetUser is null ||
+            !departmentScope.IsAllowed(targetUser.DepartmentId, Permissions.CompetenciesAll, 
                 Permissions.CompetenciesReadSub))
             return Result<bool>.Failure(
                 AppError.Create(ErrorCode.Forbidden,

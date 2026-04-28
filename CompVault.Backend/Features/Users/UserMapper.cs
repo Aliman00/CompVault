@@ -17,7 +17,7 @@ public static class UserMapper
         EmploymentType = user.EmploymentType,
         IsActive = user.IsActive,
         DepartmentId = user.DepartmentId,
-        DepartmentName = user.Department?.Name,
+        DepartmentName = user.Department?.Name ?? string.Empty,
         DepartmentIsActive = user.Department?.IsActive,
         ManagerId = user.ManagerId,
         ManagerName = user.Manager != null

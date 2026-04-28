@@ -170,8 +170,7 @@ public sealed class EquipmentIssuanceService(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
         
         // Sjekker at brukeren har tilattelse for å opprette en utlevering for denne brukeren
-        if (recipient.DepartmentId is null ||
-            !departmentScope.IsAllowed(recipient.DepartmentId.Value, Permissions.EquipmentAll, 
+        if (!departmentScope.IsAllowed(recipient.DepartmentId, Permissions.EquipmentAll, 
                 Permissions.EquipmentReadSub))
             return Result<EquipmentIssuanceDto>.Failure(
                 AppError.Create(ErrorCode.Forbidden, 

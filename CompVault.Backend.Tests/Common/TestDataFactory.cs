@@ -37,7 +37,7 @@ public static class TestDataFactory
             LastName = lastName,
             IsActive = deletedAt == null,
             DeletedAt = deletedAt,
-            DepartmentId = departmentId
+            DepartmentId = departmentId ?? TestConstants.Departments.DefaultDepartmentId
         };
 
     /// <summary>

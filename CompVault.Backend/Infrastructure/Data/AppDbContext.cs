@@ -66,7 +66,6 @@ public sealed class AppDbContext(
         builder.Entity<ApplicationUser>().HasQueryFilter(u =>
             u.DeletedAt == null &&
             (scope.HasBypass(Perms.UsersAll) ||
-             (u.DepartmentId != null &&
-              scope.GetAllowedDepartmentIds(Perms.UsersReadSub).Contains(u.DepartmentId.Value))));
+             scope.GetAllowedDepartmentIds(Perms.UsersReadSub).Contains(u.DepartmentId)));
     }
 }

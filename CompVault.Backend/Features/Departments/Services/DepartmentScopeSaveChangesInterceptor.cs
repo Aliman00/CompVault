@@ -34,10 +34,7 @@ public sealed class DepartmentScopeSaveChangesInterceptor(IServiceProvider servi
                      .Entries<ApplicationUser>()
                      .Where(e => e.State is EntityState.Added or EntityState.Modified))
         {
-            if (!entry.Entity.DepartmentId.HasValue)
-                continue;
-            
-            if (!departmentScopeService.IsAllowed(entry.Entity.DepartmentId.Value, Permissions.UsersAll, 
+            if (!departmentScopeService.IsAllowed(entry.Entity.DepartmentId, Permissions.UsersAll, 
                     Permissions.UsersReadSub))
                 throw new UnauthorizedAccessException(
                     "Du har ikke tilattelse til denne operasjonen.");
