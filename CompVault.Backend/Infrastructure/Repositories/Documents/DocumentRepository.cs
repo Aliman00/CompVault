@@ -110,7 +110,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
     
-    public async Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid? departmentId, 
+    public async Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId, 
         Guid? jobTitleId, CancellationToken ct = default) => 
         await ApplyTargetingFilter(DbSet.Where(d => d.IsActive), departmentId, jobTitleId)
             .GroupBy(d => new {  // Henter ut det vi trenger for DTO-en
@@ -124,7 +124,10 @@ public sealed class DocumentRepository(AppDbContext dbContext)
                 Name = g.Key.Name,
                 Slug = g.Key.Slug,
                 Description = g.Key.Description,
-                DocumentCount = g.Count() // Teller antall dokumenter til hver type
+                DocumentCount = g.Count(), // Teller antall dokumenter til hver type
+                PendingSignatureCount = g.Count(d =>
+                    d.RequiresSignature &&
+                    !d.Signatures.Any(s => s.UserId == userId && s.SignatureVersion == d.Version))
             })
             .OrderBy(x => x.Name)
             .AsNoTracking()

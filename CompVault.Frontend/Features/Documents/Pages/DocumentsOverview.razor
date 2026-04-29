@@ -1,10 +1,12 @@
 ﻿@page "/documents"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.DocumentsRead)]
+@attribute [Authorize(Policy = Permissions.AdminAccess)]
 @inject IDocumentTypeService DocumentTypeService
 @inject NavigationManager NavigationManager
 
 @* Landingsside for dokumenter — viser alle dokumenttyper som navigasjonskort *@
+<AppAlert @bind-Alert="_alert"/>
 
 @if (_isLoading)
 {

@@ -1,6 +1,7 @@
 ﻿@page "/equipment-items/{Id:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.EquipmentRead)]
+@attribute [Authorize(Policy = Permissions.AdminAccess)]
 @inject IEquipmentCategoryService EquipmentCategoryService
 @inject IEquipmentItemService EquipmentItemService
 @inject IEquipmentIssuancesService EquipmentIssuanceService

@@ -2,6 +2,7 @@
 @using CompVault.Frontend.Features.Competencies.Components
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.CompetenciesRead)]
+@attribute [Authorize(Policy = Permissions.AdminAccess)]
 @inject ICompetencyService CompetencyService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
