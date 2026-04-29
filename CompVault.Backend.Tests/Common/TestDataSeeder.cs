@@ -1,17 +1,24 @@
+using System.Security.Claims;
+
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Enums;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+
+using Moq;
 
 namespace CompVault.Backend.Tests.Common;
 
@@ -295,6 +302,44 @@ public static class TestDataSeeder
     }
     
     // -------------------------------------------------------------------------
+    // HttpContextAccessor
+    // -------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Oppretter en en HttpContext (et Http-forespørsel objekt) med en autorisert bruker med avdelings ID
+    /// </summary>
+    /// <param name="departmentId">Avvdelingen til en bruker. Påkrevd.</param>
+    /// <param name="permissions">Valgfrie permissions for å teste tilattelser</param>
+    /// <returns></returns>
+    public static IHttpContextAccessor CreateHttpContextAccessor(
+        Guid departmentId,
+        params string[] permissions)
+    {
+        // Legger til en tilfeldig bruker og en avdeling vi har seedet inn
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+            new("department_id", departmentId.ToString()),
+        };
+
+        foreach (string permission in permissions)
+        {
+            claims.Add(new Claim(Permissions.ClaimType, permission));
+        }
+
+        var principal = new ClaimsPrincipal(
+            new ClaimsIdentity(claims, authenticationType: "test"));
+
+        var httpContext = new DefaultHttpContext { User = principal };
+
+        // Mocker at HttpContextAccessor returnerer den bygde http-forespørselen med brukeren
+        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
+
+        return httpContextAccessorMock.Object;
+    }
+    
+    // -------------------------------------------------------------------------
     // Department
     // -------------------------------------------------------------------------
 
@@ -450,5 +495,59 @@ public static class TestDataSeeder
             }
         }
         await context.SaveChangesAsync();
+    }
+    
+    // -------------------------------------------------------------------------
+    // Equipment
+    // -------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Seeder en utstyrskategori inn i databasen med valgfrie eller defaulte verdier
+    /// </summary>
+    /// <param name="serviceProvider">DBContext vi seeder inn i</param>
+    /// <param name="id">ID-en tit kategorien. Default oppretter egen Guid</param>
+    /// <param name="name">Navn. Default er Test kategori</param>
+    /// <returns>Seedet EquipmentCategory med alle viktige egenskaper</returns>
+    public static async Task<EquipmentCategory> SeedEquipmentCategoryAsync(
+        IServiceProvider serviceProvider, 
+        Guid? id = null, 
+        string name = "Test kategori")
+    {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        
+        EquipmentCategory category = TestDataFactory.CreateEquipmentCategory(id, name);
+
+        context.EquipmentCategories.Add(category);
+        await context.SaveChangesAsync();
+
+        return category;
+    }
+    
+    /// <summary>
+    /// Seeder et utstyr inn i databasen med valgfrie eller defaulte verdier
+    /// </summary>
+    /// <param name="serviceProvider">DBContext vi seeder inn i</param>
+    /// <param name="id">ID-til utsyret. Default new Guid</param>
+    /// <param name="categoryId">ID-til EquipmentCateogry. Default new Guid</param>
+    /// <param name="name">Navn. Default er Test utstyr</param>
+    /// <param name="hasSize">Har item størrelse. Default false</param>
+    /// <returns>Seedet EquipmentItem med alle viktige egenskaper</returns>
+    public static async Task<EquipmentItem> SeedEquipmentItemAsync(
+        IServiceProvider serviceProvider, 
+        Guid? id = null, 
+        Guid? categoryId = null, 
+        string name = "Test utstyr",
+        bool hasSize = false)
+    {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        
+        EquipmentItem item = TestDataFactory.CreateEquipmentItem(id, categoryId, name, hasSize);
+
+        context.EquipmentItems.Add(item);
+        await context.SaveChangesAsync();
+
+        return item;
     }
 }

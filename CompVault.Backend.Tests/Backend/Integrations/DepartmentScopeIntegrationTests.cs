@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using CompVault.Backend.Domain.Entities.Departments;
+﻿using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
@@ -44,30 +43,11 @@ public class DepartmentScopeIntegrationTests(BackendWebApplicationFactory factor
     /// <returns></returns>
     private AppDbContext CreateContext(Guid departmentId, params string[] permissions)
     {
-        // Legger til en tilfeldig bruker og en avdeling vi har seedet inn
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()), 
-            new("department_id", departmentId.ToString())
-        };
-        
-        foreach (string permission in permissions)
-        {
-            claims.Add(new Claim(Permissions.ClaimType, permission));
-        }
-
-        var identity = new ClaimsIdentity(claims, authenticationType: "test");
-        var principal = new ClaimsPrincipal(identity);
-        
-        var httpContext = new DefaultHttpContext { User = principal };
-        
-        // Mocker at HttpContextAccessor returnerer den bygde http-forespørselen med brukeren
-        var httpContextAccessor = new Mock<IHttpContextAccessor>();
-        httpContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
-
         IServiceScope scope = factory.Services.CreateScope();
+    
+        IHttpContextAccessor httpContextAccessor = TestDataSeeder.CreateHttpContextAccessor(departmentId, permissions);
 
-        var departmentScope = new DepartmentScopeService(httpContextAccessor.Object, scope.ServiceProvider);
+        var departmentScope = new DepartmentScopeService(httpContextAccessor, scope.ServiceProvider);
         
         // Vi overstyrer DepartmentScope service siden vi har implementert BypassDepartmentScope
         // i WebAppFactory for andre tester. Vi må teste med riktig IDepartmentScopeService
@@ -77,7 +57,7 @@ public class DepartmentScopeIntegrationTests(BackendWebApplicationFactory factor
             .Returns(departmentScope);
         serviceProviderMock
             .Setup(sp => sp.GetService(typeof(IHttpContextAccessor)))
-            .Returns(httpContextAccessor.Object);
+            .Returns(httpContextAccessor);
         
         // Kobler på interceptoren for å fange opp operasjoner som skjer mot databasen
         DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()

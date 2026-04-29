@@ -1,6 +1,7 @@
 ﻿using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Departments;
+using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Tests.Common.Constants;
 
@@ -82,7 +83,7 @@ public static class TestDataFactory
         };
 
     /// <summary>
-    /// Oppretter en Department for testing.
+    /// Oppretter en Department for testing
     /// </summary>
     public static Department CreateDepartment(
         Guid? id = null,
@@ -101,4 +102,70 @@ public static class TestDataFactory
             CreatedAt = createdAt ?? DateTime.UtcNow,
             DeletedAt = deletedAt
         };
+    
+    /// <summary>
+    /// Oppretter en utstyrskategori for testing
+    /// </summary>
+    /// <param name="id">ID-en tit kategorien. Default oppretter egen Guid</param>
+    /// <param name="name">Navn. Default er Test kategori</param>
+    /// <returns>Ferdig bygget EquipmentCategory klar til testing</returns>
+    public static EquipmentCategory CreateEquipmentCategory(Guid? id = null, string name = "Test kategori") => new()
+    {
+        Id = id ?? Guid.NewGuid(), 
+        Name = name, 
+        IsActive = true, 
+        CreatedAt = DateTime.UtcNow
+    };
+    
+    /// <summary>
+    /// Oppretter et utstyr
+    /// </summary>
+    /// <param name="id">ID-til utsyret. Default new Guid</param>
+    /// <param name="categoryId">ID-til EquipmentCateogry. Default new Guid</param>
+    /// <param name="name">Navn. Default er Test utstyr</param>
+    /// <param name="hasSize">Har item størrelse. Default false</param>
+    /// <returns>EquipmentItem for testing</returns>
+    public static EquipmentItem CreateEquipmentItem(
+        Guid? id = null, 
+        Guid? categoryId = null, 
+        string name = "Test utstyr",
+        bool hasSize = false) => new()
+    {
+        Id = id ?? Guid.NewGuid(), 
+        CategoryId = categoryId ?? Guid.NewGuid(),
+        Name = name, 
+        HasSize = hasSize,
+        IsActive = true, 
+        CreatedAt = DateTime.UtcNow
+    };
+    
+    /// <summary>
+    /// Tilknytter et utstyr en bruker
+    /// </summary>
+    /// <param name="id">ID til tilknyttingen. Default new Guid</param>
+    /// <param name="userId">Brukerens ID. Default new Guid</param>
+    /// <param name="itemId">Utstyrets ID. Default new Guid</param>
+    /// <param name="issuedById">Brukeren som har utlevert. Default new Guid</param>
+    /// <param name="quantity">Antall utlevert. Default 1</param>
+    /// <param name="size">Størrelse hvis satt. Default null</param>
+    /// <returns>EquipmentIssuance for testing</returns>
+    public static EquipmentIssuance CreateEquipmentIssuance(
+        Guid? id = null, 
+        Guid? userId = null, 
+        Guid? itemId = null, 
+        Guid? issuedById = null,
+        int quantity = 1,
+        string? size = null) => new()
+    {
+        Id = id ?? Guid.NewGuid(), 
+        UserId = userId ?? Guid.NewGuid(),
+        ItemId = itemId ?? Guid.NewGuid(),
+        IssuedById = issuedById ?? Guid.NewGuid(),
+        Quantity = quantity,
+        IssuedDate = DateTime.UtcNow,
+        Size = size,
+        IsActive = true, 
+        CreatedAt = DateTime.UtcNow
+    };
+
 }
