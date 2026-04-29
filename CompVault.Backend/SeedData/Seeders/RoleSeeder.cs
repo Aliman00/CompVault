@@ -1,8 +1,6 @@
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Infrastructure.Data;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.SeedData.Seeders;
 
@@ -19,7 +17,7 @@ public static class RoleSeeder
             {
                 Name = name,
                 Description = description,
-                IsSystem = true,
+                IsSystem = false,
                 CreatedAt = DateTime.UtcNow,
             };
 
