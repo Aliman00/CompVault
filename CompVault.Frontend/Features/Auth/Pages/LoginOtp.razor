@@ -1,41 +1,55 @@
 ﻿@page "/login-otp"
+@* Route: localhost:5020/login-otp?email=test@... *@
+
 @layout AuthLayout
 @inject IJSRuntime Js
 @inject AntiforgeryStateProvider AntiforgeryStateProvider
 
-
-@* -- Route: localhost:5020/login-otp?email=test@... *@
 @inject IHttpClientFactory Http     
 @inject NavigationManager Navigation 
+@* State for login-forsøk *@
+@inject AuthStateService AuthState  
+
+@* Viktig for å rydde opp event listeners *@
+@implements IDisposable
 
 <!-- Sentralisert OTP-kort -->
 <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#f5f5f5">
     <MudCard Style="width:400px">
         <MudCardContent Class="pa-6">
+
             <MudText Typo="Typo.h4" Class="mb-4 text-center">Bekreft OTP</MudText>
-            <MudText Typo="Typo.body1" Class="mb-4">Sendt til: <strong>@Email</strong></MudText>
-            
+
             <!-- Vis e-post fra query-string (?email=...) -->
             <MudText Typo="Typo.body1" Class="mb-4">
                 Sendt til: <strong>@Email</strong>
             </MudText>
-            
+
             <!-- OTP-input (6 siffer) -->
             <MudTextField Label="OTP-kode (6 siffer)" 
                           @bind-Value="code" 
                           MaxLength="6"
                           Variant="Variant.Outlined" 
                           Immediate />
-                          
+
             <!-- Verifiser mot backend -->
-            <MudButton Class="mt-6"
-                       FullWidth
-                       Color="Color.Primary"
+            <MudButton Class="mt-6" 
+                       FullWidth 
+                       Disabled="@isDisabled"  @* Disable hvis låst *@
+                       Color="Color.Primary" 
                        Variant="Variant.Filled"
-                       OnClick="SubmitAsync">
+                       OnClick="VerifyOtpAsync">
                 Logg inn
             </MudButton>
 
+            <!-- Feilmelding ved feil OTP eller lock -->
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <MudText Color="Color.Error" Class="mt-2">
+                    @error
+                </MudText>
+            }
+            
             @* Skjult form for å legge tokens i nettleseren ved innloging *@
             <form id="login-form" method="post" action="/login-callback">
                 <AntiforgeryToken/>
@@ -49,34 +63,85 @@
 @code {
 
     // Hent e-post fra URL: /login-otp?email=test@example.com
-    [Parameter] [SupplyParameterFromQuery] public string? Email { get; set; } = "";
-    
-    private string code = ""; // Two-way binding til input
+    [Parameter] 
+    [SupplyParameterFromQuery] 
+    public string? Email { get; set; } = "";
 
+    private string code = "";   // Two-way binding til OTP input
+    private string? error;      // Feilmelding til UI
+    private bool isDisabled;    // Disable knapp ved lock
+    private bool hasRedirected; // Hindrer redirect loop
+
+    protected override void OnInitialized()
+    {
+        // Lytt på endringer i login state
+        AuthState.OnChange += StateChanged;
+
+        // Sett initial state
+        UpdateState();
+    }
+
+    private void StateChanged()
+    {
+        // Kjør UI update async (Blazor pattern)
+        InvokeAsync(UpdateState);
+    }
+
+    private void UpdateState()
+    {
+        // Disable knapp hvis bruker er låst
+        isDisabled = !AuthState.CanAttemptLogin();
+
+        // Hvis for mange feil forsøk → redirect tilbake til login
+        if (AuthState.LoginState.IsLocked && !hasRedirected)
+        {
+            hasRedirected = true;
+
+            error = "For mange feil forsøk. Du blir sendt tilbake.";
+
+            // Litt delay for bedre UX
+            Task.Run(async () =>
+            {
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/login-email", true);
+            });
+        }
+    }
+    
     private async Task VerifyOtpAsync()
     {
-        // Hent BackendApi-klient
-        var client = Http.CreateClient("BackendApi");
-
-        // POST OTP til din backend
-        var response = await client.PostAsJsonAsync("api/auth/verify-otp",
-            new { email = Email, code });
-        
-        if (!response.IsSuccessStatusCode)
+        // Stopper hvis bruker er låst
+        if (!AuthState.CanAttemptLogin())
         {
-            // Midlertidig: se hva som feiler
-            Console.WriteLine($"OTP request failed: {response.StatusCode}");
+            error = "Du er midlertidig låst.";
             return;
         }
 
-        // Ved suksess → dashboard (med forceLoad for auth)
-        if (response.IsSuccessStatusCode)
-            Navigation.NavigateTo("/dashboard", forceLoad: true);
-    }
-    
-    private async Task SubmitAsync()
-    {
+        // Hent BackendApi-klient
+        var client = Http.CreateClient("BackendApi");
+
+        // POST OTP til backend
+        var response = await client.PostAsJsonAsync("api/auth/verify-otp",
+            new { email = Email, code });
+
+        // Hvis feil OTP → øk teller
+        if (!response.IsSuccessStatusCode)
+        {
+            AuthState.RegisterFailedLogin();
+            error = "Feil OTP-kode.";
+            return;
+        }
+
+        // Suksess → reset teller og submit skjult form
+        AuthState.RegisterSuccess();
+
         var token = AntiforgeryStateProvider.GetAntiforgeryToken();
         await Js.InvokeVoidAsync("loginFormSubmit", code, token?.Value);
+    }
+    
+    public void Dispose()
+    {
+        // Viktig: fjern event listener for å unngå memory leaks
+        AuthState.OnChange -= StateChanged;
     }
 }
