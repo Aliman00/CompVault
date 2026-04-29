@@ -1,0 +1,123 @@
+flowchart TB
+    subgraph NOTE1["Om utstyrs-tilgangskontroll"]
+    direction TB
+        note1["EquipmentIssuance har ikke direkte DepartmentId — koblet til avdeling indirekte via UserId → ApplicationUser.DepartmentId. ApplyDepartmentFilter gjør en subquery mot AspNetUsers med IgnoreQueryFilters og manuell DeletedAt-sjekk for å finne tillatte bruker-IDer. Scope-sjekk ved opprettelse skjer i EquipmentIssuanceService via departmentScope.IsAllowed med equipment-permissions, ikke user-permissions."]:::note
+    end
+
+    subgraph PERMISSIONS["Lag 1 — Permissions på kontrolleren"]
+        P1(["Request ankommer"])
+        P2{"Authorize-policy: equipment:read / write / delete"}
+        P3(["403 Forbidden — mangler permission"])
+        P4["Requesten når kontrolleren"]
+    end
+
+    subgraph READ["Lag 2 — Leseoperasjoner — EquipmentIssuanceRepository.ApplyDepartmentFilter"]
+        R1["Repository mottar spørring — QueryWithDetails / GetByIdWithDetailsAsync / GetForUpdateAsync"]
+        R2{"HasBypass — bruker har equipment:read:all?"}
+        R3["Ingen avdelingsfiltrering"]
+        R4{"Har bruker equipment:read:sub?"}
+        R5["DepartmentScopeService.GetAllowedDepartmentIds — BFS nedover — Lazy, én gang per request"]
+        R6["Subquery mot AspNetUsers med IgnoreQueryFilters — finner User-IDer der DepartmentId = ANY tillatteAvdelinger og DeletedAt IS NULL"]
+        R7["WHERE IssuanceUserId = ANY tillatteUserIder"]
+        R8["Kun mottakere i brukerens egen avdeling"]
+        R9(["Filtrerte utleveringer returneres"])
+        R10["Bruker-spesifikke operasjoner — GetByUserIdPagedAsync og GetCategoriesForUserAsync — filtreres ikke ytterligere"]
+    end
+
+    subgraph WRITE["Lag 2 — Opprettelse — EquipmentIssuanceService.CreateAsync"]
+        C1(["POST — opprett utlevering"])
+        C2["Henter mottaker-bruker med GetByIdIgnoringFiltersAsync — skiller 404 fra 403"]
+        C3{"Bruker finnes?"}
+        C4(["404 Not Found"])
+        C5{"departmentScope.IsAllowed — mottakerens DepartmentId, EquipmentAll / EquipmentReadSub"}
+        C6(["403 Forbidden — mottaker utenfor scope"])
+        C7["Validering OK — oppretter utlevering"]
+        C8(["201 Created"])
+    end
+
+    subgraph UPDATE_DELETE["Lag 2 — Oppdatering og sletting — via GetForUpdateAsync"]
+        U1(["PUT / DELETE — oppdater eller slett utlevering"])
+        U2["Service kaller GetForUpdateAsync — bruker ApplyDepartmentFilter internt"]
+        U3{"Utlevering funnet innenfor scope?"}
+        U4(["404 Not Found — finnes ikke eller utenfor scope"])
+        U5["Utfører oppdatering / soft-delete"]
+        U6(["200 OK / 204 No Content"])
+    end
+
+    P1 --> P2
+    P2 -- "Mangler permission" --> P3
+    P2 -- "Har permission" --> P4
+    P4 -- "GET" --> R1
+    P4 -- "POST" --> C1
+    P4 -- "PUT / DELETE" --> U1
+
+    R1 --> R2
+    R2 -- Ja --> R3
+    R3 --> R9
+    R2 -- Nei --> R4
+    R4 -- Ja --> R5
+    R5 --> R6
+    R6 --> R7
+    R7 --> R9
+    R4 -- Nei --> R8
+    R8 --> R9
+    R1 -- "Bruker-spesifikke operasjoner" --> R10
+    R10 --> R9
+
+    C1 --> C2
+    C2 --> C3
+    C3 -- Nei --> C4
+    C3 -- Ja --> C5
+    C5 -- "Utenfor scope" --> C6
+    C5 -- "Innenfor scope" --> C7
+    C7 --> C8
+
+    U1 --> U2
+    U2 --> U3
+    U3 -- Nei --> U4
+    U3 -- Ja --> U5
+    U5 --> U6
+
+    note1:::note
+    P1:::start
+    P2:::decision
+    P3:::failure
+    P4:::action
+    R1:::action
+    R2:::decision
+    R3:::success
+    R4:::decision
+    R5:::action
+    R6:::action
+    R7:::action
+    R8:::action
+    R9:::start
+    R10:::action
+    C1:::start
+    C2:::action
+    C3:::decision
+    C4:::failure
+    C5:::decision
+    C6:::failure
+    C7:::action
+    C8:::start
+    U1:::start
+    U2:::action
+    U3:::decision
+    U4:::failure
+    U5:::action
+    U6:::start
+
+    classDef start fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef success fill:#5BA85A,stroke:#3D7A3C,color:#fff
+    classDef failure fill:#D9534F,stroke:#A02020,color:#fff
+    classDef decision fill:#F5A623,stroke:#C47D0E,color:#fff
+    classDef action fill:#E8E8E8,stroke:#999,color:#333
+    classDef async fill:#9B59B6,stroke:#6C3483,color:#fff
+    classDef note fill:#2C2C2C,stroke:#555,color:#ccc,font-style:italic
+
+    style PERMISSIONS fill:#4A4A4A,stroke:#888,color:#fff
+    style READ fill:#616161,stroke:#888,color:#fff
+    style WRITE fill:#616161,stroke:#888,color:#fff
+    style UPDATE_DELETE fill:#616161,stroke:#888,color:#fff
+    style NOTE1 fill:#3A3A3A,stroke:#666,color:#ccc

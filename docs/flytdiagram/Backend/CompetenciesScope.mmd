@@ -1,0 +1,88 @@
+flowchart TB
+    subgraph NOTE1["Om kompetanse-tilgangskontroll"]
+    direction TB
+        note1["Permissions sjekker i kontrolleren. Competency:Read, Competency:Write og Competency:Delete gir tilgang til tilhørende endepunkter. Skrivetilgang sjekkes i service-laget, mens filtrering for Get-forespørsler skjer i repository laget."]:::note
+    end
+
+    subgraph PERMISSIONS["Lag 1 — Permissions på kontrolleren"]
+        P1(["Innkommende forespørsel"])
+        P2{"Authorize-policy: competencies:read / write / delete"}
+        P3(["403 Forbidden — mangler permission"])
+        P4["Requesten når kontrolleren"]
+    end
+
+    subgraph READ[" "]
+        R1["CompetencyRepository blir kalt"]
+        R2{"Bypass — bruker har competencies:read:all?"}
+        R3["Ingen filtrering — alle kompetanser returneres"]
+        R4{"Har bruker competencies:read:sub?"}
+        R5["DepartmentScopeService.GetAllowedDepartmentIds utfører BFS nedover fra brukerens avdeling og finner tilatte avdelinger"]
+        R7["Brukeren kan kun se fra egen avdeling"]
+        R8(["Returnerer tilatte avdelinger"])
+    end
+
+    subgraph WRITE[" "]
+        C2["CompetencyService henter brukeren tilknyttet kompetansen med GetByIdIgnoringFiltersAsync for å skille mellom 404 Not Found og 403 Forbidden"]
+        C3{"Bruker finnes?"}
+        C4(["404 Not Found"])
+        C5{"departmentScope.IsAllowed sjekker om brukeren har CompetenciesAll / CompetenciesReadSub eller om brukeren er i samme avdeling"}
+        C6(["403 Forbidden"])
+        C7["Oppretter / endrer / sletter kompetanse"]
+        C8(["200 OK / 201 Created / 204 No Content"])
+    end
+
+    P1 --> P2
+    P2 -- "Mangler permission" --> P3
+    P2 -- "Har permission" --> P4
+    P4 -- "GET" --> R1
+    P4 -- "POST / PUT / DELETE" --> C2
+
+    R1 --> R2
+    R2 -- Ja --> R3
+    R3 --> R8
+    R2 -- Nei --> R4
+    R4 -- Ja --> R5
+    R5 --> R8
+    R4 -- Nei --> R7
+    R7 --> R8
+  
+
+    C2 --> C3
+    C3 -- Nei --> C4
+    C3 -- Ja --> C5
+    C5 -- "Innlogget bruker har ikke tilattelse til å utføre operasjoner mot denne brukeren" --> C6
+    C5 -- "Innlogget bruker har tilattelse" --> C7
+    C7 --> C8
+
+    note1:::note
+    P1:::start
+    P2:::decision
+    P3:::failure
+    P4:::action
+    R1:::action
+    R2:::decision
+    R3:::success
+    R4:::decision
+    R5:::action
+    R7:::action
+    R8:::start
+    C2:::action
+    C3:::decision
+    C4:::failure
+    C5:::decision
+    C6:::failure
+    C7:::action
+    C8:::start
+
+    classDef start fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef success fill:#5BA85A,stroke:#3D7A3C,color:#fff
+    classDef failure fill:#D9534F,stroke:#A02020,color:#fff
+    classDef decision fill:#F5A623,stroke:#C47D0E,color:#fff
+    classDef action fill:#E8E8E8,stroke:#999,color:#333
+    classDef async fill:#9B59B6,stroke:#6C3483,color:#fff
+    classDef note fill:#2C2C2C,stroke:#555,color:#ccc,font-style:italic
+
+    style PERMISSIONS fill:#4A4A4A,stroke:#888,color:#fff
+    style READ fill:#616161,stroke:#888,color:#fff
+    style WRITE fill:#616161,stroke:#888,color:#fff
+    style NOTE1 fill:#3A3A3A,stroke:#666,color:#ccc

@@ -14,11 +14,13 @@ public static class ApiRoutes
         public const string VerifyOtp = "verify-otp";
         public const string Refresh = "refresh";
         public const string Revoke = "revoke";
+        public const string Me = "me";
 
         public const string RequestOtpFull = $"{Base}/{RequestOtp}";
         public const string VerifyOtpFull = $"{Base}/{VerifyOtp}";
         public const string RefreshFull = $"{Base}/{Refresh}";
         public const string RevokeFull = $"{Base}/{Revoke}";
+        public const string MeFull = $"{Base}/{Me}";
     }
 
     public static class User

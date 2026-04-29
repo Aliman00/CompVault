@@ -51,13 +51,12 @@ public sealed class DepartmentScopeService : IDepartmentScopeService
             return _idsWithSubDepartments.Value.GetAwaiter().GetResult();
         
         // Returnerer egen avdeling eller tom liste hvis brukere ikke er tildelt avdeling
-        Guid? own = _userDepartmentId.Value;
-        return own.HasValue 
-            ? [own.Value] 
+        Guid? userDepartment = _userDepartmentId.Value;
+        return userDepartment.HasValue 
+            ? [userDepartment.Value] 
             : [];
     }
     
-   
     public bool IsAllowed(Guid departmentId, string readAllPermission, string? readSubPermission = null)
         => HasBypass(readAllPermission) || GetAllowedDepartmentIds(readSubPermission).Contains(departmentId);
     

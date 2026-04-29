@@ -19,6 +19,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
+            .AsSplitQuery()
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
@@ -29,6 +30,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentType)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(d => d.Id == id && d.DeletedAt == null, cancellationToken);
     
     public async Task<Document?> GetCurrentWithSignaturesAsync(
@@ -38,6 +40,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.Signatures)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
+            .AsSplitQuery()
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
@@ -52,6 +55,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
+            .AsSplitQuery()
             .Where(d => d.DocumentTypeId == documentTypeId && d.IsActive);
 
         if (documentTypeCategoryId.HasValue)
@@ -76,6 +80,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
                     .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
                     .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
                     .Include(d => d.Uploader)
+                    .AsSplitQuery()
                     .Where(d => d.IsActive),
                 departmentId, jobTitleId)
             .AsNoTracking()
@@ -105,6 +110,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
+            .AsSplitQuery()
             .Where(d => idList.Contains(d.Id))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
@@ -189,6 +195,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
+            .AsSplitQuery()
             .Skip(parameters.Skip)
             .Take(parameters.PageSize)
             .AsNoTracking()
