@@ -24,6 +24,12 @@ else
         
         @* Liste med dokumenttypes/dokumentkategorier*@
         <MudList T="UserDocumentTypeDto" Dense="true" Class="pa-2">
+            @if (!_documentTypes.Any())
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                    Du har ikke blitt tildelt noen dokumenter.
+                </MudText>
+            }
             @foreach (var documentType in _documentTypes)
             {
                 <MudListItem T="UserDocumentTypeDto"
