@@ -1,11 +1,15 @@
 using CompVault.Backend.Common.Controller;
+using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Services;
+using CompVault.Backend.Features.Users;
 using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
+using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompVault.Backend.Features.Auth.Controllers;
@@ -16,7 +20,9 @@ namespace CompVault.Backend.Features.Auth.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public sealed class AuthController(IAuthService authService) : BaseController
+public sealed class AuthController(
+    IAuthService authService,
+    UserManager<ApplicationUser> userManager) : BaseController
 {
 
     /// <summary>
@@ -79,6 +85,22 @@ public sealed class AuthController(IAuthService authService) : BaseController
             return HandleFailure(result);
 
         return Ok(result.Value);
+    }
+
+    /// <summary>Henter innlogget brukers profil uten å kreve users:read.</summary>
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserDto>> GetCurrentUserAsync(CancellationToken ct)
+    {
+        Guid currentUserId = User.GetUserId();
+        ApplicationUser? user = await userManager.FindByIdAsync(currentUserId.ToString());
+        if (user is null)
+            return Unauthorized();
+
+        IList<string> roles = await userManager.GetRolesAsync(user);
+        return Ok(UserMapper.ToDto(user, roles));
     }
 
     /// <summary>Ugyldiggjør refresh token og logger brukeren ut.</summary>
