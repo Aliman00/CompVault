@@ -1,0 +1,111 @@
+flowchart TB
+    subgraph NOTE1["Om avdelingsscope — interceptor og query filter"]
+    direction TB
+        note1["Viser hvordan DepartmentScopeService bygger opp tillatte avdelinger per request, og hvordan DepartmentScopeSaveChangesInterceptor beskytter skriveoperasjoner på ApplicationUser. Det globale query filteret på AppDbContext kjøres automatisk på alle leseoperasjoner mot brukertabellen — ingen repository eller service trenger å huske på det."]:::note
+    end
+
+    subgraph READ[" "]
+        R1(["GET-request ankommer med JWT-cookie"])
+        R2{"Permission-sjekk på kontroller — users:read"}
+        R3(["403 Forbidden — mangler permission"])
+        R4["AppDbContext evaluerer global query filter på ApplicationUser automatisk"]
+        R5{"HasBypass — bruker har users:read:all?"}
+        R6["Ingen avdelingsfiltrering"]
+        R7{"Har bruker users:read:sub?"}
+        R8["DepartmentScopeService leser department_id fra JWT-claim"]
+        R9["BFS nedover i avdelingshierarkiet fra brukerens avdeling"]
+        R10["DepartmentRepository.GetAllWithHierarchyAsync — IgnoreQueryFilters, BFS trenger alle avdelinger"]
+        R11["Resultat caches i Lazy per request"]
+        R12["SQL: WHERE DepartmentId = ANY tillatteAvdelinger AND DeletedAt IS NULL"]
+        R13["Kun brukerens egen avdeling i tillatt-listen"]
+        R14(["Filtrerte brukere returneres"])
+    end
+
+    subgraph WRITE[" "]
+        W1(["POST / PUT / DELETE-request"])
+        W2{"Permission-sjekk på kontroller — users:write / users:delete"}
+        W3(["403 Forbidden — mangler permission"])
+        W4["Kontroller kaller service → repository → SaveChangesAsync"]
+        W5["DepartmentScopeSaveChangesInterceptor — SavingChangesAsync kjøres"]
+        W6{"Finnes autentisert bruker i HttpContext — ingen ved seeding / migrasjoner?"}
+        W7["Hopper over validering — lagrer direkte"]
+        W8{"IsAllowed — targetDepartmentId, UsersAll, UsersReadSub"}
+        W9(["UnauthorizedAccessException → 403"])
+        W10(["Lagret — 200 OK / 201 Created"])
+    end
+
+    subgraph AUTH[" "]
+        A1["GetByEmailAsync — GetByIdIgnoringFiltersAsync — OtpCodeRepository.GetActiveCodeAsync — RefreshTokenRepository.GetValidTokenAsync"]
+        A2["Disse bruker alltid IgnoreQueryFilters. Brukeren er ikke logget inn ennå og har ingen department_id å filtrere på."]
+    end
+
+    NOTE1 ~~~ READ
+    READ ~~~ WRITE
+    WRITE ~~~ AUTH
+
+    R1 --> R2
+    R2 -- "Mangler permission" --> R3
+    R2 -- "Har permission" --> R4
+    R4 --> R5
+    R5 -- Ja --> R6
+    R6 --> R12
+    R5 -- Nei --> R7
+    R7 -- Ja --> R8
+    R8 --> R9
+    R9 --> R10
+    R10 --> R11
+    R11 --> R12
+    R7 -- Nei --> R13
+    R13 --> R12
+    R12 --> R14
+
+    W1 --> W2
+    W2 -- "Mangler permission" --> W3
+    W2 -- "Har permission" --> W4
+    W4 --> W5
+    W5 --> W6
+    W6 -- "Nei — seeding/migrasjoner" --> W7
+    W6 -- Ja --> W8
+    W8 -- "Utenfor scope" --> W9
+    W8 -- "Innenfor scope" --> W10
+
+    note1:::note
+    R1:::start
+    R2:::decision
+    R3:::failure
+    R4:::action
+    R5:::decision
+    R6:::success
+    R7:::decision
+    R8:::action
+    R9:::action
+    R10:::action
+    R11:::action
+    R12:::action
+    R13:::action
+    R14:::start
+    W1:::start
+    W2:::decision
+    W3:::failure
+    W4:::action
+    W5:::action
+    W6:::decision
+    W7:::action
+    W8:::decision
+    W9:::failure
+    W10:::start
+    A1:::action
+    A2:::action
+
+    classDef start fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef success fill:#5BA85A,stroke:#3D7A3C,color:#fff
+    classDef failure fill:#D9534F,stroke:#A02020,color:#fff
+    classDef decision fill:#F5A623,stroke:#C47D0E,color:#fff
+    classDef action fill:#E8E8E8,stroke:#999,color:#333
+    classDef async fill:#9B59B6,stroke:#6C3483,color:#fff
+    classDef note fill:#2C2C2C,stroke:#555,color:#ccc,font-style:italic
+
+    style READ fill:#616161,stroke:#888,color:#fff
+    style WRITE fill:#616161,stroke:#888,color:#fff
+    style AUTH fill:#757575,stroke:#999,color:#fff
+    style NOTE1 fill:#3A3A3A,stroke:#666,color:#ccc

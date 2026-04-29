@@ -1,6 +1,8 @@
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Features.Competencies;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Shared.Constants;
 using CompVault.Shared.Enums;
 
 using Microsoft.EntityFrameworkCore;
@@ -10,14 +12,15 @@ namespace CompVault.Backend.Infrastructure.Repositories.Competencies;
 /// <summary>
 /// EF Core-implementasjon av <see cref="ICompetencyRepository"/>.
 /// </summary>
-public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepository<Competency>(dbContext), ICompetencyRepository
+public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScopeService departmentScope) : 
+    BaseRepository<Competency>(dbContext), ICompetencyRepository
 {
     /// <inheritdoc />
     public async Task<Competency?> GetWithDetailsAsync(Guid id, CancellationToken cancellationToken = default) =>
-        await DbSet
-            .AsNoTracking()
-            .Include(c => c.ApplicationUser)
-            .Include(c => c.CompetencyType)
+        await ApplyDepartmentFilter(DbSet
+                .AsNoTracking()
+                .Include(c => c.ApplicationUser)
+                .Include(c => c.CompetencyType))
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     /// <inheritdoc />
@@ -68,7 +71,10 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
             .AsNoTracking()
             .Include(c => c.ApplicationUser)
             .Include(c => c.CompetencyType);
-
+        
+        // Filterer vekk avdelinger vi ikke har tilattelse til
+        query = ApplyDepartmentFilter(query);
+        
         if (userId.HasValue)
             query = query.Where(c => c.UserId == userId.Value);
 
@@ -174,5 +180,24 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
         competency.DeletedAt = DateTime.UtcNow;
         competency.IsActive = false;
         return Task.CompletedTask;
+    }
+    
+    // =========================== Hjelpemetoder =========================== 
+    
+    // Filter som sjekker at vi ikke kan hente kompetansebevis vi ikke har tilattelse til
+    private IQueryable<Competency> ApplyDepartmentFilter(IQueryable<Competency> query)
+    {
+        if (departmentScope.HasBypass(Permissions.CompetenciesAll))
+            return query;
+
+        IReadOnlyList<Guid> allowedIds =
+            departmentScope.GetAllowedDepartmentIds(Permissions.CompetenciesReadSub);
+
+        IQueryable<Guid> allowedUserIds = DbContext.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.DeletedAt == null && allowedIds.Contains(u.DepartmentId))
+            .Select(u => u.Id);
+
+        return query.Where(c => allowedUserIds.Contains(c.UserId));
     }
 }

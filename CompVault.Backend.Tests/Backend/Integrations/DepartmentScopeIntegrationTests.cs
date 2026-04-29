@@ -38,9 +38,6 @@ public class DepartmentScopeIntegrationTests(BackendWebApplicationFactory factor
     /// Bygger en DbContext med Interceptoren koblet på og med en autentisert bruker som utfører kallet,
     /// med claim for brukren og en avdeling
     /// </summary>
-    /// <param name="departmentId"></param>
-    /// <param name="permissions"></param>
-    /// <returns></returns>
     private AppDbContext CreateContext(Guid departmentId, params string[] permissions)
     {
         IServiceScope scope = factory.Services.CreateScope();

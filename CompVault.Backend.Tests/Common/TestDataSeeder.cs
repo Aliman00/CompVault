@@ -1,23 +1,20 @@
 using System.Security.Claims;
-
 using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Enums;
-
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-
 using Moq;
 
 namespace CompVault.Backend.Tests.Common;
@@ -376,7 +373,38 @@ public static class TestDataSeeder
 
         return department;
     }
+    
+    // -------------------------------------------------------------------------
+    // Competencies
+    // -------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Seeder en kompetansetype inn i databasen
+    /// </summary>
+    /// <param name="serviceProvider">DBContext vi seeder inn i</param>
+    /// <param name="id">ID-en til kompetansetypen</param>
+    /// <param name="name">Navnet på kompetansetypen. Default Dykkekurs</param>
+    /// <param name="category">Valgfri kategori. Default null</param>
+    /// <param name="requiresExpiration">Utgår kompetansetypen. Default false</param>
+    /// <returns>Ferdig seedet CompetencyType i databasen</returns>
+    public static async Task<CompetencyType> SeedCompetencyTypeAsync(
+        IServiceProvider serviceProvider,
+        Guid? id = null,
+        string name = "Dykkekurs",
+        string? category = null,
+        bool requiresExpiration = false)
+    {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+        CompetencyType competencyType = TestDataFactory.CreateCompetencyType(id, name, category, requiresExpiration);
+
+        context.CompetencyTypes.Add(competencyType);
+        await context.SaveChangesAsync();
+
+        return competencyType;
+    }
+    
     // -------------------------------------------------------------------------
     // Document Types, Categories and Documents
     // -------------------------------------------------------------------------
