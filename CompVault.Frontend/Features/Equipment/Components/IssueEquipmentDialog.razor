@@ -1,7 +1,6 @@
 ﻿@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @inject IEquipmentIssuancesService EquipmentIssuanceService
 @inject IEquipmentItemService EquipmentItemService
-@inject IUserService UserService
 
 @* Dialog for å utlevere utstyr til en bruker *@
 <MudDialog>
@@ -23,22 +22,13 @@
                 <MudGrid>
                     @* Bruker - kun redigeringsmodus hvis vi har navigert fra utstyr-siden *@
                     <MudItem xs="12" sm="6">
-                        <SelectWithLinkField Value="_editModel.UserId"
-                                             ValueChanged="OnUserChanged"
-                                             Label="Bruker"
-                                             ToStringFunc="@(id => _users.FirstOrDefault(
-                                                               u => u.Id == id)?.FullName ?? string.Empty)"
-                                             IsEditing="@(PreselectedUserId == null)"
-                                             For="() => _editModel.UserId"
-                                             DisplayValue="@(_users.FirstOrDefault(
-                                                               u => u.Id == _editModel.UserId)?.FullName)">
-                            <Items>
-                                @foreach (var user in _users)
-                                {
-                                    <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
-                                }
-                            </Items>
-                        </SelectWithLinkField>
+                        <UserAutocomplete Value="_selectedUser"
+                                          ValueChanged="OnUserChanged"
+                                          Label="Bruker"
+                                          IsEditing="@(PreselectedUserId == null)"
+                                          ReadPermission="@Permissions.EquipmentRead"
+                                          AllPermission="@Permissions.EquipmentAll"
+                                          SubPermission="@Permissions.EquipmentReadSub"/>
                     </MudItem>
 
                     @* Utstyr - kun redigeringsmodus hvis vi har navigert fra bruker-siden*@
@@ -136,8 +126,7 @@
 
     // ===================== PRIVATE FELT =====================
     private readonly CreateEquipmentIssuanceModel _editModel = new();
-
-    private List<UserLookupDto> _users = [];
+    
     private List<EquipmentItemDto> _items = [];
 
     private bool _selectedItemHasSize;
@@ -147,6 +136,8 @@
 
     private bool _isLoading = true;
     private bool _isSaving;
+    
+    private UserLookupDto? _selectedUser;
     
     private List<EquipmentItemDto> ActiveItems => _items.Where(i => i.IsActive).ToList();
 
@@ -159,31 +150,13 @@
 
         try
         {
-            var usersTask = UserService.LookupUsersAsync(
-                Permissions.EquipmentRead,
-                Permissions.EquipmentAll,
-                Permissions.EquipmentReadSub,
-                Cts.Token);
-            var itemsTask = EquipmentItemService.GetAllAsync(Cts.Token);
-
-            await Task.WhenAll(usersTask, itemsTask);
-
-            var usersResult = await usersTask;
-            var itemsResult = await itemsTask;
-
-            if (usersResult.IsFailure)
-            {
-                _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
-                return;
-            }
-
+            var itemsResult = await EquipmentItemService.GetAllAsync(Cts.Token);
             if (itemsResult.IsFailure)
             {
                 _alert = new AlertInfo(itemsResult.Error!.ToString(), Severity.Error);
                 return;
             }
-
-            _users = usersResult.Value!.ToList();
+            
             _items = itemsResult.Value!;
 
             // Setter ID-en til brukeren hvis vi kommer fra bruker-siden
@@ -197,7 +170,8 @@
             if (PreselectedItemId.HasValue)
             {
                 _editModel.ItemId = PreselectedItemId ?? Guid.Empty;
-                _editModel.ItemHasSize = _items.FirstOrDefault(i => i.Id == PreselectedItemId)?.HasSize ?? false;
+                _editModel.ItemHasSize = _items.FirstOrDefault(
+                    i => i.Id == PreselectedItemId)?.HasSize ?? false;
                 _selectedItemHasSize = _editModel.ItemHasSize;
                 _editContext.NotifyFieldChanged(_editContext.Field(nameof(_editModel.ItemId)));
             }
@@ -211,9 +185,10 @@
     // ===================== PRIVATE METHODS =====================
     
     // Handlinger som utføres hvis bruker eller utstyr endres
-    private void OnUserChanged(Guid? v)
+    private void OnUserChanged(UserLookupDto? user)
     {
-        _editModel.UserId = v;
+        _selectedUser = user;
+        _editModel.UserId = user?.Id;
         _editContext.NotifyFieldChanged(_editContext.Field(nameof(_editModel.UserId)));
     }
 

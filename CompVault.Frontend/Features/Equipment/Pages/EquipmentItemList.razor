@@ -64,6 +64,9 @@
     // ===================== PARAMETER =====================
     [SupplyParameterFromQuery(Name = "deleted")]
     public bool Deleted { get; set; }
+    
+    [SupplyParameterFromQuery(Name = "categoryId")]
+    public Guid? CategoryId { get; set; }
 
     // ===================== PRIVATE FELT =====================
     private List<EquipmentItemDto> _equipmentItems = [];
@@ -76,7 +79,13 @@
     {
         try
         {
-            var getEquipmentItemResult = await EquipmentItemService.GetAllAsync(Cts.Token);
+            if (!CategoryId.HasValue)
+            {
+                NavigationManager.NavigateTo(PageRoutes.EquipmentCategories.List);
+                return;
+            }
+            
+            var getEquipmentItemResult = await EquipmentItemService.GetByCategoryAsync(CategoryId.Value, Cts.Token);
 
             if (getEquipmentItemResult.IsFailure)
             {

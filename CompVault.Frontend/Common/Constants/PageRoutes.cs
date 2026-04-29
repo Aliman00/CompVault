@@ -109,7 +109,7 @@ public static class PageRoutes
 
     public static class EquipmentItems
     {
-        public const string List = "/equipment-items";
+        public static string ListByCategory(Guid categoryId) => $"/equipment-items?categoryId={categoryId}";
         public static string Detail(Guid id) => $"/equipment-items/{id}";
         public const string Create = "/equipment-items/create";
     }

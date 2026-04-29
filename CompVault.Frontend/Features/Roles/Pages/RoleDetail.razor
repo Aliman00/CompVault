@@ -112,13 +112,17 @@ else if (_role != null)
                            Users="_usersWithRole"
                            OnUserClick="NavigateToUser">
                     <HeaderAction>
-                        <MudButton Variant="Variant.Text"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.OpenInNew"
-                                   Size="Size.Small"
-                                   OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.Users.List))">
-                            Gå til brukere for å tildelle roller
-                        </MudButton>
+                        <AuthorizeView Policy="@Permissions.RolesWrite">
+                            <Authorized>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.PersonAdd"
+                                           Size="Size.Small"
+                                           OnClick="OpenAssignRoleDialog">
+                                    Tildel denne rollen
+                                </MudButton>
+                            </Authorized>
+                        </AuthorizeView>
                     </HeaderAction>
                 </UserTable>
             </MudItem>
@@ -162,34 +166,7 @@ else if (_role != null)
         try
         {
             _editContext = new EditContext(_editModel);
-
-            // Henter rollen og brukere for å vise en oversikt over brukere tildelt rollen - Kalles parallelt
-            var roleTask = RoleService.GetByIdAsync(Id, Cts.Token);
-            var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
-
-            await Task.WhenAll(roleTask, usersTask);
-
-            var roleResult = await roleTask;
-            var usersResult = await usersTask;
-
-            if (roleResult.IsFailure)
-            {
-                _alert = new AlertInfo(roleResult.Error!.ToString(), Severity.Error);
-                return;
-            }
-
-            _role = roleResult.Value;
-            if (_role == null) // Rollen kan være null ved feil Guid
-            {
-                _alert = new AlertInfo("Fant ikke rollen", Severity.Error);
-                return;
-            }
-
-            if (usersResult.IsFailure)
-                _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
-            else
-                _usersWithRole = usersResult.Value!.Items.Where(u => u.Roles.Contains(_role.Name)).ToList();
-
+            await GetRoleAndUsersAsync();
             ResetEditModel();
         }
         catch (OperationCanceledException)
@@ -314,5 +291,52 @@ else if (_role != null)
         _role = updatedRole;
         _alert = new AlertInfo("Permissions oppdatert", Severity.Success);
     }
+    
+    // Henter
+    private async Task GetRoleAndUsersAsync()
+    {
+        // Henter rollen og brukere for å vise en oversikt over brukere tildelt rollen - Kalles parallelt
+        var roleTask = RoleService.GetByIdAsync(Id, Cts.Token);
+        var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
 
+        await Task.WhenAll(roleTask, usersTask);
+
+        var roleResult = await roleTask;
+        var usersResult = await usersTask;
+
+        if (roleResult.IsFailure)
+        {
+            _alert = new AlertInfo(roleResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        _role = roleResult.Value;
+        if (_role == null) // Rollen kan være null ved feil Guid
+        {
+            _alert = new AlertInfo("Fant ikke rollen", Severity.Error);
+            return;
+        }
+
+        if (usersResult.IsFailure)
+            _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
+        else
+            _usersWithRole = usersResult.Value!.Items.Where(u => u.Roles.Contains(_role.Name)).ToList();
+    }
+    
+    private async Task OpenAssignRoleDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(AssignRoleDialog.PreselectedRoleName), _role!.Name }
+        };
+
+        var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", parameters, new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        });
+        var dialogResult = await dialog.Result;
+        if (dialogResult is { Canceled: false })
+            await GetRoleAndUsersAsync();
+    }
 }

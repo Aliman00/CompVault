@@ -4,7 +4,6 @@
 @inject ICompetencyService CompetencyService
 @inject ICompetencyTypeService CompetencyTypeService
 @inject NavigationManager NavigationManager
-@inject IUserService UserService
 
 @* Side for å opprette en kompetansetype *@
 
@@ -17,20 +16,15 @@
         
         @* Brukeren vi oppretter sertifisering for *@
         <MudItem xs="12" sm="6">
-            <SelectWithLinkField Value="_editModel.UserId"
-                                       ValueChanged="(Guid? v) => _editModel.UserId = v"
-                                       Label="Ansatt"
-                                       ToStringFunc="@(id => _allUsers.FirstOrDefault(
-                                                         u => u.Id == id)?.FullName ?? string.Empty)"
-                                       IsEditing="true">
-                <Items>
-                    @foreach (var user in _allUsers)
-                    {
-                        <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
-                    }
-                </Items>
-            </SelectWithLinkField>
+            <UserAutocomplete Value="_selectedUser"
+                              ValueChanged="OnUserChanged"
+                              Label="Ansatt"
+                              InitialUserId="@UserId"
+                              ReadPermission="@Permissions.CompetenciesRead"
+                              AllPermission="@Permissions.CompetenciesAll"
+                              SubPermission="@Permissions.CompetenciesReadSub"/>
         </MudItem>
+
 
         @* Kompetansetype *@
         <MudItem xs="12" sm="6">
@@ -103,7 +97,7 @@
     
     // ===================== PRIVATE FELT =====================
     private readonly CreateCompetencyModel _editModel = new();
-    private List<UserLookupDto> _allUsers = [];
+    private UserLookupDto? _selectedUser;
     private List<CompetencyTypeDto> _allCompetencyTypes = [];
     
     private bool _isLoading = true;
@@ -124,19 +118,7 @@
 
         try
         {
-            // Utfører begge kall samtidig
-            var tasks = new List<Task>();
-            
-            if (_allCompetencyTypes.Count == 0)
-                tasks.Add(LoadCompetencyTypes());
-
-            if (_allUsers.Count == 0)
-                tasks.Add(LoadUsersAsync());
-
-            await Task.WhenAll(tasks);
-
-            if (UserId.HasValue && _editModel.UserId is null)
-                _editModel.UserId = UserId;
+            await LoadCompetencyTypes();
         }
         finally
         {
@@ -163,17 +145,10 @@
             PageRoutes.Competencies.Detail(createResult.Value!.Id) + "?created=true", replace: true);
     }
     
-    private async Task LoadUsersAsync()
+    private void OnUserChanged(UserLookupDto? user)
     {
-        var result = await UserService.LookupUsersAsync(
-            Permissions.CompetenciesRead,
-            Permissions.CompetenciesAll,
-            Permissions.CompetenciesReadSub,
-            Cts.Token);
-        if (result.IsFailure)
-            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
-        else
-            _allUsers = result.Value!.ToList();
+        _selectedUser = user;
+        _editModel.UserId = user?.Id;
     }
     
     private async Task LoadCompetencyTypes()

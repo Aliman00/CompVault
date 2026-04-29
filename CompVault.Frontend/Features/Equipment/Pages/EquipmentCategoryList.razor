@@ -110,5 +110,5 @@
 
     // ===================== PRIVATE METHODS =====================
     private void OnCategoryClick(DataGridRowClickEventArgs<EquipmentCategoryDto> args) =>
-        NavigationManager.NavigateTo(PageRoutes.EquipmentItems.List);
+        NavigationManager.NavigateTo(PageRoutes.EquipmentItems.ListByCategory(args.Item.Id));
 }
