@@ -69,10 +69,20 @@ public class DepartmentScopeIntegrationTests(BackendWebApplicationFactory factor
 
         var departmentScope = new DepartmentScopeService(httpContextAccessor.Object, scope.ServiceProvider);
         
+        // Vi overstyrer DepartmentScope service siden vi har implementert BypassDepartmentScope
+        // i WebAppFactory for andre tester. Vi må teste med riktig IDepartmentScopeService
+        var serviceProviderMock = new Mock<IServiceProvider>();
+        serviceProviderMock
+            .Setup(sp => sp.GetService(typeof(IDepartmentScopeService)))
+            .Returns(departmentScope);
+        serviceProviderMock
+            .Setup(sp => sp.GetService(typeof(IHttpContextAccessor)))
+            .Returns(httpContextAccessor.Object);
+        
         // Kobler på interceptoren for å fange opp operasjoner som skjer mot databasen
         DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(factory.GetConnectionString())
-            .AddInterceptors(new DepartmentScopeSaveChangesInterceptor(scope.ServiceProvider))
+            .AddInterceptors(new DepartmentScopeSaveChangesInterceptor(serviceProviderMock.Object))
             .Options;
 
         return new AppDbContext(options, departmentScope);
@@ -155,5 +165,91 @@ public class DepartmentScopeIntegrationTests(BackendWebApplicationFactory factor
     // -------------------------------------------------------------------------
     // Test av interceptor for skrive/oppdaterings-operasjoner
     // -------------------------------------------------------------------------
+    /// <summary>
+    /// Tester at en bruker får lov til å opprette en bruker i egen avdeling. Policy 'user:write' sikrer
+    /// riktig tilattelse på endepunktet, mens interceptor sikrer at avdelingen må være riktig
+    /// </summary>
+    [Fact]
+    public async Task Interceptor_CreateUserInAllowedDepartment_SavesSuccessfully()
+    {
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(email: "usera@cv.no", 
+            departmentId: _departmentA.Id);
+        
+        await using AppDbContext context = CreateContext(_departmentA.Id);
+        context.Users.Add(user);
+        
+        // Act and assert - Utfører lagring og sjekker at det ikke blir kastet en feil
+        await context.Invoking(c => c.SaveChangesAsync())
+            .Should().NotThrowAsync();
+    }
     
+    /// <summary>
+    /// Tester at hvis en bruker prøver å opprette en bruker i en annen avdeling så kastes en
+    /// UnauthorizedAccessException-exception
+    /// </summary>
+    [Fact]
+    public async Task Interceptor_CreateUserInForbiddenDepartment_ThrowsError()
+    {
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(email: "userb@cv.no", 
+            departmentId: _departmentB.Id);
+        
+        await using AppDbContext context = CreateContext(_departmentA.Id);
+        context.Users.Add(user);
+        
+        // Act and assert - Utfører lagring og sjekker at det ikke blir kastet en feil
+        await context.Invoking(c => c.SaveChangesAsync())
+            .Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+    
+    /// <summary>
+    /// Tester at en bruker med bypass får lov til å opprette en bruker i en annen avdeling enn deres egen
+    /// </summary>
+    [Fact]
+    public async Task Interceptor_CreateUserInAnotherDepartmentWithBypass_SavesSuccessfully()
+    {
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(email: "userb@cv.no", 
+            departmentId: _departmentB.Id);
+        
+        await using AppDbContext context = CreateContext(_departmentA.Id, Permissions.UsersAll);
+        context.Users.Add(user);
+        
+        // Act and assert
+        await context.Invoking(c => c.SaveChangesAsync())
+            .Should().NotThrowAsync();
+    }
+    
+    /// <summary>
+    /// Tester at en bruker med sub-bypass kan opprette en bruker i en underavdeling
+    /// </summary>
+    [Fact]
+    public async Task Interceptor_CreateUserInSubDepartmentWithSubBypass_SavesSuccessfully()
+    {
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(email: "usersub@cv.no", 
+            departmentId: _subDepartment.Id);
+        
+        await using AppDbContext context = CreateContext(_departmentA.Id, Permissions.UsersReadSub);
+        context.Users.Add(user);
+        
+        // Act and assert
+        await context.Invoking(c => c.SaveChangesAsync())
+            .Should().NotThrowAsync();
+    }
+    
+    /// <summary>
+    /// Tester at oppretting av en bruker i en side-liggende avdeling (ikke en underliggende avdeling)
+    /// kaster en exception hvis vi har UsersReadSub (og ikke UsersAll)
+    /// </summary>
+    [Fact]
+    public async Task Interceptor_CreateUserInAnotherDepartmentWithSubBypass_ThrowsException()
+    {
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(email: "userb@cv.no", 
+            departmentId: _departmentB.Id);
+        
+        await using AppDbContext context = CreateContext(_departmentA.Id, Permissions.UsersReadSub);
+        context.Users.Add(user);
+        
+        // Act and assert
+        await context.Invoking(c => c.SaveChangesAsync())
+            .Should().ThrowAsync<UnauthorizedAccessException>();
+    }
 }
