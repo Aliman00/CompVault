@@ -21,13 +21,14 @@ public static class TestDataFactory
     ///  <param name="firstName">Optional first name som er satt til TestConstant.Users</param>
     /// <param name="lastName">Optional last name som er satt til TestConstant.Users</param>
     /// <param name="deletedAt">DateTime som bestemmer om brukeren er aktive/slettet</param>
-   
+    /// <param name="departmentId">ID til avdeling</param>
     /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
     public static ApplicationUser CreateApplicationUser(Guid? id = null,
-        string email = TestConstants.Users.DefaultEmailForActiveUser, 
+        string email = TestConstants.Users.DefaultEmailForActiveUser,
         string firstName = TestConstants.Users.FirstName,
         string lastName = TestConstants.Users.LastName,
-        DateTime? deletedAt = null) => new()
+        DateTime? deletedAt = null,
+        Guid? departmentId = null) => new()
         {
             Id = id ?? Guid.NewGuid(),
             Email = email,
@@ -35,7 +36,8 @@ public static class TestDataFactory
             FirstName = firstName,
             LastName = lastName,
             IsActive = deletedAt == null,
-            DeletedAt = deletedAt
+            DeletedAt = deletedAt,
+            DepartmentId = departmentId ?? TestConstants.Departments.DefaultDepartmentId
         };
 
     /// <summary>

@@ -17,10 +17,6 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.Property(r => r.ExpiresAt).IsRequired();
         builder.Property(r => r.IsRevoked).IsRequired();
 
-        // Soft-delete filter — ikke vis tokens tilhørende slettede brukere
-        builder.Property(r => r.CreatedAt)
-            .HasDefaultValueSql("NOW()");
-
         // Relasjon: en bruker kan ha mange refresh tokens
         builder.HasOne(r => r.User)
             .WithMany(u => u.RefreshTokens)

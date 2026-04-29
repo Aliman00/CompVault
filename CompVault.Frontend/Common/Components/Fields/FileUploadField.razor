@@ -1,0 +1,78 @@
+﻿@* Komponent for å legge til fil som en IBrowserFile for filopplastning. Fungerer bare med kun en fil *@
+
+<MudFileUpload T="IBrowserFile"
+               Files="File"
+               FilesChanged="FileChanged"
+               Accept="@AcceptedFileTypes"
+               Disabled="Disabled">
+    <CustomContent Context="fileUpload">
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.AttachFile"
+                   Disabled="Disabled"
+                   OnClick="@fileUpload.OpenFilePickerAsync">
+            @(File != null ? "Endre fil" : "Velg fil (valgfritt)")
+        </MudButton>
+    </CustomContent>
+    <SelectedTemplate>
+        @if (context is not null)
+        {
+            <MudText Typo="Typo.body1" Class="mt-4">Valgt fil:</MudText>
+            <MudPaper Outlined="true" Class="pa-4 mt-2 d-flex align-center gap-4">
+                <MudIcon Icon="@context.ContentType.GetFileIcon()"
+                         Color="Color.Primary"
+                         Size="Size.Large"/>
+                <MudStack Spacing="0" Class="flex-grow-1">
+                    <MudText Typo="Typo.body1">@context.Name</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @context.Size.FormatFileSize()
+                    </MudText>
+                </MudStack>
+                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                               Size="Size.Small"
+                               OnClick="OnClose"/>
+            </MudPaper>
+        }
+    </SelectedTemplate>
+</MudFileUpload>
+
+@code {
+    // ===================== PARAMETERS =====================
+    
+    /// <summary>
+    /// Valgt fil
+    /// </summary>
+    [Parameter]
+    public IBrowserFile? File { get; set; }
+    
+    /// <summary>
+    /// Handling som utføres når filen byttes
+    /// </summary>
+    [Parameter]
+    public EventCallback<IBrowserFile?> FileChanged { get; set; }
+    
+    /// <summary>
+    /// Tilattele filtyper som string. Eks: .pdf,.doc,.docx
+    /// </summary>
+    [Parameter]
+    public string AcceptedFileTypes { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Tekst som vises i velg fil knappen. Noen filopplastninger er valgfritt
+    /// </summary>
+    [Parameter]
+    public string ButtonText { get; set; } = "Velg fil (valgfritt)";
+    
+    /// <summary>
+    /// Disabler opplastningsknappen og funksjonen
+    /// </summary>
+    [Parameter]
+    public bool Disabled { get; set; }
+    
+    // ===================== PARAMETERS =====================
+    
+    /// <summary>
+    /// Trigger FileChanged-handlingen ved trykk på kryss-knappen til valgt fil
+    /// </summary>
+    private async Task OnClose() => await FileChanged.InvokeAsync();
+}

@@ -1,5 +1,9 @@
 using CompVault.Backend.Domain.Entities.Departments;
+using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Domain.Entities.JobTitles;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Shared.DTOs.Departments;
 using CompVault.Shared.Result;
 
@@ -9,7 +13,10 @@ namespace CompVault.Backend.Features.Departments.Services;
 /// Implementerer avdelingsadministrasjon.
 /// </summary>
 public sealed class DepartmentService(
-    IDepartmentRepository departmentRepository) : IDepartmentService
+    IDepartmentRepository departmentRepository,
+    IUserRepository userRepository,
+    IJobTitleRepository jobTitleRepository,
+    ILogger<DepartmentService> logger) : IDepartmentService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<DepartmentDto>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -37,7 +44,7 @@ public sealed class DepartmentService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<DepartmentDto>> CreateAsync(Guid userId, CreateDepartmentRequest request, 
+    public async Task<Result<DepartmentDto>> CreateAsync(Guid userId, CreateDepartmentRequest request,
         CancellationToken ct = default)
     {
         if (request.ParentDepartmentId.HasValue)
@@ -50,11 +57,18 @@ public sealed class DepartmentService(
                     AppError.NotFound($"Overordnet avdeling med ID '{request.ParentDepartmentId}' ble ikke funnet."));
         }
 
+        if (request.ManagerId.HasValue && !await IsValidManagerAsync(request.ManagerId.Value, ct))
+        {
+            return Result<DepartmentDto>.Failure(
+                AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet, er inaktiv, eller har ikke lederstilling."));
+        }
+
         var department = new Department
         {
             Name = request.Name,
             Description = request.Description ?? string.Empty,
             ParentDepartmentId = request.ParentDepartmentId,
+            ManagerId = request.ManagerId,
             CreatedAt = DateTime.UtcNow,
             CreatedById = userId,
             IsActive = true
@@ -70,10 +84,10 @@ public sealed class DepartmentService(
     public async Task<Result<DepartmentDto>> UpdateAsync(Guid id, UpdateDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         Department? department = await departmentRepository.GetByIdAsync(id, cancellationToken);
-        
+
         if (department is null)
             return Result<DepartmentDto>.Failure(
-                AppError.NotFound($"Avdeling med ID '{id}' ble ikke funnet."));
+                AppError.NotFound($"Avdeling med ID '{id}' ble ikke funket."));
 
         if (request.Name is not null)
             department.Name = request.Name;
@@ -83,6 +97,17 @@ public sealed class DepartmentService(
 
         if (request.IsActive.HasValue)
             department.IsActive = request.IsActive.Value;
+
+        if (request.ManagerId.HasValue && !await IsValidManagerAsync(request.ManagerId.Value, cancellationToken))
+        {
+            return Result<DepartmentDto>.Failure(
+                AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet, er inaktiv, eller har ikke lederstilling."));
+        }
+
+        if (request.ManagerId.HasValue)
+            department.ManagerId = request.ManagerId;
+        else if (request.ClearManagerId)
+            department.ManagerId = null;
 
         if (request.ParentDepartmentId.HasValue)
         {
@@ -101,20 +126,27 @@ public sealed class DepartmentService(
             if (ancestorIds.Contains(id))
                 return Result<DepartmentDto>.Failure(
                     AppError.Create(ErrorCode.Validation, "Kan ikke sette en underavdeling til å være forelder."));
-            
+
             department.ParentDepartmentId = request.ParentDepartmentId.Value;
         }
         else if (request.ClearParentDepartment)
         {
             department.ParentDepartmentId = null;
-        }  
-        
+        }
+
         await departmentRepository.UpdateAsync(department, cancellationToken);
         await departmentRepository.SaveChangesAsync(cancellationToken);
-        
+
         Department? updatedDepartment = await departmentRepository.GetByIdWithHierarchyAsync(id, cancellationToken);
+        if (updatedDepartment is null)
+        {
+            logger.LogError("Avdeling {DepartmentId} forsvant etter oppdatering", id);
+            return Result<DepartmentDto>.Failure(
+                AppError.Create(ErrorCode.InternalError, "Avdelingen ble ikke funnet etter oppdatering."));
+        }
+
         return Result<DepartmentDto>.Success(
-            DepartmentMapper.ToDto(updatedDepartment!, updatedDepartment!.SubDepartments.Count));
+            DepartmentMapper.ToDto(updatedDepartment, updatedDepartment.SubDepartments.Count));
     }
 
     /// <inheritdoc />
@@ -140,5 +172,23 @@ public sealed class DepartmentService(
         await departmentRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);
+    }
+
+    /// <summary>
+    /// Sjekker at en bruker kan være leder for en avdeling:
+    /// - Brukeren må eksistere og være aktiv
+    /// - Brukeren må ha en stillingstittel med IsLeader=true
+    /// </summary>
+    private async Task<bool> IsValidManagerAsync(Guid userId, CancellationToken ct)
+    {
+        ApplicationUser? user = await userRepository.GetByIdIgnoringFiltersAsync(userId, ct);
+        if (user is null || user.DeletedAt is not null || !user.IsActive)
+            return false;
+
+        if (!user.JobTitleId.HasValue)
+            return false;
+
+        JobTitle? jobTitle = await jobTitleRepository.GetByIdAsync(user.JobTitleId.Value, ct);
+        return jobTitle is not null && jobTitle.IsLeader;
     }
 }

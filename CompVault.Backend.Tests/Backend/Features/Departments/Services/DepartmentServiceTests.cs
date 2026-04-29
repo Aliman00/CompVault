@@ -3,6 +3,8 @@ using System.Linq.Expressions;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Backend.Tests.Common;
 using CompVault.Shared.DTOs.Departments;
 using CompVault.Shared.Result;
@@ -11,17 +13,27 @@ using FluentAssertions;
 
 using Moq;
 
+using Microsoft.Extensions.Logging;
+
 namespace CompVault.Backend.Tests.Backend.Features.Departments.Services;
 
 public class DepartmentServiceTests
 {
     private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IJobTitleRepository> _jobTitleRepositoryMock;
     private readonly DepartmentService _sut;
 
     public DepartmentServiceTests()
     {
         _departmentRepositoryMock = new Mock<IDepartmentRepository>();
-        _sut = new DepartmentService(_departmentRepositoryMock.Object);
+        _userRepositoryMock = new Mock<IUserRepository>();
+        _jobTitleRepositoryMock = new Mock<IJobTitleRepository>();
+        _sut = new DepartmentService(
+            _departmentRepositoryMock.Object,
+            _userRepositoryMock.Object,
+            _jobTitleRepositoryMock.Object,
+            Mock.Of<ILogger<DepartmentService>>());
     }
 
     [Fact]
@@ -154,6 +166,10 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(department);
+
+        _departmentRepositoryMock
             .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
@@ -175,7 +191,7 @@ public class DepartmentServiceTests
         var request = new UpdateDepartmentRequest { Name = "New Name" };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(nonExistentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(nonExistentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Department?)null);
 
         // Act
@@ -199,7 +215,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
         // Act
@@ -227,7 +243,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentAId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentAId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(departmentA);
 
         _departmentRepositoryMock
@@ -261,7 +277,7 @@ public class DepartmentServiceTests
         };
 
         _departmentRepositoryMock
-            .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(department);
 
         _departmentRepositoryMock
@@ -291,6 +307,10 @@ public class DepartmentServiceTests
         {
             ClearParentDepartment = true
         };
+
+        _departmentRepositoryMock
+            .Setup(x => x.GetByIdAsync(departmentId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(department);
 
         _departmentRepositoryMock
             .Setup(x => x.GetByIdWithHierarchyAsync(departmentId, It.IsAny<CancellationToken>()))

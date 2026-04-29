@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
+
 namespace CompVault.Shared.DTOs.Documents;
 
 /// <summary>
@@ -8,20 +10,20 @@ namespace CompVault.Shared.DTOs.Documents;
 public sealed class CreateDocumentRequest
 {
     /// <summary>Dokumenttittel.</summary>
-    [Required]
-    [MaxLength(200)]
+    [Required(ErrorMessage = DocValidations.Errors.TitleRequired)]
+    [MaxLength(DocValidations.TitleMaxLength, ErrorMessage = DocValidations.Errors.TitleMaxLength)]
     public string Title { get; set; } = string.Empty;
 
     /// <summary>Beskrivelse av dokumentet.</summary>
-    [MaxLength(2000)]
+    [MaxLength(DocValidations.DescMaxLength, ErrorMessage = DocValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
 
     /// <summary>ID til kategorien (DocumentTypeCategory). Null = ukategorisert.</summary>
     public Guid? DocumentTypeCategoryId { get; set; }
 
     /// <summary>Ekstern URL i stedet for filopplasting.</summary>
-    [MaxLength(500)]
-    [Url]
+    [MaxLength(DocValidations.ExternalUrlMaxLength, ErrorMessage = DocValidations.Errors.ExternalUrlMaxLength)]
+    [Url(ErrorMessage = DocValidations.Errors.ExternalUrlFormat)]
     public string? ExternalUrl { get; set; }
 
     /// <summary>ID-er til målavdelinger. Brukes når DocumentType.TargetMode er Department.</summary>

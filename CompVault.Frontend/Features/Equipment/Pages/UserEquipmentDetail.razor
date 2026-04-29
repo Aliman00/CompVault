@@ -1,0 +1,139 @@
+@page "/my-equipment/detail/{Id:guid}"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize]
+@inject IEquipmentIssuancesService EquipmentIssuancesService
+
+@* Viser mer detaljer om innloggets brukers utstyr *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_issuance != null)
+{
+    <MudPaper Class="pa-6" Elevation="1" Square="true">
+
+        @* Header *@
+        <section class="detail-header">
+            <header class="detail-header-text">
+                <MudText Typo="Typo.h5">@_issuance.ItemName.Truncate(45)</MudText>
+                @if (!string.IsNullOrWhiteSpace(_issuance.CategoryName))
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_issuance.CategoryName.Truncate(100)</MudText>
+                }
+            </header>
+        </section>
+
+        @* Felter *@
+        <MudGrid>
+
+            @* Utstyrsnavn *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_issuance.ItemName"
+                           Label="Utstyr"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Kategori *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_issuance.CategoryName"
+                           Label="Kategori"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Antall *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_issuance.Quantity.ToString()"
+                           Label="Antall"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Størrelse *@
+            @if (_issuance.HasSize)
+            {
+                <MudItem xs="12" sm="6">
+                    <TextField Value="@(_issuance.Size ?? string.Empty)"
+                               Label="Størrelse"
+                               IsEditing="false"/>
+                </MudItem>
+            }
+
+            @* Utlevert dato *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@(_issuance.IssuedDate.ToString("dd.MM.yyyy"))"
+                           Label="Utlevert"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Utlevert av *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_issuance.IssuedByName"
+                           Label="Utlevert av"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Opprettet *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@(_issuance.CreatedAt.ToString("dd.MM.yyyy"))"
+                           Label="Opprettet"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Notat *@
+            @if (!string.IsNullOrWhiteSpace(_issuance.Notes))
+            {
+                <MudItem xs="12">
+                    <TextField Value="@_issuance.Notes"
+                               Label="Notat"
+                               IsEditing="false"
+                               Lines="4"/>
+                </MudItem>
+            }
+
+        </MudGrid>
+    </MudPaper>
+}
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private EquipmentIssuanceDto? _issuance;
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await EquipmentIssuancesService.GetByIdAsync(Id, Cts.Token);
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _issuance = result.Value;
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste utleveringen. Oppdater siden for å prøve igjen.",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

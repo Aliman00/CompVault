@@ -1,5 +1,5 @@
 using CompVault.Backend.Domain.Entities.Documents;
-
+using CompVault.Shared.DTOs.Documents;
 namespace CompVault.Backend.Infrastructure.Repositories.Documents;
 
 /// <summary>
@@ -31,10 +31,44 @@ public interface IDocumentRepository : IRepository<Document>
         Guid? jobTitleId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Henter alle aktive dokumenter for en dokumenttype som er synlige for brukeren
+    /// (basert på avdeling/jobbtittel-targeting).
+    /// </summary>
+    Task<IReadOnlyList<Document>> GetAccessibleByDocumentTypeAsync(
+        Guid documentTypeId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Henter dokumenter basert på en liste med IDer.</summary>
     Task<IReadOnlyList<Document>> GetByIdsAsync(
         IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
+    
+    /// <summary>Henter alle dokumenttyper hvor brukeren har dokumenter.
+    /// Henter dokumentene og grupperer de, deretter henter ut det vi trenger for DTO-en,
+    /// sorteret etter navn</summary>
+    Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid? departmentId, 
+        Guid? jobTitleId, CancellationToken ct = default);
+    
+    /// <summary>Teller dokumenter for en bruker basert på filtrering av status</summary>
+    Task<int> CountDocumentsForUserAsync(
+        Guid userId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        DocumentQueryParameters parameters,
+        CancellationToken ct = default);
 
+    /// <summary>Henter alle dokumentene for en bruker med paginering og fitlering.
+    /// Sjekker at brukeren har tilattelse til å hente ut dokumetnene ved at det er enten brukeren
+    /// selv som henter eller at brukeren er like høyt eller høyere i hierarkiet</summary>
+    Task<IReadOnlyList<Document>> GetDocumentsForUserAsync(
+        Guid userId,
+        Guid? departmentId,
+        Guid? jobTitleId,
+        DocumentQueryParameters parameters,
+        CancellationToken ct = default);
+    
     /// <summary>Legger til en versjonsrecord.</summary>
     Task<DocumentVersion> AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default);
 

@@ -2,7 +2,6 @@
 using CompVault.Backend.Infrastructure.Data;
 
 using Microsoft.EntityFrameworkCore;
-
 namespace CompVault.Backend.Infrastructure.Repositories.Auth;
 
 public class OtpCodeRepository(AppDbContext context) : BaseRepository<OtpCode>(context), IOtpCodeRepository
@@ -10,6 +9,7 @@ public class OtpCodeRepository(AppDbContext context) : BaseRepository<OtpCode>(c
     /// <inheritdoc />
     public async Task<OtpCode?> GetActiveCodeAsync(Guid userId, CancellationToken ct = default) =>
         await DbSet
+            .IgnoreQueryFilters()
             .Where(o => o.UserId == userId && !o.IsUsed && o.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(o => o.CreatedAt)
             .FirstOrDefaultAsync(ct);
@@ -20,4 +20,10 @@ public class OtpCodeRepository(AppDbContext context) : BaseRepository<OtpCode>(c
             .Where(o => o.IsUsed || o.ExpiresAt <= DateTime.UtcNow)
             .ExecuteDeleteAsync(ct);
 
+    /// <inheritdoc />
+    public async Task DeleteInactiveForUserAsync(Guid userId, CancellationToken ct) =>
+        await DbSet
+            .IgnoreQueryFilters()
+            .Where(o => o.UserId == userId && (o.ExpiresAt <= DateTime.UtcNow || o.IsUsed))
+            .ExecuteDeleteAsync(ct);
 }

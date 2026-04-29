@@ -70,7 +70,7 @@
                         </tr>
                         <tr>
                             <td><strong>Avdeling</strong></td>
-                            <td>@(_currentUser.DepartmentId?.ToString() ?? "—")</td>
+                            <td>@(_currentUser.DepartmentId.ToString())</td>
                         </tr>
                         <tr>
                             <td><strong>Leder</strong></td>
@@ -146,8 +146,8 @@
             
             var httpClient = HttpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
             
-            HttpResponseMessage response = await httpClient.GetAsync("api/auth/dev-get-users", 
-                CancellationToken.None);
+            HttpResponseMessage response = await httpClient.GetAsync(
+                "api/auth/dev-get-users?Page=1&PageSize=100", CancellationToken.None);
 
             Result<List<UserDto>> getUsersResult =
                 await HttpClientExtensions.ParseResponseAsync<List<UserDto>>(response, CancellationToken.None);

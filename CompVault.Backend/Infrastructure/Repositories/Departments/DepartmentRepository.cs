@@ -1,8 +1,6 @@
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Infrastructure.Data;
-
 using Microsoft.EntityFrameworkCore;
-
 namespace CompVault.Backend.Infrastructure.Repositories.Departments;
 
 /// <summary>
@@ -17,15 +15,19 @@ public sealed class DepartmentRepository(AppDbContext dbContext) : BaseRepositor
             .Include(d => d.ParentDepartment)
             .Include(d => d.SubDepartments)
             .Include(d => d.CreatedBy)
+            .Include(d => d.Manager)
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<Department>> GetAllWithHierarchyAsync(CancellationToken cancellationToken = default) =>
         await DbSet
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Include(d => d.ParentDepartment)
             .Include(d => d.SubDepartments)
             .Include(d => d.CreatedBy)
+            .Include(d => d.Manager)
+            .Where(d => d.IsActive && d.DeletedAt == null)
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
@@ -34,7 +36,9 @@ public sealed class DepartmentRepository(AppDbContext dbContext) : BaseRepositor
 
     /// <inheritdoc />
     public async Task<bool> HasMembersAsync(Guid id, CancellationToken cancellationToken = default) =>
-        await DbContext.Users.AnyAsync(u => u.DepartmentId == id, cancellationToken);
+        await DbContext.Users
+            .IgnoreQueryFilters()
+            .AnyAsync(u => u.DepartmentId == id && u.DeletedAt == null, cancellationToken);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<Guid>> GetAncestorIdsAsync(Guid id, CancellationToken cancellationToken = default)

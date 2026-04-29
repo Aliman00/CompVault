@@ -1,0 +1,224 @@
+﻿@page "/documents/{Slug}/create"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DocumentsWrite)]
+@inject IDocumentService DocumentService
+@inject IDocumentTypeService DocumentTypeService
+@inject IDocumentTypeCategoryService DocumentTypeCategoryService
+@inject NavigationManager NavigationManager
+@inject IDepartmentService DepartmentService
+@inject IJobTitleService JobTitleService
+
+@* Side for å opprette et dokument *@
+
+<CreateForm Title="Opprett dokument"
+            EditContext="_editContext"
+            OnValidSubmit="CreateDocument"
+            @bind-Alert="_alert"
+            IsLoading="_isLoading">
+    <Fields>
+        @* Tittel *@
+        <MudItem xs="12" sm="6">
+            <TextField Value="@_editModel.Title"
+                       ValueChanged="(string? v) => _editModel.Title = v ?? string.Empty"
+                       Label="Navn"
+                       IsEditing="true"
+                       For="() => _editModel.Title"/>
+        </MudItem>
+
+        @* ExternalURL *@
+        <MudItem xs="12" sm="6">
+            <TextField Value="@_editModel.ExternalUrl"
+                       ValueChanged="(string? v) => _editModel.ExternalUrl = v ?? string.Empty"
+                       Label="Ekstern lenke (valgfritt)"
+                       IsEditing="true"
+                       For="() => _editModel.ExternalUrl"/>
+        </MudItem>
+        
+        @* Beskrivelse *@
+        <MudItem xs="12">
+            <TextField Value="@_editModel.Description"
+                       ValueChanged="(string? v) => _editModel.Description = v"
+                       Label="Beskrivelse (valgfritt)"
+                       IsEditing="true"
+                       For="() => _editModel.Description"
+                       Lines="4"/>
+        </MudItem>
+        
+        @* Kategori *@
+        @if (_documentTypeCategories.Count > 0)
+        {
+            <MudItem xs="12" sm="6">
+                <SelectWithLinkField Value="_editModel.DocumentTypeCategoryId"
+                                     ValueChanged="(Guid? v) => _editModel.DocumentTypeCategoryId = v"
+                                     Label="Underkategori (valgfritt)"
+                                     ToStringFunc="@(id => _documentTypeCategories.FirstOrDefault(
+                                                       c => c.Id == id)?.Name ?? string.Empty)"
+                                     IsEditing="true"
+                                     ShowLink="false">
+                    <Items>
+                        <MudSelectItem Value="(Guid?)null">Ingen kategori</MudSelectItem>
+                        @foreach (var category in _documentTypeCategories)
+                        {
+                            <MudSelectItem Value="(Guid?)category.Id">@category.Name</MudSelectItem>
+                        }
+                    </Items>
+                </SelectWithLinkField>
+            </MudItem>
+        }
+        
+        @* RequireSignature *@
+        <MudItem xs="12" sm="6">
+            <ToggleButton Label="Krever dokumentet signatur?"
+                          @bind-Value="_editModel.RequiresSignature"
+                          IsEditing="true">
+                <MudToggleItem Value="(bool?)true" Text="Krever signatur"/>
+                <MudToggleItem Value="(bool?)false" Text="Ingen signatur"/>
+            </ToggleButton>
+        </MudItem>
+        
+        @* Filopplasting *@
+        <MudItem xs="12" sm="6">
+            <FileUploadField @bind-File="_selectedFile"
+                             AcceptedFileTypes="@string.Join(',', _documentType.AllowedMimeTypes)"
+                             ButtonText="Velg fil (valgfritt)"/>
+        </MudItem>
+        
+        @* Avdelinger som målgruppe *@
+        @if (_documentType.TargetMode == DocumentTargetMode.Department)
+        {
+            <MudItem xs="12">
+                <MultiSelectField T="Guid"
+                                  SelectedValues="_editModel.TargetDepartmentIds"
+                                  SelectedValuesChanged="(List<Guid> v) => _editModel.TargetDepartmentIds = v"
+                                  Label="Målgruppe - avdelinger"
+                                  IsEditing="true"
+                                  ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                    d => d.Id == id)?.Name ?? string.Empty)">
+                    <Items>
+                        @foreach (var department in _departments)
+                        {
+                            <MudSelectItem T="Guid" Value="department.Id">@department.Name</MudSelectItem>
+                        }
+                    </Items>
+                </MultiSelectField>
+            </MudItem>
+        }
+
+        @* Stillinger som målgruppe *@
+        @if (_documentType.TargetMode == DocumentTargetMode.JobTitle)
+        {
+            <MudItem xs="12">
+                <MultiSelectField T="Guid"
+                                  SelectedValues="_editModel.TargetJobTitleIds"
+                                  SelectedValuesChanged="(List<Guid> v) => _editModel.TargetJobTitleIds = v"
+                                  Label="Målgruppe - stillinger"
+                                  IsEditing="true"
+                                  ToStringFunc="@(id => _jobTitles.FirstOrDefault(
+                                                    j => j.Id == id)?.Name ?? string.Empty)">
+                    <Items>
+                        @foreach (var jobTitle in _jobTitles)
+                        {
+                            <MudSelectItem T="Guid" Value="jobTitle.Id">@jobTitle.Name</MudSelectItem>
+                        }
+                    </Items>
+                </MultiSelectField>
+            </MudItem>
+        }
+     
+    </Fields>
+</CreateForm>
+
+@code {
+    // ===================== PARAMETERS=====================
+    [Parameter] public string Slug { get; set; } = string.Empty;
+    
+    // ===================== PRIVATE FELT =====================
+    private DocumentTypeDto _documentType = null!;
+    private List<DocumentTypeCategoryDto> _documentTypeCategories = [];
+    
+    private readonly CreateDocumentModel _editModel = new();
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+    
+    private List<DepartmentDto> _departments = [];
+    private List<JobTitleDto> _jobTitles = [];
+
+    private EditContext _editContext = null!;
+
+    private IBrowserFile? _selectedFile;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        _editContext = new EditContext(_editModel);
+
+        try
+        {
+            var documentTypeTask = DocumentTypeService.GetBySlugAsync(Slug, Cts.Token);
+            var documentTypeCategoryTask = DocumentTypeCategoryService.GetAllAsync(Slug, Cts.Token);
+            var departmentsTask = DepartmentService.GetAllAsync(Cts.Token);
+            var jobTitlesTask = JobTitleService.GetAllAsync(Cts.Token);
+
+            await Task.WhenAll(documentTypeTask, departmentsTask, jobTitlesTask);
+
+            var documentTypeResult = await documentTypeTask;
+            if (documentTypeResult.IsFailure)
+            {
+                _alert = new AlertInfo(documentTypeResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+            _documentType = documentTypeResult.Value!;
+            
+            var documentTypeCategoryResult = await documentTypeCategoryTask;
+            if (documentTypeCategoryResult.IsFailure)
+                _alert = new AlertInfo(documentTypeCategoryResult.Error!.ToString(), Severity.Error);
+            else
+                _documentTypeCategories = documentTypeCategoryResult.Value!;
+
+            var departmentsResult = await departmentsTask;
+            if (departmentsResult.IsFailure)
+                _alert = new AlertInfo(departmentsResult.Error!.ToString(), Severity.Error);
+            else
+                _departments = departmentsResult.Value!.Where(d => d.IsActive).ToList();
+
+            var jobTitlesResult = await jobTitlesTask;
+            if (jobTitlesResult.IsFailure)
+                _alert = new AlertInfo(jobTitlesResult.Error!.ToString(), Severity.Error);
+            else
+                _jobTitles = jobTitlesResult.Value!.Where(j => j.IsActive).ToList();
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handlign som skjer når vi trykker på opprett-knappen. Utfører et API-kall og
+    // navigerer oss til detalje-siden
+    private async Task CreateDocument()
+    {
+        var request = _editModel.ToRequest();
+        
+        // Bygg en stream og FileAttachment-record hvis fil er vedlagt
+        FileAttachment? file = _selectedFile != null
+            ? await _selectedFile.ToFileAttachmentAsync(_documentType.MaxFileSizeBytes, Cts.Token)
+            : null;
+        
+        var createResult = await DocumentService.CreateAsync(Slug, request, file, Cts.Token);
+        if (createResult.IsFailure)
+        {
+            _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        NavigationManager.NavigateTo(
+            PageRoutes.Documents.Detail(Slug, createResult.Value!.Id) + "?created=true", replace: true);
+    }
+}

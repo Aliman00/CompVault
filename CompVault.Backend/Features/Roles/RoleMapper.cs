@@ -20,16 +20,16 @@ public static class RoleMapper
         CreatedAt = role.CreatedAt,
         CreatedById = role.CreatedById,
         IsSystem = role.IsSystem,
-        CreatedByName = role.CreatedBy != null 
-            ? $"{role.CreatedBy.FirstName} {role.CreatedBy.LastName}" 
+        CreatedByName = role.CreatedBy != null
+            ? $"{role.CreatedBy.FirstName} {role.CreatedBy.LastName}"
             : null,
         Permissions = permissionNames
     };
 
     /// <summary>
-    /// Konverterer en <see cref="Permission"/> til en <see cref="ExpiringCompetencyDto"/>.
+    /// Konverterer en <see cref="Permission"/> til en <see cref="PermissionDto"/>.
     /// </summary>
-    public static ExpiringCompetencyDto ToPermissionDto(Permission permission) => new()
+    public static PermissionDto ToPermissionDto(Permission permission) => new()
     {
         Name = permission.Name,
         Description = permission.Description,

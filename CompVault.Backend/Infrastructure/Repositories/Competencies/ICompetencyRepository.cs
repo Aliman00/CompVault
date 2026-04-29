@@ -22,6 +22,26 @@ public interface ICompetencyRepository : IRepository<Competency>
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Teller kompetansebevis med valgfrie filtre (paginering-støtte).
+    /// </summary>
+    Task<int> CountWithFiltersAsync(
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Henter paginerte kompetansebevis med navigasjon og valgfrie filtre.
+    /// </summary>
+    Task<IReadOnlyList<Competency>> GetAllWithDetailsPagedAsync(
+        int skip,
+        int take,
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Henter kompetansebevis med EXPIRING_SOON eller EXPIRED status,
     /// filtrert på valgfrie userId og departmentId.
     /// Brukes av /api/competencies/expiring-endpointen.
@@ -39,10 +59,11 @@ public interface ICompetencyRepository : IRepository<Competency>
 
     /// <summary>
     /// Oppdaterer status på kompetansebevis basert på utløpsdato via ren SQL.
-    /// Returnerer antall oppdaterte for Expired og ExpiringSoon.
+    /// Returnerer antall oppdaterte for Expired og ExpiringSoon,
+    /// pluss liste over berørte kompetansebevis med ID og gammel/ny status.
     /// Berører aldri Revoked-bevis eller soft-deleted rader (global query filter).
     /// </summary>
-    Task<(int ExpiredCount, int ExpiringSoonCount)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default);
+    Task<(int ExpiredCount, int ExpiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)> StatusChanges)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter kompetansebeviset ved å sette DeletedAt og IsActive.</summary>
     Task SoftDeleteAsync(Competency competency, CancellationToken cancellationToken = default);

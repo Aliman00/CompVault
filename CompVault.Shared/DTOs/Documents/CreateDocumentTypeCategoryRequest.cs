@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
+using CompVault.Shared.Constants.Validations;
 namespace CompVault.Shared.DTOs.Documents;
 
 /// <summary>
@@ -8,12 +9,7 @@ namespace CompVault.Shared.DTOs.Documents;
 public sealed class CreateDocumentTypeCategoryRequest
 {
     /// <summary>Visningsnavn, f.eks. "Nødsprosedyrer".</summary>
-    [Required]
-    [MaxLength(100)]
+    [Required(ErrorMessage = DocCategoryValidations.Errors.NameRequired)]
+    [MaxLength(DocCategoryValidations.NameMaxLength, ErrorMessage = DocCategoryValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>URL-vennlig slug, f.eks. "emergency-procedure".</summary>
-    [Required]
-    [MaxLength(50)]
-    public string Slug { get; set; } = string.Empty;
 }

@@ -31,6 +31,9 @@ public class Department
     /// <summary>Når avdelingen ble opprettet (UTC).</summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>ID til brukeren som leder avdelingen.</summary>
+    public Guid? ManagerId { get; set; }
+
     /// <summary>Brukeren som opprettet avdelingen.</summary>
     public Guid? CreatedById { get; set; }
 
@@ -45,7 +48,10 @@ public class Department
     public ApplicationUser? CreatedBy { get; set; }
     public ICollection<Department> SubDepartments { get; set; } = new List<Department>();
     public ICollection<ApplicationUser> Members { get; set; } = new List<ApplicationUser>();
-    
+
     /// <summary>Navigasjonsegenskap for dokumenter rettet mot avdelinger.</summary>
     public ICollection<DocumentDepartment> DocumentDepartments { get; set; } = new List<DocumentDepartment>();
+
+    /// <summary>Brukeren som leder avdelingen.</summary>
+    public ApplicationUser? Manager { get; set; }
 }

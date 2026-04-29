@@ -1,0 +1,158 @@
+@page "/my-competencies/{Id:guid}"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize]
+@inject ICompetencyService CompetencyService
+
+@* Viser mer detaljer om innloggets brukers kompetansebevis *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_competency != null)
+{
+    <MudPaper Class="pa-6" Elevation="1" Square="true">
+
+        @* Header med tittel og subtitle *@
+        <section class="detail-header">
+            <header class="detail-header-text">
+                <MudText Typo="Typo.h5">@_competency.ToDetailTitle().Truncate(45)</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@_competency.ToDetailSubtitle().Truncate(100)</MudText>
+            </header>
+        </section>
+
+        @* Felter *@
+        <MudGrid>
+
+            @* Kompetansetype *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_competency.CompetencyTypeName"
+                           Label="Kurstype"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Sertifikatnummer *@
+            @if (!string.IsNullOrWhiteSpace(_competency.CertificateNumber))
+            {
+                <MudItem xs="12" sm="6">
+                    <TextField Value="@_competency.CertificateNumber"
+                               Label="Sertifikatnummer"
+                               IsEditing="false"/>
+                </MudItem>
+            }
+
+            @* Utstedtdato *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@(_competency.IssuedDate.ToString("dd.MM.yyyy"))"
+                           Label="Utstedt"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Utløpsdato *@
+            @if (_competency.CompetencyTypeRequiresExpiration)
+            {
+                <MudItem xs="12" sm="6">
+                    <TextField Value="@(_competency.ExpiryDate?.ToString("dd.MM.yyyy") ?? string.Empty)"
+                               Label="Utløpsdato"
+                               IsEditing="false"/>
+                </MudItem>
+            }
+            
+            @* Opprettet *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@(_competency.CreatedAt.ToString("dd.MM.yyyy"))"
+                           Label="Opprettet"
+                           IsEditing="false"/>
+            </MudItem>
+
+            @* Notat *@
+            @if (!string.IsNullOrWhiteSpace(_competency.Notes))
+            {
+                <MudItem xs="12">
+                    <TextField Value="@_competency.Notes"
+                               Label="Notat"
+                               IsEditing="false"
+                               Lines="4"/>
+                </MudItem>
+            }
+
+            @* Status *@
+            <MudItem xs="12" sm="6">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                    <div class="cv-status">
+                        <MudChip T="string"
+                                 Color="@_competency.Status.ToStatusColor()"
+                                 Size="Size.Medium"
+                                 Class="cv-rounded">
+                            @_competency.Status.ToDisplayString()
+                        </MudChip>
+                    </div>
+                </MudStack>
+            </MudItem>
+
+            @* Tilbakekalling *@
+            @if (_competency.Status == CompetencyStatus.Revoked)
+            {
+                @if (!string.IsNullOrWhiteSpace(_competency.RevokedReason))
+                {
+                    <MudItem xs="12" sm="6">
+                        <TextField Value="@_competency.RevokedReason"
+                                   Label="Årsak til tilbakekalling"
+                                   IsEditing="false"/>
+                    </MudItem>
+                }
+                <MudItem xs="12" sm="6">
+                    <TextField Value="@(_competency.RevokedAt?.ToString("dd.MM.yyyy") ?? string.Empty)"
+                               Label="Tilbakekalt"
+                               IsEditing="false"/>
+                </MudItem>
+            }
+
+        </MudGrid>
+    </MudPaper>
+}
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private CompetencyDto? _competency;
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await CompetencyService.GetByIdAsync(Id, Cts.Token);
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _competency = result.Value;
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste kompetansebeviset. Oppdater siden for å prøve igjen.",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

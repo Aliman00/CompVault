@@ -12,7 +12,7 @@
     <Fields>
         @* Rollenavn *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Name"
+            <TextField Value="@_editModel.Name"
                              ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                              Label="Rollenavn"
                              IsEditing="true"
@@ -20,7 +20,7 @@
         </MudItem>
         @* Beskrivelse *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Description"
+            <TextField Value="@_editModel.Description"
                              ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
                              Label="Beskrivelse (valgfritt)"
                              IsEditing="true"
@@ -61,6 +61,7 @@
             return;
         }
 
-        NavigationManager.NavigateTo(PageRoutes.Roles.Detail(createResult.Value!.Id) + "?created=true");
+        NavigationManager.NavigateTo(PageRoutes.Roles.Detail(createResult.Value!.Id) + "?created=true",
+            replace: true);
     }
 }

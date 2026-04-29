@@ -1,0 +1,111 @@
+﻿@page "/document-types"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DocumentTypesRead)]
+@inject IDocumentTypeService DocumentTypeService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle dokumenttyper *@
+
+<ListPage TItem="DocumentTypeDto"
+          Items="_documentTypes"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          RowClick="@(args => OnDocumentTypeClick(args))">
+    <Header>
+        <ListHeader Title="Dokumentkategorier"
+                    PageIcon="@Icons.Material.Filled.Topic"
+                    CreateHref="@PageRoutes.DocumentTypes.Create"
+                    CreateLabel="Opprett dokumentkategori"
+                    CreateIcon="@Icons.Material.Filled.Topic"
+                    CreatePolicy="@Permissions.DocumentTypesWrite"/>
+    </Header>
+    <Columns>
+        @* Dokumenttype navn *@
+        <PropertyColumn T="DocumentTypeDto" TProperty="string"
+                        Property="ct => ct.Name.Truncate(40)" Title="Navn"/>
+        
+        @* Beskrivelse *@
+        <PropertyColumn T="DocumentTypeDto" TProperty="string"
+                        Property="r => r.Description.Truncate(50)"
+                        Title="Beskrivelse"
+                        Sortable="true"/>
+
+        @* Antall kategoerier *@
+        <PropertyColumn T="DocumentTypeDto" TProperty="string"
+                        Property="r => r.TargetMode.ToDisplayString()"
+                        Title="Målgruppe"
+                        Sortable="true"/>
+        
+        @* Antall kategoerier *@
+        <PropertyColumn T="DocumentTypeDto" TProperty="string"
+                        Property="r => r.CategoryCount.ToString()"
+                        Title="Antall kategorier"
+                        Sortable="true"
+                        Filterable="false"/>
+
+        <TemplateColumn T="DocumentTypeDto"
+                        Title="Status"
+                        Sortable="true"
+                        SortBy="@(ct => ct.IsActive)">
+            <CellTemplate>
+                <MudChip T="string"
+                         Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                         Size="Size.Small"
+                         Class="cv-rounded">
+                    @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                </MudChip>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</ListPage>
+
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private List<DocumentTypeDto> _documentTypes = [];
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getDocumentTypesResult = await DocumentTypeService.GetAllAsync(Cts.Token);
+
+            if (getDocumentTypesResult.IsFailure)
+            {
+                _alert = new AlertInfo(getDocumentTypesResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _documentTypes = getDocumentTypesResult.Value!;
+
+            if (Deleted)
+                _alert = new AlertInfo("Dokumentkategori er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste dokumentkategorier. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnDocumentTypeClick(DataGridRowClickEventArgs<DocumentTypeDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.DocumentTypes.Detail(args.Item.Slug));
+}

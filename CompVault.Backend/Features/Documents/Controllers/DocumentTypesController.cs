@@ -46,6 +46,22 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
 
         return Ok(result.Value);
     }
+    
+    /// <summary>Henter dokumenttyper med antall dokumenter for innlogget bruker.</summary>
+    [HttpGet("my")]
+    [Authorize]
+    [ProducesResponseType(typeof(IReadOnlyList<UserDocumentTypeDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(CancellationToken ct)
+    {
+        Guid userId = User.GetUserId();
+        Result<IReadOnlyList<UserDocumentTypeDto>> result = 
+            await documentTypeService.GetMyDocumentTypesAsync(userId, ct);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
 
     /// <summary>Oppretter en ny dokumenttype.</summary>
     [HttpPost]
@@ -64,7 +80,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return CreatedAtAction(nameof(GetBySlugAsync), new { slug = result.Value!.Slug }, result.Value);
+        return Created($"api/document-types/{result.Value!.Slug}", result.Value);
     }
 
     /// <summary>Oppdaterer en dokumenttype.</summary>
@@ -131,8 +147,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
         if (result.IsFailure)
             return HandleFailure(result);
 
-        return CreatedAtAction(nameof(GetCategoriesAsync),
-            new { documentTypeSlug }, result.Value);
+        return Created($"api/document-types/{documentTypeSlug}/categories", result.Value);
     }
 
     /// <summary>Oppdaterer en kategori.</summary>

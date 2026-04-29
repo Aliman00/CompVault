@@ -41,7 +41,7 @@ public class JobTitleService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<JobTitleDto?>> GetByIdAsync(Guid id, CancellationToken ct)
     {
@@ -54,29 +54,29 @@ public class JobTitleService(
 
             if (result.IsFailure)
                 return Result<JobTitleDto?>.Failure(result.Error!);
-            
+
             return Result<JobTitleDto?>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av stillinger");
-            return Result<JobTitleDto?>.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<JobTitleDto?>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av stillinger");
-            return Result<JobTitleDto?>.Failure(AppError.Create(ErrorCode.Unknown, 
+            return Result<JobTitleDto?>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<JobTitleDto>> CreateAsync(CreateJobTitleRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.JobTitle.Base, request, ct);
 
             Result<JobTitleDto> result = await HttpClientExtensions.ParseResponseAsync<JobTitleDto>(response, ct);
@@ -100,13 +100,13 @@ public class JobTitleService(
         }
     }
 
-    
+
     /// <inheritdoc />
     public async Task<Result<JobTitleDto>> UpdateAsync(Guid id, UpdateJobTitleRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(ApiRoutes.JobTitle.ById(id), request, ct);
 
             Result<JobTitleDto> result = await HttpClientExtensions.ParseResponseAsync<JobTitleDto>(response, ct);
@@ -129,7 +129,7 @@ public class JobTitleService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct)
     {

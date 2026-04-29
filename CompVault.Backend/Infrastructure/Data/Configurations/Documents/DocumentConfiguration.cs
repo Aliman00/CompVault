@@ -45,6 +45,7 @@ internal sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.HasOne(d => d.Uploader)
             .WithMany()
             .HasForeignKey(d => d.UploadedBy)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Relasjon: Document → DocumentVersion (One-to-Many)

@@ -1,0 +1,99 @@
+@* Flervalgs-felt som bytter mellom lese- og redigeringsmodus. Brukes til å velge flere entiteter samtidig. 
+   Eks: Flere avdelinger *@
+@typeparam T
+
+@if (IsEditing)
+{
+    <MudSelect T="T"
+               SelectedValues="@((IReadOnlyCollection<T>)SelectedValues)"
+               SelectedValuesChanged="OnSelectedValuesChanged"
+               Label="@Label"
+               MultiSelection="true"
+               SelectAll="true"
+               SelectAllText="Velg alle"
+               QuickSearchInterval="@TimeSpan.FromMilliseconds(500)"
+               Variant="Variant.Outlined"
+               ToStringFunc="ToStringFunc">
+        @Items
+    </MudSelect>
+}
+else
+{
+    <MudStack Spacing="0">
+        <MudText Typo="Typo.caption" Color="Color.Secondary">@Label</MudText>
+        @if (SelectedValues.Count == 0)
+        {
+            <MudText Typo="Typo.body1">—</MudText>
+        }
+        else
+        {
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                @foreach (var value in SelectedValues)
+                {
+                    <MudChip T="string"
+                             OnClick="@(() => OnChipClick(value))"
+                             Size="Size.Small"
+                             Color="Color.Default"
+                             Class="cv-rounded">
+                        @ToStringFunc(value)
+                    </MudChip>
+                }
+            </MudStack>
+        }
+    </MudStack>
+}
+
+@code {
+    /// <summary>
+    /// Valgte verdier - IReadOnlyList, List
+    /// </summary>
+    [Parameter, EditorRequired] public List<T> SelectedValues { get; set; } = [];
+
+    /// <summary>
+    /// Handling som skjer når valgte verdier endres
+    /// </summary>
+    [Parameter, EditorRequired] public EventCallback<List<T>> SelectedValuesChanged { get; set; }
+
+    /// <summary>
+    /// Label som vises over feltet
+    /// </summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Endrer utseende i UI for å skille mellom redigering og visning
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing { get; set; }
+
+    /// <summary>
+    /// Konverterer verdien til et lesbart visningsnavn
+    /// </summary>
+    [Parameter, EditorRequired] public Func<T, string> ToStringFunc { get; set; } = null!;
+
+    /// <summary>
+    /// Valgene som vises i redigerings-modus
+    /// </summary>
+    [Parameter, EditorRequired] public RenderFragment Items { get; set; } = null!;
+
+    /// <summary>
+    /// Tekst som vises i lese-modus når ingen er valgt
+    /// </summary>
+    [Parameter] public string EmptyText { get; set; } = "—";
+    
+    /// <summary>
+    /// Navigering ved klikk på en entitet i lese-modus. Får inn den valgte verdien.
+    /// </summary>
+    [Parameter] public EventCallback<T> OnChipClicked { get; set; }
+
+    // ===================== PRIVATE METHODS =====================
+    
+    // Metoden som utføres når valgte verdier endres
+    private async Task OnSelectedValuesChanged(IReadOnlyCollection<T?>? values) => 
+        await SelectedValuesChanged.InvokeAsync(values?.OfType<T>().ToList() ?? []);
+    
+    // Hva som skjer ved trykk på en entitet
+    private async Task OnChipClick(T value)
+    {
+        if (OnChipClicked.HasDelegate)
+            await OnChipClicked.InvokeAsync(value);
+    }
+}

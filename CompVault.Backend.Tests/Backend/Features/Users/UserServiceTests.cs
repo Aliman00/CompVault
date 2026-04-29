@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Domain.Entities.JobTitles;
@@ -7,11 +8,17 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Backend.Tests.Common;
+using CompVault.Backend.Tests.Common.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
+
 using FluentAssertions;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+
 using Moq;
 namespace CompVault.Backend.Tests.Backend.Features.Users;
 
@@ -58,9 +65,9 @@ public class UserServiceTests
 
         // Logger mock
         var loggerMock = new Mock<ILogger<UserService>>();
-        
+
         var unitOfWorkMock = new Mock<IUnitOfWork>();
-        
+
         unitOfWorkMock
             .Setup(u => u.ExecuteInTransactionAsync(
                 It.IsAny<Func<Task<Result<UserDto>>>>(),
@@ -73,6 +80,7 @@ public class UserServiceTests
             _jobTitleRepositoryMock.Object,
             _userManagerMock.Object,
             roleManagerMock.Object,
+            new BypassDepartmentScopeService(),
             loggerMock.Object,
             unitOfWorkMock.Object);
     }
@@ -131,7 +139,8 @@ public class UserServiceTests
             Email = "ny@example.com",
             FirstName = "Ny",
             LastName = "Bruker",
-            Roles = []
+            Roles = [],
+            DepartmentId = TestConstants.Departments.DefaultDepartmentId
         };
 
         _userRepositoryMock
@@ -146,6 +155,11 @@ public class UserServiceTests
         _userManagerMock
             .Setup(m => m.GetRolesAsync(It.IsAny<ApplicationUser>()))
             .ReturnsAsync(new List<string>());
+        
+        _departmentRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<Department, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         // Act
         Result<UserDto> result = await _sut.CreateUserAsync(request);
@@ -270,17 +284,20 @@ public class UserServiceTests
         };
 
         _userRepositoryMock
-            .Setup(r => r.GetActiveUsersWithRolesAsync(It.IsAny<CancellationToken>()))
+            .Setup(r => r.CountActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(2);
+        _userRepositoryMock
+            .Setup(r => r.GetActiveUsersWithRolesPagedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(usersWithRoles);
 
         // Act
-        Result<IReadOnlyList<UserDto>> result = await _sut.GetAllUsersAsync();
+        Result<PagedResult<UserDto>> result = await _sut.GetAllUsersAsync(new PagedQuery());
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Should().HaveCount(2);
-        result.Value!.Should().Contain(u => u.Email == user1.Email);
-        result.Value!.Should().Contain(u => u.Email == user2.Email);
+        result.Value!.Items.Should().HaveCount(2);
+        result.Value!.Items.Should().Contain(u => u.Email == user1.Email);
+        result.Value!.Items.Should().Contain(u => u.Email == user2.Email);
     }
 
     /// <summary>
@@ -291,15 +308,18 @@ public class UserServiceTests
     {
         // Arrange
         _userRepositoryMock
-            .Setup(r => r.GetActiveUsersWithRolesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<(ApplicationUser, List<string>)>());
+            .Setup(r => r.CountActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+        _userRepositoryMock
+            .Setup(r => r.GetActiveUsersWithRolesPagedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<(ApplicationUser User, List<string> Roles)>());
 
         // Act
-        Result<IReadOnlyList<UserDto>> result = await _sut.GetAllUsersAsync();
+        Result<PagedResult<UserDto>> result = await _sut.GetAllUsersAsync(new PagedQuery());
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Should().BeEmpty();
+        result.Value!.Items.Should().BeEmpty();
     }
 
     // -------------------------------------------------------------------------
@@ -324,11 +344,11 @@ public class UserServiceTests
         _userRepositoryMock
             .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(_testUser);
-        
+
         _userRepositoryMock
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false); 
+            .ReturnsAsync(false);
 
         _jobTitleRepositoryMock
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<JobTitle, bool>>>(),
@@ -342,7 +362,7 @@ public class UserServiceTests
         _userRepositoryMock
             .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        
+
         _userManagerMock
             .Setup(m => m.GetRolesAsync(_testUser))
             .ReturnsAsync(new List<string> { "Employee" });
@@ -360,7 +380,7 @@ public class UserServiceTests
         _userRepositoryMock.Verify(r => r.UpdateAsync(_testUser, It.IsAny<CancellationToken>()), Times.Once);
         _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
-    
+
     /// <summary>
     /// Tester at roller oppdateres for brukeren og returner korrekt Dto
     /// </summary>
@@ -399,12 +419,12 @@ public class UserServiceTests
 
         // Assert - Sjekker at vi har prøvd å fjerne og legge til rollene
         result.IsSuccess.Should().BeTrue();
-        _userManagerMock.Verify(m => m.RemoveFromRolesAsync(_testUser, 
+        _userManagerMock.Verify(m => m.RemoveFromRolesAsync(_testUser,
             It.IsAny<IEnumerable<string>>()), Times.Once);
-        _userManagerMock.Verify(m => m.AddToRolesAsync(_testUser, 
+        _userManagerMock.Verify(m => m.AddToRolesAsync(_testUser,
             It.IsAny<IEnumerable<string>>()), Times.Once);
     }
-    
+
     /// <summary>
     /// Tester at fjerning av eksisterende roller feiler og vi returnerer InternalError
     /// </summary>
@@ -435,7 +455,7 @@ public class UserServiceTests
         _userManagerMock.Verify(m => m.AddToRolesAsync(It.IsAny<ApplicationUser>(),
             It.IsAny<IEnumerable<string>>()), Times.Never);
     }
-    
+
     /// <summary>
     /// Tester at tildeling av nye roller feiler og returnerer InternalError
     /// </summary>
@@ -493,7 +513,7 @@ public class UserServiceTests
             It.IsAny<CancellationToken>()), Times.Never);
         _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
-    
+
     /// <summary>
     /// Tester at eposten allerede er i bruk hos en annen bruker
     /// </summary>
@@ -512,12 +532,12 @@ public class UserServiceTests
         _userRepositoryMock
             .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(_testUser);
-        
+
         _userRepositoryMock
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true); 
-        
+            .ReturnsAsync(true);
+
         // Act
         Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
 
@@ -527,10 +547,10 @@ public class UserServiceTests
 
         _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
             It.IsAny<CancellationToken>()), Times.Never);
-        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }
-    
+
     /// <summary>
     /// Tester at manager ikke kan være brukeren
     /// </summary>
@@ -550,12 +570,12 @@ public class UserServiceTests
         _userRepositoryMock
             .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(_testUser);
-        
+
         _userRepositoryMock
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false); 
-        
+            .ReturnsAsync(false);
+
         // Act
         Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
 
@@ -565,10 +585,10 @@ public class UserServiceTests
 
         _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
             It.IsAny<CancellationToken>()), Times.Never);
-        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }
-    
+
     /// <summary>
     /// Tester at avdeling ikke eksisterer
     /// </summary>
@@ -587,12 +607,12 @@ public class UserServiceTests
         _userRepositoryMock
             .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(_testUser);
-        
+
         _departmentRepositoryMock
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<Department, bool>>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
-        
+
         // Act
         Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
 
@@ -602,10 +622,10 @@ public class UserServiceTests
 
         _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
             It.IsAny<CancellationToken>()), Times.Never);
-        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }
-    
+
     /// <summary>
     /// Tester at manager ikke eksisterer
     /// </summary>
@@ -624,12 +644,12 @@ public class UserServiceTests
         _userRepositoryMock
             .Setup(r => r.GetByIdWithDetailsAsync(_testUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(_testUser);
-        
+
         _userRepositoryMock
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<ApplicationUser, bool>>>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false); 
-        
+            .ReturnsAsync(false);
+
         // Act
         Result<UserDto> result = await _sut.UpdateUserAsync(_testUser.Id, request);
 
@@ -639,7 +659,7 @@ public class UserServiceTests
 
         _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<ApplicationUser>(),
             It.IsAny<CancellationToken>()), Times.Never);
-        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), 
+        _userRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }
 }
