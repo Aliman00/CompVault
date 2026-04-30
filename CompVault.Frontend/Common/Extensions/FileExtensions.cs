@@ -1,4 +1,5 @@
 ﻿using CompVault.Frontend.Common.Models;
+using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Components.Forms;
 
@@ -50,4 +51,23 @@ public static class FileExtensions
             or "image/png"
             or "image/gif"
             or "image/webp";
+    
+    /// <summary>
+    /// Speiler backend sin validnering av filer i frontend. Sjekker at den ikke er tom og at filtypen er tillatt
+    /// </summary>
+    /// <param name="file">Filen vi validerer</param>
+    /// <param name="allowedMimeTypes">Tilatte mimetypes</param>
+    /// <returns>En feilmeldingsstring eller ingenting</returns>
+    public static Result ValidateFile(this IBrowserFile file, IEnumerable<string> allowedMimeTypes)
+    {
+        if (file.Size == 0)
+            return Result.Failure(AppError.Create(ErrorCode.Validation, "Filen er tom."));
+
+        var allowed = allowedMimeTypes.ToList();
+        if (allowed.Count > 0 && !allowed.Contains(file.ContentType))
+            return Result.Failure(AppError.Create(ErrorCode.Validation,
+                $"Filtypen '{file.ContentType}' er ikke tillatt for denne dokumenttypen."));
+
+        return Result.Success();
+    }
 }
