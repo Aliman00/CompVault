@@ -13,7 +13,7 @@
     <Fields>
         @* Navn *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Name"
+            <TextField Value="@_editModel.Name"
                              ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
                              Label="Navn"
                              IsEditing="true"
@@ -21,7 +21,7 @@
         </MudItem>
         @* Kategori *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Category"
+            <TextField Value="@_editModel.Category"
                              ValueChanged="(string? v) => _editModel.Category = v ?? string.Empty"
                              Label="Kategori (valgfritt)"
                              IsEditing="true"
@@ -29,7 +29,7 @@
         </MudItem>
         @* Beskrivelse *@
         <MudItem xs="12">
-            <DetailTextField Value="@_editModel.Description"
+            <TextField Value="@_editModel.Description"
                              ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
                              Label="Beskrivelse (valgfritt)"
                              IsEditing="true"
@@ -78,6 +78,6 @@
         }
 
         NavigationManager.NavigateTo(
-            PageRoutes.CompetencyTypes.Detail(createResult.Value!.Id) + "?created=true");
+            PageRoutes.CompetencyTypes.Detail(createResult.Value!.Id) + "?created=true", replace: true);
     }
 }

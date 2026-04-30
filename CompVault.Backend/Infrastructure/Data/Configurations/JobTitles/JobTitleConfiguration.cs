@@ -14,6 +14,7 @@ internal sealed class JobTitleConfiguration : IEntityTypeConfiguration<JobTitle>
     {
         builder.Property(j => j.Name).HasMaxLength(100).IsRequired();
         builder.Property(j => j.IsActive).IsRequired().HasDefaultValue(true);
+        builder.Property(j => j.IsLeader).IsRequired().HasDefaultValue(false);
         builder.Property(j => j.CreatedAt).IsRequired();
 
         // Unikt navn — forhindrer duplikate jobbtitler

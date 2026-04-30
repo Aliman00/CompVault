@@ -1,6 +1,10 @@
 ﻿namespace CompVault.Shared.Constants.Validations;
 
-public class CompTypeValidations
+/// <summary>
+/// Felles klasse for valideringer for CompetencyType-featuren.
+/// Ved oppdatering så må både variabelene og Error-feltene endres
+/// </summary>
+public static class CompTypeValidations
 {
     public const int NameMaxLength = 200;
     public const int DescMaxLength = 500;

@@ -11,6 +11,7 @@ public class RefreshTokenRepository(AppDbContext context)
     /// <inheritdoc />
     public async Task<RefreshToken?> GetValidTokenAsync(string token, CancellationToken ct = default) =>
         await DbSet
+            .IgnoreQueryFilters()
             .Where(r => r.Token == token && !r.IsRevoked && r.ExpiresAt > DateTime.UtcNow)
             .FirstOrDefaultAsync(ct);
 

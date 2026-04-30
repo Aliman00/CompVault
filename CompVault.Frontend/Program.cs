@@ -1,8 +1,11 @@
 using System.Globalization;
+
 using CompVault.Frontend;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Extensions;
+
 using Microsoft.AspNetCore.Localization;
+
 using MudBlazor.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -26,7 +29,7 @@ builder.Services.AddRazorPages(options =>
 
 WebApplication app = builder.Build();
 
-CultureInfo[] supportedCultures = [ new("nb-NO") ];
+CultureInfo[] supportedCultures = [new("nb-NO")];
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
     DefaultRequestCulture = new RequestCulture("nb-NO"),

@@ -34,7 +34,7 @@ public sealed class CreateUserRequest
     public EmploymentType EmploymentType { get; set; } = EmploymentType.Permanent;
 
     /// <summary>Valgfri avdelings-ID.</summary>
-    public Guid? DepartmentId { get; set; }
+    public Guid DepartmentId { get; set; }
 
     /// <summary>Valgfri leder-ID.</summary>
     public Guid? ManagerId { get; set; }

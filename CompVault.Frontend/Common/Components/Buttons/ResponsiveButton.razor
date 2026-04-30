@@ -5,7 +5,8 @@
         <MudIconButton Icon="@Icon"
                        Variant="Variant.Outlined"
                        Color="@Color"
-                       OnClick="OnClick"/>
+                       OnClick="OnClick"
+                       Disabled="Disabled"/>
     </MudTooltip>
 </MudHidden>
 <MudHidden Breakpoint="Breakpoint.Xs">
@@ -13,7 +14,8 @@
     <MudButton StartIcon="@Icon"
                Variant="Variant.Outlined"
                Color="@Color"
-               OnClick="OnClick">
+               OnClick="OnClick"
+               Disabled="Disabled">
         @Label
     </MudButton>
 </MudHidden>
@@ -28,6 +30,11 @@
     /// Ønsket ikon til knappen
     /// </summary>
     [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Disabler knappen hvis ønskelig
+    /// </summary>
+    [Parameter] public bool Disabled { get; set; }
     
     /// <summary>
     /// Valgrfitt farge til knappen. Default er Color.Primary

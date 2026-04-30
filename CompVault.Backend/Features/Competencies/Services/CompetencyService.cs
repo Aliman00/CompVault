@@ -1,6 +1,11 @@
 using CompVault.Backend.Domain.Entities.Competencies;
+using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Audit.Services;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -13,21 +18,28 @@ namespace CompVault.Backend.Features.Competencies.Services;
 public sealed class CompetencyService(
     ICompetencyRepository competencyRepository,
     ICompetencyTypeRepository competencyTypeRepository,
-    IUserRepository userRepository) : ICompetencyService
+    IUserRepository userRepository,
+    IAuditContext auditContext,
+    IDepartmentScopeService departmentScope) : ICompetencyService
 {
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<CompetencyDto>>> GetAllAsync(
-        Guid? userId,
-        CompetencyStatus? status,
-        Guid? competencyTypeId,
+    public async Task<Result<PagedResult<CompetencyDto>>> GetAllAsync(
+        CompetencyQueryParameters queryParameters,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<Competency> competencies = await competencyRepository.GetAllWithDetailsAsync(
-            userId, status, competencyTypeId, cancellationToken);
+        int totalCount = await competencyRepository.CountWithFiltersAsync(
+            queryParameters.UserId, queryParameters.Status, queryParameters.CompetencyTypeId,
+            cancellationToken);
+
+        IReadOnlyList<Competency> competencies = await competencyRepository.GetAllWithDetailsPagedAsync(
+            queryParameters.Skip, queryParameters.PageSize,
+            queryParameters.UserId, queryParameters.Status, queryParameters.CompetencyTypeId,
+            cancellationToken);
 
         var dtos = competencies.Select(CompetencyMapper.ToDto).ToList();
 
-        return Result<IReadOnlyList<CompetencyDto>>.Success(dtos);
+        return Result<PagedResult<CompetencyDto>>.Success(
+            PagedResult<CompetencyDto>.Create(dtos, totalCount, queryParameters));
     }
 
     /// <inheritdoc />
@@ -60,12 +72,18 @@ public sealed class CompetencyService(
             return Result<CompetencyDto>.Failure(
                 AppError.Create(ErrorCode.Validation,
                     $"Kompetansetypen '{type.Name}' er inaktiv og kan ikke brukes."));
-
-        bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, cancellationToken);
-
-        if (!userExists)
+        
+        // Bruker sjekk
+        ApplicationUser? targetUser = await userRepository.GetByIdIgnoringFiltersAsync(userId, cancellationToken);
+        if (targetUser is null || !targetUser.IsActive || targetUser.DeletedAt is not null)
+            return Result<CompetencyDto>.Failure(AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        
+        // Sjekker om brukeren som kaller CreateAsync har tilattelse til å legge til kompetanse på targetUser
+        if (!departmentScope.IsAllowed(targetUser.DepartmentId, Permissions.CompetenciesAll, 
+                Permissions.CompetenciesReadSub))
             return Result<CompetencyDto>.Failure(
-                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+                AppError.Create(ErrorCode.Forbidden,
+                    "Du har ikke tilgang til å opprette kompetansebevis for brukere i denne avdelingen."));
 
         // Validering av ExpiryDate basert på typens RequiresExpiration
         if (type.RequiresExpiration && request.ExpiryDate is null)
@@ -110,6 +128,15 @@ public sealed class CompetencyService(
         if (competency is null)
             return Result<CompetencyDto>.Failure(
                 AppError.NotFound($"Kompetansebevis med ID '{id}' ble ikke funnet."));
+        
+        // Sjekker om brukeren som kaller UpdateAsync har tilattelse til å endre kompetansen satt på targetUser
+        ApplicationUser? targetUser = competency.ApplicationUser;
+        if (targetUser is null || 
+            !departmentScope.IsAllowed(targetUser.DepartmentId, Permissions.CompetenciesAll, 
+                Permissions.CompetenciesReadSub))
+            return Result<CompetencyDto>.Failure(
+                AppError.Create(ErrorCode.Forbidden,
+                    "Du har ikke tilgang til å oppdatere kompetansebevis for brukere i denne avdelingen."));
 
         // Validering før mutasjon — CompetencyType er lastet via GetForUpdateAsync
         DateTime? effectiveExpiry = request.ExpiryDate ?? competency.ExpiryDate;
@@ -136,10 +163,14 @@ public sealed class CompetencyService(
                 return Result<CompetencyDto>.Failure(
                     AppError.Create(ErrorCode.Validation,
                         "Årsak til tilbakekalling (RevokedReason) er påkrevd når status settes til Revoked."));
-
+            
             competency.Status = CompetencyStatus.Revoked;
             competency.RevokedAt = DateTime.UtcNow;
             competency.RevokedReason = request.RevokedReason;
+
+            // Gi interceptoren forretningskontekst for revoke
+            auditContext.SetActionOverride("competency.revoke");
+            auditContext.SetReason(request.RevokedReason);
         }
 
         if (request.ExpiryDate.HasValue && competency.CompetencyType?.RequiresExpiration == false)
@@ -171,11 +202,20 @@ public sealed class CompetencyService(
     public async Task<Result<bool>> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         Competency? competency = await competencyRepository.GetByIdAsync(id, cancellationToken);
-
+        
         if (competency is null)
             return Result<bool>.Failure(
                 AppError.NotFound($"Kompetansebevis med ID '{id}' ble ikke funnet."));
-
+        
+        ApplicationUser? targetUser = await userRepository.GetByIdIgnoringFiltersAsync(competency.UserId, 
+            cancellationToken);
+        if (targetUser is null ||
+            !departmentScope.IsAllowed(targetUser.DepartmentId, Permissions.CompetenciesAll, 
+                Permissions.CompetenciesReadSub))
+            return Result<bool>.Failure(
+                AppError.Create(ErrorCode.Forbidden,
+                    "Du har ikke tilgang til å slette kompetansebevis for brukere i denne avdelingen."));
+        
         await competencyRepository.SoftDeleteAsync(competency, cancellationToken);
         await competencyRepository.SaveChangesAsync(cancellationToken);
 
@@ -183,16 +223,24 @@ public sealed class CompetencyService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<ExpiringCompetencyDto>>> GetExpiringAsync(
-        Guid? userId,
-        Guid? departmentId,
+    public async Task<Result<PagedResult<ExpiringCompetencyDto>>> GetExpiringAsync(
+        CompetencyExpiringQueryParameters queryParameters,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<Competency> expiring = await competencyRepository.GetExpiringAsync(
-            userId, departmentId, cancellationToken);
+        // Count og paginert henting gjøres i to steg siden GetExpiringAsync i repoet
+        // returnerer IReadOnlyList, ikke IQueryable.
+        // TODO: Vurder å legge til CountExpiringAsync i repoet for renere DB-nivå paginering.
+        IReadOnlyList<Competency> allExpiring = await competencyRepository.GetExpiringAsync(
+            queryParameters.UserId, queryParameters.DepartmentId, cancellationToken);
 
-        var dtos = expiring.Select(CompetencyMapper.ToExpiringDto).ToList();
+        var dtos = allExpiring
+            .OrderBy(c => c.ExpiryDate)
+            .Skip(queryParameters.Skip)
+            .Take(queryParameters.PageSize)
+            .Select(CompetencyMapper.ToExpiringDto)
+            .ToList();
 
-        return Result<IReadOnlyList<ExpiringCompetencyDto>>.Success(dtos);
+        return Result<PagedResult<ExpiringCompetencyDto>>.Success(
+            PagedResult<ExpiringCompetencyDto>.Create(dtos, allExpiring.Count, queryParameters));
     }
 }

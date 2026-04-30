@@ -2,12 +2,11 @@ using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 namespace CompVault.Backend.Features.Documents.Controllers;
 
 /// <summary>
@@ -15,13 +14,15 @@ namespace CompVault.Backend.Features.Documents.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/documents/{documentTypeSlug}")]
-[Authorize(Policy = Permissions.DocumentsRead)]
 [Produces("application/json")]
 public sealed class DocumentsController(
-    IDocumentService documentService) : BaseController
+    IDocumentService documentService,
+    IDocumentVersioningService versioningService,
+    IDocumentSignatureService signatureService) : BaseController
 {
     /// <summary>Henter alle dokumenter for en dokumenttype.</summary>
     [HttpGet]
+    [Authorize(Policy = Permissions.DocumentsRead)]
     [ProducesResponseType(typeof(IReadOnlyList<DocumentListDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetAllAsync(
         string documentTypeSlug,
@@ -41,6 +42,7 @@ public sealed class DocumentsController(
 
     /// <summary>Henter ett dokument.</summary>
     [HttpGet("{id:guid}", Name = "GetDocumentById")]
+    [Authorize]
     [ProducesResponseType(typeof(DocumentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DocumentDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
@@ -68,16 +70,15 @@ public sealed class DocumentsController(
         IFormFile? file,
         CancellationToken cancellationToken)
     {
-        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAllDepartments);
-        
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAll);
+
         if (file is not null && file.Length == 0)
             return BadRequest("Filen er tom.");
 
         Guid uploadedById = User.GetUserId();
 
         await using Stream? fileStream = file is not null ? file.OpenReadStream() : null;
-        
-        
+
         Result<DocumentDto> result = await documentService.CreateAsync(
             documentTypeSlug,
             request,
@@ -106,8 +107,8 @@ public sealed class DocumentsController(
         CancellationToken cancellationToken)
     {
         Guid userId = User.GetUserId();
-        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAllDepartments);
-        Result<DocumentDto> result = await documentService.UpdateAsync(id, userId, request, bypassTargeting, 
+        bool bypassTargeting = User.HasPermission(Permissions.DocumentsAll);
+        Result<DocumentDto> result = await documentService.UpdateAsync(id, userId, request, bypassTargeting,
             cancellationToken);
 
         if (result.IsFailure)
@@ -149,7 +150,7 @@ public sealed class DocumentsController(
         Guid uploadedById = User.GetUserId();
 
         await using Stream stream = file.OpenReadStream();
-        Result<DocumentDto> result = await documentService.UploadVersionAsync(
+        Result<DocumentDto> result = await versioningService.UploadVersionAsync(
             id, documentTypeSlug, file.FileName, file.ContentType, stream, uploadedById, cancellationToken);
 
         if (result.IsFailure)
@@ -170,7 +171,7 @@ public sealed class DocumentsController(
     {
         Guid userId = User.GetUserId();
 
-        Result<bool> result = await documentService.SignAsync(id, userId, cancellationToken);
+        Result<bool> result = await signatureService.SignAsync(id, userId, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -180,6 +181,7 @@ public sealed class DocumentsController(
 
     /// <summary>Laster ned filen for et dokument.</summary>
     [HttpGet("{id:guid}/download")]
+    [Authorize(Policy = Permissions.DocumentsRead)]
     [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadAsync(
@@ -187,7 +189,7 @@ public sealed class DocumentsController(
     {
         Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
-        Result<DocumentDownloadResult> result = await documentService.GetDownloadAsync(
+        Result<DocumentDownloadResult> result = await versioningService.GetDownloadAsync(
             id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)
@@ -196,7 +198,7 @@ public sealed class DocumentsController(
         DocumentDownloadResult download = result.Value!;
 
         // Åpne stream her i controlleren slik at ASP.NET Core kan håndtere disposal
-        Stream fileStream = await documentService.OpenFileStreamAsync(
+        Stream fileStream = await versioningService.OpenFileStreamAsync(
             download.FilePath, cancellationToken);
 
         return File(fileStream, download.ContentType, download.FileName);
@@ -204,14 +206,15 @@ public sealed class DocumentsController(
 
     /// <summary>Henter signaturer for et dokument.</summary>
     [HttpGet("{id:guid}/signatures")]
-    [ProducesResponseType(typeof(IReadOnlyList<DocumentSignatureDto>), StatusCodes.Status200OK)]
+    [Authorize(Policy = Permissions.DocumentsRead)]
+    [ProducesResponseType(typeof(IReadOnlyList<UserSignatureStatusDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
+    public async Task<ActionResult<IReadOnlyList<UserSignatureStatusDto>>> GetSignaturesAsync(
         Guid id, CancellationToken cancellationToken)
     {
         Guid? currentUserId = User.GetUserId();
         bool bypassTargeting = User.HasPermission(Permissions.DocumentsWrite);
-        Result<IReadOnlyList<DocumentSignatureDto>> result = await documentService.GetSignaturesAsync(
+        Result<IReadOnlyList<UserSignatureStatusDto>> result = await signatureService.GetSignatureStatusAsync(
             id, currentUserId, bypassTargeting, cancellationToken);
 
         if (result.IsFailure)
@@ -220,16 +223,36 @@ public sealed class DocumentsController(
         return Ok(result.Value);
     }
 
-    /// <summary>Henter alle dokumenter brukeren har signert.</summary>
-    [HttpGet("/api/documents/my/signed")]
-    [ProducesResponseType(typeof(IReadOnlyList<DocumentListDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(
-        CancellationToken cancellationToken)
+    /// <summary>Henter fremdriftsstatistikk for en dokumenttype for innlogget bruker.</summary>
+    [HttpGet("progress")]
+    [Authorize(Policy = Permissions.DocumentsRead)]
+    [ProducesResponseType(typeof(DocumentProgressDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<DocumentProgressDto>> GetProgressAsync(
+        string documentTypeSlug, CancellationToken cancellationToken)
     {
         Guid userId = User.GetUserId();
 
-        Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetMySignedDocumentsAsync(
-            userId, cancellationToken);
+        Result<DocumentProgressDto> result = await signatureService.GetProgressAsync(
+            documentTypeSlug, userId, cancellationToken);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>Henter paginerte dokumenter brukeren har signert.</summary>
+    [HttpGet("/api/documents/my/signed")]
+    [Authorize(Policy = Permissions.DocumentsRead)]
+    [ProducesResponseType(typeof(PagedResult<DocumentListDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<DocumentListDto>>> GetMySignedDocumentsAsync(
+        [FromQuery] PagedQuery query, CancellationToken cancellationToken)
+    {
+        Guid userId = User.GetUserId();
+
+        Result<PagedResult<DocumentListDto>> result = await signatureService.GetMySignedDocumentsAsync(
+            userId, query, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -239,13 +262,14 @@ public sealed class DocumentsController(
 
     /// <summary>Henter alle dokumenter brukeren trenger å signere.</summary>
     [HttpGet("/api/documents/my/pending")]
+    [Authorize(Policy = Permissions.DocumentsRead)]
     [ProducesResponseType(typeof(IReadOnlyList<DocumentListDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetMyPendingDocumentsAsync(
         CancellationToken cancellationToken)
     {
         Guid userId = User.GetUserId();
 
-        Result<IReadOnlyList<DocumentListDto>> result = await documentService.GetMyPendingDocumentsAsync(
+        Result<IReadOnlyList<DocumentListDto>> result = await signatureService.GetMyPendingDocumentsAsync(
             userId, cancellationToken);
 
         if (result.IsFailure)
@@ -253,4 +277,28 @@ public sealed class DocumentsController(
 
         return Ok(result.Value);
     }
+    
+    /// <summary>
+    /// Henter alle dokumenter for en bruker, både signerte og ikke-signerte
+    /// </summary>
+    [HttpGet("/api/documents/user")]
+    [Authorize]
+    [ProducesResponseType(typeof(PagedResult<DocumentListDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<DocumentListDto>>> GetMyDocumentsAsync(
+        [FromQuery] DocumentQueryParameters query, CancellationToken ct)
+    {
+        Guid userId = User.GetUserId();
+        bool hasPermission = User.HasPermission(Permissions.DocumentsRead);
+
+        // Targeting skal aldri bypasses for dette endepunktet — vi henter kun dokumenter
+        // brukeren selv er i målgruppen for, uavhengig av admin-tillatelser.
+        Result<PagedResult<DocumentListDto>> result =
+            await documentService.GetDocumentsForUserAsync(userId, query, hasPermission, ct);
+
+        if (result.IsFailure)
+            return HandleFailure(result);
+
+        return Ok(result.Value);
+    }
+    
 }

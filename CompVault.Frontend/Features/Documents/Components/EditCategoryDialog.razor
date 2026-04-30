@@ -1,0 +1,164 @@
+﻿@inject IDocumentTypeCategoryService DocumentTypeCategoryService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IDialogService DialogService
+
+@* Dialog for å endre og slette en kategori til en dokumenttype *@
+<MudDialog>
+
+    @* Tittel *@
+    <TitleContent>
+        <MudText Typo="Typo.h6">Rediger @DocumentTypeCategory.Name</MudText>
+    </TitleContent>
+
+    @* Body til dialogen *@
+    <DialogContent>
+        <AppAlert @bind-Alert="_alert"/>
+        <EditForm EditContext="_editContext">
+            <DataAnnotationsValidator/>
+            <MudGrid>
+                @* Navn *@
+                <MudItem xs="12">
+                    <TextField Value="@_editModel.Name"
+                                     ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                     Label="Navn"
+                                     IsEditing="true"
+                                     For="() => _editModel.Name"/>
+                </MudItem>
+
+                @* Status *@
+                <MudItem xs="12" sm="6" Class="mb-4">
+                    <ToggleButton Label="Synlighet"
+                                  @bind-Value="_editModel.IsActive"
+                                  IsEditing="true">
+                        <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
+                        <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
+                    </ToggleButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+
+    @* Knapp for sletting, godkjenn handling og avbryt handling *@
+    <DialogActions>
+        <AuthorizeView Policy="@Permissions.DocumentTypesDelete">
+            <Authorized>
+                <MudButton Color="Color.Error"
+                           Variant="Variant.Outlined"
+                           OnClick="Delete"
+                           Disabled="_isSaving">
+                    Slett
+                </MudButton>
+            </Authorized>
+        </AuthorizeView>
+        <MudSpacer/>
+        
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel"
+                   Disabled="_isSaving">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Save"
+                   Disabled="_isSaving">
+            Lagre
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
+    /// </summary>
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Slug til dokumenttypen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Slug { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Nanvet på dokumenttypen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public DocumentTypeCategoryDto DocumentTypeCategory { get; set; }
+
+    // ===================== PRIVATE FIELDS =====================
+
+    private DocumentTypeCategoryEditModel _editModel = new();
+
+    private bool _isSaving;
+
+    private EditContext _editContext = null!;
+
+    private AlertInfo? _alert;
+
+    protected override void OnInitialized()
+    {
+        _editModel = DocumentTypeCategoryEditModel.FromDto(DocumentTypeCategory);
+        _editContext = new EditContext(_editModel);
+    }
+
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Prøver å opprette en kategori ved å sende request til backend
+    private async Task Save()
+    {
+        if (!_editContext.Validate())
+            return;
+
+        _isSaving = true;
+        try
+        {
+            var updateDocumentTypeCategoryResult = await DocumentTypeCategoryService
+                .UpdateAsync(Slug, DocumentTypeCategory.Id, _editModel.ToRequest(), Cts.Token);
+            if (updateDocumentTypeCategoryResult.IsFailure)
+            {
+                _alert = new AlertInfo(updateDocumentTypeCategoryResult.Error!.ToString(), Severity.Error);
+                _isSaving = false;
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(updateDocumentTypeCategoryResult.Value));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+    
+    // Sletting av en kategory
+    private async Task Delete()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDeleteDialog.Title), "Slett kategorien" },
+            { nameof(ConfirmDeleteDialog.Message), 
+                $"Er du sikker på at du ønsker å slette kategori {DocumentTypeCategory!.Name}?" },
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        var deleteResult = await DocumentTypeCategoryService.DeleteAsync(Slug, DocumentTypeCategory.Id,
+            Cts.Token);
+        if (deleteResult.IsFailure)
+        {
+            _alert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(DocumentTypeCategory.Id));
+    }
+}

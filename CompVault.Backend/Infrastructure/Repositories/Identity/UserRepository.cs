@@ -13,24 +13,32 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
     /// <inheritdoc />
     public async Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         await DbSet
+            .IgnoreQueryFilters()
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), cancellationToken);
-
+            .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant() && u.DeletedAt == null, cancellationToken);
+    
     /// <inheritdoc />
-    public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> 
+    public async Task<ApplicationUser?> GetByIdIgnoringFiltersAsync(Guid id, CancellationToken ct = default) =>
+        await DbSet
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null, ct);
+    
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>>
         GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default)
     {
         var result = await DbSet
             .AsNoTracking()
             .Include(u => u.Department)
             .Include(u => u.Manager)
+            .Include(u => u.JobTitle)
             .Where(u => u.IsActive && u.DeletedAt == null)
             .Select(u => new
             {
                 User = u,
                 Roles = DbContext.UserRoles
                     .Where(ur => ur.UserId == u.Id)
-                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id, 
+                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id,
                         (ur, r) => r.Name)
                     .Where(name => name != null)
                     .Select(name => name!)
@@ -41,6 +49,18 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
         return result.Select(x => (x.User, x.Roles)).ToList();
     }
     
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ApplicationUser>> GetUsersByTargetAsync(IReadOnlyList<Guid> departmentIds,
+        IReadOnlyList<Guid> jobTitleIds, CancellationToken ct = default) =>
+        await DbSet
+            .AsNoTracking()
+            .Include(u => u.Department)
+            .Include(u => u.JobTitle)
+            .Where(u => departmentIds.Count == 0 || departmentIds.Contains(u.DepartmentId))
+            .Where(u => jobTitleIds.Count == 0 ||
+                        (u.JobTitleId.HasValue && jobTitleIds.Contains(u.JobTitleId.Value)))
+            .ToListAsync(ct);
+
     /// <inheritdoc />
     public async Task<ApplicationUser?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default) =>
         await DbSet
@@ -66,10 +86,73 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<ApplicationUser>> GetPotentialManagersAsync(
+        CancellationToken cancellationToken = default) =>
+        await DbSet
+            .AsNoTracking()
+            .Include(u => u.Department)
+            .Include(u => u.JobTitle)
+            .Where(u => u.IsActive
+                        && u.DeletedAt == null
+                        && u.JobTitle != null
+                        && u.JobTitle.IsLeader)
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
+            .ToListAsync(cancellationToken);
+
+    /// <inheritdoc />
     public Task SoftDeleteAsync(ApplicationUser user, CancellationToken cancellationToken = default)
     {
         user.DeletedAt = DateTime.UtcNow;
         user.IsActive = false;
         return Task.CompletedTask;
     }
+
+    /// <inheritdoc />
+    public async Task<int> CountActiveAsync(CancellationToken cancellationToken = default) =>
+        await DbSet.CountAsync(u => u.IsActive && u.DeletedAt == null, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesPagedAsync(
+        int skip, int take, CancellationToken cancellationToken = default)
+    {
+        var result = await DbSet
+            .AsNoTracking()
+            .Include(u => u.Department)
+            .Include(u => u.Manager)
+            .Include(u => u.JobTitle)
+            .Where(u => u.IsActive && u.DeletedAt == null)
+            .OrderBy(u => u.LastName)
+                .ThenBy(u => u.FirstName)
+            .Skip(skip)
+            .Take(take)
+            .Select(u => new
+            {
+                User = u,
+                Roles = DbContext.UserRoles
+                    .Where(ur => ur.UserId == u.Id)
+                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id,
+                        (ur, r) => r.Name)
+                    .Where(name => name != null)
+                    .Select(name => name!)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        return result.Select(x => (x.User, x.Roles)).ToList();
+    }
+    
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ApplicationUser>> GetLookupAsync(IReadOnlyList<Guid> allowedDepartmentIds,
+        bool bypass, CancellationToken ct = default) =>
+        await DbSet
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Include(u => u.Department)
+            .Include(u => u.JobTitle)
+            .Where(u => u.IsActive && u.DeletedAt == null)
+            .Where(u => bypass || allowedDepartmentIds.Contains(u.DepartmentId))
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
+            .ToListAsync(ct);
 }

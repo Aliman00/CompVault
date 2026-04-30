@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Localization;
+
 using MudBlazor;
 namespace CompVault.Frontend.Common.Localization;
 
@@ -38,7 +39,7 @@ public class NorwegianMudLocalizer : MudLocalizer
         // Paginering
         { "MudDataGrid_RowsPerPage", "Rader per side" },
         { "MudDataGridPager_RowsPerPage", "Rader per side" },
-        { "MudDataGrid_of", "av" },
+        { "MudDataGridPager_InfoFormat", "{0}-{1} av {2}" },
 
         // Valg og gruppering
         { "MudDataGrid_SelectAll", "Velg alle" },
@@ -51,7 +52,7 @@ public class NorwegianMudLocalizer : MudLocalizer
         { "MudDataGrid_CollapseAllGroups", "Skjul alle grupper" },
         { "MudDataGrid_ExpandAllGroups", "Vis alle grupper" },
     };
-    
+
     public override LocalizedString this[string key]
     {
         get

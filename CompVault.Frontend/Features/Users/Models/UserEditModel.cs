@@ -5,7 +5,6 @@ using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Enums;
 namespace CompVault.Frontend.Features.Users.Models;
 
-
 /// <summary>
 /// Modellen for å endre en bruker
 /// </summary>
@@ -23,14 +22,15 @@ public class UserEditModel
     [EmailAddress(ErrorMessage = UserValidations.Errors.EmailInvalid)]
     [MaxLength(UserValidations.EmailMaxLength, ErrorMessage = UserValidations.Errors.EmailMaxLength)]
     public string Email { get; set; } = string.Empty;
-    
+
     public Guid? JobTitleId { get; set; }
-    
+
     public EmploymentType EmploymentType { get; set; }
     public bool IsActive { get; set; }
     
+    [Required(ErrorMessage = "Avdeling er påkrevd.")]
     public Guid? DepartmentId { get; set; }
-    
+
     public Guid? ManagerId { get; set; }
 
     public static UserEditModel FromDto(UserDto dto) => new()
@@ -44,17 +44,18 @@ public class UserEditModel
         ManagerId = dto.ManagerId,
         DepartmentId = dto.DepartmentId,
     };
-    
+
     public UpdateUserRequest ToRequest() => new()
     {
         FirstName = FirstName,
         LastName = LastName,
         Email = Email,
         JobTitleId = JobTitleId,
+        ClearJobTitleId = JobTitleId == null,
         EmploymentType = EmploymentType,
         DepartmentId = DepartmentId,
-        ClearDepartmentId = DepartmentId == null,
         ManagerId = ManagerId,
-        ClearManagerId = ManagerId == null
+        ClearManagerId = ManagerId == null,
+        IsActive = IsActive,
     };
 }

@@ -14,6 +14,8 @@ public static class JobTitleMapper
     public static JobTitleDto ToDto(JobTitle jobTitle) => new()
     {
         Id = jobTitle.Id,
-        Name = jobTitle.Name
+        Name = jobTitle.Name,
+        IsLeader = jobTitle.IsLeader,
+        IsActive = jobTitle.IsActive
     };
 }

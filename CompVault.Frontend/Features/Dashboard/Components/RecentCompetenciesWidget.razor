@@ -1,0 +1,110 @@
+﻿@* Widget som viser de 5 siste kompetansene til innlogget bruker *@
+@inject ICompetencyService CompetencyService
+@inject CircuitUserContext UserContext
+@inject NavigationManager NavigationManager
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid #2d7a4f;" Elevation="4">
+    <section class="widget-header">
+        <div class="statistic-header-left-section">
+            <SmallIcon Icon="@Icons.Material.Filled.WorkspacePremium"
+                       AccentColor="#2d7a4f"
+                       IconBackgroundColor="#e8f5ee"/>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@DashboardConstants.RecentCompetencies</MudText>
+        </div>
+        <WidgetMenu OnHide="OnHide"/>
+    </section>
+
+    @if (_loading)
+    {
+        @for (var i = 0; i < 5; i++)
+        {
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="44px" Class="mt-1"/>
+        }
+    }
+    else if (_error is not null)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">@_error</MudText>
+    }
+    else if (!_competencies.Any())
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.Info" Color="Color.Secondary" Size="Size.Small"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen kompetanser registrert.</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudList T="CompetencyDto" Dense="true" DisablePadding="true" Class="mt-1">
+            @foreach (var item in _competencies)
+            {
+                <MudListItem T="CompetencyDto"
+                             Dense="true"
+                             Class="px-0"
+                             OnClick="() => NavigationManager.NavigateTo(PageRoutes.UserCompetencies.Detail(item.Id))">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body2">@item.CompetencyTypeName.Truncate(30)</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @if (item.ExpiryDate is null)
+                                {
+                                    <span>Ingen utløpsdato</span>
+                                }
+                                else
+                                {
+                                    <span>@item.DaysUntilExpiry.ToExpiryText(item.Status)</span>
+                                }
+                            </MudText>
+                        </MudStack>
+                        <MudChip T="string"
+                                 Color="@item.Status.ToStatusColor()"
+                                 Size="Size.Small"
+                                 Class="cv-rounded">
+                            @item.Status.ToDisplayString()
+                        </MudChip>
+                    </MudStack>
+                </MudListItem>
+                <MudDivider/>
+            }
+        </MudList>
+        <MudLink Href="@PageRoutes.UserCompetencies.List" Typo="Typo.caption" Class="mt-2 d-block">
+            Se alle mine kompetanser →
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+    private List<CompetencyDto> _competencies = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserContext.UserId is null)
+        {
+            _error = "Kunne ikke hente bruker-ID.";
+            _loading = false;
+            return;
+        }
+
+        var filter = new CompetencyFilterRequest
+        {
+            UserId = UserContext.UserId,
+            PageSize = 5,
+            Page = 1
+        };
+
+        var result = await CompetencyService.GetAllAsync(filter, CancellationToken.None);
+
+        if (result.IsFailure)
+        {
+            _error = result.Error?.Message ?? "Noe gikk galt.";
+            _loading = false;
+            return;
+        }
+
+        _competencies = result.Value!.Items.ToList();
+        _loading = false;
+    }
+}

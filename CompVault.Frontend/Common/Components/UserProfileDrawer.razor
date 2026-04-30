@@ -1,0 +1,142 @@
+@inject IThemeService ThemeService
+@inject IJSRuntime JsRuntime
+
+@* Høyredrawer med brukerinformasjon, logout og innstillinger. Kan få egen side hvis det kommer mer info *@
+
+@* Skjult form for å kunne logge ut *@
+<form id="profile-drawer-logout-form" method="post" action="/logout-callback">
+    <AntiforgeryToken/>
+</form>
+
+<MudDrawer Open="_isOpen"
+           OpenChanged="OnDrawerOpenChanged"
+           Anchor="Anchor.Right"
+           Elevation="2"
+           Variant="DrawerVariant.Temporary"
+           Width="280px">
+
+    @* Profiloverskrift *@
+    <MudStack Class="pa-4" Spacing="0">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-4">
+            <MudAvatar Color="Color.Primary" Size="Size.Large">
+                @Initials
+            </MudAvatar>
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.subtitle1" Style="font-weight: 600; line-height: 1.3">
+                    @FullName
+                </MudText>
+                <MudText Typo="Typo.body2">
+                    @JobTitle
+                </MudText>
+            </MudStack>
+        </MudStack>
+
+        <MudDivider/>
+    </MudStack>
+
+    @* Innstillinger *@
+    <MudStack Class="px-4" Spacing="1">
+        <MudText Typo="Typo.overline" Class="mb-1">
+            Innstillinger
+        </MudText>
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="py-1">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@(IsDarkMode ? Icons.Material.Filled.DarkMode : Icons.Material.Filled.LightMode)"
+                         Size="Size.Small"
+                         Color="Color.Default"/>
+                <MudText Typo="Typo.body2">Mørk modus</MudText>
+            </MudStack>
+            <MudSwitch Value="IsDarkMode"
+                       ValueChanged="@((bool val) => OnDarkModeChanged(val))"
+                       Color="Color.Primary"
+                       Size="Size.Small"/>
+        </MudStack>
+    </MudStack>
+
+    @* Logg ut — plassert i bunnen *@
+    <MudSpacer/>
+    <MudStack Class="pa-4" Spacing="0">
+        <MudDivider Class="mb-3"/>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Error"
+                   StartIcon="@Icons.Material.Filled.Logout"
+                   FullWidth="true"
+                   OnClick="LogOutAsync"
+                   Class="justify-start">
+            Logg ut
+        </MudButton>
+    </MudStack>
+</MudDrawer>
+
+@code {
+    // ======================== Parametere ========================
+
+    /// <summary>
+    /// Kontrollerer om draweren er åpen
+    /// </summary>
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    /// <summary>
+    /// Forteller foreldrekomponenten om draweren har blitt lukket innenfra
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    /// <summary>
+    /// Mørkt/lyst tema
+    /// </summary>
+    [Parameter]
+    public bool IsDarkMode { get; set; }
+
+    /// <summary>
+    /// Kalles når mørk/lys-modus endres
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> IsDarkModeChanged { get; set; }
+
+    /// <summary>
+    /// Fullt navn på innlogget bruker
+    /// </summary>
+    [Parameter]
+    public string FullName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Stillingstittel på innlogget bruker
+    /// </summary>
+    [Parameter]
+    public string JobTitle { get; set; } = string.Empty;
+
+    // ======================== Private felt ========================
+    private bool _isOpen;
+
+    // ======================== Computed properties ========================
+
+    // Henter forbokstavene fra fullt navn for avataren
+    private string Initials => string.Concat(
+        FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Take(2)
+                .Select(del => del[0])
+    );
+
+    // ======================== Lifecycle ========================
+    protected override void OnParametersSet() => _isOpen = IsOpen;
+
+    // ======================== Private metoder ========================
+
+    private async Task OnDrawerOpenChanged(bool erÅpen)
+    {
+        _isOpen = erÅpen;
+        await IsOpenChanged.InvokeAsync(erÅpen);
+    }
+
+    private async Task OnDarkModeChanged(bool mørktTema)
+    {
+        await IsDarkModeChanged.InvokeAsync(mørktTema);
+        await ThemeService.SaveDarkModeAsync(mørktTema);
+    }
+    
+    private async Task LogOutAsync() => await JsRuntime.InvokeVoidAsync("logoutFormSubmit");
+    
+}

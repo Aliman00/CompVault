@@ -1,37 +1,28 @@
 ﻿@* Gjenbrukbar form-komponentent for alle Detail-sider *@
 
-<AppAlert @bind-Alert="Alert"/>
+@* Skjemaet *@
+<EditForm EditContext="EditContext" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator/>
+    <MudPaper Class="pa-6" Elevation="1" Square="true">
 
-@if (IsLoading)
-{
-    <AppSpinner Class="pa-20"/>
-}
-else
-{
-    @* Skjemaet *@
-    <EditForm EditContext="EditContext" OnValidSubmit="OnValidSubmit">
-        <DataAnnotationsValidator/>
-        <MudPaper Class="pa-6" Elevation="1" Square="true">
-            
-            @* Header med redigeringsknapper, dropdown meny for sletting/andre valg og valgrie knapper*@
-            <DetailHeader Title="@Title"
-                          Subtitle="@Subtitle"
-                          EditPolicy="@EditPolicy"
-                          IsEditing="IsEditing"
-                          OnStartEdit="OnStartEdit"
-                          OnCancelEdit="OnCancelEdit">
-                <ExtraActions>@ExtraActions</ExtraActions>
-                <DropdownActions>@DropdownActions</DropdownActions>
-            </DetailHeader>
-            
-            @* Unike felter for hver feature *@
-            <MudGrid>
-                @Fields
-            </MudGrid>
+        @* Header med redigeringsknapper, dropdown meny for sletting/andre valg og valgrie knapper*@
+        <DetailHeader Title="@Title"
+                      Subtitle="@Subtitle"
+                      EditPolicy="@EditPolicy"
+                      IsEditing="IsEditing"
+                      OnStartEdit="OnStartEdit"
+                      OnCancelEdit="OnCancelEdit">
+            <ExtraActions>@ExtraActions</ExtraActions>
+            <DropdownActions>@DropdownActions</DropdownActions>
+        </DetailHeader>
 
-        </MudPaper>
-    </EditForm>
-}
+        @* Unike felter for hver feature *@
+        <MudGrid>
+            @Fields
+        </MudGrid>
+
+    </MudPaper>
+</EditForm>
 
 @code {
 
@@ -55,11 +46,6 @@ else
     // ===================== TILSTAND =====================
 
     /// <summary>
-    /// Viser spinner mens vi venter på API-kall
-    /// </summary>
-    [Parameter] public bool IsLoading { get; set; }
-
-    /// <summary>
     /// Om vi er i redigering-modus eller lese-modus
     /// </summary>
     [Parameter, EditorRequired] public bool IsEditing { get; set; }
@@ -67,21 +53,21 @@ else
     // ===================== FORM =====================
 
     /// <summary>
-    /// EditContext som må opprettes i foreldrekomponenten
+    /// EditContext som må opprettes i foreldrekomponenten - Valgfritt for lesemodus
     /// </summary>
-    [Parameter, EditorRequired] public EditContext EditContext { get; set; } = null!;
+    [Parameter] public EditContext EditContext { get; set; } = null!;
 
     /// <summary>
-    /// Handling som utføres ved innsending av skjemaet
+    /// Handling som utføres ved innsending av skjemaet - Valgfritt for lesemodus
     /// </summary>
-    [Parameter, EditorRequired] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
 
     // ===================== REDIGERING =====================
 
     /// <summary>
-    /// Policy som kreves for å aktivere redigeringsmodus. Eks : User:Write
+    /// Policy som kreves for å aktivere redigeringsmodus. Eks : User:Write - Valgfritt for lesemodus
     /// </summary>
-    [Parameter, EditorRequired] public string EditPolicy { get; set; } = string.Empty;
+    [Parameter] public string EditPolicy { get; set; } = string.Empty;
 
     /// <summary>
     /// Handling ved trykk på Rediger-knappen
@@ -92,18 +78,7 @@ else
     /// Handling ved trykk på Avbryt-knappen
     /// </summary>
     [Parameter] public EventCallback OnCancelEdit { get; set; }
-
-    // ===================== ALERTS =====================
-
-    /// <summary>
-    /// Viser en suksessmelding eller feilmelding. Eks: "Brukeren ble oppdatert" / "Feil ved API-kall"
-    /// </summary>
-    [Parameter] public AlertInfo? Alert { get; set; }
-
-    /// <summary>
-    /// Ved handlinger i Alert-en (Trykk på bort-knapp)
-    /// </summary>
-    [Parameter] public EventCallback<AlertInfo?> AlertChanged { get; set; }
+    
 
     // ===================== HANDLINGER =====================
 

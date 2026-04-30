@@ -1,0 +1,150 @@
+@page "/my-competencies"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize]
+@inject ICompetencyService CompetencyService
+@inject NavigationManager NavigationManager
+@inject CircuitUserContext CircuitUserContext
+
+@* Side for å vise innlogget bruker sin egne kompetansebevis *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+<MudPaper Class="pa-4 mb-4" Square="true" Elevation="0" Outlined="true">
+
+    @* Header *@
+    <MudToolBar Dense="true" Class="pa-4 mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.WorkspacePremium" Class="mr-2" Color="Color.Primary"/>
+        <MudText Typo="Typo.h6">Mine kompetanser</MudText>
+    </MudToolBar>
+
+    @* Statusfilter *@
+    <MudGrid Class="px-4 pb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="CompetencyStatus?"
+                       Value="_statusFilter"
+                       ValueChanged="OnStatusFilterChanged"
+                       Label="Status"
+                       Clearable="true">
+                <MudSelectItem T="CompetencyStatus?" Value="null">Alle</MudSelectItem>
+                @foreach (CompetencyStatus status in Enum.GetValues<CompetencyStatus>())
+                {
+                    <MudSelectItem T="CompetencyStatus?" Value="status">
+                        @status.ToDisplayString()
+                    </MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+
+    @* Tabell *@
+    <MudDataGrid T="CompetencyDto"
+                 @ref="_grid"
+                 ServerData="LoadServerData"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Square="true"
+                 Bordered="true"
+                 RowsPerPage="20"
+                 RowClick="OnRowClick">
+        <Columns>
+            @* Kompetansetype *@
+            <PropertyColumn T="CompetencyDto" TProperty="string"
+                            Property='x => x.CompetencyTypeName.Truncate(40)'
+                            Title="Type"/>
+
+            @* Status *@
+            <TemplateColumn T="CompetencyDto" Title="Status" SortBy="x => x.Status" Sortable="true">
+                <CellTemplate Context="cell">
+                    <MudChip T="string"
+                             Color="@cell.Item.Status.ToStatusColor()"
+                             Size="Size.Small"
+                             Class="cv-rounded">
+                        @cell.Item.Status.ToDisplayString()
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+
+            @* Utløpsdato *@
+            <TemplateColumn T="CompetencyDto" Title="Utløpsdato" 
+                            SortBy="x => x.ExpiryDate" 
+                            Sortable="true">
+                <CellTemplate Context="cell">
+                    @if (cell.Item.ExpiryDate is null)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Default">—</MudText>
+                    }
+                    else
+                    {
+                        <div>
+                            <MudText Typo="Typo.body2">
+                                @cell.Item.ExpiryDate.Value.ToString("dd.MM.yyyy")
+                            </MudText>
+                            <MudText Typo="Typo.caption"
+                                     Color="@cell.Item.DaysUntilExpiry.ToExpiryColor(cell.Item.Status)">
+                                @cell.Item.DaysUntilExpiry.ToExpiryText(cell.Item.Status)
+                            </MudText>
+                        </div>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+
+            @* Utstedelsesdato *@
+            <PropertyColumn T="CompetencyDto" TProperty="DateOnly"
+                            Property="x => DateOnly.FromDateTime(x.IssuedDate)"
+                            Title="Utstedt"
+                            Format="dd.MM.yyyy"/>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="CompetencyDto"
+                              RowsPerPageString="Rader pr side:"
+                              PageSizeOptions="new[] { 10, 20, 50, 100 }"/>
+        </PagerContent>
+    </MudDataGrid>
+
+</MudPaper>
+
+@code {
+
+    // ===================== PRIVATE FELT =====================
+    private AlertInfo? _alert;
+    private CompetencyStatus? _statusFilter;
+    private MudDataGrid<CompetencyDto> _grid = null!;
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnRowClick(DataGridRowClickEventArgs<CompetencyDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.UserCompetencies.Detail(args.Item.Id));
+    
+    // Ved endring av filtrering
+    private async Task OnStatusFilterChanged(CompetencyStatus? status)
+    {
+        _statusFilter = status;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task<GridData<CompetencyDto>> LoadServerData(GridState<CompetencyDto> state, CancellationToken ct)
+    {
+        Guid? userId = CircuitUserContext.UserId;
+        
+        var filter = new CompetencyFilterRequest
+        {
+            UserId = userId,
+            Status = _statusFilter,
+            Page = state.Page + 1,
+            PageSize = state.PageSize
+        };
+
+        var result = await CompetencyService.GetAllAsync(filter, ct);
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<CompetencyDto>();
+        }
+
+        return new GridData<CompetencyDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
+    }
+}

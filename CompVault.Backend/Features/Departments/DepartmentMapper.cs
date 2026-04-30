@@ -20,10 +20,14 @@ public static class DepartmentMapper
         ParentDepartmentName = department.ParentDepartment?.Name,
         SubDepartmentCount = subDepartmentCount,
         IsActive = department.IsActive,
+        ManagerId = department.ManagerId,
+        ManagerName = department.Manager != null
+            ? $"{department.Manager.FirstName} {department.Manager.LastName}".Trim()
+            : null,
         CreatedAt = department.CreatedAt,
         CreatedById = department.CreatedById,
-        CreatedByName = department.CreatedBy != null 
-            ? $"{department.CreatedBy.FirstName} {department.CreatedBy.LastName}" 
+        CreatedByName = department.CreatedBy != null
+            ? $"{department.CreatedBy.FirstName} {department.CreatedBy.LastName}"
             : null
     };
 }

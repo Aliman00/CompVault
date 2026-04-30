@@ -11,8 +11,9 @@ else
 {
     @Header
 
-    <MudDataGrid Items="Items"
-                 Filterable="true"
+    <MudDataGrid Items="ServerData is null ? Items : null"
+                 ServerData="ServerData"
+                 Filterable="ServerData is null"
                  FilterMode="DataGridFilterMode.ColumnFilterRow"
                  FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
                  Dense="true"
@@ -20,16 +21,19 @@ else
                  Striped="true"
                  Square="true"
                  Bordered="true"
-                 SortMode="SortMode.Multiple"
+                 SortMode="ServerData is null ? SortMode.Multiple : SortMode.None"
                  FixedHeader="true"
                  Loading="IsLoading"
-                 MultiSelection="true"
-                 SelectedItemsChanged="SelectedItemsChanged"
-                 RowClick="RowClick">
+                 RowClick="RowClick"
+                 RowsPerPage="RowsPerPage">
         <Columns>
-            <SelectColumn T="TItem"/>
             @Columns
         </Columns>
+        <PagerContent>
+            <MudDataGridPager T="TItem"
+                              RowsPerPageString="Rader pr side:" 
+                              PageSizeOptions="new[] { 10, 20, 50, 100 }"/>
+        </PagerContent>
     </MudDataGrid>
 }
 
@@ -37,7 +41,12 @@ else
     /// <summary>
     /// En liste med verdiene som vises i tabellen (UserDto, CompetencyDto etc.)
     /// </summary>
-    [Parameter, EditorRequired] public IEnumerable<TItem> Items { get; set; } = [];
+    [Parameter] public IEnumerable<TItem> Items { get; set; } = [];
+    
+    /// <summary>
+    /// Server-side paginering hvis listen krever det
+    /// </summary>
+    [Parameter] public Func<GridState<TItem>, CancellationToken, Task<GridData<TItem>>>? ServerData { get; set; }
     
     /// <summary>
     /// Selve kolonnene
@@ -70,9 +79,8 @@ else
     [Parameter] public EventCallback<DataGridRowClickEventArgs<TItem>> RowClick { get; set; }
     
     /// <summary>
-    /// Handling som skjer når vi selecter entiteter i tabellen
+    /// Antall sider hvvis vi har paginering
     /// </summary>
-    [Parameter] public EventCallback<HashSet<TItem>> SelectedItemsChanged { get; set; }
-    
+    [Parameter] public int RowsPerPage { get; set; } = 20;
     
 }

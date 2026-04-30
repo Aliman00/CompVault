@@ -22,6 +22,59 @@ namespace CompVault.Backend.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Audit.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Action");
+
+                    b.HasIndex("CreatedAt")
+                        .IsDescending();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("EntityType", "EntityId");
+
+                    b.HasIndex("EntityType", "EntityId", "CreatedAt")
+                        .IsDescending(false, false, true);
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Auth.OtpCode", b =>
                 {
                     b.Property<Guid>("Id")
@@ -53,7 +106,9 @@ namespace CompVault.Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasFilter("\"IsUsed\" = false");
 
                     b.ToTable("OtpCodes");
                 });
@@ -65,9 +120,7 @@ namespace CompVault.Backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
@@ -225,6 +278,9 @@ namespace CompVault.Backend.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<Guid?>("ManagerId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -238,6 +294,8 @@ namespace CompVault.Backend.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("DeletedAt");
+
+                    b.HasIndex("ManagerId");
 
                     b.HasIndex("ParentDepartmentId");
 
@@ -331,14 +389,9 @@ namespace CompVault.Backend.Migrations
                     b.Property<Guid>("DepartmentId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("DepartmentId1")
-                        .HasColumnType("uuid");
-
                     b.HasKey("DocumentId", "DepartmentId");
 
                     b.HasIndex("DepartmentId");
-
-                    b.HasIndex("DepartmentId1");
 
                     b.ToTable("DocumentDepartments");
                 });
@@ -527,6 +580,141 @@ namespace CompVault.Backend.Migrations
                     b.ToTable("DocumentVersions");
                 });
 
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Equipment.EquipmentCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAt");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.ToTable("EquipmentCategories");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Equipment.EquipmentIssuance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<Guid>("IssuedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("IssuedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Quantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
+                    b.Property<string>("Size")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAt");
+
+                    b.HasIndex("IssuedById");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EquipmentIssuances");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Equipment.EquipmentItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("HasSize")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("DeletedAt");
+
+                    b.HasIndex("CategoryId", "Name")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.ToTable("EquipmentItems");
+                });
+
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.ApplicationRole", b =>
                 {
                     b.Property<Guid>("Id")
@@ -592,7 +780,7 @@ namespace CompVault.Backend.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DepartmentId")
+                    b.Property<Guid>("DepartmentId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Email")
@@ -749,6 +937,11 @@ namespace CompVault.Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("IsLeader")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -917,12 +1110,19 @@ namespace CompVault.Backend.Migrations
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "Manager")
+                        .WithMany()
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("CompVault.Backend.Domain.Entities.Departments.Department", "ParentDepartment")
                         .WithMany("SubDepartments")
                         .HasForeignKey("ParentDepartmentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("Manager");
 
                     b.Navigation("ParentDepartment");
                 });
@@ -943,8 +1143,7 @@ namespace CompVault.Backend.Migrations
                     b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "Uploader")
                         .WithMany()
                         .HasForeignKey("UploadedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Category");
 
@@ -956,14 +1155,10 @@ namespace CompVault.Backend.Migrations
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentDepartment", b =>
                 {
                     b.HasOne("CompVault.Backend.Domain.Entities.Departments.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CompVault.Backend.Domain.Entities.Departments.Department", null)
                         .WithMany("DocumentDepartments")
-                        .HasForeignKey("DepartmentId1");
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("CompVault.Backend.Domain.Entities.Documents.Document", "Document")
                         .WithMany("DocumentDepartments")
@@ -1046,6 +1241,42 @@ namespace CompVault.Backend.Migrations
                     b.Navigation("Document");
                 });
 
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Equipment.EquipmentIssuance", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "IssuedBy")
+                        .WithMany()
+                        .HasForeignKey("IssuedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CompVault.Backend.Domain.Entities.Equipment.EquipmentItem", "Item")
+                        .WithMany("Issuances")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("IssuedBy");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Equipment.EquipmentItem", b =>
+                {
+                    b.HasOne("CompVault.Backend.Domain.Entities.Equipment.EquipmentCategory", "Category")
+                        .WithMany("Items")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.ApplicationRole", b =>
                 {
                     b.HasOne("CompVault.Backend.Domain.Entities.Identity.ApplicationUser", "CreatedBy")
@@ -1066,7 +1297,8 @@ namespace CompVault.Backend.Migrations
                     b.HasOne("CompVault.Backend.Domain.Entities.Departments.Department", "Department")
                         .WithMany("Members")
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .IsRequired();
 
                     b.HasOne("CompVault.Backend.Domain.Entities.JobTitles.JobTitle", "JobTitle")
                         .WithMany("Users")
@@ -1192,6 +1424,16 @@ namespace CompVault.Backend.Migrations
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Documents.DocumentType", b =>
                 {
                     b.Navigation("Categories");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Equipment.EquipmentCategory", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("CompVault.Backend.Domain.Entities.Equipment.EquipmentItem", b =>
+                {
+                    b.Navigation("Issuances");
                 });
 
             modelBuilder.Entity("CompVault.Backend.Domain.Entities.Identity.ApplicationRole", b =>

@@ -41,7 +41,7 @@ public sealed class JobTitleService(
     /// <inheritdoc />
     public async Task<Result<JobTitleDto>> CreateAsync(CreateJobTitleRequest request, CancellationToken ct)
     {
-        bool nameExists = await jobTitleRepository.NameExistsAsync(request.Name, ct);
+        bool nameExists = await jobTitleRepository.NameExistsAsync(request.Name.Trim(), ct);
 
         if (nameExists)
         {
@@ -53,6 +53,7 @@ public sealed class JobTitleService(
         var jobTitle = new JobTitle
         {
             Name = request.Name.Trim(),
+            IsLeader = request.IsLeader,
             CreatedAt = DateTime.UtcNow,
             IsActive = true
         };
@@ -102,6 +103,9 @@ public sealed class JobTitleService(
 
         if (request.IsActive.HasValue)
             jobTitle.IsActive = request.IsActive.Value;
+
+        if (request.IsLeader.HasValue)
+            jobTitle.IsLeader = request.IsLeader.Value;
 
         await jobTitleRepository.UpdateAsync(jobTitle, ct);
 

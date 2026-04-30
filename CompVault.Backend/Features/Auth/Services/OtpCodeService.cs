@@ -51,7 +51,9 @@ public class OtpCodeService(
         // så vil det ende opp 2 stk gyldige OtpKoder. Vi har et SQL-filter som sikrer at dette ikke skjer
         try
         {
+            await otpCodeRepository.DeleteInactiveForUserAsync(userId, ct);
             await otpCodeRepository.AddAsync(otpCode, ct);
+            await otpCodeRepository.SaveChangesAsync(ct); // Lagrer her for å trigge filteret hvis paralell request
         }
         catch (DbUpdateException)
         {
@@ -90,8 +92,9 @@ public class OtpCodeService(
         }
 
         // Sjekker at koden er korrekt
-        bool codeMatches = CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(hashedInput),
-            Encoding.UTF8.GetBytes(otpCode.Code));
+        bool codeMatches = CryptographicOperations.FixedTimeEquals(
+            Convert.FromHexString(hashedInput),
+            Convert.FromHexString(otpCode.Code));
 
         // Koden eksisterer, men er ikke korrekt
         if (!codeMatches)

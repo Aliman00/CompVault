@@ -18,6 +18,7 @@ else if (_showDepartmentTree) @* Skjuler tabellen i hierarki-visning *@
     
     <ListHeader Title="Avdelinger"
                 CreateHref="@PageRoutes.Departments.Create"
+                PageIcon="@Icons.Material.Filled.CorporateFare"
                 CreateLabel="Opprett avdeling"
                 CreateIcon="@Icons.Material.Filled.CorporateFare"
                 CreatePolicy="@Permissions.DepartmentsWrite">
@@ -42,11 +43,11 @@ else
               Items="_department"
               IsLoading="_isLoading"
               @bind-Alert="_alert"
-              SelectedItemsChanged="@(s => _selectedDepartments = s)"
               RowClick="@(args => OnDepartmentClick(args.Item.Id))">
         <Header>
             <ListHeader Title="Avdelinger"
                         CreateHref="@PageRoutes.Departments.Create"
+                        PageIcon="@Icons.Material.Filled.CorporateFare"
                         CreateLabel="Opprett avdeling"
                         CreateIcon="@Icons.Material.Filled.CorporateFare"
                         CreatePolicy="@Permissions.DepartmentsWrite">
@@ -93,7 +94,6 @@ else
     
     // ===================== PRIVATE FELT =====================
     private List<DepartmentDto> _department = [];
-    private HashSet<DepartmentDto> _selectedDepartments = [];
     
     private bool _isLoading = true;
     private AlertInfo? _alert;

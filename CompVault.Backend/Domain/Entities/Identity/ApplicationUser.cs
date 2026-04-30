@@ -43,7 +43,7 @@ public class ApplicationUser : IdentityUser<Guid>
     public Guid? ManagerId { get; set; }
 
     /// <summary>Hvilken avdeling brukeren tilhører.</summary>
-    public Guid? DepartmentId { get; set; }
+    public Guid DepartmentId { get; set; }
 
     /// <summary>Brukeren som opprettet brukeren</summary>
     public Guid? CreatedById { get; set; }

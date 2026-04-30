@@ -1,16 +1,21 @@
-﻿using CompVault.Frontend.Common.Configuration;
+﻿using System.Reflection;
+
+using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Localization;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
+using CompVault.Frontend.Features.Audit;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Competencies.Services;
 using CompVault.Frontend.Features.Departments.Services;
-using CompVault.Frontend.Features.Roles.Services;
+using CompVault.Frontend.Features.Documents.Services;
+using CompVault.Frontend.Features.Equipment.Services;
 using CompVault.Frontend.Features.JobTitle.Services;
 using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.Users.Services;
 using CompVault.Shared.Constants;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
@@ -79,7 +84,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CircuitHandler, CircuitUserContextHandler>();
         services.AddScoped<CircuitUserContext>();
         services.AddScoped<CookieValidationEvents>();
-        
+
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
@@ -99,7 +104,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AuthStateProvider>();
         // Forteller Blazor at vår egen AuthStateProvider brukes
         services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthStateProvider>());
-        
+
         services.AddSingleton<ITokenRefreshService, TokenRefreshService>();
         services.AddScoped<IClaimsRefreshService, ClaimsRefreshService>();
 
@@ -114,42 +119,17 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAuthPolicies(this IServiceCollection services)
     {
         services.AddAuthorization(options =>
-        {   
-            // Admin-panel tilgang 
-            options.AddPolicy(Permissions.AdminAccess, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.AdminAccess));
-            
-            // Users
-            options.AddPolicy(Permissions.UsersRead, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersRead));
-            options.AddPolicy(Permissions.UsersWrite, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersWrite));
-            options.AddPolicy(Permissions.UsersDelete, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.UsersDelete));
-            
-            // Roles
-            options.AddPolicy(Permissions.RolesRead, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesRead));
-            options.AddPolicy(Permissions.RolesWrite, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesWrite));
-            options.AddPolicy(Permissions.RolesDelete, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.RolesDelete));
-            
-            // Department
-            options.AddPolicy(Permissions.DepartmentsRead, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsRead));
-            options.AddPolicy(Permissions.DepartmentsWrite, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsWrite));
-            options.AddPolicy(Permissions.DepartmentsDelete, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.DepartmentsDelete));
-            
-            // Competencies
-            options.AddPolicy(Permissions.CompetenciesRead, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesRead));
-            options.AddPolicy(Permissions.CompetenciesWrite, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesWrite));
-            options.AddPolicy(Permissions.CompetenciesDelete, policy =>
-                policy.RequireClaim(Permissions.ClaimType, Permissions.CompetenciesDelete));
+        {
+            typeof(Permissions)
+                .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(f => f.FieldType == typeof(string) && f.Name != nameof(Permissions.ClaimType))
+                .Select(f => (string)f.GetValue(null)!)
+                .ToList()
+                .ForEach(permission =>
+                {
+                    options.AddPolicy(permission, policy =>
+                        policy.RequireClaim(Permissions.ClaimType, permission));
+                });
         });
 
         return services;
@@ -167,7 +147,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IThemeService, ThemeService>();
         services.AddLocalization();
         services.AddTransient<MudLocalizer, NorwegianMudLocalizer>();
-        
+
         // ================================ Admin forretningslogikk ================================
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
@@ -175,7 +155,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICompetencyService, CompetencyService>();
         services.AddScoped<ICompetencyTypeService, CompetencyTypeService>();
         services.AddScoped<IJobTitleService, JobTitleService>();
-        
+        services.AddScoped<IDocumentTypeService, DocumentTypeService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IDocumentTypeCategoryService, DocumentTypeCategoryService>();
+        services.AddScoped<ISignatureService, SignatureService>();
+        services.AddScoped<IEquipmentCategoryService, EquipmentCategoryService>();
+        services.AddScoped<IEquipmentItemService, EquipmentItemService>();
+        services.AddScoped<IEquipmentIssuancesService, EquipmentIssuancesService>();
+        services.AddScoped<IAuditService, AuditService>();
+
         return services;
     }
 }

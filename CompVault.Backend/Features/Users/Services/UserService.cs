@@ -1,8 +1,11 @@
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -19,21 +22,24 @@ public sealed class UserService(
     IJobTitleRepository jobTitleRepository,
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
+    IDepartmentScopeService departmentScope,
     ILogger<UserService> logger,
     IUnitOfWork unitOfWork) : IUserService
 {
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<UserDto>>> GetAllUsersAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResult<UserDto>>> GetAllUsersAsync(
+        PagedQuery query, CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles = 
-            await userRepository.GetActiveUsersWithRolesAsync(cancellationToken);
+        int totalCount = await userRepository.CountActiveAsync(cancellationToken);
+        IReadOnlyList<(ApplicationUser User, List<string> Roles)> usersWithRoles =
+            await userRepository.GetActiveUsersWithRolesPagedAsync(query.Skip, query.PageSize, cancellationToken);
 
         var dtos = usersWithRoles
             .Select(uwr => UserMapper.ToDto(uwr.User, uwr.Roles))
             .ToList();
 
-        return Result<IReadOnlyList<UserDto>>.Success(dtos);
+        return Result<PagedResult<UserDto>>.Success(
+            PagedResult<UserDto>.Create(dtos, totalCount, query));
     }
 
     /// <inheritdoc />
@@ -50,6 +56,21 @@ public sealed class UserService(
         IList<string> roles = await userManager.GetRolesAsync(user);
         return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
     }
+    
+    /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserLookupDto>>> LookupAllowedUsersAsync(
+        string bypassPermission = Permissions.UsersAll,
+        string subPermission = Permissions.UsersReadSub,
+        CancellationToken ct = default)
+    {
+        // Sjekker om brukeren kan hente brukere i underavdelinger, kun fra sin egen eller alle brukere
+        bool bypass = departmentScope.HasBypass(bypassPermission);
+        IReadOnlyList<Guid> allowedIds = departmentScope.GetAllowedDepartmentIds(subPermission);
+
+        IReadOnlyList<ApplicationUser> users = await userRepository.GetLookupAsync(allowedIds, bypass, ct);
+        return Result<IReadOnlyList<UserLookupDto>>.Success(users.Select(u => u.ToLookupDto()).ToList());
+    }
+    
 
     /// <inheritdoc />
     public async Task<Result<UserDto>> CreateUserAsync(
@@ -67,31 +88,34 @@ public sealed class UserService(
         }
 
         // Valider at avdelingen eksisterer hvis DepartmentId er angitt
-        if (request.DepartmentId.HasValue)
+        bool departmentExists = await departmentRepository.ExistsAsync(
+            d => d.Id == request.DepartmentId && d.IsActive && d.DeletedAt == null, cancellationToken);
+        if (!departmentExists)
         {
-            bool departmentExists = await departmentRepository.ExistsAsync(
-                d => d.Id == request.DepartmentId.Value && d.IsActive && d.DeletedAt == null, cancellationToken);
-
-            if (!departmentExists)
-            {
-                logger.LogWarning("Kunne ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet", request.DepartmentId.Value);
-                return Result<UserDto>.Failure(
-                    AppError.NotFound($"Avdeling med ID '{request.DepartmentId.Value}' ble ikke funnet."));
-            }
+            logger.LogWarning("Kunde ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet", 
+                request.DepartmentId);
+            return Result<UserDto>.Failure(
+                AppError.NotFound($"Avdeling med ID '{request.DepartmentId}' ble ikke funnet."));
         }
 
         // Valider at lederen eksisterer og er aktiv hvis ManagerId er angitt
         if (request.ManagerId.HasValue)
         {
-            bool managerExists = await userRepository.ExistsAsync(
-                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, cancellationToken);
+            ApplicationUser? manager = await userRepository.GetByIdIgnoringFiltersAsync(
+                request.ManagerId.Value, cancellationToken);
 
-            if (!managerExists)
+            if (manager is null || !manager.IsActive)
             {
-                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", request.ManagerId.Value);
+                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", 
+                    request.ManagerId.Value);
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
             }
+
+            if (!departmentScope.IsAllowed(manager.DepartmentId, Permissions.UsersAll, Permissions.UsersReadSub))
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Forbidden, 
+                        "Du har ikke tilgang til å sette denne brukeren som leder."));
         }
 
         // Valider at stillingstittelen eksisterer hvis JobTitleId er angitt
@@ -200,11 +224,17 @@ public sealed class UserService(
 
         if (request.ManagerId.HasValue)
         {
-            bool managerExists = await userRepository.ExistsAsync(
-                u => u.Id == request.ManagerId.Value && u.IsActive && u.DeletedAt == null, ct);
-            if (!managerExists)
+            ApplicationUser? manager = await userRepository.GetByIdIgnoringFiltersAsync(
+                request.ManagerId.Value, ct);
+
+            if (manager is null || !manager.IsActive)
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
+
+            if (!departmentScope.IsAllowed(manager.DepartmentId, Permissions.UsersAll, Permissions.UsersReadSub))
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.Validation, 
+                        "Du har ikke tilgang til å sette denne brukeren som leder."));
         }
 
         // Valider at stillingstittelen eksisterer hvis JobTitleId er angitt
@@ -221,7 +251,7 @@ public sealed class UserService(
         if (request.LastName is not null) user.LastName = request.LastName;
         if (request.EmploymentType.HasValue) user.EmploymentType = request.EmploymentType.Value;
         if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
-        
+
         // Normaliserer og oppdater brukernavn da det endres ved epost bytte
         if (request.Email is not null)
         {
@@ -230,33 +260,31 @@ public sealed class UserService(
             user.UserName = request.Email;
             user.NormalizedUserName = request.Email.ToUpperInvariant();
         }
-        
+
         if (request.JobTitleId.HasValue)
             user.JobTitleId = request.JobTitleId;
         else if (request.ClearJobTitleId)
             user.JobTitleId = null;
 
         if (request.DepartmentId.HasValue)
-            user.DepartmentId = request.DepartmentId;
-        else if (request.ClearDepartmentId)
-            user.DepartmentId = null;
+            user.DepartmentId = request.DepartmentId.Value;
 
         if (request.ManagerId.HasValue)
             user.ManagerId = request.ManagerId;
         else if (request.ClearManagerId)
             user.ManagerId = null;
-        
+
         return await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             if (request.Roles is not null)
             {
                 IList<string> currentRoles = await userManager.GetRolesAsync(user);
-        
+
                 IdentityResult removeResult = await userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (!removeResult.Succeeded)
                     return Result<UserDto>.Failure(
                         AppError.Create(ErrorCode.InternalError, "Kunne ikke fjerne eksisterende roller."));
-        
+
                 if (request.Roles.Count > 0)
                 {
                     IdentityResult addResult = await userManager.AddToRolesAsync(user, request.Roles);
@@ -268,13 +296,36 @@ public sealed class UserService(
 
             await userRepository.UpdateAsync(user, ct);
             await userRepository.SaveChangesAsync(ct);
-            
-            ApplicationUser updatedUser = (await userRepository.GetByIdWithDetailsAsync(userId, ct))!;
-            
+
+            ApplicationUser? updatedUser = await userRepository.GetByIdWithDetailsAsync(userId, ct);
+            if (updatedUser is null)
+            {
+                logger.LogError("Bruker {UserId} forsvant etter oppdatering", userId);
+                return Result<UserDto>.Failure(
+                    AppError.Create(ErrorCode.InternalError, "Brukeren ble ikke funnet etter oppdatering."));
+            }
+
             logger.LogInformation("Bruker {UserId} oppdatert", userId);
             IList<string> roles = await userManager.GetRolesAsync(updatedUser);
             return Result<UserDto>.Success(UserMapper.ToDto(updatedUser, roles));
         }, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserDto>>> GetPotentialManagersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<ApplicationUser> potentialManagers =
+            await userRepository.GetPotentialManagersAsync(cancellationToken);
+
+        var dtos = new List<UserDto>();
+        foreach (ApplicationUser manager in potentialManagers)
+        {
+            IList<string> roles = await userManager.GetRolesAsync(manager);
+            dtos.Add(UserMapper.ToDto(manager, roles));
+        }
+
+        return Result<IReadOnlyList<UserDto>>.Success(dtos);
     }
 
     /// <inheritdoc />

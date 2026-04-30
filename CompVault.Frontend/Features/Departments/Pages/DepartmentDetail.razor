@@ -8,141 +8,171 @@
 
 @* Detalje visning av en avdeling med mulighet for oppdatering *@
 
-<DetailForm Title="@_department?.Name"
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_department != null)
+{
+    <DetailForm Title="@_department?.Name"
             Subtitle="@_department?.Description"
             EditPolicy="@Permissions.DepartmentsWrite"
             EditContext="_editContext"
             OnValidSubmit="SaveEdit"
             IsEditing="_isEditing"
-            IsLoading="_isLoading"
             OnStartEdit="StartEdit"
-            OnCancelEdit="CancelEdit"
-            @bind-Alert="_alert">
-    <DropdownActions>
-        <AuthorizeView Policy="@Permissions.DepartmentsDelete" Context="auth">
-            <Authorized>
-                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                             IconColor="Color.Error"
-                             OnClick="Delete">
-                    <MudText Color="Color.Error">Slett avdeling</MudText>
-                </MudMenuItem>
-            </Authorized>
-            <NotAuthorized>
-                <MudTooltip Text="Du har ikke tilgang til å slette avdelingen">
+            OnCancelEdit="CancelEdit">
+        <DropdownActions>
+            <AuthorizeView Policy="@Permissions.DepartmentsDelete">
+                <Authorized>
                     <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                 IconColor="Color.Default"
-                                 Disabled="true">
-                        <MudText>Slett avdeling</MudText>
+                                 IconColor="Color.Error"
+                                 OnClick="Delete">
+                        <MudText Color="Color.Error">Slett avdeling</MudText>
                     </MudMenuItem>
-                </MudTooltip>
-            </NotAuthorized>
-        </AuthorizeView>
-    </DropdownActions>
-    <Fields>
-        @* Avdelingsnavn *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Name"
-                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                             Label="Avdelingsnavn"
-                             IsEditing="_isEditing"
-                             For="() => _editModel.Name"/>
-        </MudItem>
-        @* Beskrivelse *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Description"
-                             ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
-                             Label="Beskrivelse (valgfritt)"
-                             IsEditing="_isEditing"
-                             For="() => _editModel.Description"/>
-        </MudItem>
-        @* Overordnet avdeling *@
-        <MudItem xs="12" sm="6">
-            @if (ParentIsInactive)
-            {
-                <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-1">
-                    Overordnet avdeling er inaktiv. Vennligst endre overordnet avdeling.
-                </MudAlert>
-            }
-            <DetailSelectWithLinkField Value="_editModel.ParentDepartmentId"
-                                       ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
-                                       Label="Overordnet avdeling"
-                                       ToStringFunc="@(id => _departments.FirstOrDefault(
-                                                         d => d.Id == id)?.Name ?? string.Empty)"
-                                       IsEditing="_isEditing"
-                                       ShowLink="_department!.ParentDepartmentId.HasValue"
-                                       DisplayValue="@_department!.ParentDepartmentName"
-                                       OnNavigate="NavigateToDepartment"
-                                       HelperText="Trykk på knappen for å gå til avdelingen">
-                <Items>
-                    <MudSelectItem Value="(Guid?)null">Ingen (toppnivå)</MudSelectItem>
-                    @foreach (var department in _departments)
-                    {
-                        <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
-                    }
-                </Items>
-            </DetailSelectWithLinkField>
-        </MudItem>
-        @* Opprettelsesdato *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_department!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
-                             Label="Opprettet"
-                             IsEditing="false"/>
-        </MudItem>
-        @* Opprettet av *@
-        <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_department!.CreatedByName"
-                             Label="Opprettet av bruker"
-                             IsEditing="false"
-                             ShowLink="_department!.CreatedById.HasValue"
-                             OnAdornmentClick="NavigateToCreatedByUser"
-                             HelperText="@(HasCreatedByUser ? "Trykk for å gå til brukeren" : null)"/>
-        </MudItem>
-        @* Status *@
-        <MudItem xs="12" sm="6">
-            <ToggleButton Label="Status"
-                          @bind-Value="_editModel.IsActive"
-                          IsEditing="_isEditing">
-                <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
-                <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
-            </ToggleButton>
-        </MudItem>
-        @* Brukere i avdelingen *@
-        <MudItem xs="12">
-            <UserTable Title="@($"Ansatte i avdelingen ({_departmentUsers.Count})")"
-                       EmptyText="Ingen ansatte i denne avdelingen."
-                       Users="_departmentUsers"
-                       OnUserClick="NavigateToUser"/>
-        </MudItem>
-        @* Underavdelinger *@
-        <MudItem xs="12">
-            <MudText Typo="Typo.subtitle1" Class="mb-2">Underavdelinger</MudText>
-            @if (_subDepartments.Count == 0)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    Ingen underavdelinger registrert.
-                </MudText>
-            }
-            else
-            {
-                <MudDataGrid Items="_subDepartments"
-                             Filterable="false"
-                             Dense="true"
-                             Hover="true"
-                             Striped="true"
-                             Square="true"
-                             Bordered="true"
-                             SortMode="SortMode.Single"
-                             RowClick="@((DataGridRowClickEventArgs<DepartmentDto> args)
-                                           => NavigateToSubDepartment(args.Item.Id))">
-                    <Columns>
-                        <PropertyColumn Property="x => x.Name" Title="Navn"/>
-                        <PropertyColumn Property="x => x.SubDepartmentCount" Title="Underavdelinger"/>
-                    </Columns>
-                </MudDataGrid>
-            }
-        </MudItem>
-    </Fields>
-</DetailForm>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å slette avdelingen">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     IconColor="Color.Default"
+                                     Disabled="true">
+                            <MudText>Slett avdeling</MudText>
+                        </MudMenuItem>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
+        </DropdownActions>
+        <Fields>
+            @* Avdelingsnavn *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_editModel.Name"
+                                 ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                                 Label="Avdelingsnavn"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Name"/>
+            </MudItem>
+            @* Beskrivelse *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_editModel.Description"
+                                 ValueChanged="(string? v) => _editModel.Description = v ?? string.Empty"
+                                 Label="Beskrivelse (valgfritt)"
+                                 IsEditing="_isEditing"
+                                 For="() => _editModel.Description"/>
+            </MudItem>
+            @* Overordnet avdeling *@
+            <MudItem xs="12" sm="6">
+                @if (ParentIsInactive)
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-1">
+                        Overordnet avdeling er inaktiv. Vennligst endre overordnet avdeling.
+                    </MudAlert>
+                }
+                <SelectWithLinkField Value="_editModel.ParentDepartmentId"
+                                     ValueChanged="(Guid? v) => _editModel.ParentDepartmentId = v"
+                                     Label="Overordnet avdeling"
+                                     ToStringFunc="@(id => _departments.FirstOrDefault(
+                                                       d => d.Id == id)?.Name ?? string.Empty)"
+                                     IsEditing="_isEditing"
+                                     ShowLink="_department!.ParentDepartmentId.HasValue"
+                                     DisplayValue="@_department!.ParentDepartmentName"
+                                     OnNavigate="NavigateToDepartment"
+                                     HelperText="Trykk på knappen for å gå til avdelingen">
+                    <Items>
+                        <MudSelectItem Value="(Guid?)null">Ingen (toppnivå)</MudSelectItem>
+                        @foreach (var department in _departments)
+                        {
+                            <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
+                        }
+                    </Items>
+                </SelectWithLinkField>
+            </MudItem>
+
+            @* Leder av avdelingen *@
+            <MudItem xs="12" sm="6">
+                <SelectWithLinkField Value="_editModel.ManagerId"
+                                     ValueChanged="(Guid? v) => _editModel.ManagerId = v"
+                                     Label="Avdelingsleder"
+                                     ToStringFunc="@(id => _potentialManagers.FirstOrDefault(
+                                                       u => u.Id == id)?.FullName ?? string.Empty)"
+                                     IsEditing="_isEditing"
+                                     ShowLink="_department!.ManagerId.HasValue"
+                                     DisplayValue="@_department!.ManagerName"
+                                     OnNavigate="@(() => NavigateToUser(_department!.ManagerId!.Value))"
+                                     HelperText="Trykk på knappen for å gå til manageren">
+                    <Items>
+                        <MudSelectItem Value="(Guid?)null">Ingen leder</MudSelectItem>
+                        @foreach (var user in _potentialManagers)
+                        {
+                            <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
+                        }
+                    </Items>
+                </SelectWithLinkField>
+            </MudItem>
+            @* Opprettelsesdato *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_department!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                                 Label="Opprettet"
+                                 IsEditing="false"/>
+            </MudItem>
+            @* Opprettet av *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_department!.CreatedByName"
+                                 Label="Opprettet av bruker"
+                                 IsEditing="false"
+                                 ShowLink="_department!.CreatedById.HasValue"
+                                 OnAdornmentClick="NavigateToCreatedByUser"
+                                 HelperText="@(HasCreatedByUser ? "Trykk for å gå til brukeren" : null)"/>
+            </MudItem>
+            @* Status *@
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Status"
+                              @bind-Value="_editModel.IsActive"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
+                    <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
+                </ToggleButton>
+            </MudItem>
+            @* Brukere i avdelingen *@
+            <MudItem xs="12">
+                <UserTable Title="@($"Ansatte i avdelingen ({_departmentUsers.Count})")"
+                           EmptyText="Ingen ansatte i denne avdelingen."
+                           Users="_departmentUsers"
+                           OnUserClick="NavigateToUser"/>
+            </MudItem>
+            @* Underavdelinger *@
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Underavdelinger</MudText>
+                @if (_subDepartments.Count == 0)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Ingen underavdelinger registrert.
+                    </MudText>
+                }
+                else
+                {
+                    <MudDataGrid Items="_subDepartments"
+                                 Filterable="false"
+                                 Dense="true"
+                                 Hover="true"
+                                 Striped="true"
+                                 Square="true"
+                                 Bordered="true"
+                                 SortMode="SortMode.Single"
+                                 RowClick="@((DataGridRowClickEventArgs<DepartmentDto> args)
+                                               => NavigateToSubDepartment(args.Item.Id))">
+                        <Columns>
+                            <PropertyColumn Property="x => x.Name" Title="Navn"/>
+                            <PropertyColumn Property="x => x.SubDepartmentCount" Title="Underavdelinger"/>
+                        </Columns>
+                    </MudDataGrid>
+                }
+            </MudItem>
+        </Fields>
+    </DetailForm> 
+}
+
 
 @code {
 
@@ -157,6 +187,7 @@
     private List<UserDto> _departmentUsers = [];
     private List<DepartmentDto> _departments = [];
     private List<DepartmentDto> _subDepartments = [];
+    private List<UserDto> _potentialManagers = [];
 
     private DepartmentEditModel _editModel = new();
 
@@ -184,6 +215,7 @@
         _isEditing = false;
         _departmentUsers = [];
         _departments = [];
+        _potentialManagers = [];
         _editModel = new();
 
         try
@@ -192,9 +224,10 @@
 
             // Hentr alle avdelinger og brukere for å vise en oversikt - Utfører begge kall parallelt
             var departmentsTask = DepartmentService.GetAllAsync(Cts.Token);
-            var usersTask = UserService.GetAllAsync(Cts.Token);
+            var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
+            var managersTask = UserService.GetPotentialManagersAsync(Cts.Token);
 
-            await Task.WhenAll(departmentsTask, usersTask);
+            await Task.WhenAll(departmentsTask, usersTask, managersTask);
 
             var departmentsResult = await departmentsTask;
             var usersResult = await usersTask;
@@ -213,6 +246,11 @@
                 return;
             }
             
+            if (managersTask.Result.IsFailure)
+                _alert = new AlertInfo(managersTask.Result.Error!.ToString(), Severity.Error);
+            else
+                _potentialManagers = managersTask.Result.Value!.ToList();
+            
             // Filterer bort inaktive avdelinger 
             _departments = departmentsResult.Value!.Where(d => d.IsActive && d.Id != Id).ToList();
             _subDepartments = departmentsResult.Value!.Where(d => d.ParentDepartmentId == Id).ToList();
@@ -220,7 +258,7 @@
             if (usersResult.IsFailure)
                 _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
             else
-                _departmentUsers = usersResult.Value!.Where(u => u.DepartmentId == Id).ToList();
+                _departmentUsers = usersResult.Value!.Items.Where(u => u.DepartmentId == Id).ToList();
 
             ResetEditModel();
 

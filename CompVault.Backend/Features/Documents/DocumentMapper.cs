@@ -1,4 +1,5 @@
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Shared.DTOs.Documents;
 
 namespace CompVault.Backend.Features.Documents;
@@ -43,6 +44,22 @@ public static class DocumentMapper
             UploadedAt = document.UploadedAt
         };
     }
+    
+    /// <summary>
+    /// Oppretter et DocumentDto, men vi viser om brukeren har signert denne versjonen eller ikke
+    /// </summary>
+    public static DocumentDto ToDtoWithUserSignature(Document document, bool hasSigned)
+    {
+        DocumentDto dto = ToDto(document);
+
+        if (document.RequiresSignature)
+        {
+            dto.CurrentUserHasSigned = hasSigned;
+            dto.CurrentUserSignatureVersion = hasSigned ? document.Version : null;
+        }
+
+        return dto;
+    }
 
     public static DocumentListDto ToListDto(
         Document document, int totalSignatures, bool signedByCurrentUser)
@@ -50,6 +67,8 @@ public static class DocumentMapper
         return new DocumentListDto
         {
             Id = document.Id,
+            Slug = document.DocumentType?.Slug ?? string.Empty,
+            SlugName = document.DocumentType?.Name ?? string.Empty,  
             Title = document.Title,
             Description = document.Description,
             DocumentTypeCategoryId = document.DocumentTypeCategoryId,
@@ -78,18 +97,19 @@ public static class DocumentMapper
         };
     }
 
-    public static DocumentSignatureDto ToSignatureDto(DocumentSignature signature)
+    public static UserSignatureStatusDto ToSignatureStatusDto(ApplicationUser user, DocumentSignature? signature)
     {
-        return new DocumentSignatureDto
+        return new UserSignatureStatusDto
         {
-            Id = signature.Id,
-            DocumentId = signature.DocumentId,
-            UserId = signature.UserId,
-            UserName = signature.User is { } user
-                ? $"{user.FirstName} {user.LastName}".Trim()
-                : string.Empty,
-            SignedAt = signature.SignedAt,
-            SignatureVersion = signature.SignatureVersion
+            UserId = user.Id,
+            FullName = $"{user.FirstName} {user.LastName}".Trim(),
+            JobTitleId = user.JobTitleId,
+            JobTitleName = user.JobTitle?.Name,
+            DepartmentId = user.DepartmentId,
+            DepartmentName = user.Department?.Name,
+            HasSigned = signature is not null,
+            SignedAt = signature?.SignedAt,
+            SignatureVersion = signature?.SignatureVersion
         };
     }
 
@@ -120,5 +140,34 @@ public static class DocumentMapper
             Slug = category.Slug,
             IsActive = category.IsActive
         };
+    }
+
+    /// <summary>
+    /// Kartlegger en liste dokumenter til DocumentListDto med signaturstatistikk.
+    /// Centraliserer logikken for å telle signaturer og sjekke om brukeren har signert.
+    /// </summary>
+    public static List<DocumentListDto> MapToListDtos(
+        IReadOnlyList<Document> documents,
+        IReadOnlyList<DocumentSignature> allSignatures,
+        Guid? currentUserId = null,
+        bool? signedByCurrentUserOverride = null)
+    {
+        var dtos = new List<DocumentListDto>(documents.Count);
+
+        foreach (Document doc in documents)
+        {
+            int signatureCount = allSignatures.Count(
+                s => s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
+
+            bool signedByCurrentUser = signedByCurrentUserOverride ?? (currentUserId.HasValue &&
+                allSignatures.Any(s =>
+                    s.DocumentId == doc.Id &&
+                    s.SignatureVersion == doc.Version &&
+                    s.UserId == currentUserId.Value));
+
+            dtos.Add(ToListDto(doc, signatureCount, signedByCurrentUser));
+        }
+
+        return dtos;
     }
 }

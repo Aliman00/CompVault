@@ -10,6 +10,7 @@ using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Backend.Infrastructure.Email.Templates;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
@@ -24,6 +25,7 @@ namespace CompVault.Backend.Features.Auth.Services;
 /// </summary>
 public sealed class AuthService(
     UserManager<ApplicationUser> userManager,
+    IUserRepository userRepository,
     ILogger<IAuthService> logger,
     IJwtService jwtService,
     IOtpCodeService otpCodeService,
@@ -46,7 +48,7 @@ public sealed class AuthService(
         {
             // Finn brukeren — returner suksess uansett utfall med unntak av interne feil (f.eks. e-postleveringsfeil)
             // for å unngå at angripere kan kartlegge hvilke e-poster som er registrert.
-            ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
+            ApplicationUser? user = await userRepository.GetByEmailAsync(request.Email, ct);
             if (user == null || !user.IsActive)
             {
                 logger.LogWarning("OTP request for {Reason}. Email: {Email}",
@@ -107,7 +109,7 @@ public sealed class AuthService(
         try
         {
             // Henter brukeren for å sjekke om e-posten er korrekt. Returner ingen feilmeldinger, kun logger
-            ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
+            ApplicationUser? user = await userRepository.GetByEmailAsync(request.Email, ct);
             if (user == null)
                 logger.LogWarning("OTP-verification attempted for unknown email. Email: {Email}", request.Email);
             else if (!user.IsActive)
@@ -153,6 +155,10 @@ public sealed class AuthService(
                 return Result<TokenResponse>.Success(BuildRefreshTokenResponse(user, roles, permissions, rawRefreshToken));
             }, ct);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error in {MethodName}", nameof(VerifyOtpAsync));
@@ -181,7 +187,7 @@ public sealed class AuthService(
                 return Result<TokenResponse>.Failure(
                     AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
 
-            ApplicationUser? user = await userManager.FindByIdAsync(storedToken.UserId.ToString());
+            ApplicationUser? user = await userRepository.GetByIdIgnoringFiltersAsync(storedToken.UserId, ct);
 
             if (user is null || !user.IsActive || user.DeletedAt is not null)
                 return Result<TokenResponse>.Failure(
@@ -211,6 +217,10 @@ public sealed class AuthService(
 
                 return Result<TokenResponse>.Success(BuildRefreshTokenResponse(user, roles, permissions, rawRefreshToken));
             }, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

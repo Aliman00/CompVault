@@ -27,7 +27,7 @@ public class RefreshToken
     /// <summary>
     /// Når tokenet ble opprettet.
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
     /// Når tokenet går ut.

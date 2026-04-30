@@ -27,6 +27,43 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
         Guid? competencyTypeId,
         CancellationToken cancellationToken = default)
     {
+        IQueryable<Competency> query = BuildFilteredQuery(userId, status, competencyTypeId);
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> CountWithFiltersAsync(
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId,
+        CancellationToken cancellationToken = default) =>
+        await BuildFilteredQuery(userId, status, competencyTypeId).CountAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Competency>> GetAllWithDetailsPagedAsync(
+        int skip,
+        int take,
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId,
+        CancellationToken cancellationToken = default) =>
+        await BuildFilteredQuery(userId, status, competencyTypeId)
+            // ! nødvendig — EF Core garanterer at navigasjonsegenskapen er lastet etter Include
+            .OrderBy(c => c.ApplicationUser!.LastName)
+                .ThenBy(c => c.ApplicationUser!.FirstName)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+    /// <summary>
+    /// Bygger en IQueryable med navigasjon og valgfrie filtre.
+    /// Gjenbrukes av GetAllWithDetailsAsync, CountWithFiltersAsync og GetAllWithDetailsPagedAsync.
+    /// </summary>
+    private IQueryable<Competency> BuildFilteredQuery(
+        Guid? userId,
+        CompetencyStatus? status,
+        Guid? competencyTypeId)
+    {
         IQueryable<Competency> query = DbSet
             .AsNoTracking()
             .Include(c => c.ApplicationUser)
@@ -41,7 +78,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
         if (competencyTypeId.HasValue)
             query = query.Where(c => c.CompetencyTypeId == competencyTypeId.Value);
 
-        return await query.ToListAsync(cancellationToken);
+        return query;
     }
 
     /// <inheritdoc />
@@ -76,31 +113,59 @@ public sealed class CompetencyRepository(AppDbContext dbContext) : BaseRepositor
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<(int ExpiredCount, int ExpiringSoonCount)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default)
+    public async Task<(int ExpiredCount, int ExpiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)> StatusChanges)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default)
     {
+        DateTime now = DateTime.UtcNow;
         int expiringSoonThresholdDays = CompetencyStatusCalculator.ExpiringSoonThresholdDays;
+        DateTime threshold = now.AddDays(expiringSoonThresholdDays);
 
-        // Sett Expired: bevis med utløpsdato i fortiden og RequiresExpiration == true
-        // Berører aldri Revoked (filtrert i WHERE) eller soft-deleted (global query filter)
-        int expiredCount = await DbSet
+        var statusChanges = new List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)>();
+
+        // --- Expired: Finn kompetanser som vil bli satt til Expired ---
+        // Ekskluderer allerede Expired for å unngå duplikate audit-entries
+        var toExpire = await DbSet
             .Where(c => c.Status != CompetencyStatus.Revoked
+                && c.Status != CompetencyStatus.Expired
                 && c.CompetencyType!.RequiresExpiration
                 && c.ExpiryDate != null
-                && c.ExpiryDate < DateTime.UtcNow)
+                && c.ExpiryDate < now)
+            .Select(c => new { c.Id, c.Status })
+            .ToListAsync(cancellationToken);
+
+        // Sett Expired via ExecuteUpdateAsync
+        int expiredCount = await DbSet
+            .Where(c => c.Status != CompetencyStatus.Revoked
+                && c.Status != CompetencyStatus.Expired
+                && c.CompetencyType!.RequiresExpiration
+                && c.ExpiryDate != null
+                && c.ExpiryDate < now)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, CompetencyStatus.Expired), cancellationToken);
 
-        // Sett ExpiringSoon: gyldige bevis med utløpsdato innen 90 dager og RequiresExpiration == true
-        // Begrenser til Status == Valid for å unngå å re-markere Expired-bevis
-        DateTime threshold = DateTime.UtcNow.AddDays(expiringSoonThresholdDays);
+        foreach (var item in toExpire)
+            statusChanges.Add((item.Id, item.Status, CompetencyStatus.Expired));
+
+        // --- ExpiringSoon: Finn kompetanser som vil bli satt til ExpiringSoon ---
+        var toExpireSoon = await DbSet
+            .Where(c => c.Status == CompetencyStatus.Valid
+                && c.CompetencyType!.RequiresExpiration
+                && c.ExpiryDate != null
+                && c.ExpiryDate >= now
+                && c.ExpiryDate <= threshold)
+            .Select(c => new { c.Id, c.Status })
+            .ToListAsync(cancellationToken);
+
         int expiringSoonCount = await DbSet
             .Where(c => c.Status == CompetencyStatus.Valid
                 && c.CompetencyType!.RequiresExpiration
                 && c.ExpiryDate != null
-                && c.ExpiryDate >= DateTime.UtcNow
+                && c.ExpiryDate >= now
                 && c.ExpiryDate <= threshold)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, CompetencyStatus.ExpiringSoon), cancellationToken);
 
-        return (expiredCount, expiringSoonCount);
+        foreach (var item in toExpireSoon)
+            statusChanges.Add((item.Id, item.Status, CompetencyStatus.ExpiringSoon));
+
+        return (expiredCount, expiringSoonCount, statusChanges);
     }
 
     /// <inheritdoc />

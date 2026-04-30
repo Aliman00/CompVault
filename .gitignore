@@ -484,3 +484,9 @@ $RECYCLE.BIN/
 
 # Specials
 opencode.json
+
+# Graphify
+graphify-out/
+
+# FileStorage
+**/storage/

@@ -1,0 +1,158 @@
+﻿@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IEquipmentIssuancesService EquipmentIssuanceService
+@inject IDialogService DialogService
+
+@* Dialog for å redigere og slette en utlevering *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Rediger utlevering — @Issuance.UserFullName</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <AppAlert @bind-Alert="_alert"/>
+        <EditForm EditContext="_editContext">
+            <DataAnnotationsValidator/>
+            <MudGrid>
+                @* Antall *@
+                <MudItem xs="12" sm="6">
+                    <NumberField T="int"
+                                 @bind-Value="_editModel.Quantity"
+                                 Label="Antall"
+                                 IsEditing="true"
+                                 Min="@EquipmentValidations.QuantityMin"
+                                 Max="@EquipmentValidations.QuantityMax"
+                                 For="() => _editModel.Quantity"/>
+                </MudItem>
+
+                @* Størrelse hvis det er aktivert *@
+                @if (HasSize)
+                {
+                    <MudItem xs="12" sm="6">
+                        <TextField Value="@_editModel.Size"
+                                   ValueChanged="(string? v) => _editModel.Size = v"
+                                   Label="Størrelse (valgfritt)"
+                                   IsEditing="true"
+                                   For="() => _editModel.Size"/>
+                    </MudItem>
+                }
+
+                @* Notater *@
+                <MudItem xs="12">
+                    <TextField Value="@_editModel.Notes"
+                               ValueChanged="(string? v) => _editModel.Notes = v"
+                               Label="Notater (valgfritt)"
+                               IsEditing="true"
+                               For="() => _editModel.Notes"
+                               Lines="3"/>
+                </MudItem>
+                
+            </MudGrid>
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        <AuthorizeView Policy="@Permissions.EquipmentDelete">
+            <Authorized>
+                <MudButton Color="Color.Error"
+                           Variant="Variant.Outlined"
+                           OnClick="Delete"
+                           Disabled="_isSaving">
+                    Slett
+                </MudButton>
+            </Authorized>
+        </AuthorizeView>
+        <MudSpacer/>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel"
+                   Disabled="_isSaving">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Save"
+                   Disabled="_isSaving">
+            Lagre
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    /// <summary>
+    /// Utlevering vi oppdaterer
+    /// </summary>
+    [Parameter, EditorRequired] public EquipmentIssuanceDto Issuance { get; set; } = null!;
+    
+    /// <summary>
+    /// Hvis utstyret har størrelse
+    /// </summary>
+    [Parameter, EditorRequired] public bool HasSize { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private EquipmentIssuanceEditModel _editModel = new();
+    private EditContext _editContext = null!;
+    private AlertInfo? _alert;
+    private bool _isSaving;
+
+    // ===================== LIFECYCLE =====================
+    protected override void OnInitialized()
+    {
+        _editModel = EquipmentIssuanceEditModel.FromDto(Issuance);
+        _editContext = new EditContext(_editModel);
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private async Task Save()
+    {
+        if (!_editContext.Validate())
+            return;
+
+        _isSaving = true;
+        try
+        {
+            var result = await EquipmentIssuanceService.UpdateAsync(
+                Issuance.Id, _editModel.ToRequest(), Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(result.Value));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task Delete()
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDeleteDialog.Title), "Slett utlevering" },
+            { nameof(ConfirmDeleteDialog.Message),
+                $"Er du sikker på at du ønsker å slette utleveringen til {Issuance.UserFullName}?" },
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        var deleteResult = await EquipmentIssuanceService.DeleteAsync(Issuance.Id, Cts.Token);
+        if (deleteResult.IsFailure)
+        {
+            _alert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(Issuance.Id));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

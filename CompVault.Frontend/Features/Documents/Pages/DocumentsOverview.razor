@@ -1,0 +1,109 @@
+﻿@page "/documents"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DocumentsRead)]
+@inject IDocumentTypeService DocumentTypeService
+@inject NavigationManager NavigationManager
+
+@* Landingsside for dokumenter — viser alle dokumenttyper som navigasjonskort *@
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else
+{   
+    @* Header *@
+    <MudPaper Elevation="1" Square="true" Class="p-2 mt-4">
+        <MudToolBar Dense="true">
+            <MudIcon Icon="@Icons.Material.Filled.Article" Class="mr-2" Color="Color.Primary"/>
+            <MudText Typo="Typo.h6">Dokument kategorier</MudText>
+            <MudSpacer/>
+            
+            @* Knapp for administeringer av types/kategorier *@
+            <AuthorizeView Policy="@Permissions.DocumentTypesRead">
+                <Authorized>
+                    <ResponsiveButton Label="Administrer dokumentkategorier"
+                                      Icon="@Icons.Material.Filled.Settings"
+                                      OnClick="@(() => NavigationManager.NavigateTo(
+                                                   PageRoutes.DocumentTypes.List))"/>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å administrere dokumentkategorier">
+                        <ResponsiveButton Label="Administrer dokumentkategorier"
+                                          Icon="@Icons.Material.Filled.Settings"
+                                          Disabled="true"/>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudToolBar>
+        
+        @* Liste med dokumenttypes/dokumentkategorier*@
+        <MudList T="DocumentTypeDto" Dense="true" Class="pa-2">
+            @foreach (var documentType in _documentTypes)
+            {
+                <MudListItem T="DocumentTypeDto"
+                             Class="cursor-pointer"
+                             OnClick="@(() => NavigationManager.NavigateTo(
+                                          PageRoutes.Documents.List(documentType.Slug, documentType.Name)))">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                        <MudIcon Icon="@Icons.Material.Filled.Folder"
+                                 Color="Color.Primary"
+                                 Size="Size.Medium"/>
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body1">@documentType.Name</MudText>
+                            @if (!string.IsNullOrWhiteSpace(documentType.Description))
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @documentType.Description.Truncate(60)
+                                </MudText>
+                            }
+                        </MudStack>
+                        <MudSpacer/>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @documentType.CategoryCount kategori@(documentType.CategoryCount == 1 ? "" : "er")
+                        </MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary"/>
+                    </MudStack>
+                </MudListItem>
+                <MudDivider/>
+            }
+        </MudList>
+    </MudPaper>
+}
+
+@code {
+
+    // ===================== PRIVATE FELT =====================
+    private List<DocumentTypeDto> _documentTypes = [];
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await DocumentTypeService.GetAllAsync(Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _documentTypes = result.Value!;
+        }
+        catch (OperationCanceledException) { }
+        catch
+        {
+            _alert = new AlertInfo(
+                "Klarte ikke å laste dokumenttyper. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

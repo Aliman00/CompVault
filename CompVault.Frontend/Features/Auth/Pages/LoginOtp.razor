@@ -1,5 +1,9 @@
-﻿@page "/login-otp"  
+﻿@page "/login-otp"
 @* Route: localhost:5020/login-otp?email=test@... *@
+
+@layout AuthLayout
+@inject IJSRuntime Js
+@inject AntiforgeryStateProvider AntiforgeryStateProvider
 
 @inject IHttpClientFactory Http     
 @inject NavigationManager Navigation 
@@ -45,7 +49,13 @@
                     @error
                 </MudText>
             }
-
+            
+            @* Skjult form for å legge tokens i nettleseren ved innloging *@
+            <form id="login-form" method="post" action="/login-callback">
+                <AntiforgeryToken/>
+                <input type="hidden" name="OtpRequest.Email" value="@Email" />
+                <input type="hidden" name="OtpRequest.OtpCode" id="otp-code-input" value="" />
+            </form>
         </MudCardContent>
     </MudCard>
 </div>
@@ -97,10 +107,10 @@
             });
         }
     }
-
+    
     private async Task VerifyOtpAsync()
     {
-        // Stopper API-kall hvis bruker er låst
+        // Stopper hvis bruker er låst
         if (!AuthState.CanAttemptLogin())
         {
             error = "Du er midlertidig låst.";
@@ -117,22 +127,21 @@
         // Hvis feil OTP → øk teller
         if (!response.IsSuccessStatusCode)
         {
-            AuthState.RegisterFailedLogin();   // 🔥 teller +1
+            AuthState.RegisterFailedLogin();
             error = "Feil OTP-kode.";
+            return;
         }
-        else
-        {
-            // Ved suksess → reset teller
-            AuthState.RegisterSuccess();       // 🔥 reset
 
-            // Naviger til dashboard (forceLoad for auth refresh)
-            Navigation.NavigateTo("/dashboard", true);
-        }
+        // Suksess → reset teller og submit skjult form
+        AuthState.RegisterSuccess();
+
+        var token = AntiforgeryStateProvider.GetAntiforgeryToken();
+        await Js.InvokeVoidAsync("loginFormSubmit", code, token?.Value);
     }
-
+    
     public void Dispose()
     {
         // Viktig: fjern event listener for å unngå memory leaks
         AuthState.OnChange -= StateChanged;
     }
-}}
+}

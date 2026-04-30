@@ -9,11 +9,14 @@ using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Features.JobTitles.Services;
+using CompVault.Backend.Features.Equipment.Services;
 using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
+using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Data.Interceptors;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.FileStorage;
@@ -25,6 +28,7 @@ using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Backend.Infrastructure.Repositories.Equipment;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
 
@@ -57,10 +61,15 @@ public static class ServiceCollectionExtensions
                 .GetSection(DatabaseSettings.SectionName)
                 .Get<DatabaseSettings>() ?? throw new InvalidOperationException("Database-konfigurasjon mangler.");
 
-            services.AddDbContext<AppDbContext>(options =>
+            services.AddDbContext<AppDbContext>((sp, options) =>
+            {
                 options.UseNpgsql(
                     dbSettings.BuildConnectionString(),
-                    npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
+                    npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
+                options.AddInterceptors(
+                    new AuditSaveChangesInterceptor(sp),
+                    new DepartmentScopeSaveChangesInterceptor(sp));
+            });
         }
 
         services.AddIdentityCore<ApplicationUser>(opts =>
@@ -200,20 +209,20 @@ public static class ServiceCollectionExtensions
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
         services.AddHttpContextAccessor();
-        
+
         if (!environment.IsEnvironment("Testing")) // Trenger ikke bakgrunns jobber under testing
         {
             // Rydder opp utgåtte og revokerte refresh tokens én gang i døgnet
             services.AddHostedService<TokenCleanupJob>();
-            
+
             // Beregner status på kompetansebevis én gang i døgnet
             services.AddHostedService<CompetencyStatusJob>();
         }
-        
+
         // Fillagring
         services.Configure<FileStorageSettings>(configuration.GetSection(nameof(FileStorageSettings)));
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
-        
+
         return services;
     }
 
@@ -262,6 +271,11 @@ public static class ServiceCollectionExtensions
         // JobTitles
         services.AddScoped<IJobTitleRepository, JobTitleRepository>();
 
+        // Equipment
+        services.AddScoped<IEquipmentCategoryRepository, EquipmentCategoryRepository>();
+        services.AddScoped<IEquipmentItemRepository, EquipmentItemRepository>();
+        services.AddScoped<IEquipmentIssuanceRepository, EquipmentIssuanceRepository>();
+
         return services;
     }
 
@@ -270,6 +284,13 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        // Hierarki-sjekk
+        services.AddScoped<IDepartmentScopeService, DepartmentScopeService>();
+        
+        // Audit
+        services.AddScoped<IAuditContext, AuditContext>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
+
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
@@ -284,9 +305,17 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentTypeService, DocumentTypeService>();
         services.AddScoped<IDocumentFileService, DocumentFileService>();
         services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IDocumentTargetingService, DocumentTargetingService>();
+        services.AddScoped<IDocumentVersioningService, DocumentVersioningService>();
+        services.AddScoped<IDocumentSignatureService, DocumentSignatureService>();
 
         // JobTitles
         services.AddScoped<IJobTitleService, JobTitleService>();
+
+        // Equipment
+        services.AddScoped<IEquipmentCategoryService, EquipmentCategoryService>();
+        services.AddScoped<IEquipmentItemService, EquipmentItemService>();
+        services.AddScoped<IEquipmentIssuanceService, EquipmentIssuanceService>();
 
         return services;
     }

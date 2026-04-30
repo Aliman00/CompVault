@@ -2,8 +2,10 @@
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Frontend.Features.Competencies.Models;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Result;
+
 using ExpiringCompetencyDto = CompVault.Shared.DTOs.Competencies.ExpiringCompetencyDto;
 namespace CompVault.Frontend.Features.Competencies.Services;
 
@@ -12,37 +14,37 @@ public class CompetencyService(
     IHttpClientFactory httpClientFactory) : ICompetencyService
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(BackendApiSettings.MainClientName);
-    
+
     /// <inheritdoc />
-    public async Task<Result<List<CompetencyDto>>> GetAllAsync(CompetencyFilterRequest? filter, CancellationToken ct)
+    public async Task<Result<PagedResult<CompetencyDto>>> GetAllAsync(CompetencyFilterRequest? filter, CancellationToken ct)
     {
         try
         {
             string url = BuildFilterUrl(ApiRoutes.Competencies.Base, filter);
             HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
 
-            Result<List<CompetencyDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<CompetencyDto>>(response, ct);
+            Result<PagedResult<CompetencyDto>> result =
+                await HttpClientExtensions.ParseResponseAsync<PagedResult<CompetencyDto>>(response, ct);
 
             if (result.IsFailure)
-                return Result<List<CompetencyDto>>.Failure(result.Error!);
+                return Result<PagedResult<CompetencyDto>>.Failure(result.Error!);
 
-            return Result<List<CompetencyDto>>.Success(result.Value!);
+            return Result<PagedResult<CompetencyDto>>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av kompetanser");
-            return Result<List<CompetencyDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
+            return Result<PagedResult<CompetencyDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av kompetanser");
-            return Result<List<CompetencyDto>>.Failure(AppError.Create(ErrorCode.Unknown,
+            return Result<PagedResult<CompetencyDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<CompetencyDto>> GetByIdAsync(Guid id, CancellationToken ct)
     {
@@ -55,29 +57,29 @@ public class CompetencyService(
 
             if (result.IsFailure)
                 return Result<CompetencyDto>.Failure(result.Error!);
-            
+
             return Result<CompetencyDto>.Success(result.Value!);
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Nettverksfeil ved henting av kompetanser {CompetencyId}", id);
-            return Result<CompetencyDto>.Failure(AppError.Create(ErrorCode.NetworkError, 
+            return Result<CompetencyDto>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Uventet feil ved henting av kompetanser {CompetencyId}", id);
-            return Result<CompetencyDto>.Failure(AppError.Create(ErrorCode.Unknown, 
+            return Result<CompetencyDto>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<CompetencyDto>> CreateAsync(CreateCompetencyRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PostAsJsonAsync(ApiRoutes.Competencies.Base, request, ct);
 
             Result<CompetencyDto> result = await HttpClientExtensions.ParseResponseAsync<CompetencyDto>(response, ct);
@@ -100,13 +102,13 @@ public class CompetencyService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<CompetencyDto>> UpdateAsync(Guid id, UpdateCompetencyRequest request, CancellationToken ct)
     {
         try
         {
-            HttpResponseMessage response = 
+            HttpResponseMessage response =
                 await _httpClient.PutAsJsonAsync(ApiRoutes.Competencies.ById(id), request, ct);
 
             Result<CompetencyDto> result = await HttpClientExtensions.ParseResponseAsync<CompetencyDto>(response, ct);
@@ -129,7 +131,7 @@ public class CompetencyService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result> DeleteAsync(Guid id, CancellationToken ct)
     {
@@ -152,7 +154,7 @@ public class CompetencyService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<List<ExpiringCompetencyDto>>> GetExpiringAsync(CancellationToken ct)
     {
@@ -181,13 +183,13 @@ public class CompetencyService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     // Bygger base-urlen med query-filtrering
     private static string BuildFilterUrl(string baseUrl, CompetencyFilterRequest? filter)
     {
-        if (filter == null) 
+        if (filter == null)
             return baseUrl;
-        
+
         // Legger til parameterne i en ordbok
         var queryParams = new Dictionary<string, string?>();
 
@@ -197,7 +199,10 @@ public class CompetencyService(
             queryParams["status"] = filter.Status.ToString();
         if (filter.CompetencyTypeId.HasValue)
             queryParams["competencyTypeId"] = filter.CompetencyTypeId.ToString();
-
+        
+        queryParams["page"] = filter.Page.ToString();
+        queryParams["pageSize"] = filter.PageSize.ToString();
+        
         return baseUrl.AddQueryFilter(queryParams);
     }
 }

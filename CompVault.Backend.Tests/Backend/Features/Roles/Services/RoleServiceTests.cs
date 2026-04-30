@@ -11,6 +11,7 @@ using CompVault.Shared.Result;
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Moq;
@@ -36,11 +37,18 @@ public class RoleServiceTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _loggerMock = new Mock<ILogger<RoleService>>();
 
+        // Use InMemoryDatabase for AppDbContext in unit tests
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        AppDbContext dbContext = new(options, new BypassDepartmentScopeService());
+
         _sut = new RoleService(
             _roleManagerMock.Object,
             _userManagerMock.Object,
             _roleRepositoryMock.Object,
             _unitOfWorkMock.Object,
+            dbContext,
             _loggerMock.Object);
     }
 
@@ -62,7 +70,7 @@ public class RoleServiceTests
         _roleManagerMock
             .Setup(x => x.RoleExistsAsync(request.Name))
             .ReturnsAsync(false);
-        
+
         _userManagerMock
             .Setup(x => x.FindByIdAsync(createdById.ToString()))
             .ReturnsAsync(createdBy);
@@ -213,7 +221,7 @@ public class RoleServiceTests
         _roleManagerMock
             .Setup(x => x.UpdateAsync(It.IsAny<ApplicationRole>()))
             .ReturnsAsync(IdentityResult.Success);
-        
+
         _roleRepositoryMock
             .Setup(x => x.GetByIdWithCreatedByAsync(roleId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(role);
@@ -515,7 +523,7 @@ public class RoleServiceTests
         result.Error!.Code.Should().Be(ErrorCode.NotFound);
         _roleRepositoryMock.Verify(x => x.GetPermissionsByNamesAsync(It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
-    
+
     [Fact]
     public async Task CreateAsync_WithNonExistentUser_ReturnsUserNotFound()
     {

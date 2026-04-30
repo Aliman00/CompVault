@@ -15,4 +15,7 @@ public sealed class UpdateJobTitleRequest
 
     /// <summary>Om stillingstittelen skal være aktiv. Null = ikke endret.</summary>
     public bool? IsActive { get; set; }
+
+    /// <summary>Om stillinger med denne tittelen skal regnes som ledere. Null = ikke endret.</summary>
+    public bool? IsLeader { get; set; }
 }
