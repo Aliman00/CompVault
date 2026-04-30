@@ -14,11 +14,6 @@
                            OnClick="ToggleDarkMode"/>
         </RightContent>
     </AppBar>
-
-    <AppDrawer @bind-IsOpen="_drawerOpen">
-        <AdminNavMenu/>
-    </AppDrawer>
-
     
     <MudMainContent>
         @Body
@@ -29,7 +24,6 @@
     
     // ======================== Private felt ========================
     private bool _isDarkMode;
-    private bool _drawerOpen = true;
     
     // Referansen til ThemeProvider komponenten for å endre tema
     private MudThemeProvider _mudThemeProvider = null!;
