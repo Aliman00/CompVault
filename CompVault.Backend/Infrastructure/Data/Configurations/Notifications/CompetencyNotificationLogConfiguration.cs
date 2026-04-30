@@ -35,9 +35,12 @@ internal sealed class CompetencyNotificationLogConfiguration : IEntityTypeConfig
         builder.HasIndex(l => new { l.CompetencyId, l.ThresholdDays });
 
         // Relasjon: CompetencyNotificationLog → Competency
+        // IsRequired(false) forhindrer query-filter-konflikt med Competency sitt soft-delete filter.
+        // Varslingsloggen er en audit-trail og skal bestå selv om kompetansen filtreres bort.
         builder.HasOne(l => l.Competency)
             .WithMany()
             .HasForeignKey(l => l.CompetencyId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
