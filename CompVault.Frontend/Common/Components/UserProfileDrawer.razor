@@ -17,25 +17,38 @@
 
     @* Profiloverskrift *@
     <MudStack Class="pa-4" Spacing="0">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-4">
-            <MudAvatar Color="Color.Primary" Size="Size.Large">
-                @Initials
-            </MudAvatar>
-            <MudStack Spacing="0">
-                <MudText Typo="Typo.subtitle1" Style="font-weight: 600; line-height: 1.3">
-                    @FullName
-                </MudText>
-                <MudText Typo="Typo.body2">
-                    @JobTitle
-                </MudText>
+        <MudLink Href="@PageRoutes.Users.MyProfile"
+                 Underline="Underline.None"
+                 Color="Color.Inherit"
+                 OnClick="@(() => OnDrawerOpenChanged(false))">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-4">
+                <MudAvatar Color="Color.Primary" Size="Size.Large">
+                    @Initials
+                </MudAvatar>
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 600; line-height: 1.3">
+                        @FullName
+                    </MudText>
+                    <MudText Typo="Typo.body2">
+                        @Department
+                    </MudText>
+                </MudStack>
             </MudStack>
-        </MudStack>
+        </MudLink>
 
         <MudDivider/>
     </MudStack>
 
     @* Innstillinger *@
     <MudStack Class="px-4" Spacing="1">
+        <MudButton Variant="Variant.Text"
+                   StartIcon="@Icons.Material.Filled.Person"
+                   FullWidth="true"
+                   Href="@PageRoutes.Users.MyProfile"
+                   Class="justify-start"
+                   Color="Color.Primary">
+            Min profil
+        </MudButton>
         <MudText Typo="Typo.overline" Class="mb-1">
             Innstillinger
         </MudText>
@@ -106,7 +119,7 @@
     /// Stillingstittel på innlogget bruker
     /// </summary>
     [Parameter]
-    public string JobTitle { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
 
     // ======================== Private felt ========================
     private bool _isOpen;

@@ -196,7 +196,7 @@ public sealed class UserService(
     {
         ApplicationUser? user = await userRepository.GetByIdWithDetailsAsync(userId, ct);
 
-        if (user is null || user.DeletedAt is not null || (!user.IsActive && request.IsActive != true))
+        if (user is null || user.DeletedAt is not null)
             return Result<UserDto>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
 
@@ -250,7 +250,6 @@ public sealed class UserService(
         if (request.FirstName is not null) user.FirstName = request.FirstName;
         if (request.LastName is not null) user.LastName = request.LastName;
         if (request.EmploymentType.HasValue) user.EmploymentType = request.EmploymentType.Value;
-        if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
 
         // Normaliserer og oppdater brukernavn da det endres ved epost bytte
         if (request.Email is not null)

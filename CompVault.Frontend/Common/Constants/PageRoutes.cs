@@ -46,6 +46,7 @@ public static class PageRoutes
         public const string List = "/users";
         public static string Detail(Guid id) => $"/users/{id}";
         public const string Create = "/users/create";
+        public const string MyProfile = "/profile";
     }
 
     public static class JobTitles

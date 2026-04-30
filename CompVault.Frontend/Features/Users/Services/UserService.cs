@@ -73,6 +73,34 @@ public class UserService(
     }
     
     /// <inheritdoc />
+    public async Task<Result<UserDto>> GetCurrentUserAsync(CancellationToken ct)
+    {
+        try
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.Auth.MeFull, ct);
+
+            Result<UserDto> result = await HttpClientExtensions.ParseResponseAsync<UserDto>(response, ct);
+
+            if (result.IsFailure)
+                return Result<UserDto>.Failure(result.Error!);
+
+            return Result<UserDto>.Success(result.Value!);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Nettverksfeil ved henting av innlogget bruker");
+            return Result<UserDto>.Failure(AppError.Create(ErrorCode.NetworkError,
+                "Tilkoblingen feilet. Sjekk nettverket ditt."));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Uventet feil ved henting av innlogget bruker");
+            return Result<UserDto>.Failure(AppError.Create(ErrorCode.Unknown,
+                "Noe gikk galt. Prøv igjen."));
+        }
+    }
+    
+    /// <inheritdoc />
     public async Task<Result<IReadOnlyList<UserLookupDto>>> LookupUsersAsync(string readPermission,
         string bypassPermission, string subPermission, CancellationToken ct)
     {

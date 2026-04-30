@@ -15,6 +15,11 @@ public interface IUserService
     /// Henter en aktiv bruker fra backend
     /// </summary>
     Task<Result<UserDto?>> GetByIdAsync(Guid id, CancellationToken ct);
+
+    /// <summary>
+    /// Henter en bruker sin egen side uten å ha User:Read
+    /// </summary>
+    Task<Result<UserDto>> GetCurrentUserAsync(CancellationToken ct);
     
     /// <summary>
     /// Henter alle brukere innlogget bruker har tilattelse til å se og utføre handlinger mot. Vi sender inn
