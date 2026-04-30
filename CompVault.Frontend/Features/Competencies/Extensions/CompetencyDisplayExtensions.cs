@@ -48,6 +48,44 @@ public static class CompetencyDisplayExtensions
             _ => Color.Default
         };
     }
+    
+    /// <summary>
+    /// Overload til dashboard hvor Success er default tilstand
+    /// </summary>
+    /// <param name="daysUntilExpiry">Antall dager som int</param>
+    /// <returns>MudBlazor Color</returns>
+    public static Color ToExpiryColor(this int daysUntilExpiry) => daysUntilExpiry switch
+    {
+        <= 30 => Color.Error,
+        <= 90 => Color.Warning,
+        _     => Color.Success
+    };
+    
+    /// <summary>
+    /// Endrer en border-farge til å matche MudBlazor sine farger på antall dager
+    /// </summary>
+    /// <param name="daysUntilExpiry">Antall dager som int</param>
+    /// <returns>Fargekode</returns>
+    public static string ToExpiryBorderColor(this int? daysUntilExpiry) => daysUntilExpiry switch
+    {
+        null  => "#2d7a4f",
+        <= 30 => "#c62828",
+        <= 90 => "#e65100",
+        _     => "#2d7a4f"
+    };
+    
+    /// <summary>
+    /// Endrer en bakgrunns-farge til å matche MudBlazor sine farger på antall dager
+    /// </summary>
+    /// <param name="daysUntilExpiry">Antall dager som int</param>
+    /// <returns>Fargekode</returns>
+    public static string ToExpiryIconBgColor(this int? daysUntilExpiry) => daysUntilExpiry switch
+    {
+        null  => "#e8f5ee",
+        <= 30 => "#fdecea",
+        <= 90 => "#fff3e0",
+        _     => "#e8f5ee"
+    };
 
     /// <summary>
     /// Viser status fargen til kompetansebevis i forskjellige farger
@@ -86,4 +124,7 @@ public static class CompetencyDisplayExtensions
             ? dto.Status.ToDisplayString()
             : $"{dto.Status.ToDisplayString()} – {expiryText}";
     }
+    
+
+   
 }

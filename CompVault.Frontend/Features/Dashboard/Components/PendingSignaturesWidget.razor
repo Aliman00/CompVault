@@ -1,19 +1,24 @@
-﻿@* Widget som lister dokumenter innlogget bruker ikke har signert ennå, med lenke til detaljside *@
-@inject IDocumentService DocumentService
+﻿@inject IDocumentService DocumentService
 @inject NavigationManager NavigationManager
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 
+@* Widget som viser dokumenter innlogget bruker ikke har signert ennå, med lenke til detaljside *@
 
-<MudPaper Class="pa-3" Style="border-top: 3px solid #1e3a5f;" Elevation="4">
-    <WidgetHeader Title="@DashboardConstants.PendingSignatures" OnHide="OnHide"/>
+<MudPaper Class="pa-3" Style="@($"border-top: 3px solid {(_documents.Any() ? "#c62828" : "#2d7a4f")};")" 
+          Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.PendingSignatures"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.Draw"
+                  AccentColor="@(_hasPending == true ? "#c62828"
+                               : _hasPending == false ? "#2d7a4f" : "#9e9e9e")"
+                  IconBackgroundColor="@(_hasPending == true ? "#fdecea"
+                                       : _hasPending == false ? "#e8f5ee" : "#f5f5f5")"/>
+
+    <AppAlert @bind-Alert="_alert"/>
 
     @if (_loading)
     {
-        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Class="mt-2"/>
-        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Class="mt-1"/>
-    }
-    else if (_error is not null)
-    {
-        <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">@_error</MudText>
+        <AppSpinner/>
     }
     else if (!_documents.Any())
     {
@@ -24,9 +29,13 @@
     }
     else
     {
-        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1 mb-2">
-            @_documents.Count dokument@(_documents.Count == 1 ? "" : "er") venter på din signatur
-        </MudText>
+
+        <MudStack Row="true" AlignItems="AlignItems.Baseline" Spacing="1" Class="mt-1">
+            <MudText Typo="Typo.h4" Color="Color.Warning">@_documents.Count</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Warning">
+                dokument@(_documents.Count == 1 ? "" : "er") venter signering
+            </MudText>
+        </MudStack>
         <MudList T="DocumentListDto" Dense="true" DisablePadding="true">
             @foreach (var doc in _documents)
             {
@@ -34,18 +43,18 @@
                              Dense="true"
                              Class="px-0"
                              OnClick="() => NavigationManager.NavigateTo(
-                             PageRoutes.UserDocuments.Detail(doc.Slug, doc.Id))">
+                                 PageRoutes.UserDocuments.Detail(doc.Slug, doc.Id))">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                         <MudStack Spacing="0">
-                            <MudText Typo="Typo.body2">@doc.Title.Truncate(40)</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Error">@doc.Title.Truncate(40)</MudText>
                             @if (!string.IsNullOrWhiteSpace(doc.CategoryName))
                             {
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@doc.CategoryName</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Error">@doc.CategoryName</MudText>
                             }
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">v@(doc.Version)</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Error">v@(doc.Version)</MudText>
                         </MudStack>
                         <MudIcon Icon="@Icons.Material.Filled.ChevronRight"
-                                 Color="Color.Secondary" Size="Size.Small"/>
+                                 Color="Color.Warning" Size="Size.Small"/>
                     </MudStack>
                 </MudListItem>
                 <MudDivider/>
@@ -58,31 +67,46 @@
 </MudPaper>
 
 @code {
+    // ======================== PARAMETERS ========================
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
     [Parameter] public EventCallback OnHide { get; set; }
 
+    // ======================== PRIVATE FIELDS ========================
+
+    private AlertInfo? _alert;
     private bool _loading = true;
-    private string? _error;
     private List<DocumentListDto> _documents = [];
+    private bool? _hasPending;
+
+    // ======================== PRIVATE METHODS ========================
 
     protected override async Task OnInitializedAsync()
     {
-        var query = new DocumentQueryParameters
+        try
         {
-            SignatureFilter = DocumentSignatureFilter.Pending,
-            PageSize = 5,
-            Page = 1
-        };
+            var query = new DocumentQueryParameters
+            {
+                SignatureFilter = DocumentSignatureFilter.Pending,
+                PageSize = 5,
+                Page = 1
+            };
 
-        var result = await DocumentService.GetUserDocumentsAsync(query, CancellationToken.None);
+            var result = await DocumentService.GetUserDocumentsAsync(query, Cts.Token);
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
 
-        if (result.IsFailure)
-        {
-            _error = result.Error?.Message ?? "Noe gikk galt.";
-            _loading = false;
-            return;
+            _documents = result.Value!.Items.ToList();
+            _hasPending = _documents.Any();
         }
-
-        _documents = result.Value!.Items.ToList();
-        _loading = false;
+        finally
+        {
+            _loading = false;
+        }
     }
+
 }

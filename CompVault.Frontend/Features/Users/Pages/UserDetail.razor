@@ -190,16 +190,6 @@ else if (_user != null)
                 </MudStack>
             </MudItem>
             
-            @* Aktiv/inaktiv *@
-            <MudItem xs="12" sm="6">
-                <ToggleButton Label="Status"
-                              @bind-Value="_editModel.IsActive"
-                              IsEditing="_isEditing">
-                    <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
-                    <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
-                </ToggleButton>
-            </MudItem>
-            
             @* Fanevisning av tabeller *@
             <MudItem xs="12">
                 <MudTabs Elevation="0"

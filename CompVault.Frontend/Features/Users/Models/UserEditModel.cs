@@ -26,7 +26,6 @@ public class UserEditModel
     public Guid? JobTitleId { get; set; }
 
     public EmploymentType EmploymentType { get; set; }
-    public bool IsActive { get; set; }
     
     [Required(ErrorMessage = "Avdeling er påkrevd.")]
     public Guid? DepartmentId { get; set; }
@@ -40,7 +39,6 @@ public class UserEditModel
         Email = dto.Email,
         JobTitleId = dto.JobTitleId,
         EmploymentType = dto.EmploymentType,
-        IsActive = dto.IsActive,
         ManagerId = dto.ManagerId,
         DepartmentId = dto.DepartmentId,
     };
@@ -56,6 +54,5 @@ public class UserEditModel
         DepartmentId = DepartmentId,
         ManagerId = ManagerId,
         ClearManagerId = ManagerId == null,
-        IsActive = IsActive,
     };
 }

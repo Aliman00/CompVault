@@ -35,32 +35,10 @@
 <MudGrid Class="mb-4">
     <AuthorizeView Policy="@Permissions.CompetenciesRead">
         <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.MyCompetencies])
-            {
-                <MudItem xs="12" sm="4">
-                    <MyCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.MyCompetencies)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
-
-    <AuthorizeView Policy="@Permissions.CompetenciesRead">
-        <Authorized Context="_">
             @if (_widgetVisibility[DashboardConstants.NextExpiry])
             {
                 <MudItem xs="12" sm="4">
                     <NextExpiryWidget OnHide="() => ToggleWidget(DashboardConstants.NextExpiry)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
-
-    <AuthorizeView Policy="@Permissions.CompetenciesRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.UserShortcuts])
-            {
-                <MudItem xs="12" sm="4">
-                    <UserShortcutWidget OnHide="() => ToggleWidget(DashboardConstants.UserShortcuts)"/>
                 </MudItem>
             }
         </Authorized>
@@ -77,6 +55,46 @@
         </Authorized>
     </AuthorizeView>
 
+    @if (_widgetVisibility[DashboardConstants.UserShortcuts])
+    {
+        <MudItem xs="12" sm="4">
+            <UserShortcutWidget OnHide="() => ToggleWidget(DashboardConstants.UserShortcuts)"/>
+        </MudItem>
+    }
+    
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.MyCompetencies])
+            {
+                <MudItem xs="12" sm="4">
+                    <MyCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.MyCompetencies)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.DocumentsRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.MyDocuments])
+            {
+                <MudItem xs="12" sm="4">
+                    <MyDocumentsWidget OnHide="() => ToggleWidget(DashboardConstants.MyDocuments)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+    
+    <AuthorizeView Policy="@Permissions.EquipmentRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.MyEquipment])
+            {
+                <MudItem xs="12" sm="4">
+                    <MyEquipmentWidget OnHide="() => ToggleWidget(DashboardConstants.MyEquipment)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+    
     <AuthorizeView Policy="@Permissions.CompetenciesRead">
         <Authorized Context="_">
             @if (_widgetVisibility[DashboardConstants.RecentCompetencies])
@@ -87,6 +105,29 @@
             }
         </Authorized>
     </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.DocumentsRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.RecentDocuments])
+            {
+                <MudItem xs="12" sm="4">
+                    <RecentDocumentsWidget OnHide="() => ToggleWidget(DashboardConstants.RecentDocuments)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+    
+    <AuthorizeView Policy="@Permissions.EquipmentRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.LatestEquipment])
+            {
+                <MudItem xs="12" sm="4">
+                    <LatestEquipmentWidget OnHide="() => ToggleWidget(DashboardConstants.LatestEquipment)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+    
 </MudGrid>
 
 @code {
@@ -101,6 +142,10 @@
         [DashboardConstants.PendingSignatures] = true,
         [DashboardConstants.UserShortcuts] = true,
         [DashboardConstants.RecentCompetencies] = true,
+        [DashboardConstants.MyEquipment] = true,
+        [DashboardConstants.LatestEquipment] = true,
+        [DashboardConstants.MyDocuments] = true,
+        [DashboardConstants.RecentDocuments] = true,
     };
     
     private AlertInfo? _alert;

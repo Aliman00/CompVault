@@ -1,8 +1,11 @@
-﻿@* Widget med shortcuts for vanlige brukere *@
+﻿@* Widget med shortcuts til vanlige bruker logikk *@
 
 <MudPaper Class="pa-4 mb-4" Elevation="4" Style="border-top: 3px solid #7b5ea7;">
+    
+    @* Header *@
     <WidgetHeader Title="@DashboardConstants.UserShortcuts" OnHide="OnHide"/>
     
+    @* Shortcuts i en grid *@
     <MudGrid>
         @foreach (var shortcut in _shortcuts)
         {
@@ -19,14 +22,20 @@
             </MudItem>
         }
     </MudGrid>
-    
+
 </MudPaper>
 
 
 @code {
+    // ======================== PARAMETERS ======================== 
+    
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
     [Parameter] public EventCallback OnHide { get; set; }
 
-    private record Shortcut(string Label, string Icon, string Url, string AccentColor, string IconBackgroundColor);
+    // ======================== PRIVATE FIELD ======================== 
+    // Samler de forskjellige verdiene i records i en liste
     private readonly List<Shortcut> _shortcuts =
     [
         new("Mine kompetanser", Icons.Material.Filled.School, PageRoutes.UserCompetencies.List,

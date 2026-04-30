@@ -1,32 +1,35 @@
-﻿@* Viser oppsummering av brukerens kompetanser: gyldige, snart-utløpende, utløpte *@
-@inject ICompetencyService CompetencyService
+﻿@inject ICompetencyService CompetencyService
 @inject CircuitUserContext UserContext
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 
+@* Viser oppsummering av brukerens kompetanser. Teller antall gyldige, snart-utløpende, utløpte *@
 
 <MudPaper Class="pa-3" Style="border-top: 3px solid #2d7a4f;" Elevation="4">
-    <section class="widget-header">
-        <div class="statistic-header-left-section">
-            <SmallIcon Icon="@Icons.Material.Filled.WorkspacePremium"
-                       AccentColor="#2d7a4f"
-                       IconBackgroundColor="#e8f5ee"/>
-            <MudText Typo="Typo.caption" Color="Color.Secondary">@DashboardConstants.MyCompetencies</MudText>
-        </div>
-        <WidgetMenu OnHide="OnHide"/>
-    </section>
+    <WidgetHeader Title="@DashboardConstants.MyCompetencies"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.WorkspacePremium"
+                  AccentColor="#2d7a4f"
+                  IconBackgroundColor="#e8f5ee"/>
+
+    <AppAlert @bind-Alert="_alert"/>
 
     @if (_loading)
     {
-        <MudSkeleton SkeletonType="SkeletonType.Text" Width="60%" Class="mt-2"/>
-        <MudSkeleton SkeletonType="SkeletonType.Text" Width="80%" Class="mt-1"/>
+        <AppSpinner/>
     }
-    else if (_error is not null)
+    else if (_total == 0)
     {
-        <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">@_error</MudText>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.WorkspacePremium" Color="Color.Secondary" Size="Size.Small"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen registrerte kompetanser</MudText>
+        </MudStack>
     }
     else
     {
-        <MudText Typo="Typo.h4" Class="mt-1">@_total</MudText>
+        <MudText Typo="Typo.h5" Class="mt-1">Du har: @_total kompetanse@(_total == 1 ? "" : "r")</MudText>
         <MudStack Row="true" Spacing="2" Class="mt-2" Wrap="Wrap.Wrap">
+            
+            @* Ikonene med antall kompetanser til hver status*@
             <MudChip T="string" Color="Color.Success" Size="Size.Small"
                      Icon="@Icons.Material.Filled.CheckCircle">
                 @_valid gyldige
@@ -53,36 +56,52 @@
 </MudPaper>
 
 @code {
+    // ======================== PARAMETERS ========================
+    
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
     [Parameter] public EventCallback OnHide { get; set; }
 
-    private bool   _loading = true;
-    private string? _error;
-    private int    _total, _valid, _expiringSoon, _expired;
+    // ======================== PRIVATE FIELDS ========================
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private int _total;
+    private int _valid;
+    private int _expiringSoon;
+    private int _expired;
+
+    // ======================== PRIVATE METHODS ========================
 
     protected override async Task OnInitializedAsync()
     {
-        if (UserContext.UserId is null)
+        try
         {
-            _error   = "Kunne ikke hente bruker-ID.";
-            _loading = false;
-            return;
+            if (UserContext.UserId is null)
+            {
+                _alert = new AlertInfo("Kunne ikke hente bruker-ID.", Severity.Error);
+                return;
+            }
+
+            var filter = new CompetencyFilterRequest { UserId = UserContext.UserId, PageSize = 100 };
+            var result = await CompetencyService.GetAllAsync(filter, Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+            
+            var items     = result.Value!.Items;
+            _total = items.Count;
+            _valid = items.Count(c => c.Status == CompetencyStatus.Valid);
+            _expiringSoon = items.Count(c => c.Status == CompetencyStatus.ExpiringSoon);
+            _expired = items.Count(c => c.Status == CompetencyStatus.Expired);
         }
-
-        var filter = new CompetencyFilterRequest { UserId = UserContext.UserId, PageSize = 100 };
-        var result = await CompetencyService.GetAllAsync(filter, CancellationToken.None);
-
-        if (result.IsFailure)
+        finally
         {
-            _error   = result.Error?.Message ?? "Noe gikk galt.";
             _loading = false;
-            return;
         }
-
-        var items    = result.Value!.Items;
-        _total       = items.Count;
-        _valid       = items.Count(c => c.Status == CompetencyStatus.Valid);
-        _expiringSoon = items.Count(c => c.Status == CompetencyStatus.ExpiringSoon);
-        _expired     = items.Count(c => c.Status == CompetencyStatus.Expired);
-        _loading     = false;
     }
 }
