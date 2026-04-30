@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Common\Helpers\" />
     <Folder Include="Features\Auth\Components\" />
   </ItemGroup>
 
