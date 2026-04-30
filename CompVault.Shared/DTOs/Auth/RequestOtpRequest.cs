@@ -16,10 +16,4 @@ public sealed class RequestOtpRequest
     [MaxLength(256, ErrorMessage = "Email cannot exceed 256 characters")]
     public string Email { get; init => field = value.Trim(); } = null!;
 
-    /// <summary>
-    /// Hvilken kanal OTP-koden sendes på.
-    /// SMS-valget vises kun i Frontend hvis brukeren har et mobilnummer registrert.
-    /// </summary>
-    [Required(ErrorMessage = "DeliveryMethod is required")]
-    public OtpDeliveryMethod DeliveryMethod { get; set; } = OtpDeliveryMethod.Email;
 }
