@@ -29,6 +29,7 @@ using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Backend.Infrastructure.Repositories.Equipment;
+using CompVault.Backend.Infrastructure.Repositories.Notifications;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
 
@@ -217,6 +218,9 @@ public static class ServiceCollectionExtensions
 
             // Beregner status på kompetansebevis én gang i døgnet
             services.AddHostedService<CompetencyStatusJob>();
+
+            // Sender e-postvarsler for kompetanseutløp én gang i døgnet
+            services.AddHostedService<ExpiryNotificationJob>();
         }
 
         // Fillagring
@@ -275,6 +279,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEquipmentCategoryRepository, EquipmentCategoryRepository>();
         services.AddScoped<IEquipmentItemRepository, EquipmentItemRepository>();
         services.AddScoped<IEquipmentIssuanceRepository, EquipmentIssuanceRepository>();
+
+        // Notifications
+        services.AddScoped<ICompetencyNotificationRepository, CompetencyNotificationRepository>();
 
         return services;
     }
