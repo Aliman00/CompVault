@@ -19,4 +19,7 @@ public class UserDocumentTypeDto
     
     /// <summary> Antall dokumenter brukeren har til hver type</summary>
     public int DocumentCount { get; set; }
+    
+    /// <summary> Antall dokumenter til hver type bruker er nødt til å signere</summary>
+    public int PendingSignatureCount { get; set; }
 }

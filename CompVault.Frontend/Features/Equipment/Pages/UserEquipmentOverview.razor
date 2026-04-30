@@ -22,6 +22,12 @@ else
         </MudToolBar>
 
         <MudList T="UserEquipmentCategoryDto" Dense="true" Class="pa-2">
+            @if (!_categories.Any())
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                    Det er ikke registert utlevert utstyr til deg.
+                </MudText>
+            }
             @foreach (var category in _categories)
             {
                 <MudListItem T="UserEquipmentCategoryDto"

@@ -5,6 +5,7 @@
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @inject IJobTitleService JobTitleService
+@inject IDialogService DialogService
 
 @* Side for å opprette en bruker *@
 
@@ -183,8 +184,33 @@
             _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
             return;
         }
-        
-        NavigationManager.NavigateTo(PageRoutes.Users.Detail(createResult.Value!.Id) + "?created=true", 
-            replace: true);
+
+        var createdUser = createResult.Value!;
+
+        // Spør om brukeren ønsker å tildele rolle med en gang
+        var confirmDialog = await DialogService.ShowMessageBoxAsync(
+            "Bruker opprettet",
+            $"{createdUser.FullName} ble opprettet. Ønsker du å tildele en rolle nå?",
+            yesText: "Tildel rolle",
+            noText: "Ikke nå");
+
+        if (confirmDialog == true)
+        {
+            var parameters = new DialogParameters
+            {
+                { nameof(AssignRoleDialog.UserId), createdUser.Id },
+                { nameof(AssignRoleDialog.CurrentRoles), createdUser.Roles }
+            };
+
+            var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", parameters, new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true
+            });
+            
+            await dialog.Result; 
+        }
+
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(createdUser.Id) + "?created=true", replace: true);
     }
 }

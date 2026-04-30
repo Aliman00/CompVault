@@ -24,6 +24,12 @@ else
         
         @* Liste med dokumenttypes/dokumentkategorier*@
         <MudList T="UserDocumentTypeDto" Dense="true" Class="pa-2">
+            @if (!_documentTypes.Any())
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                    Du har ikke blitt tildelt noen dokumenter.
+                </MudText>
+            }
             @foreach (var documentType in _documentTypes)
             {
                 <MudListItem T="UserDocumentTypeDto"
@@ -32,7 +38,7 @@ else
                                           PageRoutes.UserDocuments.List(documentType.Slug)))">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
                         <MudIcon Icon="@Icons.Material.Filled.Folder"
-                                 Color="Color.Primary"
+                                 Color="@(documentType.PendingSignatureCount > 0 ? Color.Warning : Color.Primary)"
                                  Size="Size.Medium"/>
                         <MudStack Spacing="0">
                             <MudText Typo="Typo.body1">@documentType.Name</MudText>
@@ -46,6 +52,12 @@ else
                         <MudSpacer/>
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
                             @documentType.DocumentCount dokument@(documentType.DocumentCount == 1 ? "" : "er")
+                            @if (documentType.PendingSignatureCount > 0)
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Warning" Inline="true">
+                                    (@documentType.PendingSignatureCount trenger signatur)
+                                </MudText>
+                            }
                         </MudText>
                         <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary"/>
                     </MudStack>

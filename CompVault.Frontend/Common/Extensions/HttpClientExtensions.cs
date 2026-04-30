@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Models;
 using CompVault.Shared.Result;
@@ -55,6 +56,9 @@ public static class HttpClientExtensions
     {
         try
         {
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+                return AppError.Create(ErrorCode.Forbidden, "Du har ikke tilgang til denne ressursen.");
+            
             // Henter ut hele bodyen som en et JsonDocument for å sjekke om det er datavalidation eller vår egen
             // feilmelding
             using JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), 

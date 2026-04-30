@@ -47,6 +47,11 @@
                  Bordered="true"
                  RowsPerPage="20"
                  RowClick="OnRowClick">
+        <NoRecordsContent>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                Du har ingen kompetanser registrert.
+            </MudText>
+        </NoRecordsContent>
         <Columns>
             @* Kompetansetype *@
             <PropertyColumn T="CompetencyDto" TProperty="string"
@@ -66,8 +71,8 @@
             </TemplateColumn>
 
             @* Utløpsdato *@
-            <TemplateColumn T="CompetencyDto" Title="Utløpsdato" 
-                            SortBy="x => x.ExpiryDate" 
+            <TemplateColumn T="CompetencyDto" Title="Utløpsdato"
+                            SortBy="x => x.ExpiryDate"
                             Sortable="true">
                 <CellTemplate Context="cell">
                     @if (cell.Item.ExpiryDate is null)

@@ -1,7 +1,7 @@
 ﻿@page "/equipment-items/{Id:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.EquipmentRead)]
-@inject IEquipmentCategoryService EquipmentCategoryService
+@attribute [Authorize(Policy = Permissions.AdminAccess)]
 @inject IEquipmentItemService EquipmentItemService
 @inject IEquipmentIssuancesService EquipmentIssuanceService
 @inject NavigationManager NavigationManager
@@ -188,7 +188,6 @@ else if (_equipmentItem != null)
 
     // ===================== PRIVATE FELT =====================
     private EquipmentItemDto? _equipmentItem;
-    private List<EquipmentCategoryDto> _equipmentCategories = [];
     private List<EquipmentIssuanceDto> _equipmentIssuances = [];
 
     private EquipmentItemEditModel _editModel = new();
@@ -208,7 +207,6 @@ else if (_equipmentItem != null)
         // Resetter alle feltene ved oppdatering/navigering til siden
         _isLoading = true;
         _isEditing = false;
-        _equipmentCategories = [];
         _equipmentIssuances = [];
         _editModel = new();
 
@@ -217,13 +215,11 @@ else if (_equipmentItem != null)
             _editContext = new EditContext(_editModel);
             
             var equipmentItemTask = EquipmentItemService.GetByIdAsync(Id, Cts.Token);
-            var equipmentCategoryTask = EquipmentCategoryService.GetAllAsync(Cts.Token);
             var equipmentIssuanceTask = EquipmentIssuanceService.GetByItemAsync(Id, Cts.Token);
             
-            await Task.WhenAll(equipmentItemTask, equipmentCategoryTask, equipmentIssuanceTask);
+            await Task.WhenAll(equipmentItemTask, equipmentIssuanceTask);
             
             var equipmentItemResult = await equipmentItemTask;
-            var equipmentCategoryResult = await equipmentCategoryTask;
             var equipmentIssuanceResult = await equipmentIssuanceTask;
 
             if (equipmentItemResult.IsFailure)
@@ -232,11 +228,6 @@ else if (_equipmentItem != null)
                 return;
             }
             _equipmentItem = equipmentItemResult.Value;
-
-            if (equipmentCategoryResult.IsFailure)
-                _alert = new AlertInfo(equipmentCategoryResult.Error!.ToString(), Severity.Error);
-            else
-                _equipmentCategories = equipmentCategoryResult.Value!;
             
             if (equipmentIssuanceResult.IsFailure)
                 _alert = new AlertInfo(equipmentIssuanceResult.Error!.ToString(), Severity.Error);
@@ -328,8 +319,10 @@ else if (_equipmentItem != null)
             _alert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
             return;
         }
-
-        NavigationManager.NavigateTo(PageRoutes.EquipmentItems.List + "?deleted=true");
+        
+        var categoryId = _equipmentItem.CategoryId;
+        NavigationManager.NavigateTo(
+            PageRoutes.EquipmentItems.ListByCategory(categoryId) + "&deleted=true");
     }
     
     private async Task IssueEquipment()

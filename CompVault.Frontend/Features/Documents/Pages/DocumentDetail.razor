@@ -1,6 +1,7 @@
 ﻿@page "/documents/{Slug}/{Id:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.DocumentsRead)]
+@attribute [Authorize(Policy = Permissions.AdminAccess)]
 @inject IDocumentTypeService DocumentTypeService
 @inject IDocumentService DocumentService
 @inject IDocumentTypeCategoryService DocumentTypeCategoryService

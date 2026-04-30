@@ -75,9 +75,6 @@ public sealed class UsersController(
         if (!User.HasPermission(readPermission))
             return Forbid();
 
-        if (!User.HasPermission(bypassPermission) && !User.HasPermission(subPermission))
-            return Forbid();
-
         Result<IReadOnlyList<UserLookupDto>> result =
             await userService.LookupAllowedUsersAsync(bypassPermission, subPermission, ct);
 

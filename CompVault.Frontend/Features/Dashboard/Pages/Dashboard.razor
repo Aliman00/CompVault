@@ -3,6 +3,8 @@
 @attribute [Authorize]
 @inject IJSRuntime JsRuntime
 @inject CircuitUserContext UserContext
+@inject IAuthorizationService AuthorizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @* Dashboard for vanlig brukere. Widgets slik at brukere kan fjerne det de mener er støy *@
 <section class="dashboard-header">
@@ -28,38 +30,63 @@
     }
 </section>
 
+<AppAlert @bind-Alert="_alert"/>
+
 <MudGrid Class="mb-4">
-    @if (_widgetVisibility[DashboardConstants.MyCompetencies])
-    {
-        <MudItem xs="12" sm="4">
-            <MyCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.MyCompetencies)"/>
-        </MudItem>
-    }
-    @if (_widgetVisibility[DashboardConstants.NextExpiry])
-    {
-        <MudItem xs="12" sm="4">
-            <NextExpiryWidget OnHide="() => ToggleWidget(DashboardConstants.NextExpiry)"/>
-        </MudItem>
-    }
-    @if (_widgetVisibility[DashboardConstants.UserShortcuts])
-    {
-        <MudItem xs="12" sm="4">
-            <UserShortcutWidget OnHide="() => ToggleWidget(DashboardConstants.UserShortcuts)"/>
-        </MudItem>
-    }
-    @if (_widgetVisibility[DashboardConstants.PendingSignatures])
-    {
-        <MudItem xs="12" sm="4">
-            <PendingSignaturesWidget OnHide="() => ToggleWidget(DashboardConstants.PendingSignatures)"/>
-        </MudItem>
-    }
-    @if (_widgetVisibility[DashboardConstants.RecentCompetencies])
-    {
-        <MudItem xs="12" sm="4">
-            <RecentCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.RecentCompetencies)"/>
-        </MudItem>
-    }
-    
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.MyCompetencies])
+            {
+                <MudItem xs="12" sm="4">
+                    <MyCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.MyCompetencies)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.NextExpiry])
+            {
+                <MudItem xs="12" sm="4">
+                    <NextExpiryWidget OnHide="() => ToggleWidget(DashboardConstants.NextExpiry)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.UserShortcuts])
+            {
+                <MudItem xs="12" sm="4">
+                    <UserShortcutWidget OnHide="() => ToggleWidget(DashboardConstants.UserShortcuts)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.DocumentsRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.PendingSignatures])
+            {
+                <MudItem xs="12" sm="4">
+                    <PendingSignaturesWidget OnHide="() => ToggleWidget(DashboardConstants.PendingSignatures)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Policy="@Permissions.CompetenciesRead">
+        <Authorized Context="_">
+            @if (_widgetVisibility[DashboardConstants.RecentCompetencies])
+            {
+                <MudItem xs="12" sm="4">
+                    <RecentCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.RecentCompetencies)"/>
+                </MudItem>
+            }
+        </Authorized>
+    </AuthorizeView>
 </MudGrid>
 
 @code {
@@ -75,12 +102,27 @@
         [DashboardConstants.UserShortcuts] = true,
         [DashboardConstants.RecentCompetencies] = true,
     };
-
+    
+    private AlertInfo? _alert;
+    
     // ======================== Lifecycle ========================
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
+        
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = state.User;
+        
+        var hasAnyAccess =
+            (await AuthorizationService.AuthorizeAsync(user, Permissions.CompetenciesRead)).Succeeded ||
+            (await AuthorizationService.AuthorizeAsync(user, Permissions.EquipmentRead)).Succeeded ||
+            (await AuthorizationService.AuthorizeAsync(user, Permissions.DocumentsRead)).Succeeded;
+        
+        if (!hasAnyAccess)
+            _alert = new AlertInfo("Du har ikke tilgang til å noen moduler. " +
+                                   "Kontakt administrator for å få tildelt nødvendige tillatelser.",
+                Severity.Warning);
 
         await LoadPreferencesAsync();
         StateHasChanged();

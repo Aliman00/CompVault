@@ -3,6 +3,7 @@
 @attribute [Authorize(Policy = Permissions.RolesRead)]
 @inject IRoleService RoleService
 @inject NavigationManager NavigationManager
+@inject IDialogService DialogService
 
 @* Side for liste visning av alle roller *@
 
@@ -17,7 +18,21 @@
                     CreateHref="@PageRoutes.Roles.Create"
                     CreateLabel="Opprett rolle"
                     CreateIcon="@Icons.Material.Filled.Shield"
-                    CreatePolicy="@Permissions.RolesWrite"/>
+                    CreatePolicy="@Permissions.RolesWrite">
+            <Actions>
+                <AuthorizeView Policy="@Permissions.RolesWrite">
+                    <Authorized>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                                   OnClick="OpenAssignRolesDialog"
+                                   Class="mr-2">
+                            Tildel rolle
+                        </MudButton>
+                    </Authorized>
+                </AuthorizeView>
+            </Actions>
+        </ListHeader>
     </Header>
     <Columns>
         <PropertyColumn T="RoleDto" TProperty="string"
@@ -68,16 +83,8 @@
     {
         try
         {
-            var getRolesResult = await RoleService.GetAllAsync(Cts.Token);
-
-            if (getRolesResult.IsFailure)
-            {
-                _alert = new AlertInfo(getRolesResult.Error!.ToString(), Severity.Error);
-                return;
-            }
-
-            _roles = getRolesResult.Value!;
-
+            await GetRolesAsync();
+            
             if (Deleted)
                 _alert = new AlertInfo("Rollen er slettet", Severity.Info);
         }
@@ -99,4 +106,30 @@
     // ===================== PRIVATE METHODS =====================
     private void OnRoleClick(DataGridRowClickEventArgs<RoleDto> args) =>
         NavigationManager.NavigateTo(PageRoutes.Roles.Detail(args.Item.Id));
+
+    private async Task OpenAssignRolesDialog()
+    {
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        });
+        var dialogResult = await dialog.Result;
+        if (dialogResult is { Canceled: false })
+            await GetRolesAsync();
+    }
+
+    private async Task GetRolesAsync()
+    {
+        var getRolesResult = await RoleService.GetAllAsync(Cts.Token);
+        if (getRolesResult.IsFailure)
+        {
+            _alert = new AlertInfo(getRolesResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        _roles = getRolesResult.Value!;
+    }
 }
