@@ -1,17 +1,11 @@
 ﻿@page "/login-otp"
-@* Route: localhost:5020/login-otp?email=test@... *@
-
 @layout AuthLayout
 @inject IJSRuntime Js
 @inject AntiforgeryStateProvider AntiforgeryStateProvider
-
-@inject IHttpClientFactory Http     
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IAuthService AuthService
 @inject NavigationManager Navigation 
-@* State for login-forsøk *@
 @inject AuthStateService AuthState  
-
-@* Viktig for å rydde opp event listeners *@
-@implements IDisposable
 
 <!-- Sentralisert OTP-kort -->
 <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#f5f5f5">
@@ -35,7 +29,7 @@
             <!-- Verifiser mot backend -->
             <MudButton Class="mt-6" 
                        FullWidth 
-                       Disabled="@isDisabled"  @* Disable hvis låst *@
+                       Disabled="@isDisabled" 
                        Color="Color.Primary" 
                        Variant="Variant.Filled"
                        OnClick="VerifyOtpAsync">
@@ -53,8 +47,8 @@
             @* Skjult form for å legge tokens i nettleseren ved innloging *@
             <form id="login-form" method="post" action="/login-callback">
                 <AntiforgeryToken/>
-                <input type="hidden" name="OtpRequest.Email" value="@Email" />
-                <input type="hidden" name="OtpRequest.OtpCode" id="otp-code-input" value="" />
+                <input type="hidden" name="TokenResponse.AccessToken" id="access-token-input" value="" />
+                <input type="hidden" name="TokenResponse.RefreshToken" id="refresh-token-input" value="" />
             </form>
         </MudCardContent>
     </MudCard>
@@ -116,32 +110,29 @@
             error = "Du er midlertidig låst.";
             return;
         }
-
-        // Hent BackendApi-klient
-        var client = Http.CreateClient("BackendApi");
-
-        // POST OTP til backend
-        var response = await client.PostAsJsonAsync("api/auth/verify-otp",
-            new { email = Email, code });
-
-        // Hvis feil OTP → øk teller
-        if (!response.IsSuccessStatusCode)
+        
+        var request = new VerifyOtpRequest { Email = Email ?? "", OtpCode = code };
+        var result = await AuthService.VerifyOtpAsync(request, Cts.Token);
+        if (result.IsFailure)
         {
             AuthState.RegisterFailedLogin();
             error = "Feil OTP-kode.";
             return;
         }
-
+        
         // Suksess → reset teller og submit skjult form
         AuthState.RegisterSuccess();
 
         var token = AntiforgeryStateProvider.GetAntiforgeryToken();
-        await Js.InvokeVoidAsync("loginFormSubmit", code, token?.Value);
+        await Js.InvokeVoidAsync("loginFormSubmit",
+            result.Value!.AccessToken,
+            result.Value.RefreshToken,
+            token?.Value);
     }
     
-    public void Dispose()
+    public override void Dispose()
     {
-        // Viktig: fjern event listener for å unngå memory leaks
         AuthState.OnChange -= StateChanged;
+        base.Dispose();
     }
 }
