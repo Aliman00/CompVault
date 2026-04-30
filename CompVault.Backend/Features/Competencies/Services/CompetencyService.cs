@@ -228,26 +228,4 @@ public sealed class CompetencyService(
 
         return Result<bool>.Success(true);
     }
-
-    /// <inheritdoc />
-    public async Task<Result<PagedResult<ExpiringCompetencyDto>>> GetExpiringAsync(
-        CompetencyExpiringQueryParameters queryParameters,
-        CancellationToken cancellationToken = default)
-    {
-        // Count og paginert henting gjøres i to steg siden GetExpiringAsync i repoet
-        // returnerer IReadOnlyList, ikke IQueryable.
-        // TODO: Vurder å legge til CountExpiringAsync i repoet for renere DB-nivå paginering.
-        IReadOnlyList<Competency> allExpiring = await competencyRepository.GetExpiringAsync(
-            queryParameters.UserId, queryParameters.DepartmentId, cancellationToken);
-
-        var dtos = allExpiring
-            .OrderBy(c => c.ExpiryDate)
-            .Skip(queryParameters.Skip)
-            .Take(queryParameters.PageSize)
-            .Select(CompetencyMapper.ToExpiringDto)
-            .ToList();
-
-        return Result<PagedResult<ExpiringCompetencyDto>>.Success(
-            PagedResult<ExpiringCompetencyDto>.Create(dtos, allExpiring.Count, queryParameters));
-    }
 }

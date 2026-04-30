@@ -29,12 +29,4 @@ public interface ICompetencyService
 
     /// <summary>Soft-sletter et kompetansebevis.</summary>
     Task<Result<bool>> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Henter utløpende (EXPIRING_SOON) og utløpte (EXPIRED) kompetansebevis.
-    /// Filtrerbart på userId og departmentId.
-    /// </summary>
-    Task<Result<PagedResult<ExpiringCompetencyDto>>> GetExpiringAsync(
-        CompetencyExpiringQueryParameters queryParameters,
-        CancellationToken cancellationToken = default);
 }

@@ -30,9 +30,4 @@ public interface ICompetencyService
     /// Sletter et kompetansebevis
     /// </summary>
     Task<Result> DeleteAsync(Guid id, CancellationToken ct);
-
-    /// <summary>
-    /// Henter alle utgåtte kompetansebevis TODO: Med query parameter. Ikke implementert
-    /// </summary>
-    Task<Result<List<ExpiringCompetencyDto>>> GetExpiringAsync(CancellationToken ct);
 }
