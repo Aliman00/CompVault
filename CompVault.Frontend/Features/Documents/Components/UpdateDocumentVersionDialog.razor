@@ -131,6 +131,13 @@
     {
         if (_selectedFile == null)
             return;
+        
+        Result fileResult = _selectedFile.ValidateFile(AcceptedMimeTypes.Split(','));
+        if (fileResult.IsFailure)
+        {
+            _alert = new AlertInfo(fileResult.Error!.ToString(), Severity.Warning);
+            return;
+        }
 
         _isSaving = true;
         

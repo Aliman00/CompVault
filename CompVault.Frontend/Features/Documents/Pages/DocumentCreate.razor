@@ -211,6 +211,16 @@
             ? await _selectedFile.ToFileAttachmentAsync(_documentType.MaxFileSizeBytes, Cts.Token)
             : null;
         
+        if (_selectedFile != null)
+        {
+            Result fileResult = _selectedFile.ValidateFile(_documentType.AllowedMimeTypes);
+            if (fileResult.IsFailure)
+            {
+                _alert = new AlertInfo(fileResult.Error!.ToString(), Severity.Warning);
+                return;
+            }
+        }
+        
         var createResult = await DocumentService.CreateAsync(Slug, request, file, Cts.Token);
         if (createResult.IsFailure)
         {
