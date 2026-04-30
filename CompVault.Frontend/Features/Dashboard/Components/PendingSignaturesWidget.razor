@@ -36,7 +36,7 @@
                 dokument@(_documents.Count == 1 ? "" : "er") venter signering
             </MudText>
         </MudStack>
-        <MudList T="DocumentListDto" Dense="true" DisablePadding="true">
+        <MudList T="DocumentListDto" Dense="true">
             @foreach (var doc in _documents)
             {
                 <MudListItem T="DocumentListDto"

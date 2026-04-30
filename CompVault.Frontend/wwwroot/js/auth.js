@@ -2,9 +2,10 @@
  * Lar oss logge inn og setter token
  */
 
-window.loginFormSubmit = function(code, antiforgeryToken) {
+window.loginFormSubmit = function(accessToken, refreshToken, antiforgeryToken) {
     const form = document.getElementById('login-form');
-    form.querySelector('#otp-code-input').value = code;
+    form.querySelector('#access-token-input').value = accessToken;
+    form.querySelector('#refresh-token-input').value = refreshToken;
 
     let tokenInput = form.querySelector('[name="__RequestVerificationToken"]');
     if (!tokenInput) {

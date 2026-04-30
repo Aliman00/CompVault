@@ -17,8 +17,7 @@ public interface IAuthService
     /// Verifiserer at brukerens kode stemmer. Henter ut claims og lager en ClaimsPrincipal som setter en cookie
     /// i Login Razor-siden. Returnerer også begge token
     /// </summary>
-    Task<Result<(ClaimsPrincipal Principal, TokenResponse Tokens)>> VerifyOtpAsync(
-        VerifyOtpRequest request, CancellationToken ct);
+    Task<Result<TokenResponse>> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken ct);
 
     /// <summary>
     /// Logger brukeren ut av frontend og revoker token i backend. Logger brukeren ut uansett
