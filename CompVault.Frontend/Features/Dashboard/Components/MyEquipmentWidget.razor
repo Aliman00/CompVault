@@ -1,0 +1,85 @@
+﻿@inject IEquipmentIssuancesService EquipmentIssuancesService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject NavigationManager NavigationManager
+
+@* Viser oppsummering av innlogget brukers utlevert utstyr *@
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid #1565c0;" Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.MyEquipment"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.Checkroom"
+                  AccentColor="#1565c0"
+                  IconBackgroundColor="#e3f0fc"/>
+
+    <AppAlert @bind-Alert="_alert"/>
+
+    @if (_loading)
+    {
+        <AppSpinner/>
+    }
+    else if (!_categories.Any())
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Secondary" Size="Size.Small"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen utlevert utstyr registrert.</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudText Typo="Typo.h5" Class="mt-1">@_totalItems utstyr utlevert</MudText>
+        <MudStack Row="true" Spacing="2" Class="mt-2" Wrap="Wrap.Wrap">
+            @foreach (var category in _categories)
+            {
+                <MudChip T="string"
+                         Color="Color.Primary"
+                         Size="Size.Small"
+                         Icon="@Icons.Material.Filled.Checkroom"
+                         OnClick="@(() => NavigationManager.NavigateTo(
+                                      PageRoutes.UserEquipment.List(category.Id)))">
+                    @category.Name (@category.ItemCount)
+                </MudChip>
+            }
+        </MudStack>
+        <MudLink Href="@PageRoutes.UserEquipment.Overview" Typo="Typo.caption" Class="mt-2 d-block">
+            Se alt utstyr →
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    // ======================== PARAMETERS ========================
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    // ======================== PRIVATE FIELDS ========================
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private List<UserEquipmentCategoryDto> _categories = [];
+    private int _totalItems;
+
+    // ======================== PRIVATE METHODS ========================
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await EquipmentIssuancesService.GetMyCategoriesAsync(Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _categories = result.Value!;
+            _totalItems = _categories.Sum(c => c.ItemCount);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

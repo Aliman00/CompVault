@@ -1,30 +1,26 @@
 ﻿@inject ICompetencyService CompetencyService
 @inject CircuitUserContext UserContext
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject NavigationManager NavigationManager
 
-@* Viser kompetansen som utløper nærmest i tid *@
+@* Viser kompetansen som utløper først *@
 
+<MudPaper Class="pa-3" 
+          Style="@($"border-top: 3px solid {_nextExpiringComptency?.DaysUntilExpiry.ToExpiryBorderColor()};")" 
+          Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.NextExpiry"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.Schedule"
+                  AccentColor="@_nextExpiringComptency?.DaysUntilExpiry.ToExpiryBorderColor()"
+                  IconBackgroundColor="@_nextExpiringComptency?.DaysUntilExpiry.ToExpiryIconBgColor()"/>
 
-<MudPaper Class="pa-3" Style="border-top: 3px solid #c9a84c;" Elevation="4">
-    <section class="widget-header">
-        <div class="statistic-header-left-section">
-            <SmallIcon Icon="@Icons.Material.Filled.Schedule"
-                       AccentColor="#c9a84c"
-                       IconBackgroundColor="#faf3e0"/>
-            <MudText Typo="Typo.caption" Color="Color.Secondary">@DashboardConstants.NextExpiry</MudText>
-        </div>
-        <WidgetMenu OnHide="OnHide"/>
-    </section>
+    <AppAlert @bind-Alert="_alert"/>
 
     @if (_loading)
     {
-        <MudSkeleton SkeletonType="SkeletonType.Text" Width="70%" Class="mt-2"/>
-        <MudSkeleton SkeletonType="SkeletonType.Text" Width="50%" Class="mt-1"/>
+        <AppSpinner/>
     }
-    else if (_error is not null)
-    {
-        <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">@_error</MudText>
-    }
-    else if (_next is null)
+    else if (_nextExpiringComptency is null)
     {
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
             <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small"/>
@@ -33,60 +29,63 @@
     }
     else
     {
-        <MudText Typo="Typo.subtitle1" Class="mt-1">
-            <strong>@_next.CompetencyTypeName</strong>
-        </MudText>
-        @if (_next.DaysUntilExpiry.HasValue)
-        {
-            <MudText Typo="Typo.h4" Color="@DaysColor(_next.DaysUntilExpiry.Value)">
-                @(_next.DaysUntilExpiry.Value >= 0 ? $"{_next.DaysUntilExpiry.Value} dager" : "Utløpt")
+        <MudLink Href="@PageRoutes.UserCompetencies.Detail(_nextExpiringComptency!.Id)" 
+                 Underline="Underline.None">
+            <MudText Typo="Typo.subtitle1" Class="mt-1">
+                <strong>@_nextExpiringComptency.CompetencyTypeName</strong>
             </MudText>
-            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                Utløper @_next.ExpiryDate!.Value.ToShortDateString()
-            </MudText>
-        }
+            @if (_nextExpiringComptency.DaysUntilExpiry.HasValue)
+            {
+                <MudText Typo="Typo.h4" Color="@_nextExpiringComptency.DaysUntilExpiry!.Value.ToExpiryColor()">
+                    @(_nextExpiringComptency.DaysUntilExpiry.Value >= 0 
+                        ? $"{_nextExpiringComptency.DaysUntilExpiry.Value} dager" 
+                        : "Utløpt")
+                </MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Utløper @_nextExpiringComptency.ExpiryDate!.Value.ToShortDateString()
+                </MudText>
+            }
+        </MudLink>
     }
 </MudPaper>
 
 @code {
+    // ======================== PARAMETERS ========================
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
     [Parameter] public EventCallback OnHide { get; set; }
 
-    private bool           _loading = true;
-    private string?        _error;
-    private CompetencyDto? _next;
+    // ======================== PRIVATE FIELDS ========================
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private CompetencyDto? _nextExpiringComptency;
+
+    // ======================== PRIVATE METHODS ========================
 
     protected override async Task OnInitializedAsync()
     {
-        if (UserContext.UserId is null)
+        try
         {
-            _error   = "Kunne ikke hente bruker-ID.";
-            _loading = false;
-            return;
+            var filter = new CompetencyFilterRequest { UserId = UserContext.UserId, PageSize = 100 };
+            var result = await CompetencyService.GetAllAsync(filter, Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+            
+            // Finner første utgåeende kompetanse
+            _nextExpiringComptency = result.Value!.Items
+                .Where(c => c.ExpiryDate.HasValue && c.Status != CompetencyStatus.Expired)
+                .OrderBy(c => c.ExpiryDate)
+                .FirstOrDefault();
         }
-
-        var filter = new CompetencyFilterRequest { UserId = UserContext.UserId, PageSize = 100 };
-        var result = await CompetencyService.GetAllAsync(filter, CancellationToken.None);
-
-        if (result.IsFailure)
+        finally
         {
-            _error   = result.Error?.Message ?? "Noe gikk galt.";
             _loading = false;
-            return;
         }
-
-        _next = result.Value!.Items
-            .Where(c => c.ExpiryDate.HasValue && c.Status != CompetencyStatus.Expired)
-            .OrderBy(c => c.ExpiryDate)
-            .FirstOrDefault();
-
-        _loading = false;
-    }
-
-    private static Color DaysColor(int days)
-    {
-        if (days < 0)  return Color.Error;
-        if (days < 30) return Color.Error;
-        if (days < 90) return Color.Warning;
-        return Color.Success;
     }
 }

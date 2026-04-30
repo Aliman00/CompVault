@@ -1,11 +1,47 @@
 ﻿@* Gjenbrukbar header som fungerer til alle widgets som ikke har ikoner i header - Eks:RecentActivity, Shortcut *@
 
 <section class="widget-header">
-    <MudText Typo="Typo.subtitle1">@Title</MudText>
+    <div class="statistic-header-left-section">
+        @if (Icon != null)
+        {
+            <SmallIcon Icon="@Icon"
+                       AccentColor="@AccentColor"
+                       IconBackgroundColor="@IconBackgroundColor"/>
+        }
+        <MudText Typo="@(Icon != null ? Typo.caption : Typo.subtitle1)"
+                 Color="@(Icon != null ? Color.Secondary : Color.Default)">
+            @Title
+        </MudText>
+    </div>
     <WidgetMenu OnHide="OnHide"/>
 </section>
 
 @code {
+    // ======================== PARAMETERS ========================
+    
+    /// <summary>
+    /// Tittelen til headeren
+    /// </summary>
     [Parameter] public string Title { get; set; } = ""; 
+    
+    /// <summary>
+    /// Handling som utføres ved skjuling av widget
+    /// </summary>
     [Parameter] public EventCallback OnHide { get; set; }
+    
+    /// <summary>
+    /// Ikon hvis det skal vises øverst til venstre
+    /// </summary>
+    [Parameter] public string? Icon { get; set; }
+    
+    /// <summary>
+    /// Farge til ikonet
+    /// </summary>
+    [Parameter] public string AccentColor { get; set; } = "#555555";
+    
+    /// <summary>
+    /// Bakgrunnsfargen til ikonet
+    /// </summary>
+    [Parameter] public string IconBackgroundColor { get; set; } = "#eeeeee";
+    
 }

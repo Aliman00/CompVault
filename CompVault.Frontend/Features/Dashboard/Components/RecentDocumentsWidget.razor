@@ -1,0 +1,115 @@
+﻿@* Viser de siste dokumentene innlogget bruker har tilgang til *@
+@inject IDocumentService DocumentService
+@inject NavigationManager NavigationManager
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid #4527a0;" Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.RecentDocuments"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.Description"
+                  AccentColor="#4527a0"
+                  IconBackgroundColor="#ede7f6"/>
+
+    <AppAlert @bind-Alert="_alert"/>
+
+    @if (_loading)
+    {
+        <AppSpinner/>
+    }
+    else if (!_documents.Any())
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.FolderOff" Color="Color.Secondary" Size="Size.Small"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen dokumenter tildelt.</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudList T="DocumentListDto" Dense="true" Class="pa-0 mt-1">
+            @foreach (var doc in _documents)
+            {
+                <MudListItem T="DocumentListDto" Class="px-0 cursor-pointer"
+                             OnClick="@(() => NavigationManager.NavigateTo(
+                                          PageRoutes.UserDocuments.Detail(doc.Slug, doc.Id)))">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@(doc.RequiresSignature && !doc.SignedByCurrentUser
+                                           ? Icons.Material.Filled.Draw
+                                           : Icons.Material.Filled.Description)"
+                                 Color="@(doc.RequiresSignature && !doc.SignedByCurrentUser
+                                            ? Color.Warning
+                                            : Color.Primary)"
+                                 Size="Size.Small"/>
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body2">@doc.Title.Truncate(35)</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @doc.UploadedAt.ToString("dd.MM.yyyy")
+                                @if (!string.IsNullOrWhiteSpace(doc.SlugName))
+                                {
+                                    <span> - @doc.SlugName</span>
+                                }
+                            </MudText>
+                        </MudStack>
+                        <MudSpacer/>
+                        @if (doc.RequiresSignature)
+                        {
+                            <MudChip T="string"
+                                     Color="@(doc.SignedByCurrentUser ? Color.Success : Color.Warning)"
+                                     Size="Size.Small"
+                                     Class="cv-rounded">
+                                @(doc.SignedByCurrentUser ? "Signert" : "Må signeres")
+                            </MudChip>
+                        }
+                    </MudStack>
+                </MudListItem>
+                <MudDivider/>
+            }
+        </MudList>
+        <MudLink Href="@PageRoutes.UserDocuments.Overview" Typo="Typo.caption" Class="mt-2 d-block">
+            Se alle dokumenter →
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    // ======================== PARAMETERS ========================
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    // ======================== PRIVATE FIELDS ========================
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private List<DocumentListDto> _documents = [];
+
+    // ======================== PRIVATE METHODS ========================
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var query = new DocumentQueryParameters
+            {
+                Page           = 1,
+                PageSize       = 3,
+                SortBy         = DocumentSortField.UploadedAt,
+                SortDescending = true
+            };
+
+            var result = await DocumentService.GetUserDocumentsAsync(query, Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _documents = result.Value!.Items.ToList();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
