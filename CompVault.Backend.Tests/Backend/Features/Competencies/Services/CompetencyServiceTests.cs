@@ -5,6 +5,7 @@ using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.Notifications;
 using CompVault.Backend.Tests.Common;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.DTOs.Competencies;
@@ -22,6 +23,7 @@ public class CompetencyServiceTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IAuditContext> _auditContextMock;
     private readonly Mock<IDepartmentScopeService> _departmentScopeMock;
+    private readonly Mock<ICompetencyNotificationRepository> _notificationRepositoryMock;
     private readonly CompetencyService _sut;
 
     public CompetencyServiceTests()
@@ -31,6 +33,7 @@ public class CompetencyServiceTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _auditContextMock = new Mock<IAuditContext>();
         _departmentScopeMock = new Mock<IDepartmentScopeService>();
+        _notificationRepositoryMock = new Mock<ICompetencyNotificationRepository>();
         
         // Mocker departmentScope til å tilatte alle kall for å ikke tenke på dette hvor vi ikke tester 
         // logikken rundt DepartmentScope
@@ -44,7 +47,8 @@ public class CompetencyServiceTests
             _competencyTypeRepositoryMock.Object,
             _userRepositoryMock.Object,
             _auditContextMock.Object,
-            _departmentScopeMock.Object);
+            _departmentScopeMock.Object,
+            _notificationRepositoryMock.Object);
     }
     
     // -------------------------------------------------------------------------

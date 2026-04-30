@@ -4,6 +4,7 @@ using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.Notifications;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
@@ -20,7 +21,8 @@ public sealed class CompetencyService(
     ICompetencyTypeRepository competencyTypeRepository,
     IUserRepository userRepository,
     IAuditContext auditContext,
-    IDepartmentScopeService departmentScope) : ICompetencyService
+    IDepartmentScopeService departmentScope,
+    ICompetencyNotificationRepository notificationRepository) : ICompetencyService
 {
     /// <inheritdoc />
     public async Task<Result<PagedResult<CompetencyDto>>> GetAllAsync(
@@ -190,6 +192,11 @@ public sealed class CompetencyService(
         // Statuskalkulasjon: ved ExpiryDate-endring, men aldri hvis status er Revoked
         if (!revoking && expiryChanged && !isRevoked)
             competency.Status = CompetencyStatusCalculator.Calculate(competency.ExpiryDate);
+
+        // Når ExpiryDate endres (fornyelse), slett all gammel varslingslogg
+        // slik at varslingssyklusen starter på nytt med alle terskler.
+        if (expiryChanged)
+            await notificationRepository.DeleteForCompetencyAsync(competency.Id, cancellationToken);
 
         // Entity er allerede tracked via GetForUpdateAsync — ingen UpdateAsync nødvendig
         await competencyRepository.SaveChangesAsync(cancellationToken);
