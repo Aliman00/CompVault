@@ -1,8 +1,7 @@
 ﻿using CompVault.Shared.DTOs.Audit;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.Result;
-
-namespace CompVault.Frontend.Features.Audit;
+namespace CompVault.Frontend.Features.Audit.Services;
 
 public interface IAuditService
 {
