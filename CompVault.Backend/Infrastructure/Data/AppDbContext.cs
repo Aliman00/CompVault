@@ -6,6 +6,7 @@ using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Domain.Entities.JobTitles;
+using CompVault.Backend.Domain.Entities.Notifications;
 using CompVault.Backend.Features.Departments.Services;
 using Perms = CompVault.Shared.Constants.Permissions;
 
@@ -52,6 +53,9 @@ public sealed class AppDbContext(
 
     // ============= AUDIT ==============
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
+    // ============= NOTIFICATIONS ==============
+    public DbSet<CompetencyNotificationLog> CompetencyNotificationLogs => Set<CompetencyNotificationLog>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
