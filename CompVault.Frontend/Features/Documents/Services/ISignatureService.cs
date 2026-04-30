@@ -14,14 +14,4 @@ public interface ISignatureService
     /// Signerer et dokument som innlogget bruker
     /// </summary>
     Task<Result> SignAsync(string documentTypeSlug, Guid documentId, CancellationToken ct);
-
-    /// <summary>
-    /// Henter alle dokumenter innlogget bruker har signert
-    /// </summary>
-    Task<Result<List<DocumentListDto>>> GetMySignedAsync(CancellationToken ct);
-
-    /// <summary>
-    /// Henter alle dokumenter innlogget bruker mangler å signere
-    /// </summary>
-    Task<Result<List<DocumentListDto>>> GetMyPendingAsync(CancellationToken ct);
 }

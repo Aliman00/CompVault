@@ -27,7 +27,6 @@ public static class ApiRoutes
     {
         public const string Base = "api/users";
         public static string ById(Guid id) => $"{Base}/{id}";
-        public const string JobTitles = $"{Base}/job-titles";
         public const string Managers = $"{Base}/managers";
         public static string Lookup(string readPermission, string bypassPermission, string subPermission) =>
             $"{Base}/lookup?readPermission={readPermission}" +
@@ -53,7 +52,6 @@ public static class ApiRoutes
     {
         public const string Base = "api/competencies";
         public static string ById(Guid id) => $"{Base}/{id}";
-        public const string Expiring = $"{Base}/expiring";
     }
 
     public static class CompetencyTypes
@@ -94,8 +92,6 @@ public static class ApiRoutes
         // ================= Signaturer =================
         public static string Signatures(string slug, Guid id) => $"api/documents/{slug}/{id}/signatures";
         public static string Sign(string slug, Guid id) => $"api/documents/{slug}/{id}/sign";
-        public const string MySigned = "api/documents/my/signed";
-        public const string MyPending = "api/documents/my/pending";
         
         // ================= Nedlastning =================
         public static string Download(string slug, Guid id) => $"api/documents/{slug}/{id}/download";

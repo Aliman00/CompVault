@@ -17,16 +17,4 @@ public interface IDocumentSignatureService
     Task<Result<IReadOnlyList<UserSignatureStatusDto>>> GetSignatureStatusAsync(
         Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default);
-
-    /// <summary>Henter paginerte dokumenter brukeren har signert (på tvers av typer).</summary>
-    Task<Result<PagedResult<DocumentListDto>>> GetMySignedDocumentsAsync(
-        Guid userId, PagedQuery query, CancellationToken cancellationToken = default);
-
-    /// <summary>Henter alle dokumenter brukeren trenger å signere.</summary>
-    Task<Result<IReadOnlyList<DocumentListDto>>> GetMyPendingDocumentsAsync(
-        Guid userId, CancellationToken cancellationToken = default);
-
-    /// <summary>Henter fremdriftsstatistikk for en dokumenttype for en spesifikk bruker.</summary>
-    Task<Result<DocumentProgressDto>> GetProgressAsync(
-        string documentTypeSlug, Guid userId, CancellationToken cancellationToken = default);
 }
