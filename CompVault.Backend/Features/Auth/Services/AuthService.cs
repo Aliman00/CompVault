@@ -1,5 +1,4 @@
 using System.Diagnostics;
-
 using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
@@ -12,12 +11,9 @@ using CompVault.Backend.Infrastructure.Email.Templates;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Auth;
-using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-
 namespace CompVault.Backend.Features.Auth.Services;
 
 /// <summary>
@@ -63,30 +59,23 @@ public sealed class AuthService(
                 Result<string> codeResult = await otpCodeService.GenerateOtpCodeAsync(user.Id, ct);
                 if (codeResult.IsFailure)
                     return Result.Success(); // returnerer Success for å unngå epostkartlegging
+                
+                // Oppretter en EmailBody med ferdig template
+                // codeResult.Value er garantert å eksistere siden IsFailure er false
+                string otpCode = codeResult.Value ?? throw new InvalidOperationException(
+                    "OTP-kode er null til tross for at genereringen var vellykket.");
+                EmailBody emailBody = EmailTemplates.OtpCode(otpCode);
 
-                Result deliverCodeResult;
-                if (request.DeliveryMethod == OtpDeliveryMethod.Email)
+                // Sender epost og sjekker at det er ingen feil med epost sending
+                Result emailCodeResult = await emailService.SendAsync(request.Email, emailBody, ct);
+                if (emailCodeResult.IsFailure)
                 {
-                    // Oppretter en EmailBody med ferdig template
-                    // codeResult.Value er garantert å eksistere siden IsFailure er false
-                    string otpCode = codeResult.Value ?? throw new InvalidOperationException(
-                        "OTP-kode er null til tross for at genereringen var vellykket.");
-                    EmailBody emailBody = EmailTemplates.OtpCode(otpCode);
-
-                    // Sender epost og sjekker at det er ingen feil med epost sending
-                    deliverCodeResult = await emailService.SendAsync(request.Email, emailBody, ct);
-                    if (deliverCodeResult.IsFailure)
-                    {
-                        // Skjer det en uventet feil så vil frontend få en melding om det. Skal ikke skje
-                        // i produksjon. Denne returnen bryr seg ikke om stopwatch
-                        logger.LogError("OTP delivery failed for UserId: {UserId}", user.Id);
-                        return Result.Failure(
-                            deliverCodeResult.Error ?? throw new InvalidOperationException(
-                                "E-postlevering feilet uten feilmelding."));
-                    }
+                    // Skjer det en uventet feil så vil frontend få en melding om det. Skal ikke skje
+                    // i produksjon. Denne returnen bryr seg ikke om stopwatch
+                    logger.LogError("OTP delivery failed for UserId: {UserId}", user.Id);
+                    return Result.Failure(emailCodeResult.Error ?? throw new InvalidOperationException(
+                            "E-postlevering feilet uten feilmelding."));
                 }
-                // else
-                //     deliverCodeResult = await smsService.SendAsync();
 
                 return Result.Success();
             }, ct);

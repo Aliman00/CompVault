@@ -193,8 +193,7 @@
         _isLoading = true;
         _loginErrorMessage = null;
 
-        var requestOtpRequest = new RequestOtpRequest { Email = testUser.Email,
-            DeliveryMethod = OtpDeliveryMethod.Email };
+        var requestOtpRequest = new RequestOtpRequest { Email = testUser.Email };
 
         Result requestOtpResult = await _devService.RequestOtpAsync(requestOtpRequest);
 
