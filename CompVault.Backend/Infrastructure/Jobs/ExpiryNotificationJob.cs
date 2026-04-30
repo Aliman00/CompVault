@@ -57,15 +57,56 @@ public class ExpiryNotificationJob(
         {
             DateTime now = DateTime.UtcNow;
 
+            // Hent kompetanser UTEN Include på ApplicationUser — ApplicationUser har et
+            // DepartmentScope query-filter som fjerner ALLE brukere i bakgrunnsjobbens scope
+            // (ingen autentisert bruker → ingen avdelinger tillatt).
+            // Include ville gitt INNER JOIN mot 0 brukere → 0 kompetanser.
             List<Competency> competencies = await dbContext.Competencies
                 .AsNoTracking()
-                .Include(c => c.ApplicationUser!)
-                    .ThenInclude(u => u.Manager)
                 .Include(c => c.CompetencyType)
                 .Where(c => c.CompetencyType!.RequiresExpiration
                             && c.ExpiryDate != null
                             && c.Status != CompetencyStatus.Revoked)
                 .ToListAsync(ct);
+
+            if (competencies.Count == 0)
+            {
+                logger.LogInformation("Utløpsvarslingsjobb: ingen kompetanser å varsle om");
+                return;
+            }
+
+            // Hent alle aktive brukere som har kompetanser — bruk IgnoreQueryFilters
+            // for å omgå DepartmentScope-filteret i bakgrunnsjobb-kontekst.
+            HashSet<Guid> userIds = competencies.Select(c => c.UserId).ToHashSet();
+
+            Dictionary<Guid, ApplicationUser> users = await dbContext.Users
+                .IgnoreQueryFilters()
+                .Where(u => u.DeletedAt == null && u.IsActive && userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, ct);
+
+            // Hent ledere for brukere som har en ManagerId
+            HashSet<Guid> managerIds = users.Values
+                .Where(u => u.ManagerId.HasValue)
+                .Select(u => u.ManagerId!.Value)
+                .ToHashSet();
+
+            Dictionary<Guid, ApplicationUser> managers = managerIds.Count > 0
+                ? await dbContext.Users
+                    .IgnoreQueryFilters()
+                    .Where(u => u.DeletedAt == null && u.IsActive && managerIds.Contains(u.Id))
+                    .ToDictionaryAsync(u => u.Id, ct)
+                : [];
+
+            // Wire opp navigasjoner manuelt
+            foreach (Competency competency in competencies)
+            {
+                if (users.TryGetValue(competency.UserId, out ApplicationUser? user))
+                {
+                    competency.ApplicationUser = user;
+                    if (user.ManagerId.HasValue && managers.TryGetValue(user.ManagerId.Value, out ApplicationUser? manager))
+                        user.Manager = manager;
+                }
+            }
 
             int sentCount = 0;
             int skippedCount = 0;
@@ -75,7 +116,6 @@ public class ExpiryNotificationJob(
                 if (ct.IsCancellationRequested)
                     break;
 
-                // Null-sjekk av navigasjonsegenskaper (inkluderer de, men teoretisk mulig null)
                 if (competency.ApplicationUser?.Email is null || competency.CompetencyType is null)
                     continue;
 
