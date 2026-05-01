@@ -7,12 +7,14 @@
 ```text
 Infrastructure/Email/
 ├── IEmailService.cs      <- Interface for e-postoperasjoner
-├── EmailService.cs       <- Implementasjon
-├── EmailSettings.cs      <- Konfigurasjon for SMTP/API-innstillinger
+├── EmailService.cs       <- Implementasjon (Resend.NET)
+├── Config/
+│   └── EmailSettings.cs  <- Konfigurasjon for API-nøkkel og avsenderadresse
 ├── Models/
-│   └── EmailBody.cs      <- Modell for e-postinnhold
+│   └── EmailBody.cs      <- Modell for e-postinnhold (subject + html)
 └── Templates/
-    └── EmailTemplates.cs <- HTML-maler for ulike e-posttyper
+    ├── EmailTemplates.cs         <- Generiske maler (OTP, etc.)
+    └── CompetencyEmailTemplates.cs  <- Varsler for kompetanseutløp
 ```
 
 ## Hvordan vi bruker denne mappen
@@ -40,4 +42,4 @@ public class AuthService(IEmailService emailService) : IAuthService
 - Maler skal returnere innholdet som skal sendes, ikke stå for selve utsendingen.
 - Metoder bør ta `CancellationToken ct = default` der det er naturlig.
 
-Konfigurasjon som host, port og avsendernavn legges i `appsettings.json` via `EmailSettings`, ikke i kode.
+Konfigurasjon som API-nøkkel og avsenderadresse legges i `appsettings.json` via `EmailSettings`, ikke i kode.

@@ -1,36 +1,45 @@
 # CompVault.Shared
 
-> Delt kontraktsbibliotek referert av **både** `CompVault.Backend` og `CompVault.Frontend`. Gir én enkelt kilde til sannhet for alle typer som flyter mellom lagene.
+Delt kontraktsbibliotek referert av både `CompVault.Backend` og `CompVault.Frontend`. Gir én enkelt kilde til sannhet for alle typer som flyter mellom lagene.
 
 ## Struktur
 
-```
+```text
 CompVault.Shared/
-  DTOs/
-    Auth/        <- RequestOtpRequest, VerifyOtpRequest, LoginResponse, RefreshTokenRequest
-    Users/       <- UserDto, CreateUserRequest, UpdateUserRequest
-    <Feature>/   <- opprettes per fase
-  Enums/
-    EmploymentType.cs
-    OtpDeliveryMethod.cs
-  Constants/
-    Permissions.cs
-  Result/
-    Result.cs          <- Result<T> — returtype fra alle services
-    AppError.cs        <- feiltype med melding og kode
-    ErrorCode.cs       <- enum med alle feilkoder
-    ProblemDetail.cs   <- serialiserbar feilrespons til Frontend
+├── DTOs/
+│   ├── Auth/              ← RequestOtpRequest, VerifyOtpRequest, TokenResponse
+│   ├── Users/             ← UserDto, CreateUserRequest, UpdateUserRequest
+│   ├── Documents/         ← DocumentDto, CreateDocumentRequest, DocumentTypeDto
+│   ├── Competencies/      ← CompetencyDto, CreateCompetencyRequest
+│   ├── Departments/       ← DepartmentDto, CreateDepartmentRequest
+│   ├── Equipment/         ← EquipmentCategoryDto, EquipmentIssuanceDto
+│   ├── JobTitles/         ← JobTitleDto, CreateJobTitleRequest
+│   ├── Roles/             ← RoleDto, PermissionDto, AssignPermissionsRequest
+│   ├── Audit/             ← AuditLogDto, AuditLogQueryParameters
+│   └── Common/            ← Pagination (PagedQuery, PagedResult)
+├── Enums/
+│   ├── CompetencyStatus.cs
+│   ├── DocumentSignatureFilter.cs
+│   ├── DocumentSortField.cs
+│   ├── DocumentTargetMode.cs
+│   └── EmploymentType.cs
+├── Constants/
+│   ├── Permissions.cs           ← alle permission-strenger (users:read, documents:sign, osv.)
+│   ├── ApiRoutes.cs             ← samling av alle endpoint-URLer
+│   └── Validations/             ← MaxLength/MinLength + feilmeldinger per feature
+├── Result/
+│   ├── Result.cs        ← Result<T> og Result, returtype fra alle services
+│   ├── AppError.cs      ← feil med melding + ErrorCode
+│   ├── ErrorCode.cs     ← enum med alle feilkoder
+│   └── ProblemDetail.cs ← serialiserbar feilrespons
 ```
 
 ## Hva hører hjemme her
 
-| Type | Eksempel | Begrunnelse |
-|---|---|---|
-| DTOs og response-modeller | `UserDto`, `LoginResponse` | Frontend deserialiserer API-respons til disse |
-| Request-modeller | `CreateUserRequest`, `RequestOtpRequest` | En felles definisjon holder Frontend og Backend synkronisert |
-| Enums | `EmploymentType`, `OtpDeliveryMethod` | Brukes av begge lag — dropdowns i Frontend, validering i Backend |
-| Konstanter | `Permissions.cs` | Backend: autorisasjonspolicyer. Frontend: vise/skjule UI-elementer |
-| Result-typer | `Result<T>`, `AppError`, `ErrorCode` | Backend returnerer disse; Frontend bruker dem til feilhåndtering |
+- **DTOs og request-modeller** — Frontend deserialiserer API-respons til disse (`UserDto`, `DocumentDto`). Request-modeller (`CreateUserRequest`, `UpdateDocumentRequest`) holder Frontend og Backend synkronisert.
+- **Enums** — Brukes av begge lag. Dropdowns i Frontend, validering i Backend. F.eks. `EmploymentType`, `DocumentTargetMode`, `CompetencyStatus`.
+- **Konstanter** — `Permissions.cs` brukes av Backend for autorisasjon og av Frontend for å vise/skjule UI-elementer. `ApiRoutes.cs` samler alle endpoint-URLer. `*Validations`-klasser inneholder `MaxLength`/`MinLength` og feilmeldinger som deles.
+- **Result-typer** — `Result<T>`, `AppError`, `ErrorCode`, `ProblemDetail`. Backend returnerer disse; Frontend bruker dem til feilhåndtering.
 
 ## Hva hører IKKE hjemme her
 
@@ -42,11 +51,11 @@ CompVault.Shared/
 
 ## Ny fase? Gjør slik
 
-1. Opprett `DTOs/<FeatureName>/` med request- og response-klasser
-2. Opprett `Enums/<NyEnum>.cs` for eventuelle nye enums
-3. Legg til nye konstanter nederst i `Constants/Permissions.cs`
+1. Opprett `DTOs/<FeatureName>/` med request- og response-klasser.
+2. Opprett `Enums/<NyEnum>.cs` for eventuelle nye enums.
+3. Legg til nye konstanter i `Constants/` — bruk feature-spesifikke filer (`UserValidations`, `DocValidations`, osv.).
 
-Namespace-konvensjon:
+**Namespace-konvensjon:**
 
 ```csharp
 namespace CompVault.Shared.DTOs.<FeatureName>;

@@ -69,7 +69,7 @@ public static class ServiceCollectionExtensions
                     npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
                 options.AddInterceptors(
                     new AuditSaveChangesInterceptor(sp),
-                    new DepartmentScopeSaveChangesInterceptor(sp));
+                    new UserDepartmentWriteInterceptor(sp));
             });
         }
 

@@ -7,12 +7,14 @@
 ```text
 Infrastructure/Data/
 ├── AppDbContext.cs         <- Hoved-DbContext (arver fra IdentityDbContext)
+├── AppDbContextFactory.cs  <- Design-time factory for EF Core-migrasjoner
 ├── IUnitOfWork.cs          <- Interface for transaksjonshåndtering
 ├── UnitOfWork.cs           <- Implementasjon med ExecuteInTransactionAsync
 ├── DatabaseSettings.cs     <- Konfigurasjon for database-tilkobling
-└── Configurations/         <- EF Core-konfigurasjoner per entitet
-    └── <Domene>/
-        └── <Entity>Configuration.cs
+├── Configurations/         <- EF Core-konfigurasjoner per entitet
+│   └── <Domene>/
+│       └── <Entity>Configuration.cs
+└── Interceptors/           <- EF Core-interceptorer (AuditSaveChangesInterceptor)
 ```
 
 ## AppDbContext
