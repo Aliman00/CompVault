@@ -24,17 +24,6 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Competency>> GetAllWithDetailsAsync(
-        Guid? userId,
-        CompetencyStatus? status,
-        Guid? competencyTypeId,
-        CancellationToken cancellationToken = default)
-    {
-        IQueryable<Competency> query = BuildFilteredQuery(userId, status, competencyTypeId);
-        return await query.ToListAsync(cancellationToken);
-    }
-
-    /// <inheritdoc />
     public async Task<int> CountWithFiltersAsync(
         Guid? userId,
         CompetencyStatus? status,
@@ -60,7 +49,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
 
     /// <summary>
     /// Bygger en IQueryable med navigasjon og valgfrie filtre.
-    /// Gjenbrukes av GetAllWithDetailsAsync, CountWithFiltersAsync og GetAllWithDetailsPagedAsync.
+    /// Gjenbrukes av CountWithFiltersAsync og GetAllWithDetailsPagedAsync.
     /// </summary>
     private IQueryable<Competency> BuildFilteredQuery(
         Guid? userId,
