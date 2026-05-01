@@ -13,7 +13,7 @@ public interface IDocumentTypeService
 
     /// <summary>Henter én dokumenttype basert på slug.</summary>
     Task<Result<DocumentTypeDto>> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
-    
+
     /// <summary> Henter alle dokumentertyper for en bruker</summary>
     Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(Guid userId,
         CancellationToken ct = default);

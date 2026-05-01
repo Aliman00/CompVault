@@ -71,7 +71,7 @@ public class EquipmentCategoryService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<EquipmentCategoryDto>> CreateAsync(CreateEquipmentCategoryRequest request, 
+    public async Task<Result<EquipmentCategoryDto>> CreateAsync(CreateEquipmentCategoryRequest request,
         CancellationToken ct)
     {
         try
@@ -102,7 +102,7 @@ public class EquipmentCategoryService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<EquipmentCategoryDto>> UpdateAsync(Guid id, UpdateEquipmentCategoryRequest request, 
+    public async Task<Result<EquipmentCategoryDto>> UpdateAsync(Guid id, UpdateEquipmentCategoryRequest request,
         CancellationToken ct)
     {
         try

@@ -97,7 +97,7 @@ public sealed class DevAuthController(
 
         if (user is null)
             return Unauthorized(new { message = "Ugyldig e-post eller passord." });
-        
+
         OtpCode? existing = await dbContext.OtpCodes
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(o => o.UserId == user.Id);

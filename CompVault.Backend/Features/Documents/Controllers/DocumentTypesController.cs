@@ -46,7 +46,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
 
         return Ok(result.Value);
     }
-    
+
     /// <summary>Henter dokumenttyper med antall dokumenter for innlogget bruker.</summary>
     [HttpGet("my")]
     [Authorize]
@@ -54,7 +54,7 @@ public sealed class DocumentTypesController(IDocumentTypeService documentTypeSer
     public async Task<ActionResult<IReadOnlyList<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(CancellationToken ct)
     {
         Guid userId = User.GetUserId();
-        Result<IReadOnlyList<UserDocumentTypeDto>> result = 
+        Result<IReadOnlyList<UserDocumentTypeDto>> result =
             await documentTypeService.GetMyDocumentTypesAsync(userId, ct);
 
         if (result.IsFailure)

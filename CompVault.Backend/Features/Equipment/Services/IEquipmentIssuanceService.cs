@@ -16,15 +16,15 @@ public interface IEquipmentIssuanceService
     /// <summary> Henter alle utleveringer for et utstyr </summary>
     Task<Result<IReadOnlyList<EquipmentIssuanceDto>>> GetByItemAsync(Guid equipmentItemId,
         CancellationToken ct = default);
-    
+
     /// <summary>Henter alle utstyrskategorier for innlogget bruker.</summary>
-    Task<Result<IReadOnlyList<UserEquipmentCategoryDto>>> GetCategoriesForUserAsync(Guid userId, 
+    Task<Result<IReadOnlyList<UserEquipmentCategoryDto>>> GetCategoriesForUserAsync(Guid userId,
         CancellationToken ct = default);
-    
+
     /// <summary>Henter utleveringer for innlogget bruker med valgfri kategorifiltrering.</summary>
-    Task<Result<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(Guid userId, Guid? categoryId, 
+    Task<Result<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(Guid userId, Guid? categoryId,
         PagedQuery query, CancellationToken ct = default);
-    
+
     Task<Result<EquipmentIssuanceDto>> CreateAsync(Guid issuedById, CreateEquipmentIssuanceRequest request, CancellationToken cancellationToken = default);
     Task<Result<EquipmentIssuanceDto>> UpdateAsync(Guid id, UpdateEquipmentIssuanceRequest request, CancellationToken cancellationToken = default);
     Task<Result<bool>> DeleteAsync(Guid id, CancellationToken cancellationToken = default);

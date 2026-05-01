@@ -78,7 +78,7 @@ public class EquipmentItemService(
         {
             HttpResponseMessage response =
                 await _httpClient.GetAsync(ApiRoutes.EquipmentItems.ByCategory(categoryId), ct);
-            
+
             Result<List<EquipmentItemDto>> result =
                 await HttpClientExtensions.ParseResponseAsync<List<EquipmentItemDto>>(response, ct);
 

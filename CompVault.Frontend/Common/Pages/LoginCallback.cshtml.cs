@@ -1,7 +1,9 @@
 ﻿using System.Security.Claims;
+
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.DTOs.Auth;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -26,12 +28,12 @@ public class LoginCallback(AuthSettings authSettings, IWebHostEnvironment env) :
         if (string.IsNullOrWhiteSpace(TokenResponse.AccessToken) ||
             string.IsNullOrWhiteSpace(TokenResponse.RefreshToken))
             return LocalRedirect("/login-email?error=invalid");
-        
+
         IEnumerable<Claim> claims = JwtExtensions.ParseClaimsFromJwt(TokenResponse.AccessToken);
         var identity = new ClaimsIdentity(claims, "jwt");
         identity.AddClaim(new Claim("access_token", TokenResponse.AccessToken));
         var principal = new ClaimsPrincipal(identity);
-        
+
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
             new AuthenticationProperties { IsPersistent = true });
 

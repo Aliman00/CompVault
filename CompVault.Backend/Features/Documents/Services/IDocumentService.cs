@@ -31,7 +31,7 @@ public interface IDocumentService
         DocumentQueryParameters query,
         bool hasPermission,
         CancellationToken ct = default);
-    
+
     /// <summary>Oppretter et nytt dokument med valgfri filopplasting.</summary>
     Task<Result<DocumentDto>> CreateAsync(
         string documentTypeSlug,

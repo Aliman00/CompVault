@@ -16,7 +16,7 @@ public sealed class CreateEquipmentIssuanceRequest
     public Guid ItemId { get; set; }
 
     /// <summary>Antall som utleveres. Standard er 1.</summary>
-    [Range(EquipmentValidations.QuantityMin, EquipmentValidations.QuantityMax, ErrorMessage = 
+    [Range(EquipmentValidations.QuantityMin, EquipmentValidations.QuantityMax, ErrorMessage =
         EquipmentValidations.Errors.QuantityRange)]
     public int Quantity { get; set; } = 1;
 

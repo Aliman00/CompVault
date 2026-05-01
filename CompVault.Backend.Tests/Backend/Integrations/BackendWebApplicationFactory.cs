@@ -37,7 +37,7 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 
     // Vi mocker EmailService for å mocke email kall
     public Mock<IEmailService> EmailServiceMock { get; } = new();
-    
+
     // Lar oss hente tilkobling til databasen fra test-klasser
     public string GetConnectionString() => _postgres.GetConnectionString();
 
@@ -65,7 +65,7 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsy
 
             foreach (ServiceDescriptor? descriptor in descriptors)
                 services.Remove(descriptor);
-            
+
             // Fjerner filterene slik at tester kan tester ikke trenger å tenke på DepartmentScopeService og hierarkiet
             services.AddDbContext<AppDbContext>((sp, options) =>
                 options.UseNpgsql(_postgres.GetConnectionString())

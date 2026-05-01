@@ -1,8 +1,10 @@
 ﻿using System.Net;
 using System.Text.Json;
+
 using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Models;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.WebUtilities;
 namespace CompVault.Frontend.Common.Extensions;
 
@@ -58,10 +60,10 @@ public static class HttpClientExtensions
         {
             if (response.StatusCode == HttpStatusCode.Forbidden)
                 return AppError.Create(ErrorCode.Forbidden, "Du har ikke tilgang til denne ressursen.");
-            
+
             // Henter ut hele bodyen som en et JsonDocument for å sjekke om det er datavalidation eller vår egen
             // feilmelding
-            using JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), 
+            using JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct),
                 cancellationToken: ct);
             JsonElement root = doc.RootElement;
 
@@ -105,7 +107,7 @@ public static class HttpClientExtensions
             ? baseUrl
             : QueryHelpers.AddQueryString(baseUrl, queryParams);
     }
-    
+
     /// <summary>
     /// Generisk metode som bygger og poster en MultipartFormDataContent med en request og
     /// eventuelt en fil hvis vedlagt.
@@ -128,15 +130,15 @@ public static class HttpClientExtensions
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
         return await httpClient.PostAsync(url, content, ct);
     }
-    
-    
+
+
     /// <summary>
     /// Leser filinnholdet fra en HTTP-respons og mapper det til en FileAttachment
     /// </summary>
     /// <param name="response">Http-forespørsel fra backend</param>
     /// <param name="ct"></param>
     /// <returns>Ferdig mappet FileAttachment for nedlastning</returns>
-    internal static async Task<FileAttachment> ReadFileAttachmentAsync(HttpResponseMessage response, 
+    internal static async Task<FileAttachment> ReadFileAttachmentAsync(HttpResponseMessage response,
         CancellationToken ct)
     {
         Stream stream = await response.Content.ReadAsStreamAsync(ct);
@@ -148,6 +150,6 @@ public static class HttpClientExtensions
 
         return new FileAttachment(stream, fileName, contentType);
     }
-    
-    
+
+
 }

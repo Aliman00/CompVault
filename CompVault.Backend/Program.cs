@@ -1,9 +1,9 @@
 using CompVault.Backend.Common.Authorization;
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.SeedData;
 using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Extensions;
+using CompVault.Backend.SeedData;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

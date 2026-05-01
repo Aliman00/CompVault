@@ -104,8 +104,8 @@ public static class TestDataFactory
             CreatedAt = createdAt ?? DateTime.UtcNow,
             DeletedAt = deletedAt
         };
-    
-    
+
+
     /// <summary>
     /// Oppretter en kompetansetype for testing
     /// </summary>
@@ -119,15 +119,15 @@ public static class TestDataFactory
         string name = "Dykkekurs",
         string? category = null,
         bool requiresExpiration = false) => new()
-    {
-        Id = id ?? Guid.NewGuid(),
-        Name = name,
-        Category = category,
-        RequiresExpiration = requiresExpiration,
-        CreatedAt = DateTime.UtcNow,
-        IsActive = true
-    };
-    
+        {
+            Id = id ?? Guid.NewGuid(),
+            Name = name,
+            Category = category,
+            RequiresExpiration = requiresExpiration,
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true
+        };
+
     /// <summary>
     /// Oppretter en kompetanse for å teste mot. Egenskaper for revoke og soft delete er utelatt
     /// </summary>
@@ -145,16 +145,16 @@ public static class TestDataFactory
         CompetencyStatus status = CompetencyStatus.Valid,
         DateTime? expiryDate = null,
         DateTime? issuedDate = null) => new()
-    {
-        Id = id ?? Guid.NewGuid(),
-        UserId = userId ?? Guid.NewGuid(),
-        CompetencyTypeId = competencyTypeId ?? Guid.NewGuid(),
-        Status = status,
-        ExpiryDate = expiryDate,
-        IssuedDate = issuedDate ?? DateTime.UtcNow,
-        IsActive = true
-    };
-    
+        {
+            Id = id ?? Guid.NewGuid(),
+            UserId = userId ?? Guid.NewGuid(),
+            CompetencyTypeId = competencyTypeId ?? Guid.NewGuid(),
+            Status = status,
+            ExpiryDate = expiryDate,
+            IssuedDate = issuedDate ?? DateTime.UtcNow,
+            IsActive = true
+        };
+
     /// <summary>
     /// Oppretter en utstyrskategori for testing
     /// </summary>
@@ -163,12 +163,12 @@ public static class TestDataFactory
     /// <returns>Ferdig bygget EquipmentCategory klar til testing</returns>
     public static EquipmentCategory CreateEquipmentCategory(Guid? id = null, string name = "Test kategori") => new()
     {
-        Id = id ?? Guid.NewGuid(), 
-        Name = name, 
-        IsActive = true, 
+        Id = id ?? Guid.NewGuid(),
+        Name = name,
+        IsActive = true,
         CreatedAt = DateTime.UtcNow
     };
-    
+
     /// <summary>
     /// Oppretter et utstyr
     /// </summary>
@@ -178,19 +178,19 @@ public static class TestDataFactory
     /// <param name="hasSize">Har item størrelse. Default false</param>
     /// <returns>EquipmentItem for testing</returns>
     public static EquipmentItem CreateEquipmentItem(
-        Guid? id = null, 
-        Guid? categoryId = null, 
+        Guid? id = null,
+        Guid? categoryId = null,
         string name = "Test utstyr",
         bool hasSize = false) => new()
-    {
-        Id = id ?? Guid.NewGuid(), 
-        CategoryId = categoryId ?? Guid.NewGuid(),
-        Name = name, 
-        HasSize = hasSize,
-        IsActive = true, 
-        CreatedAt = DateTime.UtcNow
-    };
-    
+        {
+            Id = id ?? Guid.NewGuid(),
+            CategoryId = categoryId ?? Guid.NewGuid(),
+            Name = name,
+            HasSize = hasSize,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
     /// <summary>
     /// Tilknytter et utstyr en bruker
     /// </summary>
@@ -202,22 +202,22 @@ public static class TestDataFactory
     /// <param name="size">Størrelse hvis satt. Default null</param>
     /// <returns>EquipmentIssuance for testing</returns>
     public static EquipmentIssuance CreateEquipmentIssuance(
-        Guid? id = null, 
-        Guid? userId = null, 
-        Guid? itemId = null, 
+        Guid? id = null,
+        Guid? userId = null,
+        Guid? itemId = null,
         Guid? issuedById = null,
         int quantity = 1,
         string? size = null) => new()
-    {
-        Id = id ?? Guid.NewGuid(), 
-        UserId = userId ?? Guid.NewGuid(),
-        ItemId = itemId ?? Guid.NewGuid(),
-        IssuedById = issuedById ?? Guid.NewGuid(),
-        Quantity = quantity,
-        IssuedDate = DateTime.UtcNow,
-        Size = size,
-        IsActive = true, 
-        CreatedAt = DateTime.UtcNow
-    };
+        {
+            Id = id ?? Guid.NewGuid(),
+            UserId = userId ?? Guid.NewGuid(),
+            ItemId = itemId ?? Guid.NewGuid(),
+            IssuedById = issuedById ?? Guid.NewGuid(),
+            Quantity = quantity,
+            IssuedDate = DateTime.UtcNow,
+            Size = size,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
 
 }

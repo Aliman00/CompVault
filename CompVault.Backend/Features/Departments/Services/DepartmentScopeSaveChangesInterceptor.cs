@@ -1,5 +1,6 @@
 ﻿using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Shared.Constants;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -20,7 +21,7 @@ public sealed class DepartmentScopeSaveChangesInterceptor(IServiceProvider servi
         // Ingen scope så kan det bety at vi er i en kontekst uten en HTTP-forespørsel som eks migrasjon eller seeding
         if (departmentScopeService == null)
             return base.SavingChangesAsync(eventData, result, ct);
-        
+
         IHttpContextAccessor? http = serviceProvider.GetService<IHttpContextAccessor>();
         if (http?.HttpContext?.User.Identity?.IsAuthenticated != true)
             return base.SavingChangesAsync(eventData, result, ct);
@@ -29,12 +30,12 @@ public sealed class DepartmentScopeSaveChangesInterceptor(IServiceProvider servi
                      .Entries<ApplicationUser>()
                      .Where(e => e.State is EntityState.Added or EntityState.Modified))
         {
-            if (!departmentScopeService.IsAllowed(entry.Entity.DepartmentId, Permissions.UsersAll, 
+            if (!departmentScopeService.IsAllowed(entry.Entity.DepartmentId, Permissions.UsersAll,
                     Permissions.UsersReadSub))
                 throw new UnauthorizedAccessException(
                     "Du har ikke tilattelse til denne operasjonen.");
         }
-        
+
         return base.SavingChangesAsync(eventData, result, ct);
     }
 }

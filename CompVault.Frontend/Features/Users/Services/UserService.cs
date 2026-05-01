@@ -20,10 +20,10 @@ public class UserService(
         {
             string url = $"{ApiRoutes.User.Base}?page={query.Page}&pageSize={query.PageSize}";
             HttpResponseMessage response = await _httpClient.GetAsync(url, ct);
-            
+
             Result<PagedResult<UserDto>> result =
                 await HttpClientExtensions.ParseResponseAsync<PagedResult<UserDto>>(response, ct);
-            
+
             if (result.IsFailure)
                 return Result<PagedResult<UserDto>>.Failure(result.Error!);
 
@@ -71,7 +71,7 @@ public class UserService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<UserDto>> GetCurrentUserAsync(CancellationToken ct)
     {
@@ -99,7 +99,7 @@ public class UserService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<UserLookupDto>>> LookupUsersAsync(string readPermission,
         string bypassPermission, string subPermission, CancellationToken ct)
@@ -108,10 +108,10 @@ public class UserService(
         {
             HttpResponseMessage response = await _httpClient.GetAsync(
                 ApiRoutes.User.Lookup(readPermission, bypassPermission, subPermission), ct);
-            
+
             Result<IReadOnlyList<UserLookupDto>> result =
                 await HttpClientExtensions.ParseResponseAsync<IReadOnlyList<UserLookupDto>>(response, ct);
-            
+
             if (result.IsFailure)
                 return Result<IReadOnlyList<UserLookupDto>>.Failure(result.Error!);
 

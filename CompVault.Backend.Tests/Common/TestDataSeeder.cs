@@ -1,4 +1,5 @@
 using System.Security.Claims;
+
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
@@ -10,11 +11,13 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Enums;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+
 using Moq;
 
 namespace CompVault.Backend.Tests.Common;
@@ -69,11 +72,11 @@ public static class TestDataSeeder
         // Opprett rollen hvis den ikke eksisterer
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole { Name = role });
-        
+
         // Opprett en department hvis den ikke eksisterer
         departmentId ??= (await SeedDepartmentAsync(serviceProvider)).Id;
 
-        ApplicationUser user = TestDataFactory.CreateApplicationUser(id: id, email: email, deletedAt: deletedAt, 
+        ApplicationUser user = TestDataFactory.CreateApplicationUser(id: id, email: email, deletedAt: deletedAt,
             departmentId: departmentId);
         await userManager.CreateAsync(user);
         await userManager.AddToRoleAsync(user, role);
@@ -297,11 +300,11 @@ public static class TestDataSeeder
 
         return client;
     }
-    
+
     // -------------------------------------------------------------------------
     // HttpContextAccessor
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Oppretter en en HttpContext (et Http-forespørsel objekt) med en autorisert bruker med avdelings ID
     /// </summary>
@@ -335,7 +338,7 @@ public static class TestDataSeeder
 
         return httpContextAccessorMock.Object;
     }
-    
+
     // -------------------------------------------------------------------------
     // Department
     // -------------------------------------------------------------------------
@@ -353,7 +356,7 @@ public static class TestDataSeeder
     /// <param name="deletedAt">Default null</param>
     /// <returns></returns>
     public static async Task<Department> SeedDepartmentAsync(
-        IServiceProvider serviceProvider, 
+        IServiceProvider serviceProvider,
         Guid? id = null,
         string name = "Test Department",
         string? description = null,
@@ -364,8 +367,8 @@ public static class TestDataSeeder
     {
         using IServiceScope scope = serviceProvider.CreateScope();
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
-        Department department = TestDataFactory.CreateDepartment(id, name, description, parentDepartmentId, 
+
+        Department department = TestDataFactory.CreateDepartment(id, name, description, parentDepartmentId,
             isActive, createdAt, deletedAt);
 
         context.Departments.Add(department);
@@ -373,11 +376,11 @@ public static class TestDataSeeder
 
         return department;
     }
-    
+
     // -------------------------------------------------------------------------
     // Competencies
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Seeder en kompetansetype inn i databasen
     /// </summary>
@@ -404,7 +407,7 @@ public static class TestDataSeeder
 
         return competencyType;
     }
-    
+
     // -------------------------------------------------------------------------
     // Document Types, Categories and Documents
     // -------------------------------------------------------------------------
@@ -524,11 +527,11 @@ public static class TestDataSeeder
         }
         await context.SaveChangesAsync();
     }
-    
+
     // -------------------------------------------------------------------------
     // Equipment
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Seeder en utstyrskategori inn i databasen med valgfrie eller defaulte verdier
     /// </summary>
@@ -537,13 +540,13 @@ public static class TestDataSeeder
     /// <param name="name">Navn. Default er Test kategori</param>
     /// <returns>Seedet EquipmentCategory med alle viktige egenskaper</returns>
     public static async Task<EquipmentCategory> SeedEquipmentCategoryAsync(
-        IServiceProvider serviceProvider, 
-        Guid? id = null, 
+        IServiceProvider serviceProvider,
+        Guid? id = null,
         string name = "Test kategori")
     {
         using IServiceScope scope = serviceProvider.CreateScope();
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
+
         EquipmentCategory category = TestDataFactory.CreateEquipmentCategory(id, name);
 
         context.EquipmentCategories.Add(category);
@@ -551,7 +554,7 @@ public static class TestDataSeeder
 
         return category;
     }
-    
+
     /// <summary>
     /// Seeder et utstyr inn i databasen med valgfrie eller defaulte verdier
     /// </summary>
@@ -562,15 +565,15 @@ public static class TestDataSeeder
     /// <param name="hasSize">Har item størrelse. Default false</param>
     /// <returns>Seedet EquipmentItem med alle viktige egenskaper</returns>
     public static async Task<EquipmentItem> SeedEquipmentItemAsync(
-        IServiceProvider serviceProvider, 
-        Guid? id = null, 
-        Guid? categoryId = null, 
+        IServiceProvider serviceProvider,
+        Guid? id = null,
+        Guid? categoryId = null,
         string name = "Test utstyr",
         bool hasSize = false)
     {
         using IServiceScope scope = serviceProvider.CreateScope();
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
+
         EquipmentItem item = TestDataFactory.CreateEquipmentItem(id, categoryId, name, hasSize);
 
         context.EquipmentItems.Add(item);

@@ -12,7 +12,7 @@ namespace CompVault.Backend.Infrastructure.Repositories.Competencies;
 /// <summary>
 /// EF Core-implementasjon av <see cref="ICompetencyRepository"/>.
 /// </summary>
-public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScopeService departmentScope) : 
+public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScopeService departmentScope) :
     BaseRepository<Competency>(dbContext), ICompetencyRepository
 {
     /// <inheritdoc />
@@ -71,10 +71,10 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
             .AsNoTracking()
             .Include(c => c.ApplicationUser)
             .Include(c => c.CompetencyType);
-        
+
         // Filterer vekk avdelinger vi ikke har tilattelse til
         query = ApplyDepartmentFilter(query);
-        
+
         if (userId.HasValue)
             query = query.Where(c => c.UserId == userId.Value);
 
@@ -157,9 +157,9 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
         competency.IsActive = false;
         return Task.CompletedTask;
     }
-    
+
     // =========================== Hjelpemetoder =========================== 
-    
+
     // Filter som sjekker at vi ikke kan hente kompetansebevis vi ikke har tilattelse til
     private IQueryable<Competency> ApplyDepartmentFilter(IQueryable<Competency> query)
     {

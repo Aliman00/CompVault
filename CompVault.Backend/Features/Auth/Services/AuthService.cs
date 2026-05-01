@@ -1,4 +1,5 @@
 using System.Diagnostics;
+
 using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Identity;
@@ -12,6 +13,7 @@ using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 namespace CompVault.Backend.Features.Auth.Services;
@@ -59,7 +61,7 @@ public sealed class AuthService(
                 Result<string> codeResult = await otpCodeService.GenerateOtpCodeAsync(user.Id, ct);
                 if (codeResult.IsFailure)
                     return Result.Success(); // returnerer Success for å unngå epostkartlegging
-                
+
                 // Oppretter en EmailBody med ferdig template
                 // codeResult.Value er garantert å eksistere siden IsFailure er false
                 string otpCode = codeResult.Value ?? throw new InvalidOperationException(

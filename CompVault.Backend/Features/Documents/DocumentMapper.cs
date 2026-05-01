@@ -44,7 +44,7 @@ public static class DocumentMapper
             UploadedAt = document.UploadedAt
         };
     }
-    
+
     /// <summary>
     /// Oppretter et DocumentDto, men vi viser om brukeren har signert denne versjonen eller ikke
     /// </summary>
@@ -68,7 +68,7 @@ public static class DocumentMapper
         {
             Id = document.Id,
             Slug = document.DocumentType?.Slug ?? string.Empty,
-            SlugName = document.DocumentType?.Name ?? string.Empty,  
+            SlugName = document.DocumentType?.Name ?? string.Empty,
             Title = document.Title,
             Description = document.Description,
             DocumentTypeCategoryId = document.DocumentTypeCategoryId,

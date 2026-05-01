@@ -44,7 +44,7 @@ public sealed class EquipmentIssuanceDto
 
     /// <summary>Antall utlevert.</summary>
     public int Quantity { get; set; }
-    
+
     /// <summary>Om utstyret har størrelse.</summary>
     public bool HasSize { get; set; }
 

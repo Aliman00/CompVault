@@ -26,7 +26,7 @@ public static class UserMapper
         CreatedAt = user.CreatedAt,
         Roles = roles.ToList()
     };
-    
+
     public static UserLookupDto ToLookupDto(this ApplicationUser user) => new()
     {
         Id = user.Id,

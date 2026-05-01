@@ -18,44 +18,44 @@ public class DepartmentScopeServiceTests
 {
     // Vi bygger en struktur her for testing ved at Root er toppavdelingen, ChildA og ChildB er under Root igjen, og
     // Grandchild er under ChildA igjen
-    
+
     //   Root
     //   ├── ChildA
     //   │   └── GrandChild
     //   └── ChildB
-    
+
     private static readonly Guid RootId = Guid.Parse("10000000-0000-0000-0000-000000000001");
     private static readonly Guid ChildAId = Guid.Parse("10000000-0000-0000-0000-000000000002");
     private static readonly Guid ChildBId = Guid.Parse("10000000-0000-0000-0000-000000000003");
     private static readonly Guid GrandChildId = Guid.Parse("10000000-0000-0000-0000-000000000004");
-    
+
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
     private readonly Mock<IServiceProvider> _serviceProviderMock;
-    
-    
+
+
     public DepartmentScopeServiceTests()
     {
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         _departmentRepositoryMock = new Mock<IDepartmentRepository>();
         _serviceProviderMock = new Mock<IServiceProvider>();
-        
+
         // Setter opp til å kunne mocke at vi kaller ServiceProvider i testene
         _serviceProviderMock
             .Setup(sp => sp.GetService(typeof(IDepartmentRepository)))
             .Returns(_departmentRepositoryMock.Object);
-        
+
         // Mocker at vi får en tom liste
         _departmentRepositoryMock
             .Setup(r => r.GetAllWithHierarchyAsync(
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Department>());
     }
-    
+
     // -------------------------------------------------------------------------
     // Hjelpemetoder
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Bygger en DepartmentScopeService med en innlogget bruker med avdeling og tilattelser
     /// </summary>
@@ -69,7 +69,7 @@ public class DepartmentScopeServiceTests
 
         return new DepartmentScopeService(_httpContextAccessorMock.Object, _serviceProviderMock.Object);
     }
-    
+
     /// <summary>
     /// Bygger en uautentisert sut for å teste uten en innlogget bruker med claim
     /// </summary>
@@ -78,7 +78,7 @@ public class DepartmentScopeServiceTests
         _httpContextAccessorMock.Setup(x => x.HttpContext).Returns((HttpContext?)null);
         return new DepartmentScopeService(_httpContextAccessorMock.Object, _serviceProviderMock.Object);
     }
-    
+
     /// <summary>
     /// Bygger en HttpContext med en innlogget bruker med valgrie permissions
     /// Setter kun department-claim hvis det er med en avdeling, for å kunne teste uten en claim
@@ -92,7 +92,7 @@ public class DepartmentScopeServiceTests
 
         if (departmentId.HasValue)
             claims.Add(new Claim("department_id", departmentId.Value.ToString()));
-    
+
         foreach (string permission in permissions)
         {
             claims.Add(new Claim(Permissions.ClaimType, permission));
@@ -118,17 +118,17 @@ public class DepartmentScopeServiceTests
             TestDataFactory.CreateDepartment(id: ChildBId, name: "ChildB", parentDepartmentId: RootId),
             TestDataFactory.CreateDepartment(id: GrandChildId, name: "Grandchild", parentDepartmentId: ChildAId),
         };
-        
+
         _departmentRepositoryMock
             .Setup(r => r.GetAllWithHierarchyAsync(
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(departments);
     }
-    
+
     // -------------------------------------------------------------------------
     // HasBypass
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester at HasBypass gir oss true hvis vi har korrekt bypass tilattelse
     /// </summary>
@@ -140,11 +140,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         bool result = sut.HasBypass(Permissions.UsersAll);
-        
+
         // Assert
         result.Should().BeTrue();
     }
-    
+
     /// <summary>
     /// Tester at vi får false hvis vi ikke har en korrekt bypass permission. Vi har UsersRead, men metoden
     /// vi kaller krever at vi har UsersAll
@@ -157,11 +157,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         bool result = sut.HasBypass(Permissions.UsersAll);
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     /// <summary>
     /// Tester at vi får false hvis vi ikke er innlogget
     /// </summary>
@@ -173,15 +173,15 @@ public class DepartmentScopeServiceTests
 
         // Act
         bool result = sut.HasBypass(Permissions.UsersAll);
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     // -------------------------------------------------------------------------
     // GetAllowedDepartmentIds
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester at riktig tilattelse gir oss egen avdeling og underavdeling
     /// </summary>
@@ -194,11 +194,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         IReadOnlyList<Guid> result = sut.GetAllowedDepartmentIds(Permissions.UsersReadSub);
-        
+
         // Assert - Sjekker at det er to elementer i listen og at det er korrekt avdelinger
         result.Should().BeEquivalentTo([ChildAId, GrandChildId]);
     }
-    
+
     /// <summary>
     /// Tester at hvis vi ikke har korrekt permission så får vi ikke se under avdelinger. Brukeeren har UsersRead,
     /// men metoden krever UsersReadSub. Brukeren får se egen avdeling
@@ -211,12 +211,12 @@ public class DepartmentScopeServiceTests
 
         // Act
         IReadOnlyList<Guid> result = sut.GetAllowedDepartmentIds(Permissions.UsersReadSub);
-        
+
         // Assert - Sjekker at det er kun et element i resultatet listen at det er korrekt avdeling
         result.Should().ContainSingle()
             .Which.Should().Be(ChildAId);
     }
-    
+
     /// <summary>
     /// Tester at uautentisert bruker gir oss en tom liste
     /// </summary>
@@ -228,11 +228,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         IReadOnlyList<Guid> result = sut.GetAllowedDepartmentIds(Permissions.UsersReadSub);
-        
+
         // Assert
         result.Should().BeEmpty();
     }
-    
+
     /// <summary>
     /// Sjekker at vi får hele hierarkiet ved å ha korrekt sub-permission
     /// </summary>
@@ -245,11 +245,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         IReadOnlyList<Guid> result = sut.GetAllowedDepartmentIds(Permissions.UsersReadSub);
-        
+
         // Assert
         result.Should().BeEquivalentTo([RootId, ChildAId, ChildBId, GrandChildId]);
     }
-    
+
     /// <summary>
     /// Sjekker at algoritmen vår med BFS ikke returnerer en høyere avdeling når vi har sub-permission
     /// </summary>
@@ -262,16 +262,16 @@ public class DepartmentScopeServiceTests
 
         // Act
         IReadOnlyList<Guid> result = sut.GetAllowedDepartmentIds(Permissions.UsersReadSub);
-        
+
         // Assert
         result.Should().ContainSingle()
             .Which.Should().Be(GrandChildId);
     }
-    
+
     // -------------------------------------------------------------------------
     // IsAllowed
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Sjekker at vi får true hvis brukeren har readAll-permission og vi sjekker en underavdeling
     /// </summary>
@@ -283,11 +283,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         bool result = sut.IsAllowed(GrandChildId, Permissions.UsersAll, Permissions.UsersReadSub);
-        
+
         // Assert
         result.Should().BeTrue();
     }
-    
+
     /// <summary>
     /// Sjekker at vi får true hvis brukeren har sub-permission og vi sjekker en underavdeling
     /// </summary>
@@ -300,11 +300,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         bool result = sut.IsAllowed(GrandChildId, Permissions.UsersAll, Permissions.UsersReadSub);
-        
+
         // Assert
         result.Should().BeTrue();
     }
-    
+
     /// <summary>
     /// Sjekker at vi får false hvis vi sjekker en avdeling som ikke er egen avdeling eller under,
     /// selvom vi har tilattelse
@@ -318,11 +318,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         bool result = sut.IsAllowed(ChildBId, Permissions.UsersAll, Permissions.UsersReadSub);
-    
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     /// <summary>
     /// Sjekker at vi får false hvis brukeren ikke har riktig permission og vi sjekker en annen avdeling
     /// </summary>
@@ -334,11 +334,11 @@ public class DepartmentScopeServiceTests
 
         // Act
         bool result = sut.IsAllowed(ChildBId, Permissions.UsersAll, Permissions.UsersReadSub);
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     /// <summary>
     /// Sjekker at vi får true hvis brukeren ikke har riktig permission og vi sjekker egen avdeling
     /// </summary>
@@ -350,12 +350,12 @@ public class DepartmentScopeServiceTests
 
         // Act
         bool result = sut.IsAllowed(ChildAId, Permissions.UsersAll, Permissions.UsersReadSub);
-        
+
         // Assert
         result.Should().BeTrue();
     }
-    
-        
+
+
     // -------------------------------------------------------------------------
     // Test av lazy-cache
     // -------------------------------------------------------------------------
@@ -374,7 +374,7 @@ public class DepartmentScopeServiceTests
         sut.GetAllowedDepartmentIds(Permissions.UsersReadSub);
         sut.GetAllowedDepartmentIds(Permissions.UsersReadSub);
         sut.GetAllowedDepartmentIds(Permissions.UsersReadSub);
-        
+
         // Assert
         _departmentRepositoryMock.Verify(
             r => r.GetAllWithHierarchyAsync(It.IsAny<CancellationToken>()),

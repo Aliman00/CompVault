@@ -31,14 +31,14 @@ public interface IDocumentService
     /// <param name="file">Fil som en FileAttachment</param>
     /// <param name="ct"></param>
     /// <returns>DocumentDto ved vellykket oppdatering</returns>
-    Task<Result<DocumentDto>> CreateAsync(string slug, CreateDocumentRequest request, FileAttachment? file, 
+    Task<Result<DocumentDto>> CreateAsync(string slug, CreateDocumentRequest request, FileAttachment? file,
         CancellationToken ct);
 
     /// <summary>
     /// Oppdaterer eksisterende dokument. Krever Slug og ID
     /// </summary>
     Task<Result<DocumentDto>> UpdateAsync(string slug, Guid id, UpdateDocumentRequest request, CancellationToken ct);
-    
+
     /// <summary>
     /// Oppdaterer et eksisterende dokument sin versjon
     /// </summary>
@@ -47,7 +47,7 @@ public interface IDocumentService
     /// <param name="file">Fil som FileAttachment - må stemme med eksisterende fil</param>
     /// <param name="ct"></param>
     /// <returns>Oppdatert DocumentDto</returns>
-    Task<Result<DocumentDto>> UpdateVersionAsync(string slug, Guid documentId, FileAttachment? file, 
+    Task<Result<DocumentDto>> UpdateVersionAsync(string slug, Guid documentId, FileAttachment? file,
         CancellationToken ct);
 
     /// <summary>

@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Reflection;
+
 using CompVault.Frontend.Common.Models;
 namespace CompVault.Frontend.Common.Http;
 
@@ -18,7 +19,7 @@ internal static class MultipartFormBuilder
         where TRequest : class
     {
         var content = new MultipartFormDataContent();
-        
+
         // Serialiserer alle egenskapene fra DTO-en til en string for å sende med requesten i MultipartFormDataContent
         foreach (PropertyInfo property in typeof(TRequest).GetProperties())
         {
@@ -26,35 +27,35 @@ internal static class MultipartFormBuilder
             object? value = property.GetValue(request);
             if (value is null)
                 continue;
-            
+
             // Lister som er List<Guid> - lister må sendes som seprate form-felter med indeks i navnet
             if (value is IReadOnlyList<Guid> guids)
             {
                 AddIndexedList(content, property.Name, guids, g => g.ToString());
                 continue;
             }
-            
+
             // String er allerede string, så her sender vi inn g uten ToString()
             if (value is IReadOnlyList<string> strings)
             {
                 AddIndexedList(content, property.Name, strings, g => g);
                 continue;
             }
-            
+
             // Bool gjort om til string med ToString() blir store bokstaver, må sikre at det er små bokstaver
             string stringValue = value is bool boolValue
                 ? boolValue.ToString().ToLowerInvariant()
                 : value.ToString()!; // Verdien er sjekket for null over
-            
+
             content.Add(new StringContent(stringValue), property.Name);
         }
-        
+
         // Legger til fil hvis fil er vedlagt
         AddFile(content, file);
 
         return content;
     }
-    
+
     /// <summary>
     /// Iterer igjennom en liste med forskjellige verdier, gjør det om til en string med indeks i navnet
     /// slik MutlipartFormDataContent krever. Eks: TargetDepartmentIds[0] = "a1b2c3..."
@@ -72,7 +73,7 @@ internal static class MultipartFormBuilder
             content.Add(new StringContent(toString(list[i])), $"{propertyName}[{i}]");
         }
     }
-    
+
     /// <summary>
     /// Legger til en fil inn i MutlipartFormDataContent hvis fil er vedlagt.
     /// </summary>
@@ -82,7 +83,7 @@ internal static class MultipartFormBuilder
     {
         if (file == null)
             return;
-        
+
         var fileContent = new StreamContent(file.Stream);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
         // MutlipartFormDataContent krever innhold, feltnavn og filnavn

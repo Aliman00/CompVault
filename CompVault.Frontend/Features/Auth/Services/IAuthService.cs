@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-
-using CompVault.Shared.DTOs.Auth;
+﻿using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
 
 namespace CompVault.Frontend.Features.Auth.Services;

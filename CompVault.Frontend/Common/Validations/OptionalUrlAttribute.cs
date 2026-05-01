@@ -2,7 +2,7 @@
 namespace CompVault.Frontend.Common.Validations;
 
 public class OptionalUrlAttribute : ValidationAttribute
-{   
+{
     // Overstyerer URL slik at hvis vi kan hoppe ut av et URL-felt selvom verdien er en tom string
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {

@@ -24,9 +24,9 @@ public interface IDocumentRepository : IRepository<Document>
     /// <summary>Henter alle dokumenttyper hvor brukeren har dokumenter.
     /// Henter dokumentene og grupperer de, deretter henter ut det vi trenger for DTO-en,
     /// sorteret etter navn</summary>
-    Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId, 
+    Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId,
         Guid? jobTitleId, CancellationToken ct = default);
-    
+
     /// <summary>Teller dokumenter for en bruker basert på filtrering av status</summary>
     Task<int> CountDocumentsForUserAsync(
         Guid userId,
@@ -44,7 +44,7 @@ public interface IDocumentRepository : IRepository<Document>
         Guid? jobTitleId,
         DocumentQueryParameters parameters,
         CancellationToken ct = default);
-    
+
     /// <summary>Legger til en versjonsrecord.</summary>
     Task<DocumentVersion> AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default);
 

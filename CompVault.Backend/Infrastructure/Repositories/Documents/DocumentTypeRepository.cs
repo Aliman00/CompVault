@@ -15,7 +15,7 @@ public sealed class DocumentTypeRepository(AppDbContext dbContext)
         return await DbSet
             .FirstOrDefaultAsync(dt => dt.Slug == slug, cancellationToken);
     }
-    
+
     public async Task<IReadOnlyList<string>> GetSlugsAsync(CancellationToken ct = default) =>
         await DbSet
             .Select(dt => dt.Slug)

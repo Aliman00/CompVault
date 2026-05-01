@@ -1,7 +1,6 @@
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Identity;
-using CompVault.Backend.Features.Competencies;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
@@ -9,7 +8,9 @@ using CompVault.Backend.Tests.Common;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Enums;
+
 using FluentAssertions;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,29 +28,29 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
     private ApplicationUser _userA = null!;
     private ApplicationUser _userB = null!;
     private ApplicationUser _userSub = null!;
-    
+
     public async Task InitializeAsync()
     {
         await factory.ResetDatabaseAsync();
-        
+
         _departmentA = await TestDataSeeder.SeedDepartmentAsync(factory.Services, name: "Avdeling A");
         _departmentB = await TestDataSeeder.SeedDepartmentAsync(factory.Services, name: "Avdeling B");
         _subDepartment = await TestDataSeeder.SeedDepartmentAsync(factory.Services, name: "Underavdeling A",
             parentDepartmentId: _departmentA.Id);
-        
+
         _userA = await TestDataSeeder.SeedUserAsync(factory.Services,
             id: TestConstants.Users.ActiveUserId, departmentId: _departmentA.Id);
         _userB = await TestDataSeeder.SeedUserAsync(factory.Services,
             email: "userb@cv.no", departmentId: _departmentB.Id);
         _userSub = await TestDataSeeder.SeedUserAsync(factory.Services,
             email: "usersub@cv.no", departmentId: _subDepartment.Id);
-        
+
         _testType = await TestDataSeeder.SeedCompetencyTypeAsync(factory.Services, name: "Test Type",
             requiresExpiration: true);
 
         IServiceScope scope = factory.Services.CreateScope();
         _context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
+
         IHttpContextAccessor accessor = TestDataSeeder.CreateHttpContextAccessor(_departmentA.Id);
         var departmentScope = new DepartmentScopeService(accessor, scope.ServiceProvider);
 
@@ -57,21 +58,21 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
-    
+
     // -------------------------------------------------------------------------
     // Hjelpemetoder
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Oppretter CompetencyRepository med en DbContext og en DepartmentScopeService
     /// </summary>
     private CompetencyRepository CreateSut(Guid departmentId, params string[] permissions)
     {
         IServiceScope scope = factory.Services.CreateScope();
-        
+
         IHttpContextAccessor accessor = TestDataSeeder.CreateHttpContextAccessor(departmentId, permissions);
         var departmentScope = new DepartmentScopeService(accessor, scope.ServiceProvider);
-        
+
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         return new CompetencyRepository(context, departmentScope);
     }
@@ -169,11 +170,11 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         await _context.Entry(validCompetency).ReloadAsync();
         validCompetency.Status.Should().Be(CompetencyStatus.Valid);
     }
-    
+
     // -------------------------------------------------------------------------
     // ApplyDepartmentFilter Tests
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester at brukeren i avdeling A ikke får sett kompetansebeviset til brukeren i avdeling B uten tilattelse
     /// </summary>
@@ -193,16 +194,16 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         await seedContext.SaveChangesAsync();
 
         CompetencyRepository sut = CreateSut(_departmentA.Id);
-        
+
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsAsync(null, null, 
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsAsync(null, null,
             null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
         result.Should().NotContain(c => c.Id == competencyB.Id);
     }
-    
+
     /// <summary>
     /// Tester at brukeren i avdeling A får sett kompetansebeviset til brukeren i avdeling B med
     /// CompetenciesAll-tilattelse
@@ -223,16 +224,16 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         await seedContext.SaveChangesAsync();
 
         CompetencyRepository sut = CreateSut(_departmentA.Id, Permissions.CompetenciesAll);
-        
+
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsAsync(null, null, 
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsAsync(null, null,
             null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
         result.Should().Contain(c => c.Id == competencyB.Id);
     }
-    
+
     /// <summary>
     /// Tester at brukeren i avdeling A ikke får sett kompetansebeviset til brukeren i underavdeling A uten tilattelse
     /// </summary>
@@ -252,16 +253,16 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         await seedContext.SaveChangesAsync();
 
         CompetencyRepository sut = CreateSut(_departmentA.Id);
-        
+
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsAsync(null, null, 
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsAsync(null, null,
             null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
         result.Should().NotContain(c => c.Id == competencySub.Id);
     }
-    
+
     /// <summary>
     /// Tester at brukeren i avdeling A får sett kompetansebeviset til brukeren i underavdeling A med
     /// CompetenciesReadSub-tilattelse
@@ -282,9 +283,9 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         await seedContext.SaveChangesAsync();
 
         CompetencyRepository sut = CreateSut(_departmentA.Id, Permissions.CompetenciesReadSub);
-        
+
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsAsync(null, null, 
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsAsync(null, null,
             null);
 
         // Assert

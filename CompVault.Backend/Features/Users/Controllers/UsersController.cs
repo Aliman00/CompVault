@@ -1,5 +1,4 @@
 using CompVault.Backend.Common.Controller;
-using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
@@ -54,7 +53,7 @@ public sealed class UsersController(
 
         return Ok(result.Value);
     }
-    
+
     /// <summary>
     /// Lar en bruker slå opp alle brukerne de har tilattelse til. Så fremt brukeren har riktig
     /// tilattelse. Frontend velger hvilke permissions som er påkrevd til de forskjellige featurene.

@@ -9,7 +9,7 @@ public interface IUserRepository : IRepository<ApplicationUser>
 {
     /// <summary>Finner en bruker basert på e-postadressen.</summary>
     Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
-    
+
     /// <summary>Finner en bruker basert på ID uten filteret som sjekker avdeling.</summary>
     Task<ApplicationUser?> GetByIdIgnoringFiltersAsync(Guid id, CancellationToken ct = default);
 
@@ -18,11 +18,11 @@ public interface IUserRepository : IRepository<ApplicationUser>
 
     /// <summary>Henter alle aktive brukere inkludert rollene deres i én operasjon for å unngå N+1 problemer.</summary>
     Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default);
-    
+
     /// <summary>Henter brukere som tilhører en målgruppe. Enten avdeling eller stillingstittel.</summary>
     Task<IReadOnlyList<ApplicationUser>> GetUsersByTargetAsync(IReadOnlyList<Guid> departmentIds,
         IReadOnlyList<Guid> jobTitleIds, CancellationToken ct = default);
-    
+
     /// <summary>Henter alle aktive brukere som ikke er slettet.</summary>
     Task<IReadOnlyList<ApplicationUser>> GetActiveUsersAsync(CancellationToken cancellationToken = default);
 
@@ -44,7 +44,7 @@ public interface IUserRepository : IRepository<ApplicationUser>
     /// <summary>Henter en paginert side med aktive brukere inkludert rollene sine.</summary>
     Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>> GetActiveUsersWithRolesPagedAsync(
         int skip, int take, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Henter alle brukere en bruker har tilattelse til å se med avdeling og stillinge. Vi lar brukeren hente
     /// underavdelinger hvis de har tilattelse eller permissions til det. Sortert etter etternavn

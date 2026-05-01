@@ -54,14 +54,14 @@ public static class EnumDisplayExtensions
         DocumentTargetMode d => d.ToDisplayString(),
         _ => value.ToString()
     };
-    
+
     /// <summary>
     /// Viser en bruker i en select eller autocomplete-felt. For å kunne skille mellom brukere med likt navn,
     /// og evnetuelt lik avdeling
     /// </summary>
     /// <param name="user">Brukeren som vi gjør om som en UserLookupDto</param>
     /// <returns>Formatert string i riktig format Lars Hansen - Utvikling - Systemutvikler</returns>
-    public static string ToDisplayLabel(this UserLookupDto user) => 
+    public static string ToDisplayLabel(this UserLookupDto user) =>
         $"{user.FullName} - {user.DepartmentName} - {user.JobTitleName ?? ""}";
-    
+
 }

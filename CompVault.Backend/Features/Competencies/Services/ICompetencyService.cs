@@ -1,6 +1,5 @@
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
-using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
 
 namespace CompVault.Backend.Features.Competencies.Services;

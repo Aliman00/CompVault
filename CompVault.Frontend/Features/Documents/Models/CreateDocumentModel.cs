@@ -14,7 +14,7 @@ public class CreateDocumentModel
 
     [MaxLength(DocValidations.DescMaxLength, ErrorMessage = DocValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
-    
+
     public Guid? DocumentTypeCategoryId { get; set; }
 
     [MaxLength(DocValidations.ExternalUrlMaxLength, ErrorMessage = DocValidations.Errors.ExternalUrlMaxLength)]
@@ -22,7 +22,7 @@ public class CreateDocumentModel
     public string? ExternalUrl { get; set; }
 
     public bool RequiresSignature { get; set; } = true;
-    
+
     public List<Guid> TargetDepartmentIds { get; set; } = [];
     public List<Guid> TargetJobTitleIds { get; set; } = [];
 

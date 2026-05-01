@@ -15,7 +15,7 @@ public static class TextExtensions
         text is null ? string.Empty : text.Length > maxLength
             ? text[..maxLength] + "…"
             : text;
-    
+
     /// <summary>
     /// Gjør om et fullName til å returnere initialene til brukeren
     /// </summary>
@@ -79,7 +79,7 @@ public static class TextExtensions
         Permissions.AdminAccess => "Se administratorpanel",
         _ => permission
     };
-    
+
     /// <summary>
     /// Gjør om AuditLog sin Action om til leslig og forståerlig for brukeren
     /// </summary>
@@ -160,7 +160,7 @@ public static class TextExtensions
 
         _ => action
     };
-    
+
     /// <summary>
     /// Gjør om nøkkelen til en AuditLog sin detalje felt til norsk og mer forståerlig for brukeren
     /// </summary>

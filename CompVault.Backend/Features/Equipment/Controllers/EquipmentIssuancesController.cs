@@ -55,23 +55,23 @@ public sealed class EquipmentIssuancesController(IEquipmentIssuanceService issua
         if (result.IsFailure) return HandleFailure(result);
         return Ok(result.Value);
     }
-    
+
     /// <summary>
     /// Henter alle utleveringer til en EquipmentItem
     /// </summary>
     [HttpGet("by-item/{itemId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<EquipmentIssuanceDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<EquipmentIssuanceDto>>> GetByItemAsync(Guid itemId, 
+    public async Task<ActionResult<IReadOnlyList<EquipmentIssuanceDto>>> GetByItemAsync(Guid itemId,
         CancellationToken ct)
     {
         Result<IReadOnlyList<EquipmentIssuanceDto>> result = await issuanceService.GetByItemAsync(itemId, ct);
 
-        if (result.IsFailure) 
+        if (result.IsFailure)
             return HandleFailure(result);
-        
+
         return Ok(result.Value);
     }
-    
+
     /// <summary>
     /// Henter utstyrskategorier med antall utstyr for innlogget bruker
     /// </summary>
@@ -89,7 +89,7 @@ public sealed class EquipmentIssuancesController(IEquipmentIssuanceService issua
 
         return Ok(result.Value);
     }
-    
+
     /// <summary>
     /// Henter utleveringer med filteringer og paginering for innlogget bruker
     /// </summary>

@@ -9,14 +9,14 @@ public class CreateEquipmentIssuanceModel : IValidatableObject
 {
     [Required(ErrorMessage = "Bruker er påkrevd")]
     public Guid? UserId { get; set; }
-    
+
     [Required(ErrorMessage = "Utstyr er påkrevd")]
     public Guid? ItemId { get; set; }
 
     [Range(EquipmentValidations.QuantityMin, EquipmentValidations.QuantityMax,
         ErrorMessage = EquipmentValidations.Errors.QuantityRange)]
     public int Quantity { get; set; } = 1;
-    
+
     [StringLength(EquipmentValidations.SizeMaxLength, ErrorMessage = EquipmentValidations.Errors.SizeMaxLength)]
     public string? Size { get; set; }
 
@@ -24,10 +24,10 @@ public class CreateEquipmentIssuanceModel : IValidatableObject
 
     [StringLength(EquipmentValidations.NotesMaxLength, ErrorMessage = EquipmentValidations.Errors.NotesMaxLength)]
     public string? Notes { get; set; }
-    
+
     // Settes av dialogen når utstyr velges
     public bool ItemHasSize { get; set; }
-    
+
     /// <summary>
     /// Validerer atstørrelse er påkrevd hvis utstyret krever størrelse
     /// </summary>

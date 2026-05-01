@@ -73,7 +73,7 @@ public class EquipmentIssuancesService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, PagedQuery query, 
+    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetByUserAsync(Guid userId, PagedQuery query,
         CancellationToken ct)
     {
         try
@@ -102,7 +102,7 @@ public class EquipmentIssuancesService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<List<UserEquipmentCategoryDto>>> GetMyCategoriesAsync(CancellationToken ct)
     {
@@ -132,7 +132,7 @@ public class EquipmentIssuancesService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(
         Guid? categoryId, PagedQuery query, CancellationToken ct)
@@ -166,7 +166,7 @@ public class EquipmentIssuancesService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<List<EquipmentIssuanceDto>>> GetByItemAsync(Guid itemId, CancellationToken ct)
     {
@@ -174,7 +174,7 @@ public class EquipmentIssuancesService(
         {
             HttpResponseMessage response =
                 await _httpClient.GetAsync(ApiRoutes.EquipmentIssuances.ByItem(itemId), ct);
-            
+
             Result<List<EquipmentIssuanceDto>> result =
                 await HttpClientExtensions.ParseResponseAsync<List<EquipmentIssuanceDto>>(response, ct);
 
@@ -198,7 +198,7 @@ public class EquipmentIssuancesService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<EquipmentIssuanceDto>> CreateAsync(CreateEquipmentIssuanceRequest request, 
+    public async Task<Result<EquipmentIssuanceDto>> CreateAsync(CreateEquipmentIssuanceRequest request,
         CancellationToken ct)
     {
         try
@@ -229,7 +229,7 @@ public class EquipmentIssuancesService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<EquipmentIssuanceDto>> UpdateAsync(Guid id, UpdateEquipmentIssuanceRequest request, 
+    public async Task<Result<EquipmentIssuanceDto>> UpdateAsync(Guid id, UpdateEquipmentIssuanceRequest request,
         CancellationToken ct)
     {
         try

@@ -7,7 +7,7 @@ public interface ISignatureService
     /// <summary>
     /// Henter alle signaturer for et dokument
     /// </summary>
-    Task<Result<List<UserSignatureStatusDto>>> GetSignaturesAsync(string documentTypeSlug, Guid documentId, 
+    Task<Result<List<UserSignatureStatusDto>>> GetSignaturesAsync(string documentTypeSlug, Guid documentId,
         CancellationToken ct);
 
     /// <summary>

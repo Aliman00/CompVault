@@ -5,8 +5,11 @@ using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using Moq;
 namespace CompVault.Backend.Tests.Backend.Features.Documents.Services;
 

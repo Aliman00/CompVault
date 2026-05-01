@@ -20,14 +20,14 @@ public interface IUserService
     /// Henter en bruker sin egen side uten å ha User:Read
     /// </summary>
     Task<Result<UserDto>> GetCurrentUserAsync(CancellationToken ct);
-    
+
     /// <summary>
     /// Henter alle brukere innlogget bruker har tilattelse til å se og utføre handlinger mot. Vi sender inn
     /// hvilken tilattelse er påkrevd til de forskjellige featurene. Eks: equipment:read for utlevering av utstyr
     /// </summary>
     Task<Result<IReadOnlyList<UserLookupDto>>> LookupUsersAsync(string readPermission, string bypassPermission,
         string subPermission, CancellationToken ct);
-    
+
     /// <summary>
     /// Henter alle brukere med leder-stillingstittel (IsLeader=true)
     /// </summary>

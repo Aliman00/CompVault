@@ -11,7 +11,9 @@ using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
+
 using FluentAssertions;
+
 using Moq;
 
 namespace CompVault.Backend.Tests.Backend.Features.Competencies.Services;
@@ -34,14 +36,14 @@ public class CompetencyServiceTests
         _auditContextMock = new Mock<IAuditContext>();
         _departmentScopeMock = new Mock<IDepartmentScopeService>();
         _notificationRepositoryMock = new Mock<ICompetencyNotificationRepository>();
-        
+
         // Mocker departmentScope til å tilatte alle kall for å ikke tenke på dette hvor vi ikke tester 
         // logikken rundt DepartmentScope
         _departmentScopeMock
-            .Setup(s => s.IsAllowed(It.IsAny<Guid>(), 
+            .Setup(s => s.IsAllowed(It.IsAny<Guid>(),
                 It.IsAny<string>(), It.IsAny<string>()))
             .Returns(true);
-        
+
         _sut = new CompetencyService(
             _competencyRepositoryMock.Object,
             _competencyTypeRepositoryMock.Object,
@@ -50,11 +52,11 @@ public class CompetencyServiceTests
             _departmentScopeMock.Object,
             _notificationRepositoryMock.Object);
     }
-    
+
     // -------------------------------------------------------------------------
     // Hjelpemetoder
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Oppretter en CompetencyRequest for testing
     /// </summary>
@@ -72,15 +74,15 @@ public class CompetencyServiceTests
         DateTime? expiryDate = null,
         string? certificateNumber = null,
         string? notes = null) => new()
-    {
-        UserId = userId ?? Guid.NewGuid(),
-        CompetencyTypeId = competencyTypeId ?? Guid.NewGuid(),
-        IssuedDate = issuedDate ?? DateTime.UtcNow.AddDays(-10),
-        ExpiryDate = expiryDate,
-        CertificateNumber = certificateNumber,
-        Notes = notes
-    };
-    
+        {
+            UserId = userId ?? Guid.NewGuid(),
+            CompetencyTypeId = competencyTypeId ?? Guid.NewGuid(),
+            IssuedDate = issuedDate ?? DateTime.UtcNow.AddDays(-10),
+            ExpiryDate = expiryDate,
+            CertificateNumber = certificateNumber,
+            Notes = notes
+        };
+
     // -------------------------------------------------------------------------
     // CreateAsync Tests
     // -------------------------------------------------------------------------
@@ -190,15 +192,15 @@ public class CompetencyServiceTests
         CompetencyType type = new() { Id = competencyTypeId, Name = "Requires Expiry", IsActive = true, RequiresExpiration = true };
         var targetUser = new ApplicationUser
         {
-            Id = request.UserId!.Value, 
-            IsActive = true, 
+            Id = request.UserId!.Value,
+            IsActive = true,
             DepartmentId = Guid.NewGuid()
         };
-        
+
         _competencyTypeRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
-        
+
         _userRepositoryMock
             .Setup(x => x.GetByIdIgnoringFiltersAsync(request.UserId.Value, It.IsAny<CancellationToken>()))
             .ReturnsAsync(targetUser);
@@ -230,16 +232,16 @@ public class CompetencyServiceTests
         CompetencyType type = new() { Id = competencyTypeId, Name = "Test", IsActive = true, RequiresExpiration = true };
         var targetUser = new ApplicationUser
         {
-            Id = request.UserId!.Value, 
-            IsActive = true, 
+            Id = request.UserId!.Value,
+            IsActive = true,
             DepartmentId = Guid.NewGuid()
         };
-        
+
         _competencyTypeRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
 
-       
+
         _userRepositoryMock
             .Setup(x => x.GetByIdIgnoringFiltersAsync(request.UserId.Value, It.IsAny<CancellationToken>()))
             .ReturnsAsync(targetUser);
@@ -275,7 +277,7 @@ public class CompetencyServiceTests
             IsActive = true,
             RequiresExpiration = true
         };
-        
+
         // Bruker med avdeling for å sjekke tilattelse
         var targetUser = new ApplicationUser
         {
@@ -329,7 +331,7 @@ public class CompetencyServiceTests
         _competencyRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Competency>(), It.IsAny<CancellationToken>()), Times.Once);
         _competencyRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
-    
+
     /// <summary>
     /// Tester at brukeren som tilknytter en brukers ansattkompetanse ikke er i samme avdeling og heller
     /// ikke har tilattelse
@@ -339,22 +341,22 @@ public class CompetencyServiceTests
     {
         // Arrange
         CreateCompetencyRequest request = CreateCompetencyRequest();
-        CompetencyType type = TestDataFactory.CreateCompetencyType(id: request.CompetencyTypeId!.Value, 
+        CompetencyType type = TestDataFactory.CreateCompetencyType(id: request.CompetencyTypeId!.Value,
             requiresExpiration: false);
         ApplicationUser targetUser = TestDataFactory.CreateApplicationUser(id: request.UserId!.Value);
-        
+
         // Mocker at vi henter korrekt Type
         _competencyTypeRepositoryMock
-            .Setup(x => x.GetByIdAsync(request.CompetencyTypeId.Value, 
+            .Setup(x => x.GetByIdAsync(request.CompetencyTypeId.Value,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(type);
-        
+
         // Mocker at vi henter riktig bruker
         _userRepositoryMock
-            .Setup(x => x.GetByIdIgnoringFiltersAsync(request.UserId.Value, 
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(request.UserId.Value,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(targetUser);
-        
+
         // Mcoker at vi får false og ikke har bypass
         _departmentScopeMock
             .Setup(s => s.IsAllowed(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -410,14 +412,14 @@ public class CompetencyServiceTests
 
         CompetencyType type = new() { Id = Guid.NewGuid(), Name = "Test", RequiresExpiration = true };
         var user = new ApplicationUser { Id = Guid.NewGuid(), DepartmentId = Guid.NewGuid() };
-        
+
         Competency competency = new()
         {
             Id = id,
             UserId = Guid.NewGuid(),
             CompetencyTypeId = type.Id,
             CompetencyType = type,
-            ApplicationUser = user, 
+            ApplicationUser = user,
             IssuedDate = DateTime.UtcNow.AddDays(-5),
             ExpiryDate = DateTime.UtcNow.AddDays(100)
         };
@@ -449,7 +451,7 @@ public class CompetencyServiceTests
 
         CompetencyType type = new() { Id = Guid.NewGuid(), Name = "Test", RequiresExpiration = true };
         var user = new ApplicationUser { Id = Guid.NewGuid(), DepartmentId = Guid.NewGuid() };
-        
+
         Competency competency = new()
         {
             Id = id,
@@ -489,17 +491,17 @@ public class CompetencyServiceTests
         };
 
         CompetencyType type = new() { Id = Guid.NewGuid(), Name = "Test", RequiresExpiration = true };
-        
+
         // Bruker med avdeling for å sjekke hierarkiet
         var user = new ApplicationUser { Id = Guid.NewGuid(), DepartmentId = Guid.NewGuid() };
-        
+
         Competency competency = new()
         {
             Id = id,
             UserId = Guid.NewGuid(),
             CompetencyTypeId = type.Id,
             CompetencyType = type,
-            ApplicationUser = user, 
+            ApplicationUser = user,
             IssuedDate = DateTime.UtcNow.AddDays(-5),
             ExpiryDate = DateTime.UtcNow.AddDays(100),
             Status = CompetencyStatus.Valid
@@ -516,7 +518,7 @@ public class CompetencyServiceTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.Validation);
     }
-    
+
     /// <summary>
     /// Mocker at en bruker prøvver å oppdatere en annen bruker sin ansattkompetanse, men de er i
     /// forskjellige avdelinger og ingen bypass.
@@ -536,13 +538,13 @@ public class CompetencyServiceTests
             competencyTypeId: type.Id);
         competency.CompetencyType = type;
         competency.ApplicationUser = user;
-        
+
         // Mocker at vi henter korrekt kompetanse
         _competencyRepositoryMock
-            .Setup(x => x.GetForUpdateAsync(id, 
+            .Setup(x => x.GetForUpdateAsync(id,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(competency);
-        
+
         // Mocker at vi ikke har tilattelse
         _departmentScopeMock
             .Setup(s => s.IsAllowed(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -590,12 +592,12 @@ public class CompetencyServiceTests
         // Arrange
         var id = Guid.NewGuid();
         var user = new ApplicationUser { Id = Guid.NewGuid(), DepartmentId = Guid.NewGuid() };
-        Competency competency = new() { Id = id, UserId = user.Id }; 
+        Competency competency = new() { Id = id, UserId = user.Id };
 
         _competencyRepositoryMock
             .Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(competency);
-        
+
         _userRepositoryMock
             .Setup(x => x.GetByIdIgnoringFiltersAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
@@ -609,7 +611,7 @@ public class CompetencyServiceTests
         _competencyRepositoryMock.Verify(x => x.SoftDeleteAsync(competency, It.IsAny<CancellationToken>()), Times.Once);
         _competencyRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
-    
+
     /// <summary>
     /// Tester at en bruker i en avdeling ikke kan slette en bruker sitt kompetansebevis i en annen avdeling
     /// </summary>
@@ -620,22 +622,22 @@ public class CompetencyServiceTests
         var id = Guid.NewGuid();
         ApplicationUser user = TestDataFactory.CreateApplicationUser();
         Competency competency = TestDataFactory.CreateCompetency(userId: user.Id);
-        
+
         // Mocker at vi henter riktig kompetanse
         _competencyRepositoryMock
-            .Setup(x => x.GetByIdAsync(id, 
+            .Setup(x => x.GetByIdAsync(id,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(competency);
-        
+
         // Mocker at vi henter riktig bruker
         _userRepositoryMock
-            .Setup(x => x.GetByIdIgnoringFiltersAsync(user.Id, 
+            .Setup(x => x.GetByIdIgnoringFiltersAsync(user.Id,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
-        
+
         // Mocker at vi ikke har tilattelse
         _departmentScopeMock
-            .Setup(s => s.IsAllowed(It.IsAny<Guid>(), 
+            .Setup(s => s.IsAllowed(It.IsAny<Guid>(),
                 It.IsAny<string>(), It.IsAny<string>()))
             .Returns(false);
 

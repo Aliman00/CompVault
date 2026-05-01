@@ -26,7 +26,7 @@ public sealed class CreateDocumentTypeRequest
     public string[] AllowedMimeTypes { get; set; } = ["application/pdf"];
 
     /// <summary>Maksimal filstørrelse i bytes. Standard: 20 MB.</summary>
-    [Range(DocTypeValidations.MaxFileSizeMinBytes, DocTypeValidations.MaxFileSizeMaxBytes, 
+    [Range(DocTypeValidations.MaxFileSizeMinBytes, DocTypeValidations.MaxFileSizeMaxBytes,
         ErrorMessage = DocTypeValidations.Errors.MaxFileSizeRange)]
     public long MaxFileSizeBytes { get; set; } = 20 * 1024 * 1024;
 }

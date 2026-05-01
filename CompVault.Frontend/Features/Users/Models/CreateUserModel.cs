@@ -24,7 +24,7 @@ public class CreateUserModel
     public Guid? JobTitleId { get; set; }
 
     public EmploymentType EmploymentType { get; set; }
-    
+
     [Required(ErrorMessage = "Avdeling er påkrevd.")]
     public Guid? DepartmentId { get; set; }
     public Guid? ManagerId { get; set; }

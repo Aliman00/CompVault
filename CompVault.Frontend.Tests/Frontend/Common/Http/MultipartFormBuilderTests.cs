@@ -2,6 +2,7 @@
 using CompVault.Frontend.Common.Models;
 using CompVault.Frontend.Tests.Common;
 using CompVault.Shared.DTOs.Documents;
+
 using FluentAssertions;
 namespace CompVault.Frontend.Tests.Frontend.Common.Http;
 
@@ -24,11 +25,11 @@ public class MultipartFormBuilderTests
         {
             // Henter ut egenskap navnet som da blir Key
             string propertyName = part.Headers.ContentDisposition!.Name!.Trim('"');
-            
+
             // Egenskaper relevant til filen hopper vi over
             if (part.Headers.ContentDisposition?.FileName != null)
                 continue;
-            
+
             // Leser verdien og gir oss en string som vi bruker som Value
             string value = await part.ReadAsStringAsync();
             fields[propertyName] = value;
@@ -36,7 +37,7 @@ public class MultipartFormBuilderTests
 
         return fields;
     }
-    
+
     // -------------------------------------------------------------------------
     // String-felter
     // -------------------------------------------------------------------------
@@ -55,16 +56,16 @@ public class MultipartFormBuilderTests
         // Act - Henter ut verdiene i en ordbok
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
         Dictionary<string, string> fieldsFromContent = await ReadFormFieldsAsync(content);
-        
+
         // Assert 
         fieldsFromContent.Should().ContainKey(titleKey);
         fieldsFromContent[titleKey].Should().Be(titlevalue);
     }
-    
+
     // -------------------------------------------------------------------------
     // Bool
     // -------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Tester at både true og false blir gjort om til liten bokstav som MultipartFormDataContent krever
     /// </summary>
@@ -83,12 +84,12 @@ public class MultipartFormBuilderTests
         // Act - Henter ut verdiene i en ordbok
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
         Dictionary<string, string> fieldsFromContent = await ReadFormFieldsAsync(content);
-        
+
         // Assert 
         fieldsFromContent.Should().ContainKey(requresSignatureKey);
         fieldsFromContent[requresSignatureKey].Should().Be(expectedValue);
     }
-    
+
     // -------------------------------------------------------------------------
     // Skipper null-felter
     // -------------------------------------------------------------------------
@@ -107,11 +108,11 @@ public class MultipartFormBuilderTests
         // Act 
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
         Dictionary<string, string> fieldsFromContent = await ReadFormFieldsAsync(content);
-        
+
         // Assert 
         fieldsFromContent.Should().NotContainKey(descriptionKey);
     }
-    
+
     // -------------------------------------------------------------------------
     // Lise-felt
     // -------------------------------------------------------------------------
@@ -124,14 +125,14 @@ public class MultipartFormBuilderTests
         // Arrange - Bygger en liste med Guids
         var deptId1 = Guid.NewGuid();
         var deptId2 = Guid.NewGuid();
-        CreateDocumentRequest request = 
+        CreateDocumentRequest request =
             TestDataFactory.BuildCreateDocumentRequest(targetDepartmentIds: [deptId1, deptId2]);
         FileAttachment file = TestDataFactory.BuildFileAttachment();
 
         // Act 
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
         Dictionary<string, string> fieldsFromContent = await ReadFormFieldsAsync(content);
-        
+
         // Assert 
         fieldsFromContent.Should().ContainKey("TargetDepartmentIds[0]");
         fieldsFromContent.Should().ContainKey("TargetDepartmentIds[1]");
@@ -139,7 +140,7 @@ public class MultipartFormBuilderTests
         fieldsFromContent["TargetDepartmentIds[1]"].Should().Be(deptId2.ToString());
 
     }
-    
+
     /// <summary>
     /// Tester at en tom liste ikke gir oss tomme felt i content
     /// </summary>
@@ -147,18 +148,18 @@ public class MultipartFormBuilderTests
     public async Task Build_RequestWithEmptyList_SkipsField()
     {
         // Arrange
-        CreateDocumentRequest request = 
+        CreateDocumentRequest request =
             TestDataFactory.BuildCreateDocumentRequest(targetDepartmentIds: []);
         FileAttachment file = TestDataFactory.BuildFileAttachment();
 
         // Act 
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
         Dictionary<string, string> fieldsFromContent = await ReadFormFieldsAsync(content);
-        
+
         // Assert 
         fieldsFromContent.Should().NotContainKey("TargetDepartmentIds[0]");
     }
-    
+
     // -------------------------------------------------------------------------
     // Fil-opplastning
     // -------------------------------------------------------------------------
@@ -174,7 +175,7 @@ public class MultipartFormBuilderTests
 
         // Act - Henter ut verdiene i en ordbok
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request, file);
-        
+
         // Assert 
         HttpContent? filePart =
             content.FirstOrDefault(p =>
@@ -183,7 +184,7 @@ public class MultipartFormBuilderTests
         filePart.Headers.ContentDisposition?.Name?.Trim('"').Should().Be("file");
         filePart.Headers.ContentType!.MediaType.Should().Be("application/pdf");
     }
-    
+
     /// <summary>
     /// Tester at det ikke er noen metadata i headeren hvis vi ikke har noen vedlagt fil
     /// </summary>
@@ -195,12 +196,12 @@ public class MultipartFormBuilderTests
 
         // Act - Henter ut verdiene i en ordbok
         using MultipartFormDataContent content = MultipartFormBuilder.Build(request);
-        
+
         // Assert 
         HttpContent? filePart =
             content.FirstOrDefault(p => p.Headers.ContentDisposition?.FileName != null);
         filePart.Should().BeNull();
     }
-    
-    
+
+
 }

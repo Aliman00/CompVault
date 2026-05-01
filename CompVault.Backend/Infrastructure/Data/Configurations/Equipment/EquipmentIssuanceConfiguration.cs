@@ -29,7 +29,7 @@ internal sealed class EquipmentIssuanceConfiguration : IEntityTypeConfiguration<
         builder.HasIndex(i => i.DeletedAt);
 
         builder.HasQueryFilter(i => i.DeletedAt == null);
-        
+
         // Relasjon: Issuance → ApplicationUser (UserId — hvem fikk utstyret)
         builder.HasOne(i => i.User)
             .WithMany()
