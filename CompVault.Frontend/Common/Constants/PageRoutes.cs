@@ -14,11 +14,7 @@ public static class PageRoutes
     }
 
     // =============================== EMPLOYEES =============================== 
-    public static class Dashboard
-    {
-        public const string Home = "/";
-    }
-
+   
     public static class UserCompetencies
     {
         public const string List = "/my-competencies";

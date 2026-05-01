@@ -14,5 +14,5 @@ public interface ICompetencyTypeRepository : IRepository<CompetencyType>
     Task<bool> HasCompetenciesAsync(Guid competencyTypeId, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter kompetansetypen ved å sette DeletedAt og IsActive.</summary>
-    Task SoftDeleteAsync(CompetencyType competencyType, CancellationToken cancellationToken = default);
+    Task SoftDeleteAsync(CompetencyType competencyType);
 }

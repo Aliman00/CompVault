@@ -11,15 +11,6 @@ namespace CompVault.Backend.Infrastructure.Repositories.Identity;
 public sealed class RoleRepository(AppDbContext dbContext) : BaseRepository<ApplicationRole>(dbContext), IRoleRepository
 {
     /// <inheritdoc />
-    public async Task<ApplicationRole?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(name);
-        return await DbSet
-            .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.Name == name, cancellationToken);
-    }
-
-    /// <inheritdoc />
     public async Task<ApplicationRole?> GetByIdWithCreatedByAsync(Guid id, CancellationToken ct = default) =>
         await DbSet
             .AsNoTracking()

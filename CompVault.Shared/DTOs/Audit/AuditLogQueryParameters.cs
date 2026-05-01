@@ -6,7 +6,7 @@ namespace CompVault.Shared.DTOs.Audit;
 /// Query-parametere for filtrering og paginering av revisjonsloggen.
 /// Arver paginering fra <see cref="PagedQuery"/> og legger til audit-spesifikke filtre.
 /// </summary>
-public record class AuditLogQueryParameters : PagedQuery
+public record AuditLogQueryParameters : PagedQuery
 {
     /// <summary>Filtrer på action-type, f.eks. "competency.revoke".</summary>
     public string? Action { get; set; }

@@ -24,17 +24,6 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Competency>> GetAllWithDetailsAsync(
-        Guid? userId,
-        CompetencyStatus? status,
-        Guid? competencyTypeId,
-        CancellationToken cancellationToken = default)
-    {
-        IQueryable<Competency> query = BuildFilteredQuery(userId, status, competencyTypeId);
-        return await query.ToListAsync(cancellationToken);
-    }
-
-    /// <inheritdoc />
     public async Task<int> CountWithFiltersAsync(
         Guid? userId,
         CompetencyStatus? status,
@@ -151,7 +140,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
     }
 
     /// <inheritdoc />
-    public Task SoftDeleteAsync(Competency competency, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(Competency competency)
     {
         competency.DeletedAt = DateTime.UtcNow;
         competency.IsActive = false;

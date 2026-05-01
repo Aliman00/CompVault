@@ -355,7 +355,7 @@ public sealed class DocumentService(
             return Result<bool>.Failure(
                 AppError.NotFound($"Dokument med ID '{id}' ble ikke funnet."));
 
-        await documentRepository.SoftDeleteAsync(document, cancellationToken);
+        await documentRepository.SoftDeleteAsync(document);
         await documentRepository.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Dokument {DocumentId} slettet (soft delete)", id);

@@ -1,4 +1,4 @@
-﻿namespace CompVault.Frontend.Common.Constants;
+﻿namespace CompVault.Frontend.Common.Models;
 
 /// <summary>
 /// En MimeType med label og selve typen som string. Eks: "PDF","application/pdf"

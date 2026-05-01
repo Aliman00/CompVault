@@ -12,10 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Auth\Components\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <_ContentIncludedByDefault Remove="Layout\Errors\Error.razor" />
     <_ContentIncludedByDefault Remove="Layout\Errors\NotFound.razor" />
     <_ContentIncludedByDefault Remove="Layout\MainLayout.razor" />

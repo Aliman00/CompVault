@@ -277,7 +277,7 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
         details["old_version"] = signatureVersion;
 
         // Prøv å finne dokumentet i ChangeTracker for tittel og ny versjon
-        EntityEntry<Document>? documentEntry = context.ChangeTracker.Entries<Domain.Entities.Documents.Document>()
+        EntityEntry<Document>? documentEntry = context.ChangeTracker.Entries<Document>()
             .FirstOrDefault(e => e.Entity.Id == documentId);
 
         if (documentEntry is not null)
@@ -287,7 +287,7 @@ public sealed class AuditSaveChangesInterceptor(IServiceProvider serviceProvider
         }
 
         // Prøv å finne brukeren i ChangeTracker for navn og e-post
-        EntityEntry<ApplicationUser>? userEntry = context.ChangeTracker.Entries<Domain.Entities.Identity.ApplicationUser>()
+        EntityEntry<ApplicationUser>? userEntry = context.ChangeTracker.Entries<ApplicationUser>()
             .FirstOrDefault(e => e.Entity.Id == signatureUserId);
 
         if (userEntry is not null)

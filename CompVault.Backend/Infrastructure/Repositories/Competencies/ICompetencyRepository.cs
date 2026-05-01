@@ -12,16 +12,6 @@ public interface ICompetencyRepository : IRepository<Competency>
     Task<Competency?> GetWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Henter kompetansebevis med navigasjon, filtrert på valgfrie parametere.
-    /// Alle parametere er nullable — null betyr ingen filtrering.
-    /// </summary>
-    Task<IReadOnlyList<Competency>> GetAllWithDetailsAsync(
-        Guid? userId,
-        CompetencyStatus? status,
-        Guid? competencyTypeId,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Teller kompetansebevis med valgfrie filtre (paginering-støtte).
     /// </summary>
     Task<int> CountWithFiltersAsync(
@@ -56,5 +46,5 @@ public interface ICompetencyRepository : IRepository<Competency>
     Task<(int ExpiredCount, int ExpiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)> StatusChanges)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter kompetansebeviset ved å sette DeletedAt og IsActive.</summary>
-    Task SoftDeleteAsync(Competency competency, CancellationToken cancellationToken = default);
+    Task SoftDeleteAsync(Competency competency);
 }
