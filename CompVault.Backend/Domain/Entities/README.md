@@ -6,7 +6,7 @@
 
 ```text
 Domain/Entities/
-├── <Domene1>/       <- f.eks. Identity, Auth, Departments, Competencies
+├── <Domene1>/       <- f.eks. Audit, Auth, Documents, Equipment, JobTitles, Notifications
 ├── <Domene2>/
 └── <Domene>/
 ```
@@ -19,7 +19,7 @@ Det gjør det lettere å se hvilke modeller som faktisk hører sammen. Når man 
 
 ## Retningslinjer
 
-- Entiteter bør ikke ha direkte avhengigheter til EF Core, ASP.NET eller andre rammeverk.
+- Entiteter bør ikke ha direkte avhengigheter til EF Core, ASP.NET eller andre rammeverk. Identity-entiteter (`ApplicationUser`, `ApplicationRole`) er et unntak her — de må nødvendigvis arve fra `IdentityUser<Guid>` og `IdentityRole<Guid>`.
 - Entiteter bør heller ikke kjenne til services, repositories eller DTO-er fra andre lag.
 - Enkel logikk som naturlig hører til modellen kan være grei å ha her, for eksempel beregnede properties som `FullName` eller `IsValid`.
 - Enums legges i `CompVault.Shared/Enums/` slik at de kan brukes både i backend og frontend.

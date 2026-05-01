@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace CompVault.Backend.Features.Departments.Services;
 
-public sealed class DepartmentScopeSaveChangesInterceptor(IServiceProvider serviceProvider) : SaveChangesInterceptor
+public sealed class UserDepartmentWriteInterceptor(IServiceProvider serviceProvider) : SaveChangesInterceptor
 {
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
