@@ -70,7 +70,7 @@ public class BackendWebApplicationFactory : WebApplicationFactory<Program>, IAsy
             services.AddDbContext<AppDbContext>((sp, options) =>
                 options.UseNpgsql(_postgres.GetConnectionString())
                     .AddInterceptors(new AuditSaveChangesInterceptor(sp),
-                        new DepartmentScopeSaveChangesInterceptor(sp)));
+                        new UserDepartmentWriteInterceptor(sp)));
 
             // Bytt ut ekte scope-service med bypass i alle integrasjonstester
             services.RemoveAll<IDepartmentScopeService>();

@@ -59,7 +59,7 @@ public class DepartmentScopeIntegrationTests(BackendWebApplicationFactory factor
         // Kobler på interceptoren for å fange opp operasjoner som skjer mot databasen
         DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(factory.GetConnectionString())
-            .AddInterceptors(new DepartmentScopeSaveChangesInterceptor(serviceProviderMock.Object))
+            .AddInterceptors(new UserDepartmentWriteInterceptor(serviceProviderMock.Object))
             .Options;
 
         return new AppDbContext(options, departmentScope);

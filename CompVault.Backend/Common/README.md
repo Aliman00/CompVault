@@ -6,11 +6,9 @@
 
 ```text
 Common/
-├── Controller/           <- Base-klasser og felles funksjonalitet for API-lag
-├── Middleware/           <- HTTP-middleware (f.eks. exception handling)
-├── Authorization/        <- Autorisasjons-handlers og policyer
-├── Responses/            <- Response-buildere og formattering
-└── <Kategori>/           <- ny undermappe ved behov
+├── <Kategori>/       <- f.eks. Controller, Middleware, Authorization, Responses, Security, Utils
+├── <Kategori>/
+└── <Kategori>/       <- ny kategori ved behov
 ```
 
 ## Hvordan vi bruker denne mappen
