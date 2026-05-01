@@ -13,7 +13,7 @@ public class DocumentEditModel
 
     [MaxLength(DocValidations.DescMaxLength, ErrorMessage = DocValidations.Errors.DescMaxLength)]
     public string? Description { get; set; }
-    
+
     public Guid? DocumentTypeCategoryId { get; set; }
 
     [MaxLength(DocValidations.ExternalUrlMaxLength, ErrorMessage = DocValidations.Errors.ExternalUrlMaxLength)]
@@ -32,8 +32,8 @@ public class DocumentEditModel
         DocumentTypeCategoryId = dto.DocumentTypeCategoryId,
         ExternalUrl = dto.ExternalUrl,
         RequiresSignature = dto.RequiresSignature,
-        TargetDepartmentIds = [..dto.TargetDepartmentIds],
-        TargetJobTitleIds = [..dto.TargetJobTitleIds],
+        TargetDepartmentIds = [.. dto.TargetDepartmentIds],
+        TargetJobTitleIds = [.. dto.TargetJobTitleIds],
     };
 
     public UpdateDocumentRequest ToRequest() => new()

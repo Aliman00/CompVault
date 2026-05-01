@@ -76,7 +76,7 @@ public sealed class DocumentService(
         Result accessResult = await targetingService.CheckAccessAsync(document, currentUserId, bypassTargeting, cancellationToken);
         if (accessResult.IsFailure)
             return Result<DocumentDto>.Failure(accessResult.Error!);
-        
+
         // Sjekker om brukeren har signert nyeste versjon
         bool hasSigned = false;
         if (document.RequiresSignature && currentUserId.HasValue)
@@ -85,10 +85,10 @@ public sealed class DocumentService(
 
         return Result<DocumentDto>.Success(DocumentMapper.ToDtoWithUserSignature(document, hasSigned));
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<PagedResult<DocumentListDto>>> GetDocumentsForUserAsync(
-        Guid userId, 
+        Guid userId,
         DocumentQueryParameters query,
         bool hasPermission,
         CancellationToken ct = default)
@@ -97,10 +97,10 @@ public sealed class DocumentService(
         {
             logger.LogWarning("Bruker med ID {RequestingUserId} prøver å hente dokumenter for " +
                               "bruker {TargetUserId} uten tilattelse", userId, query.UserId);
-            return Result<PagedResult<DocumentListDto>>.Failure(AppError.Create(ErrorCode.Forbidden, 
+            return Result<PagedResult<DocumentListDto>>.Failure(AppError.Create(ErrorCode.Forbidden,
                     "Du har ikke tilgang til å hente dokumenter for andre brukere."));
         }
-        
+
         ApplicationUser? user = await userRepository.GetByIdAsync(userId, ct);
         if (user is null)
         {
@@ -108,19 +108,19 @@ public sealed class DocumentService(
             return Result<PagedResult<DocumentListDto>>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
         }
-        
+
         // Setter enten vår egen UserId eller brukeren sin UserId hvis vi har tilattelse
         if (query.UserId.HasValue && hasPermission)
             userId = query.UserId.Value;
-        
+
         // Henter antall dokumenter
         int totalCount = await documentRepository.CountDocumentsForUserAsync(
             userId, user.DepartmentId, user.JobTitleId, query, ct);
-        
+
         // Henter alle dokumentene med for brukeren
         IReadOnlyList<Document> documents = await documentRepository.GetDocumentsForUserAsync(
             userId, user.DepartmentId, user.JobTitleId, query, ct);
-        
+
         // Henter ut de signerte dokumentene og henter DocumentSignature for å kunne bygge med MapToListDtos
         var signedDocumentIds = documents.Select(d => d.Id).ToList();
         IReadOnlyList<DocumentSignature> signatures = await signatureRepository.GetByDocumentIdsAsync(
@@ -321,7 +321,7 @@ public sealed class DocumentService(
                 return Result<DocumentDto>.Failure(
                     AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for dokumentets dokumenttype."));
         }
-        
+
         ApplyTargetingUpdate(document, request);
         ApplyUpdate(document, request);
 
@@ -387,7 +387,7 @@ public sealed class DocumentService(
         else if (request.ExternalUrl is not null)
             document.ExternalUrl = request.ExternalUrl;
     }
-    
+
     // Ved endring av målgruppe til en dokumenttype så kan dokumenter sitte igjen med verdier i listen til gamle
     // måltyper. Vi rydder opp i listene og legger til og fjerner gamle utifra hva brukeren legger til i requesten
     private static void ApplyTargetingUpdate(Document document, UpdateDocumentRequest request)

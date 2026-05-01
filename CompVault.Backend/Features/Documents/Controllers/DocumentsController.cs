@@ -5,6 +5,7 @@ using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace CompVault.Backend.Features.Documents.Controllers;
@@ -223,61 +224,6 @@ public sealed class DocumentsController(
         return Ok(result.Value);
     }
 
-    /// <summary>Henter fremdriftsstatistikk for en dokumenttype for innlogget bruker.</summary>
-    [HttpGet("progress")]
-    [Authorize(Policy = Permissions.DocumentsRead)]
-    [ProducesResponseType(typeof(DocumentProgressDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<DocumentProgressDto>> GetProgressAsync(
-        string documentTypeSlug, CancellationToken cancellationToken)
-    {
-        Guid userId = User.GetUserId();
-
-        Result<DocumentProgressDto> result = await signatureService.GetProgressAsync(
-            documentTypeSlug, userId, cancellationToken);
-
-        if (result.IsFailure)
-            return HandleFailure(result);
-
-        return Ok(result.Value);
-    }
-
-    /// <summary>Henter paginerte dokumenter brukeren har signert.</summary>
-    [HttpGet("/api/documents/my/signed")]
-    [Authorize(Policy = Permissions.DocumentsRead)]
-    [ProducesResponseType(typeof(PagedResult<DocumentListDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<DocumentListDto>>> GetMySignedDocumentsAsync(
-        [FromQuery] PagedQuery query, CancellationToken cancellationToken)
-    {
-        Guid userId = User.GetUserId();
-
-        Result<PagedResult<DocumentListDto>> result = await signatureService.GetMySignedDocumentsAsync(
-            userId, query, cancellationToken);
-
-        if (result.IsFailure)
-            return HandleFailure(result);
-
-        return Ok(result.Value);
-    }
-
-    /// <summary>Henter alle dokumenter brukeren trenger å signere.</summary>
-    [HttpGet("/api/documents/my/pending")]
-    [Authorize(Policy = Permissions.DocumentsRead)]
-    [ProducesResponseType(typeof(IReadOnlyList<DocumentListDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<DocumentListDto>>> GetMyPendingDocumentsAsync(
-        CancellationToken cancellationToken)
-    {
-        Guid userId = User.GetUserId();
-
-        Result<IReadOnlyList<DocumentListDto>> result = await signatureService.GetMyPendingDocumentsAsync(
-            userId, cancellationToken);
-
-        if (result.IsFailure)
-            return HandleFailure(result);
-
-        return Ok(result.Value);
-    }
-    
     /// <summary>
     /// Henter alle dokumenter for en bruker, både signerte og ikke-signerte
     /// </summary>
@@ -300,5 +246,5 @@ public sealed class DocumentsController(
 
         return Ok(result.Value);
     }
-    
+
 }

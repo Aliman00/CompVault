@@ -52,30 +52,6 @@ public static class CompetencyMapper
         };
     }
 
-    /// <summary>
-    /// Konverterer en <see cref="Competency"/> til en <see cref="ExpiringCompetencyDto"/>.
-    /// Inkluderer avdelingsinfo og beregnet dager til utløp.
-    /// </summary>
-    public static ExpiringCompetencyDto ToExpiringDto(Competency competency)
-    {
-        DateTime now = DateTime.UtcNow;
-
-        return new ExpiringCompetencyDto
-        {
-            Id = competency.Id,
-            CompetencyTypeName = competency.CompetencyType?.Name,
-            Status = competency.Status,
-            UserId = competency.UserId,
-            UserName = competency.ApplicationUser?.UserName,
-            UserFirstName = competency.ApplicationUser?.FirstName,
-            UserLastName = competency.ApplicationUser?.LastName,
-            ExpiryDate = competency.ExpiryDate,
-            DaysUntilExpiry = CalculateDaysUntilExpiry(competency.ExpiryDate, now),
-            DepartmentId = competency.ApplicationUser?.DepartmentId,
-            DepartmentName = competency.ApplicationUser?.Department?.Name
-        };
-    }
-
     private static int? CalculateDaysUntilExpiry(DateTime? expiryDate, DateTime now) =>
         expiryDate.HasValue ? (int)Math.Floor((expiryDate.Value - now).TotalDays) : null;
 }

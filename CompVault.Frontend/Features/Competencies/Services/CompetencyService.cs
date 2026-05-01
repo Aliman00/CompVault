@@ -6,7 +6,6 @@ using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
 using CompVault.Shared.Result;
 
-using ExpiringCompetencyDto = CompVault.Shared.DTOs.Competencies.ExpiringCompetencyDto;
 namespace CompVault.Frontend.Features.Competencies.Services;
 
 public class CompetencyService(
@@ -155,35 +154,6 @@ public class CompetencyService(
         }
     }
 
-    /// <inheritdoc />
-    public async Task<Result<List<ExpiringCompetencyDto>>> GetExpiringAsync(CancellationToken ct)
-    {
-        try
-        {
-            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.Competencies.Expiring, ct);
-
-            Result<List<ExpiringCompetencyDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<ExpiringCompetencyDto>>(response, ct);
-
-            if (result.IsFailure)
-                return Result<List<ExpiringCompetencyDto>>.Failure(result.Error!);
-
-            return Result<List<ExpiringCompetencyDto>>.Success(result.Value!);
-        }
-        catch (HttpRequestException ex)
-        {
-            logger.LogError(ex, "Nettverksfeil ved henting av alle utgåtte kompetansebevis");
-            return Result<List<ExpiringCompetencyDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
-                "Tilkoblingen feilet. Sjekk nettverket ditt."));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Uventet feil ved henting av alle utgåtte kompetansebevis");
-            return Result<List<ExpiringCompetencyDto>>.Failure(AppError.Create(ErrorCode.Unknown,
-                "Noe gikk galt. Prøv igjen."));
-        }
-    }
-
     // Bygger base-urlen med query-filtrering
     private static string BuildFilterUrl(string baseUrl, CompetencyFilterRequest? filter)
     {
@@ -199,10 +169,10 @@ public class CompetencyService(
             queryParams["status"] = filter.Status.ToString();
         if (filter.CompetencyTypeId.HasValue)
             queryParams["competencyTypeId"] = filter.CompetencyTypeId.ToString();
-        
+
         queryParams["page"] = filter.Page.ToString();
         queryParams["pageSize"] = filter.PageSize.ToString();
-        
+
         return baseUrl.AddQueryFilter(queryParams);
     }
 }

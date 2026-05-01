@@ -36,7 +36,7 @@ public static class TestConstants
         public const string Default = "Employee";
         public const string Admin = "Admin";
     }
-    
+
     public static class Departments
     {
         public static readonly Guid DefaultDepartmentId = Guid.Parse("c3d4e5f6-a7b8-9012-cdef-123456789012");

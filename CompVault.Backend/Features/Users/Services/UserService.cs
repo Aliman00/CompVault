@@ -56,7 +56,7 @@ public sealed class UserService(
         IList<string> roles = await userManager.GetRolesAsync(user);
         return Result<UserDto>.Success(UserMapper.ToDto(user, roles));
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<UserLookupDto>>> LookupAllowedUsersAsync(
         string bypassPermission = Permissions.UsersAll,
@@ -70,7 +70,7 @@ public sealed class UserService(
         IReadOnlyList<ApplicationUser> users = await userRepository.GetLookupAsync(allowedIds, bypass, ct);
         return Result<IReadOnlyList<UserLookupDto>>.Success(users.Select(u => u.ToLookupDto()).ToList());
     }
-    
+
 
     /// <inheritdoc />
     public async Task<Result<UserDto>> CreateUserAsync(
@@ -92,7 +92,7 @@ public sealed class UserService(
             d => d.Id == request.DepartmentId && d.IsActive && d.DeletedAt == null, cancellationToken);
         if (!departmentExists)
         {
-            logger.LogWarning("Kunde ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet", 
+            logger.LogWarning("Kunde ikke opprette bruker: avdeling {DepartmentId} ble ikke funnet",
                 request.DepartmentId);
             return Result<UserDto>.Failure(
                 AppError.NotFound($"Avdeling med ID '{request.DepartmentId}' ble ikke funnet."));
@@ -106,7 +106,7 @@ public sealed class UserService(
 
             if (manager is null || !manager.IsActive)
             {
-                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv", 
+                logger.LogWarning("Kunne ikke opprette bruker: leder {ManagerId} ble ikke funnet eller er inaktiv",
                     request.ManagerId.Value);
                 return Result<UserDto>.Failure(
                     AppError.NotFound($"Leder med ID '{request.ManagerId.Value}' ble ikke funnet eller er inaktiv."));
@@ -114,7 +114,7 @@ public sealed class UserService(
 
             if (!departmentScope.IsAllowed(manager.DepartmentId, Permissions.UsersAll, Permissions.UsersReadSub))
                 return Result<UserDto>.Failure(
-                    AppError.Create(ErrorCode.Forbidden, 
+                    AppError.Create(ErrorCode.Forbidden,
                         "Du har ikke tilgang til å sette denne brukeren som leder."));
         }
 
@@ -233,7 +233,7 @@ public sealed class UserService(
 
             if (!departmentScope.IsAllowed(manager.DepartmentId, Permissions.UsersAll, Permissions.UsersReadSub))
                 return Result<UserDto>.Failure(
-                    AppError.Create(ErrorCode.Validation, 
+                    AppError.Create(ErrorCode.Validation,
                         "Du har ikke tilgang til å sette denne brukeren som leder."));
         }
 

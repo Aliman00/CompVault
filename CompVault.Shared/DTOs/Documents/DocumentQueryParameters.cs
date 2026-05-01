@@ -10,7 +10,7 @@ public sealed record DocumentQueryParameters : PagedQuery
 {
     public Guid? UserId { get; init; }
     public DocumentSignatureFilter SignatureFilter { get; init; } = DocumentSignatureFilter.All;
-    public string? DocumentTypeSlug { get; init; } 
+    public string? DocumentTypeSlug { get; init; }
     public DocumentSortField SortBy { get; init; } = DocumentSortField.UploadedAt;
     public bool SortDescending { get; init; } = true;
 }

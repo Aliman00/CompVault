@@ -13,7 +13,7 @@ public static class DashboardConstants
     public const string LatestEquipment = "Siste utstyr";
     public const string MyDocuments = "Mine dokumenter";
     public const string RecentDocuments = "Siste dokumenter";
-    
+
     // ================================= Local storage nøkkel =================================
     public const string StorageKey = "compvault-dashboard-widgets";
 }

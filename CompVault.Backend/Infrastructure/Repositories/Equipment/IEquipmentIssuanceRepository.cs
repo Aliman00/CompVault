@@ -26,15 +26,15 @@ public interface IEquipmentIssuanceRepository : IRepository<EquipmentIssuance>
 
     /// <summary>Henter alle utleveringer for en bestemt bruker med navigasjonsdata.</summary>
     Task<IReadOnlyList<EquipmentIssuance>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
-    
+
     /// <summary>Henter utleveringer for en bruker med valgfri kategorifiltrering og paginering. Returner
     /// en liste med utlevert utstyr og totalt antall</summary>
     Task<(IReadOnlyList<EquipmentIssuance> Items, int TotalCount)> GetByUserIdPagedAsync(
         Guid userId, Guid? categoryId, PagedQuery query, CancellationToken ct = default);
-    
+
     /// <summary>Henter alle utleveringer for et bestemt utstyr med navigasjonsdata.</summary>
     Task<IReadOnlyList<EquipmentIssuance>> GetByItemIdAsync(Guid itemId, CancellationToken ct = default);
-    
+
     /// <summary>Henter alle utstyrskategorier der en bruker har fått utlevert utstyur.
     /// Grupperer etter ID og navn, og sorterer etter navn. Teller antall utstyr pr kategori</summary>
     Task<IReadOnlyList<UserEquipmentCategoryDto>> GetCategoriesForUserAsync(Guid userId,

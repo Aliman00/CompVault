@@ -13,7 +13,7 @@ public interface IDocumentTypeService
     /// Henter en dokumenttype basert på slug
     /// </summary>
     Task<Result<DocumentTypeDto>> GetBySlugAsync(string slug, CancellationToken ct);
-    
+
     /// <summary>
     /// Henter dokumentkategoriene/typene til en innlogget bruker
     /// </summary>

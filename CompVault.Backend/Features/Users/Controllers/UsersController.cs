@@ -1,10 +1,8 @@
 using CompVault.Backend.Common.Controller;
-using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
-using CompVault.Shared.DTOs.JobTitles;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -21,8 +19,7 @@ namespace CompVault.Backend.Features.Users.Controllers;
 [Route("api/[controller]")]
 [Produces("application/json")]
 public sealed class UsersController(
-    IUserService userService,
-    IJobTitleService jobTitleService) : BaseController
+    IUserService userService) : BaseController
 {
     /// <summary>Henter paginerte aktive brukere.</summary>
     /// <response code="200">Paginert liste med brukere.</response>
@@ -56,7 +53,7 @@ public sealed class UsersController(
 
         return Ok(result.Value);
     }
-    
+
     /// <summary>
     /// Lar en bruker slå opp alle brukerne de har tilattelse til. Så fremt brukeren har riktig
     /// tilattelse. Frontend velger hvilke permissions som er påkrevd til de forskjellige featurene.
@@ -77,21 +74,6 @@ public sealed class UsersController(
 
         Result<IReadOnlyList<UserLookupDto>> result =
             await userService.LookupAllowedUsersAsync(bypassPermission, subPermission, ct);
-
-        if (result.IsFailure)
-            return HandleFailure(result);
-
-        return Ok(result.Value);
-    }
-
-    /// <summary>Henter alle aktive stillingstitler for autocomplete.</summary>
-    /// <response code="200">Liste med stillingstitler.</response>
-    [HttpGet("job-titles")]
-    [Authorize(Policy = Permissions.UsersRead)]
-    [ProducesResponseType(typeof(IReadOnlyList<JobTitleDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<JobTitleDto>>> GetJobTitlesAsync(CancellationToken cancellationToken)
-    {
-        Result<IReadOnlyList<JobTitleDto>> result = await jobTitleService.GetAllAsync(cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);

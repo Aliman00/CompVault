@@ -1,5 +1,4 @@
 ﻿using System.Security.Cryptography;
-using System.Text;
 
 using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;

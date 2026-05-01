@@ -36,7 +36,7 @@ public static class TestDataFactory
         public string Name { get; set; } = string.Empty;
         public int Value { get; set; }
     }
-    
+
     /// <summary>
     /// Bygger en CreateDocumentRequest med defaulte verdier
     /// </summary>
@@ -49,23 +49,23 @@ public static class TestDataFactory
     /// <param name="targetJobTitleIds">Stillingstitteler, default tom liste</param>
     /// <returns>Ferdig CreateDocumentRequest</returns>
     public static CreateDocumentRequest BuildCreateDocumentRequest(
-        string title = "HMS-sjekkliste", 
+        string title = "HMS-sjekkliste",
         string? description = null,
         Guid? typeCategory = null,
-        string? externalUrl = null, 
+        string? externalUrl = null,
         bool requiresSignature = true,
         List<Guid>? targetDepartmentIds = null,
         List<Guid>? targetJobTitleIds = null) => new CreateDocumentRequest()
-    {
-          Title = title,
-          Description = description,
-          DocumentTypeCategoryId = typeCategory,
-          ExternalUrl = externalUrl,
-          RequiresSignature = requiresSignature,
-          TargetDepartmentIds = targetDepartmentIds ?? [],
-          TargetJobTitleIds = targetJobTitleIds ?? []
-    };
-    
+        {
+            Title = title,
+            Description = description,
+            DocumentTypeCategoryId = typeCategory,
+            ExternalUrl = externalUrl,
+            RequiresSignature = requiresSignature,
+            TargetDepartmentIds = targetDepartmentIds ?? [],
+            TargetJobTitleIds = targetJobTitleIds ?? []
+        };
+
     /// <summary>
     /// Bygger en FileAttachment med stream og defaulte verdier
     /// </summary>

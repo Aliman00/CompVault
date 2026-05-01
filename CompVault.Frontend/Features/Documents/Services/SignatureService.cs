@@ -30,14 +30,14 @@ public class SignatureService(
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Nettverksfeil ved henting av signaturer for {Slug}/{Id}", 
+            logger.LogError(ex, "Nettverksfeil ved henting av signaturer for {Slug}/{Id}",
                 documentTypeSlug, documentId);
             return Result<List<UserSignatureStatusDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Uventet feil ved henting av signaturer for {Slug}/{Id}", 
+            logger.LogError(ex, "Uventet feil ved henting av signaturer for {Slug}/{Id}",
                 documentTypeSlug, documentId);
             return Result<List<UserSignatureStatusDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
@@ -56,74 +56,16 @@ public class SignatureService(
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Nettverksfeil ved signering av dokument {Slug}/{Id}", 
+            logger.LogError(ex, "Nettverksfeil ved signering av dokument {Slug}/{Id}",
                 documentTypeSlug, documentId);
             return Result.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Uventet feil ved signering av dokument {Slug}/{Id}", 
+            logger.LogError(ex, "Uventet feil ved signering av dokument {Slug}/{Id}",
                 documentTypeSlug, documentId);
             return Result.Failure(AppError.Create(ErrorCode.Unknown,
-                "Noe gikk galt. Prøv igjen."));
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task<Result<List<DocumentListDto>>> GetMySignedAsync(CancellationToken ct)
-    {
-        try
-        {
-            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.Documents.MySigned, ct);
-
-            Result<List<DocumentListDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<DocumentListDto>>(response, ct);
-
-            if (result.IsFailure)
-                return Result<List<DocumentListDto>>.Failure(result.Error!);
-
-            return Result<List<DocumentListDto>>.Success(result.Value!);
-        }
-        catch (HttpRequestException ex)
-        {
-            logger.LogError(ex, "Nettverksfeil ved henting av signerte dokumenter");
-            return Result<List<DocumentListDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
-                "Tilkoblingen feilet. Sjekk nettverket ditt."));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Uventet feil ved henting av signerte dokumenter");
-            return Result<List<DocumentListDto>>.Failure(AppError.Create(ErrorCode.Unknown,
-                "Noe gikk galt. Prøv igjen."));
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task<Result<List<DocumentListDto>>> GetMyPendingAsync(CancellationToken ct)
-    {
-        try
-        {
-            HttpResponseMessage response = await _httpClient.GetAsync(ApiRoutes.Documents.MyPending, ct);
-
-            Result<List<DocumentListDto>> result =
-                await HttpClientExtensions.ParseResponseAsync<List<DocumentListDto>>(response, ct);
-
-            if (result.IsFailure)
-                return Result<List<DocumentListDto>>.Failure(result.Error!);
-
-            return Result<List<DocumentListDto>>.Success(result.Value!);
-        }
-        catch (HttpRequestException ex)
-        {
-            logger.LogError(ex, "Nettverksfeil ved henting av ventende dokumenter");
-            return Result<List<DocumentListDto>>.Failure(AppError.Create(ErrorCode.NetworkError,
-                "Tilkoblingen feilet. Sjekk nettverket ditt."));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Uventet feil ved henting av ventende dokumenter");
-            return Result<List<DocumentListDto>>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
         }
     }

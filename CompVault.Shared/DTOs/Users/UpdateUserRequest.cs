@@ -31,7 +31,7 @@ public sealed class UpdateUserRequest
 
     /// <summary>Ny ansettelsestype (valgfritt).</summary>
     public EmploymentType? EmploymentType { get; set; }
-    
+
     /// <summary>Flytt brukeren til en annen avdeling (valgfritt).</summary>
     public Guid? DepartmentId { get; set; }
 

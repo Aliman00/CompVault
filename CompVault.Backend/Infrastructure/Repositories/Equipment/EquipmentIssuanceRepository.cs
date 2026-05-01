@@ -13,8 +13,8 @@ namespace CompVault.Backend.Infrastructure.Repositories.Equipment;
 /// EF Core-implementasjon av <see cref="IEquipmentIssuanceRepository"/>.
 /// </summary>
 public sealed class EquipmentIssuanceRepository(
-    AppDbContext dbContext, 
-    IDepartmentScopeService departmentScope) 
+    AppDbContext dbContext,
+    IDepartmentScopeService departmentScope)
     : BaseRepository<EquipmentIssuance>(dbContext), IEquipmentIssuanceRepository
 {
     /// <inheritdoc />
@@ -74,7 +74,7 @@ public sealed class EquipmentIssuanceRepository(
                 .ThenInclude(item => item.Category)
             .Include(i => i.IssuedBy)
             .ToListAsync(cancellationToken);
-    
+
     /// <inheritdoc />
     public async Task<(IReadOnlyList<EquipmentIssuance> Items, int TotalCount)> GetByUserIdPagedAsync(
         Guid userId, Guid? categoryId, PagedQuery query, CancellationToken ct = default)
@@ -99,7 +99,7 @@ public sealed class EquipmentIssuanceRepository(
 
         return (items, totalCount);
     }
-    
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<EquipmentIssuance>> GetByItemIdAsync(
         Guid itemId, CancellationToken ct = default)
@@ -115,7 +115,7 @@ public sealed class EquipmentIssuanceRepository(
 
         return await ApplyDepartmentFilter(query).ToListAsync(ct);
     }
-    
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<UserEquipmentCategoryDto>> GetCategoriesForUserAsync(
         Guid userId, CancellationToken ct = default) =>
@@ -161,7 +161,7 @@ public sealed class EquipmentIssuanceRepository(
         issuance.IsActive = false;
         return Task.CompletedTask;
     }
-    
+
     /// <summary>
     /// Filtrerer vekk utleveringer brukeren ikke har tilattelse til å se/endre
     /// </summary>

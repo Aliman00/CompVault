@@ -36,16 +36,6 @@ public sealed class DocumentSignatureRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Guid>> GetSignedDocumentIdsAsync(
-        Guid userId, CancellationToken cancellationToken = default)
-    {
-        return await DbSet
-            .Where(s => s.UserId == userId)
-            .Select(s => s.DocumentId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-    }
-
     public async Task<IReadOnlyList<DocumentSignature>> GetForDocumentAsync(
         Guid documentId, CancellationToken cancellationToken = default)
     {

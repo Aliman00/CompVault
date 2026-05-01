@@ -114,20 +114,4 @@ public sealed class CompetenciesController(ICompetencyService competencyService)
 
         return NoContent();
     }
-
-    /// <summary>Henter utløpende og utløpte kompetansebevis med filtrering og paginering.</summary>
-    [HttpGet("expiring")]
-    [ProducesResponseType(typeof(PagedResult<ExpiringCompetencyDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<ExpiringCompetencyDto>>> GetExpiringAsync(
-        [FromQuery] CompetencyExpiringQueryParameters queryParameters,
-        CancellationToken cancellationToken)
-    {
-        Result<PagedResult<ExpiringCompetencyDto>> result = await competencyService.GetExpiringAsync(
-            queryParameters, cancellationToken);
-
-        if (result.IsFailure)
-            return HandleFailure(result);
-
-        return Ok(result.Value);
-    }
 }

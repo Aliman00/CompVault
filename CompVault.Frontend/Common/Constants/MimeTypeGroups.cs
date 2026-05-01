@@ -32,7 +32,7 @@ public static class MimeTypeGroups
             new("CSV","text/csv"),
         ]),
     ];
-    
+
     /// <summary>
     /// Henter ut alle mimetypes i en liste for å enklere slå opp hva en label er
     /// </summary>

@@ -1,5 +1,7 @@
+@using CompVault.Frontend.Features.Auth.Services
 @inject IThemeService ThemeService
 @inject IJSRuntime JsRuntime
+@inject IAuthService AuthService
 
 @* Høyredrawer med brukerinformasjon, logout og innstillinger. Kan få egen side hvis det kommer mer info *@
 
@@ -150,6 +152,10 @@
         await ThemeService.SaveDarkModeAsync(mørktTema);
     }
     
-    private async Task LogOutAsync() => await JsRuntime.InvokeVoidAsync("logoutFormSubmit");
+    private async Task LogOutAsync()
+    {
+        await AuthService.LogOutAsync(CancellationToken.None);
+        await JsRuntime.InvokeVoidAsync("logoutFormSubmit");
+    }
     
 }

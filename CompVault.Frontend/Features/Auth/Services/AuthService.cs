@@ -1,10 +1,8 @@
-using System.Security.Claims;
 using CompVault.Frontend.Common.Configuration;
 using CompVault.Frontend.Common.Extensions;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.Result;
-
 namespace CompVault.Frontend.Features.Auth.Services;
 
 public class AuthService(

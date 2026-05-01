@@ -23,7 +23,7 @@ public interface IEquipmentCategoryService
     /// <summary>
     /// Oppdaterer en eksisterende utstyrskategori
     /// </summary>
-    Task<Result<EquipmentCategoryDto>> UpdateAsync(Guid id, UpdateEquipmentCategoryRequest request, 
+    Task<Result<EquipmentCategoryDto>> UpdateAsync(Guid id, UpdateEquipmentCategoryRequest request,
         CancellationToken ct);
 
     /// <summary>

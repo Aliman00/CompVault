@@ -42,16 +42,6 @@ public interface ICompetencyRepository : IRepository<Competency>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Henter kompetansebevis med EXPIRING_SOON eller EXPIRED status,
-    /// filtrert på valgfrie userId og departmentId.
-    /// Brukes av /api/competencies/expiring-endpointen.
-    /// </summary>
-    Task<IReadOnlyList<Competency>> GetExpiringAsync(
-        Guid? userId,
-        Guid? departmentId,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Henter ett kompetansebevis med navigasjon for oppdatering (tracking).
     /// Brukes av CompetencyService.UpdateAsync for å unngå ekstra queries.
     /// </summary>

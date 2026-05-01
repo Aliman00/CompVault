@@ -114,7 +114,7 @@ public class DocumentService(
         try
         {
             HttpResponseMessage response =
-                await _httpClient.PostAsMultipartFormAsync(ApiRoutes.Documents.Base(slug), 
+                await _httpClient.PostAsMultipartFormAsync(ApiRoutes.Documents.Base(slug),
                     request, file, ct);
 
             Result<DocumentDto> result = await HttpClientExtensions.ParseResponseAsync<DocumentDto>(response, ct);
@@ -167,16 +167,16 @@ public class DocumentService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
-    public async Task<Result<DocumentDto>> UpdateVersionAsync(string slug, Guid documentId, 
+    public async Task<Result<DocumentDto>> UpdateVersionAsync(string slug, Guid documentId,
         FileAttachment? file, CancellationToken ct)
     {
         try
         { // Bygger FormFile med filen
             using var content = new MultipartFormDataContent();
             MultipartFormBuilder.AddFile(content, file);
-            
+
             HttpResponseMessage response =
                 await _httpClient.PostAsync(
                     ApiRoutes.Documents.UploadVersion(slug, documentId), content, ct);
@@ -190,14 +190,14 @@ public class DocumentService(
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Nettverksfeil ved versjonsoppdatering av dokument {Slug}/{Id}", 
+            logger.LogError(ex, "Nettverksfeil ved versjonsoppdatering av dokument {Slug}/{Id}",
                 slug, documentId);
             return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.NetworkError,
                 "Tilkoblingen feilet. Sjekk nettverket ditt."));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Uventet feil ved versjonsoppdatering av dokument {Slug}/{Id}", 
+            logger.LogError(ex, "Uventet feil ved versjonsoppdatering av dokument {Slug}/{Id}",
                 slug, documentId);
             return Result<DocumentDto>.Failure(AppError.Create(ErrorCode.Unknown,
                 "Noe gikk galt. Prøv igjen."));
@@ -227,7 +227,7 @@ public class DocumentService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<FileAttachment>> DownloadAsync(string slug, Guid id, CancellationToken ct)
     {
@@ -258,7 +258,7 @@ public class DocumentService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     // Bygger base-urlen med query-filtering
     private static string BuildFilterUrl(string baseUrl, DocumentQueryParameters query)
     {
@@ -271,10 +271,10 @@ public class DocumentService(
 
         if (query.UserId.HasValue)
             queryParams["userId"] = query.UserId.ToString();
-        
+
         if (query.DocumentTypeSlug is not null)
             queryParams["documentTypeSlug"] = query.DocumentTypeSlug;
-        
+
         queryParams["sortBy"] = ((int)query.SortBy).ToString();
         queryParams["sortDescending"] = query.SortDescending.ToString().ToLower();
 

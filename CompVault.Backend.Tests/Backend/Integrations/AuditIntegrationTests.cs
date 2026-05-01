@@ -19,19 +19,13 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CompVault.Backend.Tests.Backend.Integrations;
 
 [Collection(nameof(IntegrationTestCollection))]
-public class AuditIntegrationTests : IAsyncLifetime
+public class AuditIntegrationTests(BackendWebApplicationFactory factory) : IAsyncLifetime
 {
-    private readonly BackendWebApplicationFactory _factory;
-    private readonly HttpClient _client;
+    private readonly BackendWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateClient();
     private AppDbContext _dbContext = null!;
     private HttpClient _authenticatedClient = null!;
     private ApplicationUser _adminUser = null!;
-
-    public AuditIntegrationTests(BackendWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _client = factory.CreateClient();
-    }
 
     public async Task InitializeAsync()
     {
@@ -129,7 +123,7 @@ public class AuditIntegrationTests : IAsyncLifetime
     public async Task GetAuditLog_ReturnsPagedResult()
     {
         // Act
-        var response = await _authenticatedClient.GetAsync(ApiRoutes.Audit.Base);
+        HttpResponseMessage response = await _authenticatedClient.GetAsync(ApiRoutes.Audit.Base);
 
         // Assert
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
@@ -160,7 +154,7 @@ public class AuditIntegrationTests : IAsyncLifetime
         await _dbContext.SaveChangesAsync();
 
         // Act — filter på department.create
-        var response = await _authenticatedClient.GetAsync(
+        HttpResponseMessage response = await _authenticatedClient.GetAsync(
             $"{ApiRoutes.Audit.Base}?action=department.create");
 
         // Assert
@@ -179,7 +173,7 @@ public class AuditIntegrationTests : IAsyncLifetime
     public async Task GetAuditLog_Unauthenticated_Returns401()
     {
         // Act — use unauthenticated client
-        var response = await _client.GetAsync(ApiRoutes.Audit.Base);
+        HttpResponseMessage response = await _client.GetAsync(ApiRoutes.Audit.Base);
 
         // Assert
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
@@ -193,7 +187,7 @@ public class AuditIntegrationTests : IAsyncLifetime
     public async Task GetAuditLog_FilterByEntityType_ReturnsMatchingEntries()
     {
         // Act
-        var response = await _authenticatedClient.GetAsync(
+        HttpResponseMessage response = await _authenticatedClient.GetAsync(
             $"{ApiRoutes.Audit.Base}?entityType=Department");
 
         // Assert

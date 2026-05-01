@@ -5,7 +5,7 @@ using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Localization;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
-using CompVault.Frontend.Features.Audit;
+using CompVault.Frontend.Features.Audit.Services;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Competencies.Services;
 using CompVault.Frontend.Features.Departments.Services;

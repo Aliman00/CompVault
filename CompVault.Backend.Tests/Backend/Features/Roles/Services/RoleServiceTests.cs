@@ -38,7 +38,7 @@ public class RoleServiceTests
         _loggerMock = new Mock<ILogger<RoleService>>();
 
         // Use InMemoryDatabase for AppDbContext in unit tests
-        var options = new DbContextOptionsBuilder<AppDbContext>()
+        DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         AppDbContext dbContext = new(options, new BypassDepartmentScopeService());

@@ -21,7 +21,7 @@ public static class AuditConstants
         "equipment_item.create", "equipment_item.update", "equipment_item.delete",
         "equipment_issuance.create", "equipment_issuance.update", "equipment_issuance.delete",
     ];
-    
+
     public static readonly IReadOnlyList<string> AllEntityTypes =
     [
         "ApplicationUser", "ApplicationRole", "Department", "JobTitle",

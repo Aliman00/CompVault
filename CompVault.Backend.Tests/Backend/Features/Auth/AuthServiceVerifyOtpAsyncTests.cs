@@ -48,7 +48,7 @@ public class AuthServiceVerifyOtpAsyncTests
         _refreshTokenService = new Mock<IRefreshTokenService>();
         var refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
-        Mock<IPermissionService> permissionServiceMock = new Mock<IPermissionService>();
+        var permissionServiceMock = new Mock<IPermissionService>();
         _userRepositoryMock = new Mock<IUserRepository>();
 
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
@@ -107,7 +107,7 @@ public class AuthServiceVerifyOtpAsyncTests
 
         // mocker UserRepository til å returerne opprettet bruker
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
@@ -123,7 +123,7 @@ public class AuthServiceVerifyOtpAsyncTests
             .ReturnsAsync(roles);
 
         // mocker JwtService til å returere AccessToken
-        _jwtServiceMock.Setup(x => x.GenerateAccessToken(user, roles, 
+        _jwtServiceMock.Setup(x => x.GenerateAccessToken(user, roles,
                 It.IsAny<IEnumerable<string>>()))
             .Returns(accessToken);
 
@@ -142,12 +142,12 @@ public class AuthServiceVerifyOtpAsyncTests
         otpCode.IsUsed.Should().BeTrue(); // Sjekker at Otp-koden er satt til brukt
 
         // Verfiserer at alle servicene ble kalt engang
-        _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(), 
+        _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(),
             It.IsAny<CancellationToken>()), Times.Once);
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(user.Id, request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Once);
         _userManagerMock.Verify(x => x.GetRolesAsync(user), Times.Once);
-        _jwtServiceMock.Verify(x => x.GenerateAccessToken(user, roles, 
+        _jwtServiceMock.Verify(x => x.GenerateAccessToken(user, roles,
             It.IsAny<IEnumerable<string>>()), Times.Once());
         _refreshTokenService.Verify(x => x.CreateRefreshTokenAsync(user.Id,
             It.IsAny<CancellationToken>()), Times.Once);
@@ -170,10 +170,10 @@ public class AuthServiceVerifyOtpAsyncTests
 
         // mocker UserRepository til å returerne null
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((ApplicationUser?)null);
-        
+
         // Act
         Result<TokenResponse> result = await _sut.VerifyOtpAsync(request);
 
@@ -206,7 +206,7 @@ public class AuthServiceVerifyOtpAsyncTests
 
         // mocker UserManager til å returerne opprettet bruker
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
@@ -224,7 +224,7 @@ public class AuthServiceVerifyOtpAsyncTests
         result.Error!.Code.Should().Be(ErrorCode.OtpMaxAttemptsExceeded);
 
         // Verifiserer at FindByEmailAsync og VerifyOtpCodeAsync blir kalt, men ikke GetRolesAsync eller UnitOfWork
-        _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(), 
+        _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(),
             It.IsAny<CancellationToken>()), Times.Once);
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(It.IsAny<Guid>(), request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Once);
@@ -250,7 +250,7 @@ public class AuthServiceVerifyOtpAsyncTests
 
         // mocker UserRepository til å returerne opprettet bruker
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
@@ -262,7 +262,7 @@ public class AuthServiceVerifyOtpAsyncTests
 
         // mocker RefreshTokenService til å faile og returnere Failure
         _refreshTokenService
-            .Setup(x => x.CreateRefreshTokenAsync(user.Id, 
+            .Setup(x => x.CreateRefreshTokenAsync(user.Id,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<string>.Failure(refreshTokenError));
 
@@ -274,7 +274,7 @@ public class AuthServiceVerifyOtpAsyncTests
         result.Error!.Code.Should().Be(ErrorCode.InternalError);
 
         // Verifiserer at FindByEmailAsync og VerifyOtpCodeAsync blir kalt, men ikke JwtService 
-        _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(), 
+        _userRepositoryMock.Verify(x => x.GetByEmailAsync(It.IsAny<string>(),
             It.IsAny<CancellationToken>()), Times.Once);
         _otpCodeServiceMock.Verify(x => x.VerifyOtpCodeAsync(It.IsAny<Guid>(), request.OtpCode,
             It.IsAny<CancellationToken>()), Times.Once);

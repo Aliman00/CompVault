@@ -1,11 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 using CompVault.Shared.Constants.Validations;
 using CompVault.Shared.DTOs.Equipment;
 namespace CompVault.Frontend.Features.Equipment.Models;
 
 public class EquipmentIssuanceEditModel
 {
-    [Range(EquipmentValidations.QuantityMin, EquipmentValidations.QuantityMax, 
+    [Range(EquipmentValidations.QuantityMin, EquipmentValidations.QuantityMax,
         ErrorMessage = EquipmentValidations.Errors.QuantityRange)]
     public int Quantity { get; set; } = 1;
 

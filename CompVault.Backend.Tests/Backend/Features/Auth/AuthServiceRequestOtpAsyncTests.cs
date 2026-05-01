@@ -100,7 +100,7 @@ public class AuthServiceRequestOtpAsyncTests
 
         // mocker UserManager til å returerne opprettet bruker
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
@@ -143,7 +143,7 @@ public class AuthServiceRequestOtpAsyncTests
 
         // mocker UserManager til å returnere inaktive bruker
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((ApplicationUser?)null);
         // Act
@@ -174,7 +174,7 @@ public class AuthServiceRequestOtpAsyncTests
 
         // mocker UserManager til å returnere null
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
@@ -206,7 +206,7 @@ public class AuthServiceRequestOtpAsyncTests
 
         // mocker UserManager til å returerne opprettet bruker
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
@@ -245,7 +245,7 @@ public class AuthServiceRequestOtpAsyncTests
 
         // mocker UserManager til å returerne opprettet bruker
         _userRepositoryMock
-            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(), 
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 

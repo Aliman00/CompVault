@@ -47,8 +47,8 @@ public sealed class EquipmentIssuanceService(
     public async Task<Result<EquipmentIssuanceDto>> GetByIdAsync(
         Guid id, CancellationToken cancellationToken = default)
     {
-       EquipmentIssuance? issuance =
-            await issuanceRepository.GetByIdWithDetailsAsync(id, cancellationToken);
+        EquipmentIssuance? issuance =
+             await issuanceRepository.GetByIdWithDetailsAsync(id, cancellationToken);
 
         if (issuance is null)
             return Result<EquipmentIssuanceDto>.Failure(
@@ -76,9 +76,9 @@ public sealed class EquipmentIssuanceService(
         return Result<PagedResult<EquipmentIssuanceDto>>.Success(
             PagedResult<EquipmentIssuanceDto>.Create(dtos, totalCount, query));
     }
-    
+
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<EquipmentIssuanceDto>>> GetByItemAsync(Guid equipmentItemId, 
+    public async Task<Result<IReadOnlyList<EquipmentIssuanceDto>>> GetByItemAsync(Guid equipmentItemId,
         CancellationToken ct = default)
     {
         bool itemExists = await itemRepository.ExistsAsync(u => u.Id == equipmentItemId, ct);
@@ -94,9 +94,9 @@ public sealed class EquipmentIssuanceService(
 
         return Result<IReadOnlyList<EquipmentIssuanceDto>>.Success(dtos);
     }
-    
+
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<UserEquipmentCategoryDto>>> GetCategoriesForUserAsync(Guid userId, 
+    public async Task<Result<IReadOnlyList<UserEquipmentCategoryDto>>> GetCategoriesForUserAsync(Guid userId,
         CancellationToken ct = default)
     {
         bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, ct);
@@ -112,9 +112,9 @@ public sealed class EquipmentIssuanceService(
 
         return Result<IReadOnlyList<UserEquipmentCategoryDto>>.Success(result);
     }
-    
+
     /// <inheritdoc />
-    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(Guid userId, Guid? categoryId, 
+    public async Task<Result<PagedResult<EquipmentIssuanceDto>>> GetMyEquipmentAsync(Guid userId, Guid? categoryId,
         PagedQuery query, CancellationToken ct = default)
     {
         bool userExists = await userRepository.ExistsAsync(u => u.Id == userId, ct);
@@ -125,7 +125,7 @@ public sealed class EquipmentIssuanceService(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
         }
 
-        (IReadOnlyList<EquipmentIssuance> items, int totalCount) = 
+        (IReadOnlyList<EquipmentIssuance> items, int totalCount) =
             await issuanceRepository.GetByUserIdPagedAsync(userId, categoryId, query, ct);
 
         var equipmentIssuanceDtos = items.Select(EquipmentMapper.ToDto).ToList();
@@ -168,12 +168,12 @@ public sealed class EquipmentIssuanceService(
         if (recipient is null)
             return Result<EquipmentIssuanceDto>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
-        
+
         // Sjekker at brukeren har tilattelse for å opprette en utlevering for denne brukeren
-        if (!departmentScope.IsAllowed(recipient.DepartmentId, Permissions.EquipmentAll, 
+        if (!departmentScope.IsAllowed(recipient.DepartmentId, Permissions.EquipmentAll,
                 Permissions.EquipmentReadSub))
             return Result<EquipmentIssuanceDto>.Failure(
-                AppError.Create(ErrorCode.Forbidden, 
+                AppError.Create(ErrorCode.Forbidden,
                     "Du har ikke tilgang til å opprette utleveringer for denne brukeren."));
 
         // Valider utstyr

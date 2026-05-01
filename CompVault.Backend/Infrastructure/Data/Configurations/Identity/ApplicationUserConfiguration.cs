@@ -43,6 +43,6 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
             .WithMany()
             .HasForeignKey(u => u.CreatedById)
             .OnDelete(DeleteBehavior.SetNull);
-        
+
     }
 }

@@ -77,7 +77,7 @@ public class ExpiryNotificationJob(
 
             // Hent alle aktive brukere som har kompetanser — bruk IgnoreQueryFilters
             // for å omgå DepartmentScope-filteret i bakgrunnsjobb-kontekst.
-            HashSet<Guid> userIds = competencies.Select(c => c.UserId).ToHashSet();
+            var userIds = competencies.Select(c => c.UserId).ToHashSet();
 
             Dictionary<Guid, ApplicationUser> users = await dbContext.Users
                 .IgnoreQueryFilters()
@@ -85,7 +85,7 @@ public class ExpiryNotificationJob(
                 .ToDictionaryAsync(u => u.Id, ct);
 
             // Hent ledere for brukere som har en ManagerId
-            HashSet<Guid> managerIds = users.Values
+            var managerIds = users.Values
                 .Where(u => u.ManagerId.HasValue)
                 .Select(u => u.ManagerId!.Value)
                 .ToHashSet();
