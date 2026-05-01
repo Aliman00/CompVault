@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace CompVault.Frontend.Common.Extensions;
 
 public static class JwtExtensions
-{   
+{
     /// <summary>
     /// Parser claims fra JWT for å legge cookies inn i nettleseren
     /// </summary>

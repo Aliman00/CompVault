@@ -15,7 +15,7 @@ public interface IUserService
 
     /// <summary>Henter én bruker basert på ID.</summary>
     Task<Result<UserDto>> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default);
-    
+
     /// <summary>Henter alle brukere innlogget bruker har lov til å hente</summary>
     Task<Result<IReadOnlyList<UserLookupDto>>> LookupAllowedUsersAsync(string bypassPermission = Permissions.UsersAll,
         string subPermission = Permissions.UsersReadSub, CancellationToken ct = default);

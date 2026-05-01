@@ -12,35 +12,35 @@ public static class PageRoutes
         public const string LoginEmail = "/login-email";
         public const string LoginOtp = "/login-otp";
     }
-    
+
     // =============================== EMPLOYEES =============================== 
     public static class Dashboard
     {
         public const string Home = "/";
     }
-    
+
     public static class UserCompetencies
     {
         public const string List = "/my-competencies";
         public static string Detail(Guid id) => $"/my-competencies/{id}";
     }
-    
+
     public static class UserEquipment
     {
         public const string Overview = "/my-equipment";
         public static string List(Guid categoryId) => $"/my-equipment/{categoryId}";
         public static string Detail(Guid id) => $"/my-equipment/detail/{id}";
     }
-    
+
     public static class UserDocuments
     {
         public const string Overview = "/my-documents";
         public static string List(string slug) => $"/my-documents/{slug}";
         public static string Detail(string slug, Guid id) => $"/my-documents/{slug}/{id}";
     }
-    
+
     // =============================== ADMIN =============================== 
-    
+
     public static class Users
     {
         public const string List = "/users";
@@ -69,7 +69,7 @@ public static class PageRoutes
         public static string Detail(Guid id) => $"/roles/{id}";
         public const string Create = "/roles/create";
     }
-    
+
 
     public static class Competencies
     {
@@ -100,7 +100,7 @@ public static class PageRoutes
         public static string Detail(string slug) => $"/document-types/{slug}";
         public const string Create = "/document-types/create";
     }
-    
+
     public static class EquipmentCategories
     {
         public const string List = "/equipment-categories";
@@ -125,7 +125,7 @@ public static class PageRoutes
         public const string NotFound = "/not-found";
         public const string NotAuthorized = "/not-authorized";
     }
-    
+
     public static class Audit
     {
         public const string List = "/audit-log";

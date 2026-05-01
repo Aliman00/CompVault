@@ -12,7 +12,7 @@ namespace CompVault.Backend.Infrastructure.Repositories.Competencies;
 /// <summary>
 /// EF Core-implementasjon av <see cref="ICompetencyRepository"/>.
 /// </summary>
-public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScopeService departmentScope) : 
+public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScopeService departmentScope) :
     BaseRepository<Competency>(dbContext), ICompetencyRepository
 {
     /// <inheritdoc />
@@ -71,10 +71,10 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
             .AsNoTracking()
             .Include(c => c.ApplicationUser)
             .Include(c => c.CompetencyType);
-        
+
         // Filterer vekk avdelinger vi ikke har tilattelse til
         query = ApplyDepartmentFilter(query);
-        
+
         if (userId.HasValue)
             query = query.Where(c => c.UserId == userId.Value);
 
@@ -85,30 +85,6 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
             query = query.Where(c => c.CompetencyTypeId == competencyTypeId.Value);
 
         return query;
-    }
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<Competency>> GetExpiringAsync(
-        Guid? userId,
-        Guid? departmentId,
-        CancellationToken cancellationToken = default)
-    {
-        IQueryable<Competency> query = DbSet
-            .AsNoTracking()
-            // ! nødvendig — EF Core garanterer at navigasjonsegenskapen er lastet etter Include
-            .Include(c => c.ApplicationUser!)
-                .ThenInclude(u => u.Department)
-            .Include(c => c.CompetencyType)
-            .Where(c => c.Status == CompetencyStatus.ExpiringSoon || c.Status == CompetencyStatus.Expired);
-
-        if (userId.HasValue)
-            query = query.Where(c => c.UserId == userId.Value);
-
-        if (departmentId.HasValue)
-            // ! nødvendig — Include garanterer at ApplicationUser er lastet
-            query = query.Where(c => c.ApplicationUser!.DepartmentId == departmentId.Value);
-
-        return await query.ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -181,9 +157,9 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
         competency.IsActive = false;
         return Task.CompletedTask;
     }
-    
+
     // =========================== Hjelpemetoder =========================== 
-    
+
     // Filter som sjekker at vi ikke kan hente kompetansebevis vi ikke har tilattelse til
     private IQueryable<Competency> ApplyDepartmentFilter(IQueryable<Competency> query)
     {

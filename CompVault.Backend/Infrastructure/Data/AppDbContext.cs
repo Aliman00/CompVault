@@ -1,5 +1,5 @@
-using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Audit;
+using CompVault.Backend.Domain.Entities.Auth;
 using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Domain.Entities.Documents;
@@ -8,10 +8,11 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Domain.Entities.JobTitles;
 using CompVault.Backend.Domain.Entities.Notifications;
 using CompVault.Backend.Features.Departments.Services;
-using Perms = CompVault.Shared.Constants.Permissions;
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+
+using Perms = CompVault.Shared.Constants.Permissions;
 
 namespace CompVault.Backend.Infrastructure.Data;
 
@@ -65,7 +66,7 @@ public sealed class AppDbContext(
         // Plukker automatisk opp alle IEntityTypeConfiguration-klasser i assembly-et.
         // Ingen grunn til å registrere dem manuelt når du legger til nye entiteter.
         builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-        
+
         // Legger til query-filter på hver bruker
         builder.Entity<ApplicationUser>().HasQueryFilter(u =>
             u.DeletedAt == null &&

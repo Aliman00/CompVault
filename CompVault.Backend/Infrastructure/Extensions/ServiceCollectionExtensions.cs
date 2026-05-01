@@ -3,16 +3,16 @@ using System.Text;
 using CompVault.Backend.Common.Middleware;
 using CompVault.Backend.Common.Responses;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Features.Documents.Services;
-using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Equipment.Services;
+using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
-using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
@@ -26,9 +26,9 @@ using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
+using CompVault.Backend.Infrastructure.Repositories.Equipment;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
-using CompVault.Backend.Infrastructure.Repositories.Equipment;
 using CompVault.Backend.Infrastructure.Repositories.Notifications;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
@@ -293,7 +293,7 @@ public static class ServiceCollectionExtensions
     {
         // Hierarki-sjekk
         services.AddScoped<IDepartmentScopeService, DepartmentScopeService>();
-        
+
         // Audit
         services.AddScoped<IAuditContext, AuditContext>();
         services.AddScoped<IAuditLogService, AuditLogService>();

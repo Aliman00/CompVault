@@ -14,7 +14,7 @@ public class CreateJobTitleModel
 
     public CreateJobTitleRequest ToRequest() => new()
     {
-        Name = Name, 
+        Name = Name,
         IsLeader = IsLeader
     };
 }

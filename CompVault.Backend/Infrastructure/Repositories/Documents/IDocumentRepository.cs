@@ -21,36 +21,12 @@ public interface IDocumentRepository : IRepository<Document>
         Guid documentTypeId, Guid? categoryId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Henter alle aktive dokumenter rettet mot brukerens avdeling, jobbtittel, eller udirigerte.
-    /// Filtrering av signaturkrav og allerede signerte dokumenter gjøres i service-laget.
-    /// </summary>
-    Task<IReadOnlyList<Document>> GetPendingForUserAsync(
-        Guid userId,
-        Guid? departmentId,
-        Guid? jobTitleId,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Henter alle aktive dokumenter for en dokumenttype som er synlige for brukeren
-    /// (basert på avdeling/jobbtittel-targeting).
-    /// </summary>
-    Task<IReadOnlyList<Document>> GetAccessibleByDocumentTypeAsync(
-        Guid documentTypeId,
-        Guid? departmentId,
-        Guid? jobTitleId,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>Henter dokumenter basert på en liste med IDer.</summary>
-    Task<IReadOnlyList<Document>> GetByIdsAsync(
-        IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
-    
     /// <summary>Henter alle dokumenttyper hvor brukeren har dokumenter.
     /// Henter dokumentene og grupperer de, deretter henter ut det vi trenger for DTO-en,
     /// sorteret etter navn</summary>
-    Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId, 
+    Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId,
         Guid? jobTitleId, CancellationToken ct = default);
-    
+
     /// <summary>Teller dokumenter for en bruker basert på filtrering av status</summary>
     Task<int> CountDocumentsForUserAsync(
         Guid userId,
@@ -68,7 +44,7 @@ public interface IDocumentRepository : IRepository<Document>
         Guid? jobTitleId,
         DocumentQueryParameters parameters,
         CancellationToken ct = default);
-    
+
     /// <summary>Legger til en versjonsrecord.</summary>
     Task<DocumentVersion> AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default);
 

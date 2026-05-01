@@ -69,7 +69,7 @@ public class DocumentTypeService(
                 "Noe gikk galt. Prøv igjen."));
         }
     }
-    
+
     /// <inheritdoc />
     public async Task<Result<List<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(CancellationToken ct)
     {

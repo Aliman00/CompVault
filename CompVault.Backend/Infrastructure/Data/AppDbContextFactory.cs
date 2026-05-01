@@ -15,14 +15,14 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
     public AppDbContext CreateDbContext(string[] args)
     {
         ConfigurationLoader.LoadEnvironmentFile();
-        
+
         IConfigurationRoot config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false)
             .AddJsonFile("appsettings.Development.json", optional: true)
             .AddEnvironmentVariables()
             .Build();
-        
+
         DatabaseSettings dbSettings = config
             .GetSection(DatabaseSettings.SectionName)
             .Get<DatabaseSettings>()
@@ -41,10 +41,10 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 file sealed class DesignTimeDepartmentScope : IDepartmentScopeService
 {
     public bool HasBypass(string readAllPermissions) => true;
-    
-    public IReadOnlyList<Guid> GetAllowedDepartmentIds(string? readSubPermission = null) 
+
+    public IReadOnlyList<Guid> GetAllowedDepartmentIds(string? readSubPermission = null)
         => [];
 
-    public bool IsAllowed(Guid departmentId, string readAllPermission, string? readSubPermission = null) 
+    public bool IsAllowed(Guid departmentId, string readAllPermission, string? readSubPermission = null)
         => true;
 }

@@ -16,7 +16,7 @@ public class CreateDocumentTypeModel
 
     [Required(ErrorMessage = DocTypeValidations.Errors.TargetModeRequired)]
     public DocumentTargetMode TargetMode { get; set; } = DocumentTargetMode.None;
-    
+
     public string[] AllowedMimeTypes { get; set; } = ["application/pdf"];
 
     [Range(DocTypeValidations.MaxFileSizeMinMb, DocTypeValidations.MaxFileSizeMaxMb,

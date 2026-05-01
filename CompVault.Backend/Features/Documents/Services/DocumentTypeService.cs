@@ -39,9 +39,9 @@ public sealed class DocumentTypeService(
 
         return Result<DocumentTypeDto>.Success(DocumentMapper.ToTypeDto(documentType));
     }
-    
+
     /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(Guid userId, 
+    public async Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(Guid userId,
         CancellationToken ct = default)
     {
         ApplicationUser? user = await userRepository.GetByIdIgnoringFiltersAsync(userId, ct);
@@ -51,8 +51,8 @@ public sealed class DocumentTypeService(
             return Result<IReadOnlyList<UserDocumentTypeDto>>.Failure(
                 AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
         }
-        
-        IReadOnlyList<UserDocumentTypeDto> result = 
+
+        IReadOnlyList<UserDocumentTypeDto> result =
             await documentRepository.GetDocumentTypesForUserAsync(userId, user.DepartmentId, user.JobTitleId, ct);
 
         return Result<IReadOnlyList<UserDocumentTypeDto>>.Success(result);

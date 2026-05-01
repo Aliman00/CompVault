@@ -8,7 +8,7 @@ public static class DocTypeValidations
 {
     public const int NameMaxLength = 100;
     public const int DescMaxLength = 500;
-    
+
     // 1 byte til 100 MB
     public const int MaxFileSizeMinBytes = 1;
     public const long MaxFileSizeMaxBytes = 100L * 1024 * 1024;

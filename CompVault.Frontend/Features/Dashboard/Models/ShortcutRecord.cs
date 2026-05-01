@@ -9,8 +9,8 @@
 /// <param name="AccentColor">Fargen på ikonet</param>
 /// <param name="IconBackgroundColor">Bakgrunnsfargen</param>
 public record Shortcut(
-    string Label, 
-    string Icon, 
-    string Url, 
-    string AccentColor, 
+    string Label,
+    string Icon,
+    string Url,
+    string AccentColor,
     string IconBackgroundColor);

@@ -169,10 +169,10 @@ public class CompetencyService(
             queryParams["status"] = filter.Status.ToString();
         if (filter.CompetencyTypeId.HasValue)
             queryParams["competencyTypeId"] = filter.CompetencyTypeId.ToString();
-        
+
         queryParams["page"] = filter.Page.ToString();
         queryParams["pageSize"] = filter.PageSize.ToString();
-        
+
         return baseUrl.AddQueryFilter(queryParams);
     }
 }

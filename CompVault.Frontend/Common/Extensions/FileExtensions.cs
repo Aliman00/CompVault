@@ -18,7 +18,7 @@ public static class FileExtensions
     /// <param name="maxSizeInBytes">Maks størrelse til et dokument</param>
     /// <param name="ct"></param>
     /// <returns>FileAttachment med stream, filnavn og contenttype</returns>
-    public static async Task<FileAttachment> ToFileAttachmentAsync(this IBrowserFile file, long maxSizeInBytes, 
+    public static async Task<FileAttachment> ToFileAttachmentAsync(this IBrowserFile file, long maxSizeInBytes,
         CancellationToken ct = default)
     {
         var buffer = new MemoryStream();
@@ -28,7 +28,7 @@ public static class FileExtensions
 
         return new FileAttachment(buffer, file.Name, file.ContentType);
     }
-    
+
     /// <summary>
     /// Gjør om en FileAttachment sin stream til en base64-streng
     /// </summary>
@@ -41,7 +41,7 @@ public static class FileExtensions
         await file.Stream.CopyToAsync(ms, ct);
         return Convert.ToBase64String(ms.ToArray());
     }
-    
+
     /// <summary>
     /// Returnerer true hvis MIME-typen kan vises i nettleseren uten nedlasting. Eks: bilder, pdf
     /// </summary>
@@ -51,7 +51,7 @@ public static class FileExtensions
             or "image/png"
             or "image/gif"
             or "image/webp";
-    
+
     /// <summary>
     /// Speiler backend sin validnering av filer i frontend. Sjekker at den ikke er tom og at filtypen er tillatt
     /// </summary>

@@ -5,6 +5,7 @@ using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace CompVault.Backend.Features.Documents.Controllers;
@@ -222,7 +223,7 @@ public sealed class DocumentsController(
 
         return Ok(result.Value);
     }
-    
+
     /// <summary>
     /// Henter alle dokumenter for en bruker, både signerte og ikke-signerte
     /// </summary>
@@ -245,5 +246,5 @@ public sealed class DocumentsController(
 
         return Ok(result.Value);
     }
-    
+
 }

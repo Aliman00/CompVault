@@ -16,13 +16,13 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .IgnoreQueryFilters()
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant() && u.DeletedAt == null, cancellationToken);
-    
+
     /// <inheritdoc />
     public async Task<ApplicationUser?> GetByIdIgnoringFiltersAsync(Guid id, CancellationToken ct = default) =>
         await DbSet
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null, ct);
-    
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>>
         GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default)
@@ -48,7 +48,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
 
         return result.Select(x => (x.User, x.Roles)).ToList();
     }
-    
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<ApplicationUser>> GetUsersByTargetAsync(IReadOnlyList<Guid> departmentIds,
         IReadOnlyList<Guid> jobTitleIds, CancellationToken ct = default) =>
@@ -141,7 +141,7 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
 
         return result.Select(x => (x.User, x.Roles)).ToList();
     }
-    
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<ApplicationUser>> GetLookupAsync(IReadOnlyList<Guid> allowedDepartmentIds,
         bool bypass, CancellationToken ct = default) =>

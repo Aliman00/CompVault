@@ -11,9 +11,9 @@ using CompVault.Shared.Result;
 
 using FluentAssertions;
 
-using Moq;
-
 using Microsoft.Extensions.Logging;
+
+using Moq;
 
 namespace CompVault.Backend.Tests.Backend.Features.Departments.Services;
 

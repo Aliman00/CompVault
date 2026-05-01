@@ -155,7 +155,7 @@ public class UserServiceTests
         _userManagerMock
             .Setup(m => m.GetRolesAsync(It.IsAny<ApplicationUser>()))
             .ReturnsAsync(new List<string>());
-        
+
         _departmentRepositoryMock
             .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<Department, bool>>>(),
                 It.IsAny<CancellationToken>()))

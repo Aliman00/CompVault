@@ -9,7 +9,7 @@ public class CircuitUserContext
 {
     public ClaimsPrincipal User { get; private set; } = new(new ClaimsIdentity());
     public string? RefreshToken { get; private set; }
-    
+
     /// <summary>Fornavn til innlogget bruker</summary>
     public string FirstName => User.FindFirst("firstName")?.Value ?? string.Empty;
 
