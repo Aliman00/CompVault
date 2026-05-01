@@ -2,7 +2,6 @@ using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
-using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
@@ -14,7 +13,6 @@ namespace CompVault.Backend.Features.Documents.Services;
 public sealed class DocumentSignatureService(
     IDocumentRepository documentRepository,
     IDocumentSignatureRepository signatureRepository,
-    IDocumentTypeRepository documentTypeRepository,
     IUserRepository userRepository,
     IDocumentTargetingService targetingService,
     ILogger<DocumentSignatureService> logger) : IDocumentSignatureService
@@ -82,13 +80,13 @@ public sealed class DocumentSignatureService(
         if (document is null)
             return Result<IReadOnlyList<UserSignatureStatusDto>>.Failure(
                 AppError.NotFound($"Dokument med ID '{documentId}' ble ikke funnet."));
-        
+
         // Sjekker at brukeren har lov til å se dokumentet
-        Result accessResult = await targetingService.CheckAccessAsync(document, currentUserId, bypassTargeting, 
+        Result accessResult = await targetingService.CheckAccessAsync(document, currentUserId, bypassTargeting,
             cancellationToken);
         if (accessResult.IsFailure)
             return Result<IReadOnlyList<UserSignatureStatusDto>>.Failure(accessResult.Error!);
-        
+
         // Henter ut avdelingene og jobbstillingene hvis noen er i målgruppen
         var departmentIds = document.DocumentDepartments.Select(dd => dd.DepartmentId).ToList();
         var jobTitleIds = document.DocumentJobTitles.Select(dj => dj.JobTitleId).ToList();
@@ -99,7 +97,7 @@ public sealed class DocumentSignatureService(
 
         IReadOnlyList<ApplicationUser> targetedUsers = await userRepository.GetUsersByTargetAsync(
             departmentIds, jobTitleIds, cancellationToken);
-        
+
         // Slår sammen signaturen og brukeren til SignatureStatusDto og sorterer etter om brukeren har signert
         var dtos = targetedUsers
             .Select(u => DocumentMapper.ToSignatureStatusDto(

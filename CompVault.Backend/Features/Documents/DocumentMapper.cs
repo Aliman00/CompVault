@@ -149,8 +149,7 @@ public static class DocumentMapper
     public static List<DocumentListDto> MapToListDtos(
         IReadOnlyList<Document> documents,
         IReadOnlyList<DocumentSignature> allSignatures,
-        Guid? currentUserId = null,
-        bool? signedByCurrentUserOverride = null)
+        Guid? currentUserId = null)
     {
         var dtos = new List<DocumentListDto>(documents.Count);
 
@@ -159,11 +158,11 @@ public static class DocumentMapper
             int signatureCount = allSignatures.Count(
                 s => s.DocumentId == doc.Id && s.SignatureVersion == doc.Version);
 
-            bool signedByCurrentUser = signedByCurrentUserOverride ?? (currentUserId.HasValue &&
+            bool signedByCurrentUser = currentUserId.HasValue &&
                 allSignatures.Any(s =>
                     s.DocumentId == doc.Id &&
                     s.SignatureVersion == doc.Version &&
-                    s.UserId == currentUserId.Value));
+                    s.UserId == currentUserId.Value);
 
             dtos.Add(ToListDto(doc, signatureCount, signedByCurrentUser));
         }

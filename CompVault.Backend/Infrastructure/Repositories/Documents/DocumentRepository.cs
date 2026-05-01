@@ -66,55 +66,6 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
-
-    public async Task<IReadOnlyList<Document>> GetPendingForUserAsync(
-        Guid userId,
-        Guid? departmentId,
-        Guid? jobTitleId,
-        CancellationToken cancellationToken = default)
-    {
-        return await ApplyTargetingFilter(
-                DbSet
-                    .Include(d => d.DocumentType)
-                    .Include(d => d.Category)
-                    .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
-                    .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
-                    .Include(d => d.Uploader)
-                    .AsSplitQuery()
-                    .Where(d => d.IsActive),
-                departmentId, jobTitleId)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<Document>> GetAccessibleByDocumentTypeAsync(
-        Guid documentTypeId,
-        Guid? departmentId,
-        Guid? jobTitleId,
-        CancellationToken cancellationToken = default)
-    {
-        return await ApplyTargetingFilter(
-                DbSet.Where(d => d.DocumentTypeId == documentTypeId && d.IsActive),
-                departmentId, jobTitleId)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<Document>> GetByIdsAsync(
-        IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
-    {
-        var idList = ids.ToList();
-        return await DbSet
-            .Include(d => d.DocumentType)
-            .Include(d => d.Category)
-            .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
-            .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
-            .Include(d => d.Uploader)
-            .AsSplitQuery()
-            .Where(d => idList.Contains(d.Id))
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-    }
     
     public async Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId, 
         Guid? jobTitleId, CancellationToken ct = default) => 

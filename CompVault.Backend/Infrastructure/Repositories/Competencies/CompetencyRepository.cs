@@ -88,30 +88,6 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Competency>> GetExpiringAsync(
-        Guid? userId,
-        Guid? departmentId,
-        CancellationToken cancellationToken = default)
-    {
-        IQueryable<Competency> query = DbSet
-            .AsNoTracking()
-            // ! nødvendig — EF Core garanterer at navigasjonsegenskapen er lastet etter Include
-            .Include(c => c.ApplicationUser!)
-                .ThenInclude(u => u.Department)
-            .Include(c => c.CompetencyType)
-            .Where(c => c.Status == CompetencyStatus.ExpiringSoon || c.Status == CompetencyStatus.Expired);
-
-        if (userId.HasValue)
-            query = query.Where(c => c.UserId == userId.Value);
-
-        if (departmentId.HasValue)
-            // ! nødvendig — Include garanterer at ApplicationUser er lastet
-            query = query.Where(c => c.ApplicationUser!.DepartmentId == departmentId.Value);
-
-        return await query.ToListAsync(cancellationToken);
-    }
-
-    /// <inheritdoc />
     public async Task<Competency?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(c => c.ApplicationUser)

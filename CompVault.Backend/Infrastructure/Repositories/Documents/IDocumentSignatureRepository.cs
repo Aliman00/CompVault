@@ -19,10 +19,6 @@ public interface IDocumentSignatureRepository : IRepository<DocumentSignature>
     Task<IReadOnlyList<DocumentSignature>> GetByDocumentIdsAsync(
         IEnumerable<Guid> documentIds, CancellationToken cancellationToken = default);
 
-    /// <summary>Henter alle dokument-IDer en bruker har signert.</summary>
-    Task<IReadOnlyList<Guid>> GetSignedDocumentIdsAsync(
-        Guid userId, CancellationToken cancellationToken = default);
-
     /// <summary>Henter alle signaturer for et dokument (for tracked delete).</summary>
     Task<IReadOnlyList<DocumentSignature>> GetForDocumentAsync(
         Guid documentId, CancellationToken cancellationToken = default);

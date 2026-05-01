@@ -4,9 +4,7 @@ using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Tests.Common.Constants;
-using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
-using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
 
 using FluentAssertions;
@@ -21,7 +19,6 @@ public class DocumentSignatureServiceTests
 {
     private readonly Mock<IDocumentRepository> _documentRepositoryMock;
     private readonly Mock<IDocumentSignatureRepository> _signatureRepositoryMock;
-    private readonly Mock<IDocumentTypeRepository> _documentTypeRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IDocumentTargetingService> _targetingServiceMock;
     private readonly Mock<ILogger<DocumentSignatureService>> _loggerMock;
@@ -31,7 +28,6 @@ public class DocumentSignatureServiceTests
     {
         _documentRepositoryMock = new Mock<IDocumentRepository>();
         _signatureRepositoryMock = new Mock<IDocumentSignatureRepository>();
-        _documentTypeRepositoryMock = new Mock<IDocumentTypeRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
         _targetingServiceMock = new Mock<IDocumentTargetingService>();
         _loggerMock = new Mock<ILogger<DocumentSignatureService>>();
@@ -45,26 +41,9 @@ public class DocumentSignatureServiceTests
         _sut = new DocumentSignatureService(
             _documentRepositoryMock.Object,
             _signatureRepositoryMock.Object,
-            _documentTypeRepositoryMock.Object,
             _userRepositoryMock.Object,
             _targetingServiceMock.Object,
             _loggerMock.Object);
-    }
-
-    private static DocumentType CreateDocumentType(
-        DocumentTargetMode targetMode = DocumentTargetMode.None,
-        Guid? id = null)
-    {
-        return new DocumentType
-        {
-            Id = id ?? Guid.NewGuid(),
-            Name = "Test Type",
-            Slug = "test-type",
-            TargetMode = targetMode,
-            IsActive = true,
-            StorageFolder = "test-type",
-            AllowedMimeTypes = ["application/pdf"]
-        };
     }
 
     private static ApplicationUser CreateUser(
@@ -198,7 +177,7 @@ public class DocumentSignatureServiceTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.NotFound);
     }
-    
+
     /// <summary>
     /// Tester at brukeren ikke riktig tilattelse eller er ikke i målgruppen
     /// </summary>
@@ -212,12 +191,12 @@ public class DocumentSignatureServiceTests
         _documentRepositoryMock
             .Setup(x => x.GetWithDetailsAsync(docId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
-        
+
         // Mocker at vi får feilmelding når vi sjekker om vi har tilgang
         _targetingServiceMock
             .Setup(x => x.CheckAccessAsync(
                 document, It.IsAny<Guid?>(), false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(AppError.Create(ErrorCode.Forbidden, 
+            .ReturnsAsync(Result.Failure(AppError.Create(ErrorCode.Forbidden,
                 "Du har ikke tilgang til dette dokumentet.")));
 
         // Act
@@ -228,7 +207,7 @@ public class DocumentSignatureServiceTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.Forbidden);
     }
-    
+
     /// <summary>
     /// Tester happy path at vi henter dokumentet, brukeren har tilattelse og vi returner en bruker som har singert
     /// og en som ikke har signert. Tester for alle brukere
@@ -259,19 +238,19 @@ public class DocumentSignatureServiceTests
             SignatureVersion = 2,
             SignedAt = DateTime.UtcNow
         };
-        
+
         // Mocker at vi henter dokumentet
         _documentRepositoryMock
-            .Setup(x => x.GetWithDetailsAsync(docId, 
+            .Setup(x => x.GetWithDetailsAsync(docId,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
-        
+
         // Mocker at vi returner en bruker som har signert
         _signatureRepositoryMock
-            .Setup(x => x.GetForDocumentVersionAsync(docId, 2, 
+            .Setup(x => x.GetForDocumentVersionAsync(docId, 2,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync([signature]);
-        
+
         // Mocker at vi henter alle brukerne. Vi har ingen målgruppe, så vi henter begge
         _userRepositoryMock
             .Setup(x => x.GetUsersByTargetAsync(
