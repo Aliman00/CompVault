@@ -92,7 +92,7 @@ public sealed class AuthController(
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<UserDto>> GetCurrentUserAsync(CancellationToken ct)
+    public async Task<ActionResult<UserDto>> GetCurrentUserAsync()
     {
         Guid currentUserId = User.GetUserId();
         ApplicationUser? user = await userManager.FindByIdAsync(currentUserId.ToString());
@@ -113,12 +113,12 @@ public sealed class AuthController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeAsync(
-        [FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        [FromBody] RefreshTokenRequest request, CancellationToken ct)
     {
         Guid currentUserId = User.GetUserId();
 
         Result result = await authService.RevokeRefreshTokenAsync(
-            request.RefreshToken, currentUserId, cancellationToken);
+            request.RefreshToken, currentUserId, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);
