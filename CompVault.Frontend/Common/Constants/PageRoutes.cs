@@ -9,14 +9,14 @@ public static class PageRoutes
     // =============================== AUTH =============================== 
     public static class Auth
     {
-        public const string LoginEmail = "/login-email";
+        public const string LoginEmail = "/";
         public const string LoginOtp = "/login-otp";
     }
 
     // =============================== EMPLOYEES =============================== 
     public static class Dashboard
     {
-        public const string Home = "/";
+        public const string Home = "/dashboard";
     }
 
     public static class UserCompetencies

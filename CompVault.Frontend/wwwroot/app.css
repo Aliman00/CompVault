@@ -92,6 +92,42 @@ h1:focus {
     width: fit-content
 }
 
+/* ============================= LOGIN PAGE ============================= */
+
+.cv-login-light .cv-login-page {
+    background: linear-gradient(160deg, #f4f6f8 0%, #eef2f7 40%, #dce6f0 100%);
+}
+
+.cv-login-dark .cv-login-page {
+    background: radial-gradient(ellipse at top, #1e3a5f 0%, #1a2535 60%, #0f1724 100%);
+}
+
+.cv-login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.cv-login-card {
+    width: 100%;
+    max-width: 440px;
+    border-radius: 16px !important;
+}
+
+.cv-login-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.cv-login-header .mud-typography-h4 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
 /* ============================= LOGO ============================= */
 
 .app-header-logo {

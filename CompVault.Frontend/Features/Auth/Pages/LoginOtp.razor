@@ -1,52 +1,95 @@
 ﻿@page "/login-otp"
 @layout AuthLayout
+
 @inject IJSRuntime Js
 @inject AntiforgeryStateProvider AntiforgeryStateProvider
-@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @inject IAuthService AuthService
-@inject NavigationManager Navigation 
-@inject AuthStateService AuthState  
+@inject NavigationManager Navigation
+@inject AuthStateService AuthState
 
-<!-- Sentralisert OTP-kort -->
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#f5f5f5">
-    <MudCard Style="width:400px">
-        <MudCardContent Class="pa-6">
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 
-            <MudText Typo="Typo.h4" Class="mb-4 text-center">Bekreft OTP</MudText>
+<PageTitle>Bekreft kode – CompVault</PageTitle>
 
-            <!-- Vis e-post fra query-string (?email=...) -->
-            <MudText Typo="Typo.body1" Class="mb-4">
-                Sendt til: <strong>@Email</strong>
-            </MudText>
+<div class="cv-login-page">
+    <MudCard Class="cv-login-card" Elevation="8">
+        <MudCardContent Class="pa-8">
+
+            <div class="cv-login-header">
+                <MudImage Src="images/CompVault.png"
+                          Alt="CompVault Logo"
+                          Height="100"
+                          ObjectFit="ObjectFit.Contain" />
+                <MudText Typo="Typo.h4" Class="mt-4">Sikker innlogging</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">
+                    Skriv inn engangskoden fra e-posten
+                </MudText>
+            </div>
+
+            <MudDivider Class="my-6" />
+
+            <!-- E-postinfo -->
+            <div class="d-flex align-center gap-2 mb-4">
+                <MudIcon Icon="@Icons.Material.Outlined.Email" Size="Size.Small" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Sendt til <strong>@Email</strong>
+                </MudText>
+            </div>
 
             <!-- OTP-input (6 siffer) -->
-            <MudTextField Label="OTP-kode (6 siffer)" 
-                          @bind-Value="code" 
+            <MudTextField T="string"
+                          @ref="_otpInput"
+                          Label="Engangskode"
+                          @bind-Value="code"
                           MaxLength="6"
-                          Variant="Variant.Outlined" 
-                          Immediate />
+                          Variant="Variant.Outlined"
+                          Immediate="true"
+                          InputType="InputType.Number"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Outlined.Lock"
+                          Disabled="@isDisabled"
+                          Error="@(!string.IsNullOrEmpty(error))"
+                          ErrorText="@error"
+                          OnKeyDown="HandleKeyDown"
+                          Class="mb-2" />
+
+            <!-- Hjelpetekst -->
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                Tast inn de 6 sifrene du mottok på e-post
+            </MudText>
+
+            <!-- Låst-tilstand -->
+            @if (isDisabled)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-4" Dense="true">
+                    For mange feil forsøk. Vent før du prøver igjen.
+                </MudAlert>
+            }
 
             <!-- Verifiser mot backend -->
-            <MudButton Class="mt-6" 
-                       FullWidth 
-                       Disabled="@isDisabled" 
-                       Color="Color.Primary" 
+            <MudButton Class="mt-6"
+                       FullWidth
+                       Disabled="@isDisabled"
+                       Color="Color.Primary"
                        Variant="Variant.Filled"
-                       OnClick="VerifyOtpAsync">
+                       Size="Size.Large"
+                       OnClick="VerifyOtpAsync"
+                       StartIcon="@Icons.Material.Outlined.VerifiedUser">
                 Logg inn
             </MudButton>
 
-            <!-- Feilmelding ved feil OTP eller lock -->
-            @if (!string.IsNullOrEmpty(error))
-            {
-                <MudText Color="Color.Error" Class="mt-2">
-                    @error
-                </MudText>
-            }
-            
+            <MudButton Class="mt-3"
+                       FullWidth
+                       Variant="Variant.Text"
+                       Size="Size.Small"
+                       Color="Color.Secondary"
+                       OnClick="GoBack">
+                Tilbake til e-post
+            </MudButton>
+
             @* Skjult form for å legge tokens i nettleseren ved innloging *@
             <form id="login-form" method="post" action="/login-callback">
-                <AntiforgeryToken/>
+                <AntiforgeryToken />
                 <input type="hidden" name="TokenResponse.AccessToken" id="access-token-input" value="" />
                 <input type="hidden" name="TokenResponse.RefreshToken" id="refresh-token-input" value="" />
             </form>
@@ -57,70 +100,90 @@
 @code {
 
     // Hent e-post fra URL: /login-otp?email=test@example.com
-    [Parameter] 
-    [SupplyParameterFromQuery] 
+    [Parameter]
+    [SupplyParameterFromQuery]
     public string? Email { get; set; } = "";
 
-    private string code = "";   // Two-way binding til OTP input
-    private string? error;      // Feilmelding til UI
-    private bool isDisabled;    // Disable knapp ved lock
-    private bool hasRedirected; // Hindrer redirect loop
+    private MudTextField<string> _otpInput = null!;
+    private string code = "";
+    private string? error;
+    private bool isDisabled;
+    private bool hasRedirected;
 
     protected override void OnInitialized()
     {
-        // Lytt på endringer i login state
         AuthState.OnChange += StateChanged;
-
-        // Sett initial state
         UpdateState();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Fokuser OTP-feltet automatisk
+            await _otpInput.FocusAsync();
+        }
     }
 
     private void StateChanged()
     {
-        // Kjør UI update async (Blazor pattern)
         InvokeAsync(UpdateState);
     }
 
     private void UpdateState()
     {
-        // Disable knapp hvis bruker er låst
         isDisabled = !AuthState.CanAttemptLogin();
 
-        // Hvis for mange feil forsøk → redirect tilbake til login
         if (AuthState.LoginState.IsLocked && !hasRedirected)
         {
             hasRedirected = true;
-
             error = "For mange feil forsøk. Du blir sendt tilbake.";
 
-            // Litt delay for bedre UX
             Task.Run(async () =>
             {
                 await Task.Delay(1500);
-                Navigation.NavigateTo("/login-email", true);
+                Navigation.NavigateTo("/", true);
             });
         }
     }
-    
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        // Auto-submit når Enter trykkes
+        if (args.Key == "Enter" && !isDisabled)
+        {
+            _ = VerifyOtpAsync();
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/");
+
     private async Task VerifyOtpAsync()
     {
-        // Stopper hvis bruker er låst
+        error = null;
+
         if (!AuthState.CanAttemptLogin())
         {
             error = "Du er midlertidig låst.";
             return;
         }
-        
+
+        if (string.IsNullOrWhiteSpace(code) || code.Length != 6)
+        {
+            error = "Koden må være nøyaktig 6 siffer.";
+            return;
+        }
+
         var request = new VerifyOtpRequest { Email = Email ?? "", OtpCode = code };
         var result = await AuthService.VerifyOtpAsync(request, Cts.Token);
+
         if (result.IsFailure)
         {
             AuthState.RegisterFailedLogin();
-            error = "Feil OTP-kode.";
+            error = "Feil engangskode. Prøv igjen.";
             return;
         }
-        
-        // Suksess → reset teller og submit skjult form
+
         AuthState.RegisterSuccess();
 
         var token = AntiforgeryStateProvider.GetAntiforgeryToken();
@@ -129,7 +192,7 @@
             result.Value.RefreshToken,
             token?.Value);
     }
-    
+
     public override void Dispose()
     {
         AuthState.OnChange -= StateChanged;

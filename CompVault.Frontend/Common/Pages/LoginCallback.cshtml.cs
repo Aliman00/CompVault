@@ -27,7 +27,7 @@ public class LoginCallback(AuthSettings authSettings, IWebHostEnvironment env) :
     {
         if (string.IsNullOrWhiteSpace(TokenResponse.AccessToken) ||
             string.IsNullOrWhiteSpace(TokenResponse.RefreshToken))
-            return LocalRedirect("/login-email?error=invalid");
+            return LocalRedirect("/?error=invalid");
 
         IEnumerable<Claim> claims = JwtExtensions.ParseClaimsFromJwt(TokenResponse.AccessToken);
         var identity = new ClaimsIdentity(claims, "jwt");

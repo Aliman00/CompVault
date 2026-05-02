@@ -1,40 +1,71 @@
-﻿@page "/login-email"
+﻿@page "/"
 @layout AuthLayout
-@inject IHttpClientFactory Http     
+
+@inject IHttpClientFactory Http
 @inject NavigationManager Navigation
 @inject AuthStateService AuthState
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:#f5f5f5">
-    <MudCard Style="width:400px">
-        <MudCardContent Class="pa-6">
-            <MudText Typo="Typo.h4" Class="mb-6 text-center">Logg inn</MudText>
+<PageTitle>Logg inn – CompVault</PageTitle>
 
-            <MudTextField Label="E-post (æøå OK)"
+<div class="cv-login-page">
+    <MudCard Class="cv-login-card" Elevation="8">
+        <MudCardContent Class="pa-8">
+            <div class="cv-login-header">
+                <MudImage Src="images/CompVault.png"
+                          Alt="CompVault Logo"
+                          Height="140"
+                          ObjectFit="ObjectFit.Contain" />
+                <MudText Typo="Typo.h4" Class="mt-4">Velkommen til CompVault</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">
+                    Logg inn med din e-postadresse
+                </MudText>
+            </div>
+
+            <MudDivider Class="my-6" />
+
+            <MudTextField T="string"
+                          Label="E-postadresse"
                           @bind-Value="email"
                           Variant="Variant.Outlined"
-                          Immediate />
+                          Immediate="true"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Outlined.Email"
+                          Disabled="@isLocked"
+                          Error="@(!string.IsNullOrEmpty(_error))"
+                          ErrorText="@_error" />
+
+            @if (isLocked)
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-4" Dense="true">
+                    For mange forsøk. Prøv igjen senere.
+                </MudAlert>
+            }
 
             <MudButton Class="mt-6"
                        FullWidth
                        Disabled="@isLocked"
                        Color="Color.Primary"
                        Variant="Variant.Filled"
-                       OnClick="SendOtpAsync">
-                Send OTP-kode
+                       Size="Size.Large"
+                       OnClick="SendOtpAsync"
+                       StartIcon="@Icons.Material.Outlined.Login">
+                Send engangskode
             </MudButton>
 
-            @if (isLocked)
-            {
-                <MudText Color="Color.Error" Class="mt-2">
-                    For mange forsøk. Prøv igjen senere.
-                </MudText>
-            }
+            <MudText Typo="Typo.caption"
+                     Align="Align.Center"
+                     Class="mt-4 d-block"
+                     Color="Color.Secondary">
+                Du vil motta en engangskode på e-post
+            </MudText>
         </MudCardContent>
     </MudCard>
 </div>
 
 @code {
     private string email = "";
+    private string _error = "";
     private bool isLocked;
 
     protected override void OnInitialized()
@@ -42,13 +73,30 @@
         isLocked = !AuthState.CanAttemptLogin();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+            Navigation.NavigateTo("/dashboard");
+    }
+
     private async Task SendOtpAsync()
     {
+        _error = "";
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            _error = "E-postadresse er påkrevd";
+            return;
+        }
+
         if (!AuthState.CanAttemptLogin())
             return;
 
         var client = Http.CreateClient("BackendApi");
-
         await client.PostAsJsonAsync("api/auth/request-otp", new { email });
 
         Navigation.NavigateTo($"/login-otp?email={Uri.EscapeDataString(email)}");
