@@ -7,9 +7,6 @@ namespace CompVault.Backend.Infrastructure.Repositories.JobTitles;
 /// </summary>
 public interface IJobTitleRepository : IRepository<JobTitle>
 {
-    /// <summary>Henter én stillingstittel basert på navn.</summary>
-    Task<JobTitle?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
-
     /// <summary>Sjekker om en stillingstittel med angitt navn allerede finnes.</summary>
     Task<bool> NameExistsAsync(string name, CancellationToken cancellationToken = default);
 
