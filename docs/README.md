@@ -60,6 +60,7 @@ Modulene er bygget som *vertical slices* — hver modul har egne controllere, se
 
 ## Andre filer
 
+- `frontend/` — Oversikt over frontend-moduler, felles komponenter, JWT-håndtering, mappestruktur. Gjør det enklere å navigere i Blazor-kodebasen.
 - `tekniske-hoydepunkter.md` — Backend-detaljer som CI/CD, Docker, testing, sikkerhet, audit. Dette er ting som ligger i koden men lett går under radaren.
 - `frontend-hoydepunkter.md` — Frontend-detaljer: komponenter, services, JWT-håndtering, responsivt UI.
 - `backend/` — Oppsett av Program.cs, konfigurasjon, health checks, CORS, seeding.
