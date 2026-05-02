@@ -140,6 +140,27 @@ h1:focus {
     height: 25px;
 }
 
+.cv-dashboard-section {
+    margin-bottom: 2rem;
+}
+
+.cv-dashboard-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--mud-palette-divider);
+}
+
+.cv-dashboard-section-title .mud-typography-subtitle2 {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: var(--mud-palette-text-secondary);
+}
+
 /* ============================= ADMIN DASHBOARD ============================= */
 
 .dashboard-header {

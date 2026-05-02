@@ -4,83 +4,86 @@
 
 @* Widget som viser dokumenter innlogget bruker ikke har signert ennå, med lenke til detaljside *@
 
-<MudPaper Class="pa-3" Style="@($"border-top: 3px solid {(_documents.Any() ? "#c62828" : "#2d7a4f")};")" 
-          Elevation="4">
+<MudPaper Class="pa-3" Style="border-top: 3px solid var(--mud-palette-warning);" Elevation="4">
     <WidgetHeader Title="@DashboardConstants.PendingSignatures"
                   OnHide="OnHide"
                   Icon="@Icons.Material.Filled.Draw"
-                  AccentColor="@(_hasPending == true ? "#c62828"
-                               : _hasPending == false ? "#2d7a4f" : "#9e9e9e")"
-                  IconBackgroundColor="@(_hasPending == true ? "#fdecea"
-                                       : _hasPending == false ? "#e8f5ee" : "#f5f5f5")"/>
+                  AccentColor="var(--mud-palette-warning)"
+                  IconBackgroundColor="var(--mud-palette-warning-hover)" />
 
-    <AppAlert @bind-Alert="_alert"/>
+    <AppAlert @bind-Alert="_alert" />
 
     @if (_loading)
     {
-        <AppSpinner/>
+        <AppSpinner />
     }
     else if (!_documents.Any())
     {
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
-            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small"/>
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
             <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen ventende signeringer.</MudText>
         </MudStack>
     }
     else
     {
-
-        <MudStack Row="true" AlignItems="AlignItems.Baseline" Spacing="1" Class="mt-1">
-            <MudText Typo="Typo.h4" Color="Color.Warning">@_documents.Count</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Warning">
+        <!-- Oppsummering -->
+        <MudStack Row="true" AlignItems="AlignItems.Baseline" Spacing="2" Class="mt-1 mb-2">
+            <MudText Typo="Typo.h5" Color="Color.Error">@_documents.Count</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Error">
                 dokument@(_documents.Count == 1 ? "" : "er") venter signering
             </MudText>
         </MudStack>
-        <MudList T="DocumentListDto" Dense="true">
+
+        <MudList T="DocumentListDto" Dense="true" Class="pa-0">
             @foreach (var doc in _documents)
             {
                 <MudListItem T="DocumentListDto"
                              Dense="true"
-                             Class="px-0"
+                             Class="px-0 cursor-pointer"
+                             Style="border-radius:4px;"
                              OnClick="() => NavigationManager.NavigateTo(
                                  PageRoutes.UserDocuments.Detail(doc.Slug, doc.Id))">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.body2" Color="Color.Error">@doc.Title.Truncate(40)</MudText>
-                            @if (!string.IsNullOrWhiteSpace(doc.CategoryName))
-                            {
-                                <MudText Typo="Typo.caption" Color="Color.Error">@doc.CategoryName</MudText>
-                            }
-                            <MudText Typo="Typo.caption" Color="Color.Error">v@(doc.Version)</MudText>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                            <MudIcon Icon="@Icons.Material.Filled.Description"
+                                     Color="Color.Warning"
+                                     Size="Size.Small" />
+
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2" Class="text-truncate">
+                                    @doc.Title.Truncate(40)
+                                </MudText>
+                                @if (!string.IsNullOrWhiteSpace(doc.CategoryName))
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @doc.CategoryName
+                                    </MudText>
+                                }
+                            </MudStack>
                         </MudStack>
+
                         <MudIcon Icon="@Icons.Material.Filled.ChevronRight"
-                                 Color="Color.Warning" Size="Size.Small"/>
+                                 Color="Color.Secondary"
+                                 Size="Size.Small" />
                     </MudStack>
                 </MudListItem>
-                <MudDivider/>
+                <MudDivider />
             }
         </MudList>
-        <MudLink Href="@PageRoutes.UserDocuments.Overview" Typo="Typo.caption" Class="mt-2 d-block">
+        <MudLink Href="@PageRoutes.UserDocuments.Overview"
+                  Typo="Typo.caption"
+                  Class="mt-2 d-block">
             Se alle mine dokumenter →
         </MudLink>
     }
 </MudPaper>
 
 @code {
-    // ======================== PARAMETERS ========================
-    /// <summary>
-    /// Handling som utføres ved trykk på 'Skjul'-knappen
-    /// </summary>
     [Parameter] public EventCallback OnHide { get; set; }
-
-    // ======================== PRIVATE FIELDS ========================
 
     private AlertInfo? _alert;
     private bool _loading = true;
     private List<DocumentListDto> _documents = [];
-    private bool? _hasPending;
-
-    // ======================== PRIVATE METHODS ========================
 
     protected override async Task OnInitializedAsync()
     {
@@ -101,12 +104,10 @@
             }
 
             _documents = result.Value!.Items.ToList();
-            _hasPending = _documents.Any();
         }
         finally
         {
             _loading = false;
         }
     }
-
 }

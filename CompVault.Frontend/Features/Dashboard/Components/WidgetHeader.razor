@@ -1,4 +1,4 @@
-﻿@* Gjenbrukbar header som fungerer til alle widgets som ikke har ikoner i header - Eks:RecentActivity, Shortcut *@
+﻿@* Gjenbrukbar header til alle widgets *@
 
 <section class="widget-header">
     <div class="statistic-header-left-section">
@@ -8,8 +8,8 @@
                        AccentColor="@AccentColor"
                        IconBackgroundColor="@IconBackgroundColor"/>
         }
-        <MudText Typo="@(Icon != null ? Typo.caption : Typo.subtitle1)"
-                 Color="@(Icon != null ? Color.Secondary : Color.Default)">
+        <MudText Typo="Typo.subtitle1"
+                 Style="font-weight:600">
             @Title
         </MudText>
     </div>

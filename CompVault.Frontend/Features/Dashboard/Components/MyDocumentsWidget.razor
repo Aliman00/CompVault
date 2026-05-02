@@ -27,16 +27,20 @@
     else
     {
         <MudText Typo="Typo.h5" Class="mt-1">
-            Du har: @_totalDocuments dokument@(_totalDocuments == 1 ? "" : "er")
+            @_totalDocuments dokument@(_totalDocuments == 1 ? "" : "er")
         </MudText>
-        <MudStack Row="true" Spacing="2" Class="mt-2" Wrap="Wrap.Wrap">
-            @if (_totalPending > 0)
-            {
-                <MudText Typo="Typo.subtitle1" Class="mt-1" Color="Color.Warning">
-                    @($"{_totalPending} dokument" +
-                          $"{(_totalPending == 1 ? "" : "er")} venter signering")
+
+        @if (_totalPending > 0)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Color="Color.Error" Size="Size.Small" />
+                <MudText Typo="Typo.body2" Color="Color.Error">
+                    @_totalPending venter signering
                 </MudText>
-            }
+            </MudStack>
+        }
+
+        <MudStack Row="true" Spacing="2" Class="mt-3" Wrap="Wrap.Wrap">
             @foreach (var dt in _documentTypes)
             {
                 <MudChip T="string"
@@ -48,7 +52,10 @@
                 </MudChip>
             }
         </MudStack>
-        <MudLink Href="@PageRoutes.UserDocuments.Overview" Typo="Typo.caption" Class="mt-2 d-block">
+
+        <MudLink Href="@PageRoutes.UserDocuments.Overview"
+                  Typo="Typo.caption"
+                  Class="mt-3 d-block">
             Se alle dokumenter →
         </MudLink>
     }
