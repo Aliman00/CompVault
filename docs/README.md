@@ -1,70 +1,68 @@
 # CompVault — Dokumentasjon
 
-Dette er dokumentasjonen for CompVault, et system for digital personal- og kompetansehåndtering bygget som en fordypningsoppgave.
-
-## Hva finner du her?
-
-Mappen er delt i to deler: **oversiktsdiagrammer** og **moduldokumentasjon**.
+Her ligger all dokumentasjon for CompVault. Mappen er delt i to: oversiktsdiagrammer og modul-dokumentasjon.
 
 ---
 
 ## Oversiktsdiagrammer
 
-Disse fire diagrammene gir et helhetsbilde av systemet. De er ment til å brukes i presentasjonen eller rapporten — start her for å forstå arkitekturen, og gå så inn i de individuelle modulene for detaljer.
+Start med disse fire diagrammene hvis du vil ha et helhetsbilde av systemet. De er laget for presentasjonen, så de viser det viktigste uten å drukne i detaljer.
 
 | Diagram | Fil | Hva det viser |
 |---------|-----|---------------|
-| **Systemoversikt** | `system-oversikt.png` | Hva systemet gjør, og hvem som bruker det (medarbeider, leder, administrator) |
-| **Teknisk arkitektur** | `teknisk-arkitektur.png` | Hvilke applikasjoner systemet består av: Blazor-frontend, ASP.NET-backend, PostgreSQL, fil-lagring, Resend API |
-| **Modulavhengigheter** | `modul-avhengigheter.png` | Hvilke av de 8 backend-modulene som snakker med hverandre, og hvorfor |
-| **Intern lag-struktur** | `intern-lag-struktur.png` | Hvordan data flyter gjennom lagene i backenden: Controller → Service → Repository → Database |
+| Systemoversikt | `system-oversikt.png` | Hva systemet gjør og hvem som bruker det |
+| Teknisk arkitektur | `teknisk-arkitektur.png` | Hvilke applikasjoner det består av |
+| Modulavhengigheter | `modul-avhengigheter.png` | Hvilke moduler som snakker sammen |
+| Intern lag-struktur | `intern-lag-struktur.png` | Hvordan data flyter i backenden |
 
-> **Tips til presentasjon:** Gå gjennom diagrammene i rekkefølgen over. Det bygger en naturlig progresjon fra "hva er dette?" → "hva består det av?" → "hvordan er det bygget inni?"
+Rekkefølgen over er egentlig den beste rekkefølgen å presentere dem i. Da bygger man fra "hva er dette" → "hva består det av" → "hvordan er det bygget inni".
 
 ---
 
 ## Moduldokumentasjon
 
-Hver modul har sin egen mappe med en struktur som følges over hele linja:
+Hver modul har sin egen mappe med samme struktur:
 
 ```
 docs/
 ├── auth/
-│   ├── README.md           ← Tekstdokumentasjon (problemstilling, teknisk design, valg)
-│   ├── auth-er-diagram.pdf ← ER-diagram (tabeller, relasjoner, indekser)
-│   └── auth-arkitektur.png ← Arkitekturdiagram (controller → service → repo → DB)
+│   ├── README.md           ← tekst (problemstilling, valg, design)
+│   ├── auth-er-diagram.pdf ← tabeller, relasjoner, indekser
+│   └── auth-arkitektur.png ← controller → service → repo → DB
 ├── users/
 │   ├── README.md
 │   ├── users-er-diagram.pdf
 │   └── users-arkitektur.png
-├── ... (samme mønster for alle 9 moduler)
+└── ... (samme mønster for alle moduler)
 ```
 
-### Moduler i systemet
+### Modulene i systemet
 
-| Modul | Beskrivelse |
-|-------|-------------|
-| **Auth** | Passwordless innlogging med OTP på e-post. JWT access tokens + refresh tokens. |
-| **Users** | Bruker-CRUD med avdeling, leder, stillingstittel og roller. Soft delete. |
-| **RBAC** | Rollebasert tilgangskontroll med 37 permissions. Systemroller er beskyttet. |
-| **Departments** | Avdelingshierarki med selvrefererende foreldre-avdeling. Validerer leder via `IsLeader`. |
-| **JobTitles** | Stillingstitler. `IsLeader`-flagget avgjør om brukeren kan være avdelingsleder. |
-| **Competencies** | Kompetanseregistrering med utløpsdatoer. Varsler ved 90, 60, 30, 14, 7 og 0 dager. |
-| **Documents** | Dokumentstyring med typer, kategorier, versjonering, signering og målgruppe-filtrering. |
-| **Equipment** | Utstyrsutlevering med kategorier, utstyrs-items og utleveringer med størrelse/quantity. |
-| **Audit** | Logging av alle endringer i systemet. |
+- **Auth** — Passwordless innlogging med OTP på e-post. JWT + refresh tokens.
+- **Users** — Bruker-CRUD med avdeling, leder, stillingstittel og roller. Soft delete.
+- **RBAC** — Roller og 37 permissions. Systemroller kan ikke slettes.
+- **Departments** — Avdelingshierarki. Validerer at leder faktisk har `IsLeader`.
+- **JobTitles** — Stillingstitler. `IsLeader` avgjør om brukeren kan være avdelingsleder.
+- **Competencies** — Kompetanseregistrering med utløpsdatoer. Varsler ved 90, 60, 30, 14, 7 og 0 dager.
+- **Documents** — Dokumenter med typer, kategorier, versjonering, signering og målgrupper.
+- **Equipment** — Utstyrsutlevering med kategorier, items og utleveringer.
+- **Audit** — Logger alle endringer i systemet.
 
-### Hvordan lese en modul
+### Sånn leser du en modul
 
-1. **Start med `README.md`** — den forklarer *hvorfor* modulen er bygget som den er (problemstilling, krav, tekniske valg).
-2. **Se på `*-er-diagram.pdf`** — for å forstå datamodellen (tabeller, kolonner, relasjoner, indekser).
-3. **Se på `*-arkitektur.png`** — for å forstå kode-strukturen (hvilke klasser som snakker med hvilke).
+1. Start med `README.md`. Den forklarer hvorfor modulen er bygget som den er — hva var problemet, hva prøvde vi å løse, og hvilke valg tok vi underveis.
+2. Se på `*-er-diagram.pdf` for å forstå datamodellen.
+3. Se på `*-arkitektur.png` for å forstå kode-strukturen.
 
-> **Merk:** Modulene er bygget som *vertical slices* — hver modul har sine egne controllere, services og repositories. Noen moduler leser fra andre modulers repositories (f.eks. leser `Documents` fra `Departments` og `JobTitles` for målgruppe-filtrering), men ingen modul skriver direkte til en annen moduls tabeller.
+Modulene er bygget som *vertical slices* — hver modul har egne controllere, services og repositories. Noen moduler leser fra andre modulers repositories (f.eks. leser Documents fra Departments og JobTitles for målgruppe-filtrering), men ingen modul skriver direkte til en annen moduls tabeller.
 
 ---
 
-## Andre mapper
+## Andre filer
 
-- **`seed-data/`** — Beskrivelse av testdata som seedes ved oppstart i Development-miljøet.
-- **`images/`** — Delte bilder som brukes på tvers av dokumentasjonen.
+- `tekniske-hoydepunkter.md` — Backend-detaljer som CI/CD, Docker, testing, sikkerhet, audit. Dette er ting som ligger i koden men lett går under radaren.
+- `frontend-hoydepunkter.md` — Frontend-detaljer: komponenter, services, JWT-håndtering, responsivt UI.
+- `backend/` — Oppsett av Program.cs, konfigurasjon, health checks, CORS, seeding.
+- `flytdiagram/` — Brukerflyter (innlogging, opprette bruker, etc.) som viser steg-for-steg gjennom frontend og backend.
+- `seed-data/` — Hva slags testdata som seedes ved oppstart i Development.
+- `images/` — Delte bilder som brukes flere steder i dokumentasjonen.
