@@ -45,16 +45,6 @@ public abstract class BaseRepository<T>(AppDbContext dbContext) : IRepository<T>
     }
 
     /// <inheritdoc />
-    public virtual async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        T? entity = await GetByIdAsync(id, cancellationToken);
-        if (entity is not null)
-        {
-            DbSet.Remove(entity);
-        }
-    }
-
-    /// <inheritdoc />
     public virtual async Task<bool> ExistsAsync(
         Expression<Func<T, bool>> predicate,
         CancellationToken cancellationToken = default) =>
@@ -63,9 +53,4 @@ public abstract class BaseRepository<T>(AppDbContext dbContext) : IRepository<T>
     /// <inheritdoc />
     public Task SaveChangesAsync(CancellationToken ct = default)
         => DbContext.SaveChangesAsync(ct);
-
-    /// <summary>Gir tilgang til et IQueryable som kan bygges videre på før det kjøres mot DB.</summary>
-    protected IQueryable<T> Query() => DbSet.AsQueryable();
-
-
 }
