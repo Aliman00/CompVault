@@ -1,37 +1,63 @@
-﻿@* Standard navigasjonsmeny for MainLayout - AdminLayout har egen *@
+﻿@* Standard navigasjonsmeny for MainLayout *@
 
-<MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
-        Hjem
+<MudNavMenu Class="cv-nav-menu">
+    <MudText Typo="Typo.overline" Class="cv-nav-section-title px-4 mt-4 mb-2">
+        Min side
+    </MudText>
+
+    <MudNavLink Href="/dashboard"
+                 Match="NavLinkMatch.All"
+                 Icon="@Icons.Material.Filled.Dashboard"
+                 Class="cv-nav-link">
+        Dashboard
     </MudNavLink>
+
     <AuthorizeView Policy="@Permissions.CompetenciesRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.UserCompetencies.List" Icon="@Icons.Material.Filled.WorkspacePremium">
+            <MudNavLink Href="@PageRoutes.UserCompetencies.List"
+                        Icon="@Icons.Material.Filled.WorkspacePremium"
+                        Class="cv-nav-link">
                 Min kompetanse
             </MudNavLink>
         </Authorized>
     </AuthorizeView>
+
     <AuthorizeView Policy="@Permissions.DocumentsRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.UserDocuments.Overview" Icon="@Icons.Material.Filled.Description">
+            <MudNavLink Href="@PageRoutes.UserDocuments.Overview"
+                        Icon="@Icons.Material.Filled.Article"
+                        Class="cv-nav-link">
                 Mine dokumenter
             </MudNavLink>
         </Authorized>
     </AuthorizeView>
+
     <AuthorizeView Policy="@Permissions.EquipmentRead">
         <Authorized>
-            <MudNavLink Href="@PageRoutes.UserEquipment.Overview" Icon="@Icons.Material.Filled.Headphones">
+            <MudNavLink Href="@PageRoutes.UserEquipment.Overview"
+                        Icon="@Icons.Material.Filled.Construction"
+                        Class="cv-nav-link">
                 Mitt utstyr
             </MudNavLink>
         </Authorized>
     </AuthorizeView>
-    
+
     <AuthorizeView Policy="@Permissions.AdminAccess">
         <Authorized Context="_">
-            <MudNavGroup Title="Admin" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true">
+            <MudDivider Class="my-4 mx-4 cv-nav-divider" />
+
+            <MudText Typo="Typo.overline" Class="cv-nav-section-title px-4 mb-2">
+                Administrasjon
+            </MudText>
+
+            <MudNavGroup Title="Brukere & roller"
+                         Icon="@Icons.Material.Filled.PeopleAlt"
+                         Class="cv-nav-group">
                 <AuthorizeView Policy="@Permissions.UsersRead">
                     <Authorized>
-                        <MudNavLink Href="@PageRoutes.Users.List" Icon="@Icons.Material.Filled.People">
+                        <MudNavLink Href="@PageRoutes.Users.List"
+                                    Icon="@Icons.Material.Filled.People"
+                                    Class="cv-nav-link">
                             Brukere
                         </MudNavLink>
                     </Authorized>
@@ -39,15 +65,19 @@
 
                 <AuthorizeView Policy="@Permissions.JobTitlesRead">
                     <Authorized>
-                        <MudNavLink Href="@PageRoutes.JobTitles.List" Icon="@Icons.Material.Filled.Work">
-                            Stillingstitler
+                        <MudNavLink Href="@PageRoutes.JobTitles.List"
+                                    Icon="@Icons.Material.Filled.Work"
+                                    Class="cv-nav-link">
+                            Stillinger
                         </MudNavLink>
                     </Authorized>
                 </AuthorizeView>
 
                 <AuthorizeView Policy="@Permissions.DepartmentsRead">
                     <Authorized>
-                        <MudNavLink Href="@PageRoutes.Departments.List" Icon="@Icons.Material.Filled.Business">
+                        <MudNavLink Href="@PageRoutes.Departments.List"
+                                    Icon="@Icons.Material.Filled.Business"
+                                    Class="cv-nav-link">
                             Avdelinger
                         </MudNavLink>
                     </Authorized>
@@ -55,25 +85,29 @@
 
                 <AuthorizeView Policy="@Permissions.RolesRead">
                     <Authorized>
-                        <MudNavLink Href="@PageRoutes.Roles.List" Icon="@Icons.Material.Filled.Shield">
+                        <MudNavLink Href="@PageRoutes.Roles.List"
+                                    Icon="@Icons.Material.Filled.Shield"
+                                    Class="cv-nav-link">
                             Roller
                         </MudNavLink>
                     </Authorized>
                 </AuthorizeView>
-            
-                <AuthorizeView Policy="@Permissions.CompetenciesRead">
-                    <Authorized>
-                        <MudNavLink Href="@PageRoutes.CompetencyTypes.List" Icon="@Icons.Material.Filled.Category">
-                            Kompetanser
-                        </MudNavLink>
-                    </Authorized>
-                </AuthorizeView>
+            </MudNavGroup>
 
+            <MudNavGroup Title="Kompetanse & dokumenter"
+                         Icon="@Icons.Material.Filled.FolderShared"
+                         Class="cv-nav-group">
                 <AuthorizeView Policy="@Permissions.CompetenciesRead">
                     <Authorized>
+                        <MudNavLink Href="@PageRoutes.CompetencyTypes.List"
+                                    Icon="@Icons.Material.Filled.Category"
+                                    Class="cv-nav-link">
+                            Kompetansetyper
+                        </MudNavLink>
                         <MudNavLink Href="@PageRoutes.Competencies.List"
-                                    Icon="@Icons.Material.Filled.WorkspacePremium">
-                            Ansattkompetanser
+                                    Icon="@Icons.Material.Filled.WorkspacePremium"
+                                    Class="cv-nav-link">
+                            Registrerte kompetanser
                         </MudNavLink>
                     </Authorized>
                 </AuthorizeView>
@@ -81,25 +115,36 @@
                 <AuthorizeView Policy="@Permissions.DocumentsRead">
                     <Authorized>
                         <MudNavLink Href="@PageRoutes.Documents.Overview"
-                                    Icon="@Icons.Material.Filled.Article">
-                            Dokumenter
+                                    Icon="@Icons.Material.Filled.Article"
+                                    Class="cv-nav-link">
+                            Dokumentkategorier
                         </MudNavLink>
                     </Authorized>
                 </AuthorizeView>
+            </MudNavGroup>
 
+            <MudNavGroup Title="Utstyr"
+                         Icon="@Icons.Material.Filled.Handyman"
+                         Class="cv-nav-group">
                 <AuthorizeView Policy="@Permissions.EquipmentRead">
                     <Authorized>
                         <MudNavLink Href="@PageRoutes.EquipmentCategories.List"
-                                    Icon="@Icons.Material.Filled.Headset">
-                            Utstyr
+                                    Icon="@Icons.Material.Filled.Headset"
+                                    Class="cv-nav-link">
+                            Utstyrskategorier
                         </MudNavLink>
                     </Authorized>
                 </AuthorizeView>
+            </MudNavGroup>
 
+            <MudNavGroup Title="System"
+                         Icon="@Icons.Material.Filled.Settings"
+                         Class="cv-nav-group">
                 <AuthorizeView Policy="@Permissions.AuditRead">
                     <Authorized>
                         <MudNavLink Href="@PageRoutes.Audit.List"
-                                    Icon="@Icons.Material.Filled.History">
+                                    Icon="@Icons.Material.Filled.History"
+                                    Class="cv-nav-link">
                             Revisjonslogg
                         </MudNavLink>
                     </Authorized>
@@ -107,8 +152,10 @@
 
                 <AuthorizeView Policy="@Permissions.AdminAccess">
                     <Authorized>
-                        <MudNavLink Href="@PageRoutes.Admin.Dashboard" Icon="@Icons.Material.Filled.AdminPanelSettings">
-                            Admin-panel
+                        <MudNavLink Href="@PageRoutes.Admin.Dashboard"
+                                    Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                    Class="cv-nav-link">
+                            Admin-oversikt
                         </MudNavLink>
                     </Authorized>
                 </AuthorizeView>
