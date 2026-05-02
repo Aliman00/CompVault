@@ -10,9 +10,6 @@ public interface IDocumentTypeRepository : IRepository<DocumentType>
     /// <summary>Henter en dokumenttype basert på slug (uten kategorier).</summary>
     Task<DocumentType?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
-    /// <summary>Henter alle slugs i databasen.</summary>
-    Task<IReadOnlyList<string>> GetSlugsAsync(CancellationToken ct = default);
-
     /// <summary>Henter alle dokumenttyper med aktive kategorier.</summary>
     Task<IReadOnlyList<DocumentType>> GetAllWithCategoriesAsync(CancellationToken cancellationToken = default);
 
