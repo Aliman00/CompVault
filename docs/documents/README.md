@@ -23,7 +23,7 @@ Konkrete krav til løsningen:
 
 ### Datamodell
 
-Modulen har 7 entiteter: `Document`, `DocumentType`, `DocumentTypeCategory`, `DocumentVersion`, `DocumentSignature`, `DocumentDepartment` og `DocumentJobTitle`. Den fullstendige datamodellen er dokumentert i `documents-er-diagram-final.dbml`.
+Modulen har 7 entiteter: `Document`, `DocumentType`, `DocumentTypeCategory`, `DocumentVersion`, `DocumentSignature`, `DocumentDepartment` og `DocumentJobTitle`. Den fullstendige datamodellen er dokumentert i `documents-er-diagram.pdf`.
 
 **DocumentType:**
 
@@ -100,7 +100,7 @@ Signaturstatus kan hentes via `GET /{id}/signatures`, som returnerer en liste ov
 
 Modulen har 6 services som hver har et tydelig avgrenset ansvar. `DocumentsController` bruker `IDocumentService`, `IDocumentVersioningService` og `IDocumentSignatureService`. `DocumentTypesController` bruker `IDocumentTypeService`. Under disse ligger 4 repositories og `IDocumentFileService` som wrapper fillagring.
 
-Samspillet er vist i `documents-arkitektur-final.mmd`.
+Samspillet er vist i `documents-arkitektur.png` eller mer detaljert i `documents-arkitektur-avansert.png`.
 
 **Komponentoversikt:**
 

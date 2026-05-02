@@ -19,7 +19,7 @@ Konkrete krav til løsningen:
 
 ### Datamodell
 
-Kjernen i brukermodulen er `ApplicationUser`, som arver fra `IdentityUser<Guid>` og utvider med egne felt. Den fullstendige datamodellen er dokumentert i `users-er-diagram-final.dbml`.
+Kjernen i brukermodulen er `ApplicationUser`, som arver fra `IdentityUser<Guid>` og utvider med egne felt. Den fullstendige datamodellen er dokumentert i `users-er-diagram.pdf`.
 
 **ApplicationUser:**
 
@@ -50,7 +50,7 @@ Modellen er enkel, men dekker behovet. Vi validerer at en bruker ikke kan settes
 
 ### Arkitektur
 
-Modulen er delt i controller, service, repository og mapper. `UserService` samler forretningslogikken og bruker både `UserRepository`, `DepartmentRepository`, `JobTitleRepository`, ASP.NET Identity (`UserManager`, `RoleManager`) og `DepartmentScopeService` for avdelingsbaserte tilgangssjekker. `UserMapper` konverterer mellom entiteter og DTO-er. Samspillet er vist i `users-arkitektur-final.mmd`.
+Modulen er delt i controller, service, repository og mapper. `UserService` samler forretningslogikken og bruker både `UserRepository`, `DepartmentRepository`, `JobTitleRepository`, ASP.NET Identity (`UserManager`, `RoleManager`) og `DepartmentScopeService` for avdelingsbaserte tilgangssjekker. `UserMapper` konverterer mellom entiteter og DTO-er. Samspillet er vist i `users-arkitektur.png`.
 
 **Komponentoversikt:**
 

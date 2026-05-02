@@ -19,7 +19,7 @@ Konkrete krav til løsningen:
 
 ### Datamodell
 
-Modulen har fire entiteter: `ApplicationRole`, `Permission`, `RolePermission` (koblingstabell), og `ApplicationUser` — sistnevnte eies av Users-modulen men rollene administreres her. Den fullstendige datamodellen er dokumentert i `rbac-er-diagram-final.dbml`.
+Modulen har fire entiteter: `ApplicationRole`, `Permission`, `RolePermission` (koblingstabell), og `ApplicationUser` — sistnevnte eies av Users-modulen men rollene administreres her. Den fullstendige datamodellen er dokumentert i `rbac-er-diagram.pdf`.
 
 **ApplicationRole:**
 | Felt | Type | Hva det er |
@@ -70,7 +70,7 @@ Autorisasjon følger en ganske enkel kjede:
 
 ### Arkitektur
 
-`RoleService` er navet i modulen og bruker både ASP.NET Identity (`RoleManager`, `UserManager`) og `RoleRepository` for databaseoperasjoner. `PermissionService` er en tynn wrapper rundt `RoleRepository` og brukes av `AuthService` under innlogging og token-refresh for å slå opp permissions på rollene brukeren har. Samspillet er vist i `rbac-arkitektur-final.mmd`.
+`RoleService` er navet i modulen og bruker både ASP.NET Identity (`RoleManager`, `UserManager`) og `RoleRepository` for databaseoperasjoner. `PermissionService` er en tynn wrapper rundt `RoleRepository` og brukes av `AuthService` under innlogging og token-refresh for å slå opp permissions på rollene brukeren har. Samspillet er vist i `rbac-arkitektur.png`.
 
 **Komponentoversikt:**
 
