@@ -1,7 +1,6 @@
 ﻿@page "/documents/{Slug}/{Id:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize(Policy = Permissions.DocumentsRead)]
-@attribute [Authorize(Policy = Permissions.AdminAccess)]
 @inject IDocumentTypeService DocumentTypeService
 @inject IDocumentService DocumentService
 @inject IDocumentTypeCategoryService DocumentTypeCategoryService
@@ -420,12 +419,20 @@ else if (_document != null && _documentType != null)
                 _documentTypeCategories = documentTypeCategoriesResult.Value!;
             
             if (departmentsResult.IsFailure)
-                _alert = new AlertInfo(departmentsResult.Error!.ToString(), Severity.Error);
+            {
+                // 403 er OK — brukeren har ikke departments:read, men kan fremdeles redigere dokumentet
+                if (departmentsResult.Error?.Code != ErrorCode.Forbidden)
+                    _alert = new AlertInfo(departmentsResult.Error!.ToString(), Severity.Error);
+            }
             else
                 _departments = departmentsResult.Value!;
             
             if (jobTitlesResult.IsFailure)
-                _alert = new AlertInfo(jobTitlesResult.Error!.ToString(), Severity.Error);
+            {
+                // 403 er OK — brukeren har ikke job_titles:read, men kan fremdeles redigere dokumentet
+                if (jobTitlesResult.Error?.Code != ErrorCode.Forbidden)
+                    _alert = new AlertInfo(jobTitlesResult.Error!.ToString(), Severity.Error);
+            }
             else
                 _jobTitles = jobTitlesResult.Value!;
             

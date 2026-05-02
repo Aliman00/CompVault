@@ -1,4 +1,5 @@
 ﻿@* Standard navigasjonsmeny for MainLayout *@
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <MudNavMenu Class="cv-nav-menu">
     <MudText Typo="Typo.overline" Class="cv-nav-section-title px-4 mt-4 mb-2">
@@ -42,26 +43,26 @@
         </Authorized>
     </AuthorizeView>
 
-    <AuthorizeView Policy="@Permissions.AdminAccess">
-        <Authorized Context="_">
-            <MudDivider Class="my-4 mx-4 cv-nav-divider" />
+    @if (_showAdminSection)
+    {
+        <MudDivider Class="my-4 mx-4 cv-nav-divider" />
 
-            <MudText Typo="Typo.overline" Class="cv-nav-section-title px-4 mb-2">
-                Administrasjon
-            </MudText>
+        <MudText Typo="Typo.overline" Class="cv-nav-section-title px-4 mb-2">
+            Administrasjon
+        </MudText>
+    }
 
+    <!-- Brukere & roller -->
+    <AuthorizeView Policy="@Permissions.UsersRead">
+        <Authorized Context="usersAuth">
             <MudNavGroup Title="Brukere & roller"
                          Icon="@Icons.Material.Filled.PeopleAlt"
                          Class="cv-nav-group">
-                <AuthorizeView Policy="@Permissions.UsersRead">
-                    <Authorized>
-                        <MudNavLink Href="@PageRoutes.Users.List"
-                                    Icon="@Icons.Material.Filled.People"
-                                    Class="cv-nav-link">
-                            Brukere
-                        </MudNavLink>
-                    </Authorized>
-                </AuthorizeView>
+                <MudNavLink Href="@PageRoutes.Users.List"
+                            Icon="@Icons.Material.Filled.People"
+                            Class="cv-nav-link">
+                    Brukere
+                </MudNavLink>
 
                 <AuthorizeView Policy="@Permissions.JobTitlesRead">
                     <Authorized>
@@ -93,73 +94,102 @@
                     </Authorized>
                 </AuthorizeView>
             </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
 
-            <MudNavGroup Title="Kompetanse & dokumenter"
+    <!-- Kompetanse (admin) -->
+    <AuthorizeView Policy="@Permissions.CompetenciesWrite">
+        <Authorized>
+            <MudNavGroup Title="Kompetanse"
                          Icon="@Icons.Material.Filled.FolderShared"
                          Class="cv-nav-group">
-                <AuthorizeView Policy="@Permissions.CompetenciesRead">
-                    <Authorized>
-                        <MudNavLink Href="@PageRoutes.CompetencyTypes.List"
-                                    Icon="@Icons.Material.Filled.Category"
-                                    Class="cv-nav-link">
-                            Kompetansetyper
-                        </MudNavLink>
-                        <MudNavLink Href="@PageRoutes.Competencies.List"
-                                    Icon="@Icons.Material.Filled.WorkspacePremium"
-                                    Class="cv-nav-link">
-                            Registrerte kompetanser
-                        </MudNavLink>
-                    </Authorized>
-                </AuthorizeView>
-
-                <AuthorizeView Policy="@Permissions.DocumentsRead">
-                    <Authorized>
-                        <MudNavLink Href="@PageRoutes.Documents.Overview"
-                                    Icon="@Icons.Material.Filled.Article"
-                                    Class="cv-nav-link">
-                            Dokumentkategorier
-                        </MudNavLink>
-                    </Authorized>
-                </AuthorizeView>
+                <MudNavLink Href="@PageRoutes.CompetencyTypes.List"
+                            Icon="@Icons.Material.Filled.Category"
+                            Class="cv-nav-link">
+                    Kompetansetyper
+                </MudNavLink>
+                <MudNavLink Href="@PageRoutes.Competencies.List"
+                            Icon="@Icons.Material.Filled.WorkspacePremium"
+                            Class="cv-nav-link">
+                    Registrerte kompetanser
+                </MudNavLink>
             </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
 
+    <!-- Dokumenter (admin) -->
+    <AuthorizeView Policy="@Permissions.DocumentsWrite">
+        <Authorized>
+            <MudNavGroup Title="Dokumenter"
+                         Icon="@Icons.Material.Filled.Article"
+                         Class="cv-nav-group">
+                <MudNavLink Href="@PageRoutes.Documents.Overview"
+                            Icon="@Icons.Material.Filled.Article"
+                            Class="cv-nav-link">
+                    Dokumentkategorier
+                </MudNavLink>
+            </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
+
+    <!-- Utstyr (admin) -->
+    <AuthorizeView Policy="@Permissions.EquipmentWrite">
+        <Authorized>
             <MudNavGroup Title="Utstyr"
                          Icon="@Icons.Material.Filled.Handyman"
                          Class="cv-nav-group">
-                <AuthorizeView Policy="@Permissions.EquipmentRead">
-                    <Authorized>
-                        <MudNavLink Href="@PageRoutes.EquipmentCategories.List"
-                                    Icon="@Icons.Material.Filled.Headset"
-                                    Class="cv-nav-link">
-                            Utstyrskategorier
-                        </MudNavLink>
-                    </Authorized>
-                </AuthorizeView>
+                <MudNavLink Href="@PageRoutes.EquipmentCategories.List"
+                            Icon="@Icons.Material.Filled.Headset"
+                            Class="cv-nav-link">
+                    Utstyrskategorier
+                </MudNavLink>
             </MudNavGroup>
+        </Authorized>
+    </AuthorizeView>
 
+    <!-- System -->
+    <AuthorizeView Policy="@Permissions.AuditRead">
+        <Authorized>
             <MudNavGroup Title="System"
                          Icon="@Icons.Material.Filled.Settings"
                          Class="cv-nav-group">
-                <AuthorizeView Policy="@Permissions.AuditRead">
-                    <Authorized>
-                        <MudNavLink Href="@PageRoutes.Audit.List"
-                                    Icon="@Icons.Material.Filled.History"
-                                    Class="cv-nav-link">
-                            Revisjonslogg
-                        </MudNavLink>
-                    </Authorized>
-                </AuthorizeView>
-
-                <AuthorizeView Policy="@Permissions.AdminAccess">
-                    <Authorized>
-                        <MudNavLink Href="@PageRoutes.Admin.Dashboard"
-                                    Icon="@Icons.Material.Filled.AdminPanelSettings"
-                                    Class="cv-nav-link">
-                            Admin-oversikt
-                        </MudNavLink>
-                    </Authorized>
-                </AuthorizeView>
+                <MudNavLink Href="@PageRoutes.Audit.List"
+                            Icon="@Icons.Material.Filled.History"
+                            Class="cv-nav-link">
+                    Revisjonslogg
+                </MudNavLink>
             </MudNavGroup>
         </Authorized>
     </AuthorizeView>
 </MudNavMenu>
+
+@code {
+    private bool _showAdminSection;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = state.User;
+
+        if (!user.Identity?.IsAuthenticated == true)
+            return;
+
+        _showAdminSection =
+            HasClaim(user, Permissions.UsersRead) ||
+            HasClaim(user, Permissions.CompetenciesWrite) ||
+            HasClaim(user, Permissions.DocumentsWrite) ||
+            HasClaim(user, Permissions.EquipmentWrite) ||
+            HasClaim(user, Permissions.AuditRead);
+
+        if (_showAdminSection)
+            StateHasChanged();
+    }
+
+    private static bool HasClaim(System.Security.Claims.ClaimsPrincipal user, string permission)
+    {
+        return user.HasClaim(Permissions.ClaimType, permission);
+    }
+}

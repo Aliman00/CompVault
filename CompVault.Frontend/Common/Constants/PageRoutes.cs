@@ -115,20 +115,15 @@ public static class PageRoutes
         public const string Create = "/equipment-items/create";
     }
 
-    public static class Admin
+    public static class Audit
     {
-        public const string Dashboard = "/admin/dashboard";
+        public const string List = "/audit-log";
     }
 
     public static class Errors
     {
         public const string NotFound = "/not-found";
         public const string NotAuthorized = "/not-authorized";
-    }
-
-    public static class Audit
-    {
-        public const string List = "/audit-log";
     }
 
     public static class Dev

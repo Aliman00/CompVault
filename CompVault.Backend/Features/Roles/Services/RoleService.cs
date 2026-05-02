@@ -274,6 +274,7 @@ public sealed class RoleService(
         IReadOnlyList<Permission> permissions = await roleRepository.GetAllPermissionsAsync(cancellationToken);
 
         var dtos = permissions
+            .Where(p => p.Name != "admin:access")
             .Select(RoleMapper.ToPermissionDto)
             .ToList();
 

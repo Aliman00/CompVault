@@ -76,7 +76,6 @@ public static class TextExtensions
         Permissions.CompetenciesRead => "Se kompetanser",
         Permissions.CompetenciesWrite => "Opprett/endre kompetanser",
         Permissions.CompetenciesDelete => "Slett kompetanser",
-        Permissions.AdminAccess => "Se administratorpanel",
         _ => permission
     };
 
