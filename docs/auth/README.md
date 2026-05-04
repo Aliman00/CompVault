@@ -135,11 +135,7 @@ Tester for auth finnes i `CompVault.Backend.Tests/Backend/Features/Auth/`:
 - `OtpCodeServiceTests.cs` — Tester OTP-generering, cooldown, verifisering
 - `RefreshTokenServiceTests.cs` — Tester token-generering og lagring
 
-## 6. Vurdering og refleksjon
-
-*(Denne seksjonen skal fylles ut senere — tanker rundt hva som fungerte bra, hva som kunne vært gjort annerledes, og lærdommer fra implementasjonen.)*
-
-## 7. Relaterte moduler
+## 6. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|

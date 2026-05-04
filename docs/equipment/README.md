@@ -120,7 +120,7 @@ En ting å merke seg: alle spørringer i `EquipmentIssuanceRepository` bruker `I
 
 Da vi designet `UpdateEquipmentIssuanceRequest`, måtte vi ta stilling til hva som faktisk kan endres på en utlevering etter at den er opprettet. Vi kunne latt alt være redigerbart — bytte utstyret fra en laptop til en mobiltelefon, endre mottakeren fra Anne til Bente, endre datoen. Men det hadde skapt gråsoner i revisjonsloggen: står det "Laptop utlevert til Anne 15. januar", men noen har i ettertid endret mottaker til Bente — hva var den faktiske historien?
 
-Vi valgte å låse `UserId`, `ItemId`, `IssuedById` og `IssuedDate`. Det betyr at hvis du utleverte feil størrelse, endrer du bare `Size`. Hvis du utleverte feil utstyr til feil person, må du slette utleveringen og opprette en ny. Det er mer tungvint i øyeblikket, men revisjonssporet er ugjendrivelig.
+Vi valgte å låse `UserId`, `ItemId`, `IssuedById` og `IssuedDate`. Det betyr at hvis du utleverte feil størrelse, endrer du bare `Size`. Hvis du utleverte feil utstyr til feil person, må du slette utleveringen og opprette en ny. Det er mer tungvint i øyeblikket, men revisjonssporet blir entydig og etterprøvbart.
 
 ### IgnoreQueryFilters — en nødvendig workaround
 
@@ -134,11 +134,7 @@ Løsningen er `IgnoreQueryFilters()` på alle spørringer i `EquipmentIssuanceRe
 
 Dette er en av de små detaljene som er lette å overse, men som gjør API-et mer robust. Du kan sende inn hva som helst, men modulen vil alltid sørge for at dataene er konsistente.
 
-## 5. Vurdering og refleksjon
-
-*(Denne seksjonen fylles ut senere.)*
-
-## 6. Relaterte moduler
+## 5. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|

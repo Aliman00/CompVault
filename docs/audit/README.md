@@ -105,11 +105,7 @@ Løsningen er denormalisering: `UserEmail` og `UserName` skrives direkte inn i `
 
 Vi måtte velge: droppe `ExecuteUpdateAsync` og gå tilbake til ChangeTracker (tregere, men automatisk logging), eller beholde bulk-oppdateringen og logge manuelt. Vi valgte det siste. `CompetencyStatusJob` henter ut alle berørte bevis med gammel og ny status før bulk-oppdateringen, skriver én `AuditLog`-rad per endring manuelt, og kjører deretter `ExecuteUpdateAsync`. Det er mer kode, men det er verdt det for ytelsen når antall kompetansebevis vokser.
 
-## 5. Vurdering og refleksjon
-
-*(Denne seksjonen fylles ut senere.)*
-
-## 6. Relaterte moduler
+## 5. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|

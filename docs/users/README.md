@@ -107,11 +107,7 @@ Når en admin setter en leder for en bruker, må vi sikre at adminen faktisk har
 
 Vi valgte å sette `UserName` lik `Email.ToLowerInvariant()`. Dette betyr at `CreateUserRequest.Email` både er kontaktinformasjon og innloggingsidentifikator. Ved e-postbytte i `UpdateUserAsync` oppdateres derfor fire felter: `Email`, `NormalizedEmail`, `UserName` og `NormalizedUserName`. Det er en enkel modell, men den fungerer godt så lenge e-postadresser er unike — noe vi allerede validerer.
 
-## 5. Vurdering og refleksjon
-
-*(Denne seksjonen fylles ut senere.)*
-
-## 6. Relaterte moduler
+## 5. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|

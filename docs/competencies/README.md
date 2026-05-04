@@ -138,11 +138,7 @@ Løsningen ble at `CompetencyStatusJob` skriver `AuditLog`-entries manuelt. Vi h
 
 Vi diskuterte AutoMapper, men med bare to entiteter og to DTO-er føltes det som å skyte spurv med kanon. `CompetencyMapper` er en statisk klasse på under 60 linjer, og det er helt åpenbart hva som skjer når du leser den. Ingen magi, ingen konfigurasjon, ingenting som brekker hvis noen endrer et feltnavn uten å oppdatere en AutoMapper-profil.
 
-## 5. Vurdering og refleksjon
-
-*(Denne seksjonen fylles ut senere.)*
-
-## 6. Relaterte moduler
+## 5. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|

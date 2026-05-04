@@ -164,19 +164,12 @@ Tre TargetModes, to separate join-tabeller, avdelingshierarki, og permission-byp
 
 Da vi implementerte versjonering, innså vi at signaturer på gamle versjoner blir meningsløse. Løsningen ble å slette alle signaturer ved ny versjon — `DocumentVersioningService` kaller `signatureRepository.Remove()` på hver tracked signatur. Dette tvinger brukere til å signere på nytt og sikrer at signaturstatus alltid reflekterer gjeldende versjon.
 
-### Én orphaned metode fjernet
-
-`GetSlugsAsync` på `IDocumentTypeRepository` returnerte alle slugs i databasen, men ble aldri kalt fra noen feature. Funksjonaliteten den kunne støttet (sjekke om en slug allerede finnes) er allerede dekket av `SlugExistsAsync`. Fjernet fra interface og implementasjon.
 
 ### Ekstern URL vs. filvedlegg
 
 Et dokument kan ha enten en ekstern URL, en opplastet fil, eller ingen av delene. Vi valgte å ikke tvinge frem "minst én av dem" — et tomt dokument kan være en placeholder eller en ren tekst-beskrivelse. `HasFile`-flagget i `DocumentDto` lar frontend vite om nedlastingsknappen skal vises.
 
-## 5. Vurdering og refleksjon
-
-*(Denne seksjonen fylles ut senere.)*
-
-## 6. Relaterte moduler
+## 5. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|

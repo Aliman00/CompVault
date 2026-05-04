@@ -97,11 +97,7 @@ Vi diskuterte om API-et skulle returnere et ferdig bygd JSON-tre. Det høres fin
 
 Vi kunne latt hvem som helst bli satt som avdelingsleder, men det ga ikke mening. Hvis du skal være leder for en avdeling, bør stillingstittelen din faktisk si at du er leder. `IsValidManagerAsync` sjekker `JobTitle.IsLeader` — en enkel validering som hindrer at en sommervikar plutselig blir satt som avdelingsleder ved et uhell.
 
-## 5. Vurdering og refleksjon
-
-*(Denne seksjonen fylles ut senere.)*
-
-## 6. Relaterte moduler
+## 5. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|

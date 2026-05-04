@@ -89,11 +89,7 @@ Vi kunne lagt unikheten på `Name` uten filter, men da kunne man aldri gjenbruke
 
 Vi valgte case-insensitive. "Avdelingsleder" og "avdelingsleder" skal være samme tittel. `ToLower()` i LINQ-spørringene er enkel å forstå og fungerer fint for dette datavolumet.
 
-## 5. Vurdering og refleksjon
-
-*(Denne seksjonen fylles ut senere.)*
-
-## 6. Relaterte moduler
+## 5. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|

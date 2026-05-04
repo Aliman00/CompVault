@@ -47,7 +47,7 @@ Modulen har fire entiteter: `ApplicationRole`, `Permission`, `RolePermission` (k
 | `GrantedAt` | DateTime | Når tillatelsen ble tildelt |
 | `GrantedById` | Guid? | Hvem som tildelte |
 
-**Permissions (37 totalt):**
+**Permissions (36 totalt):**
 - Users (5): `users:read`, `users:write`, `users:delete`, `users:read:all`, `users:read:sub`
 - Roles (3): `roles:read`, `roles:write`, `roles:delete`
 - Departments (5): `departments:read`, `departments:write`, `departments:delete`, `departments:read:all`, `departments:read:sub`
@@ -56,7 +56,6 @@ Modulen har fire entiteter: `ApplicationRole`, `Permission`, `RolePermission` (k
 - Documents (6): `documents:read`, `documents:write`, `documents:delete`, `documents:sign`, `documents:all:departments`, `documents:read:sub`
 - JobTitles (3): `job_titles:read`, `job_titles:write`, `job_titles:delete`
 - Equipment (5): `equipment:read`, `equipment:write`, `equipment:delete`, `equipment:read:all`, `equipment:read:sub`
-- Admins (1): `admin:access`
 - Audit (1): `audit:read`
 
 ### Autorisasjonsflyt
@@ -128,11 +127,7 @@ En av de første tingene vi tenkte på var: hva hvis noen sletter "Admin"-rollen
 
 Siden permissions bakes inn i tokenet ved innlogging, vil ikke endringer slå inn for allerede innloggede brukere før de får nytt token. Vi vurderte å ugyldiggjøre tokens ved permission-endring, men det ble for mye kompleksitet for dette prosjektet. 15 minutters access token-levetid begrenser uansett vinduet.
 
-## 5. Vurdering og refleksjon
-
-*(Denne seksjonen fylles ut senere.)*
-
-## 6. Relaterte moduler
+## 5. Relaterte moduler
 
 | Modul | Relasjon |
 |-------|----------|
