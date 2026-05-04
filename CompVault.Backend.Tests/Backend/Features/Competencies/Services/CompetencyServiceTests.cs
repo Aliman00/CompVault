@@ -608,7 +608,7 @@ public class CompetencyServiceTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        _competencyRepositoryMock.Verify(x => x.SoftDeleteAsync(competency, It.IsAny<CancellationToken>()), Times.Once);
+        _competencyRepositoryMock.Verify(x => x.SoftDeleteAsync(competency), Times.Once);
         _competencyRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 

@@ -1,7 +1,6 @@
 ﻿@page "/documents"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.DocumentsRead)]
-@attribute [Authorize(Policy = Permissions.AdminAccess)]
+@attribute [Authorize(Policy = Permissions.DocumentsWrite)]
 @inject IDocumentTypeService DocumentTypeService
 @inject NavigationManager NavigationManager
 

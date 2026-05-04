@@ -41,7 +41,7 @@ public sealed class AuthorizationFailureHandler : IAuthorizationMiddlewareResult
 
     private static string GetForbiddenMessage(PolicyAuthorizationResult result)
     {
-        if (result.AuthorizationFailure?.FailureReasons?.Any() == true)
+        if (result.AuthorizationFailure?.FailureReasons.Any() == true)
         {
             IEnumerable<string> reasons = result.AuthorizationFailure.FailureReasons
                 .Select(r => r.Message);

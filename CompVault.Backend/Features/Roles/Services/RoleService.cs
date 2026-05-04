@@ -63,10 +63,6 @@ public sealed class RoleService(
     /// <inheritdoc />
     public async Task<Result<RoleDto>> CreateAsync(CreateRoleRequest request, Guid createdById, CancellationToken cancellationToken = default)
     {
-        if (request is null)
-            return Result<RoleDto>.Failure(
-                AppError.Create(ErrorCode.Validation, "Forespørsel kan ikke være null."));
-
         bool exists = await roleManager.RoleExistsAsync(request.Name);
         if (exists)
             return Result<RoleDto>.Failure(
@@ -104,10 +100,6 @@ public sealed class RoleService(
     /// <inheritdoc />
     public async Task<Result<RoleDto>> UpdateAsync(Guid id, UpdateRoleRequest request, CancellationToken cancellationToken = default)
     {
-        if (request is null)
-            return Result<RoleDto>.Failure(
-                AppError.Create(ErrorCode.Validation, "Forespørsel kan ikke være null."));
-
         ApplicationRole? role = await roleManager.FindByIdAsync(id.ToString());
         if (role is null)
             return Result<RoleDto>.Failure(
@@ -181,10 +173,6 @@ public sealed class RoleService(
     /// <inheritdoc />
     public async Task<Result<RoleDto>> AssignPermissionsAsync(Guid roleId, AssignPermissionsRequest request, Guid grantedById, CancellationToken cancellationToken = default)
     {
-        if (request is null)
-            return Result<RoleDto>.Failure(
-                AppError.Create(ErrorCode.Validation, "Forespørsel kan ikke være null."));
-
         ApplicationRole? role = await roleManager.FindByIdAsync(roleId.ToString());
         if (role is null)
             return Result<RoleDto>.Failure(
@@ -274,6 +262,7 @@ public sealed class RoleService(
         IReadOnlyList<Permission> permissions = await roleRepository.GetAllPermissionsAsync(cancellationToken);
 
         var dtos = permissions
+            .Where(p => p.Name != "admin:access")
             .Select(RoleMapper.ToPermissionDto)
             .ToList();
 

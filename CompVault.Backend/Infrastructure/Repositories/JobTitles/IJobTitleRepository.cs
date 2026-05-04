@@ -11,5 +11,5 @@ public interface IJobTitleRepository : IRepository<JobTitle>
     Task<bool> NameExistsAsync(string name, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter stillingstittelen ved å sette DeletedAt og IsActive.</summary>
-    Task SoftDeleteAsync(JobTitle jobTitle, CancellationToken cancellationToken = default);
+    Task SoftDeleteAsync(JobTitle jobTitle);
 }

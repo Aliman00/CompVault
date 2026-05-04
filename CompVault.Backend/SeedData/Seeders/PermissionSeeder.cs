@@ -55,7 +55,6 @@ public static class PermissionSeeder
             (Permissions.EquipmentAll, "Se utstyr i alle avdelinger", "Equipment"),
             (Permissions.EquipmentReadSub, "Se utstyr i underavdelinger", "Equipment"),
 
-            (Permissions.AdminAccess, "Se administratorpanel", "Admins"),
             (Permissions.AuditRead, "Tilgang til revisjonslogg", "Audit"),
         ];
 

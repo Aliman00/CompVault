@@ -15,7 +15,7 @@ public sealed class JobTitleRepository(AppDbContext dbContext) : BaseRepository<
         await DbSet.AnyAsync(jt => jt.Name.ToLower() == name.ToLower(), cancellationToken);
 
     /// <inheritdoc />
-    public Task SoftDeleteAsync(JobTitle jobTitle, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(JobTitle jobTitle)
     {
         jobTitle.DeletedAt = DateTime.UtcNow;
         jobTitle.IsActive = false;

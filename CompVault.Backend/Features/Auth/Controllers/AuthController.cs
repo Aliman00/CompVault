@@ -3,6 +3,7 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Users;
 using CompVault.Backend.Infrastructure.Extensions;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.Constants;
 using CompVault.Shared.DTOs.Auth;
 using CompVault.Shared.DTOs.Users;
@@ -22,6 +23,7 @@ namespace CompVault.Backend.Features.Auth.Controllers;
 [Produces("application/json")]
 public sealed class AuthController(
     IAuthService authService,
+    IUserRepository userRepository,
     UserManager<ApplicationUser> userManager) : BaseController
 {
 
@@ -92,10 +94,10 @@ public sealed class AuthController(
     [Authorize]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<UserDto>> GetCurrentUserAsync()
+    public async Task<ActionResult<UserDto>> GetCurrentUserAsync(CancellationToken ct)
     {
         Guid currentUserId = User.GetUserId();
-        ApplicationUser? user = await userManager.FindByIdAsync(currentUserId.ToString());
+        ApplicationUser? user = await userRepository.GetByIdWithDetailsAsync(currentUserId, ct);
         if (user is null)
             return Unauthorized();
 

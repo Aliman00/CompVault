@@ -46,5 +46,5 @@ public interface ICompetencyRepository : IRepository<Competency>
     Task<(int ExpiredCount, int ExpiringSoonCount, List<(Guid CompetencyId, CompetencyStatus OldStatus, CompetencyStatus NewStatus)> StatusChanges)> UpdateExpiryStatusesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter kompetansebeviset ved å sette DeletedAt og IsActive.</summary>
-    Task SoftDeleteAsync(Competency competency, CancellationToken cancellationToken = default);
+    Task SoftDeleteAsync(Competency competency);
 }

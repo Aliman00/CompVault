@@ -6,7 +6,7 @@ namespace CompVault.Frontend.Features.Competencies.Services;
 public interface ICompetencyTypeService
 {
     /// <summary>
-    /// Henter alle kompetansebevistyper fra backend TODO: Med query parameter. Ikke implementert
+    /// Henter alle kompetansebevistyper fra backend
     /// </summary>
     Task<Result<List<CompetencyTypeDto>>> GetAllAsync(CancellationToken ct);
 

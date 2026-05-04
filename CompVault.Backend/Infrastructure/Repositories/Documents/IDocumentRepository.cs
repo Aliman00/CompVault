@@ -49,5 +49,5 @@ public interface IDocumentRepository : IRepository<Document>
     Task<DocumentVersion> AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter et dokument.</summary>
-    Task SoftDeleteAsync(Document document, CancellationToken cancellationToken = default);
+    Task SoftDeleteAsync(Document document);
 }

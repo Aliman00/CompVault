@@ -126,7 +126,7 @@ public static class DocumentMapper
             MaxFileSizeBytes = documentType.MaxFileSizeBytes,
             IsActive = documentType.IsActive,
             CreatedAt = documentType.CreatedAt,
-            CategoryCount = documentType.Categories?.Count ?? 0
+            CategoryCount = documentType.Categories.Count
         };
     }
 

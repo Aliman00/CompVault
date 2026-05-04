@@ -276,7 +276,7 @@ public sealed class EquipmentIssuanceService(
         if (issuance is null)
             return Result<bool>.Failure(AppError.NotFound($"Utlevering med ID '{id}' ble ikke funnet."));
 
-        await issuanceRepository.SoftDeleteAsync(issuance, cancellationToken);
+        await issuanceRepository.SoftDeleteAsync(issuance);
         await issuanceRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);

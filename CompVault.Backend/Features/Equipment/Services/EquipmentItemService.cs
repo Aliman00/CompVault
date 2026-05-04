@@ -174,7 +174,7 @@ public sealed class EquipmentItemService(
                 AppError.Create(ErrorCode.Validation,
                     "Kan ikke slette utstyr som har aktive utleveringer. Slett utleveringene først."));
 
-        await itemRepository.SoftDeleteAsync(item, cancellationToken);
+        await itemRepository.SoftDeleteAsync(item);
         await itemRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);

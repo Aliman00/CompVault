@@ -140,7 +140,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
     }
 
     /// <inheritdoc />
-    public Task SoftDeleteAsync(Competency competency, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(Competency competency)
     {
         competency.DeletedAt = DateTime.UtcNow;
         competency.IsActive = false;

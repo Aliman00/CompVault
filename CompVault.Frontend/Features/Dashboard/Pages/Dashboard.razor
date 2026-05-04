@@ -1,4 +1,4 @@
-﻿@page "/"
+﻿@page "/dashboard"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
 @attribute [Authorize]
 @inject IJSRuntime JsRuntime
@@ -6,132 +6,142 @@
 @inject IAuthorizationService AuthorizationService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-@* Dashboard for vanlig brukere. Widgets slik at brukere kan fjerne det de mener er støy *@
-<section class="dashboard-header">
-    <MudText Typo="Typo.h5">Hei, @UserContext.FirstName</MudText>
+<PageTitle>Oversikt – CompVault</PageTitle>
 
-    @if (HiddenWidgets.Any())
-    {
-        <MudMenu StartIcon="@Icons.Material.Filled.VisibilityOff"
-                 EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
-                 Label="@($"Skjulte widgets ({HiddenWidgets.Count()})")"
-                 Variant="Variant.Outlined"
-                 Size="Size.Small"
-                 AnchorOrigin="Origin.BottomRight"
-                 TransformOrigin="Origin.TopRight"
-                 Dense="true">
-            @foreach (var widget in HiddenWidgets)
-            {
-                <MudMenuItem OnClick="() => ToggleWidget(widget)">
-                    Vis @widget
-                </MudMenuItem>
-            }
-        </MudMenu>
-    }
+@* ======== TOPP: Hilsen + kontroller ======== *@
+<section class="dashboard-header">
+    <div class="d-flex align-center gap-3">
+        <MudText Typo="Typo.h5">Hei, @UserContext.FirstName</MudText>
+    </div>
+
+    <div class="d-flex align-center gap-2">
+        @if (HiddenWidgets.Any())
+        {
+            <MudButton Variant="Variant.Text"
+                       Size="Size.Small"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.RestartAlt"
+                       OnClick="ResetAllWidgets">
+                Tilbakestill dashboard
+            </MudButton>
+        }
+
+        @if (HiddenWidgets.Any())
+        {
+            <MudMenu StartIcon="@Icons.Material.Filled.VisibilityOff"
+                     EndIcon="@Icons.Material.Filled.KeyboardArrowDown"
+                     Label="@($"Skjulte ({HiddenWidgets.Count()})")"
+                     Variant="Variant.Outlined"
+                     Size="Size.Small"
+                     AnchorOrigin="Origin.BottomRight"
+                     TransformOrigin="Origin.TopRight"
+                     Dense="true">
+                @foreach (var widget in HiddenWidgets)
+                {
+                    <MudMenuItem OnClick="() => ToggleWidget(widget)">
+                        <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Class="mr-2" />
+                        Vis @widget
+                    </MudMenuItem>
+                }
+            </MudMenu>
+        }
+    </div>
 </section>
 
-<AppAlert @bind-Alert="_alert"/>
+<AppAlert @bind-Alert="_alert" />
 
-<MudGrid Class="mb-4">
-    <AuthorizeView Policy="@Permissions.CompetenciesRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.NextExpiry])
-            {
-                <MudItem xs="12" sm="4">
-                    <NextExpiryWidget OnHide="() => ToggleWidget(DashboardConstants.NextExpiry)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
+@* ======== SEKSJON 1: KREVER DIN OPPMERKSOMHET ======== *@
+<section class="cv-dashboard-section">
+    <div class="cv-dashboard-section-title">
+        <MudIcon Icon="@Icons.Material.Filled.NotificationImportant" Size="Size.Small" Color="Color.Error" />
+        <MudText Typo="Typo.subtitle2">Krever din oppmerksomhet</MudText>
+    </div>
 
-    <AuthorizeView Policy="@Permissions.DocumentsRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.PendingSignatures])
-            {
-                <MudItem xs="12" sm="4">
-                    <PendingSignaturesWidget OnHide="() => ToggleWidget(DashboardConstants.PendingSignatures)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
+    <MudGrid Spacing="3">
+        <AuthorizeView Policy="@Permissions.CompetenciesRead">
+            <Authorized Context="_">
+                @if (_widgetVisibility[DashboardConstants.NextExpiry])
+                {
+                    <MudItem xs="12" sm="6" md="6">
+                        <NextExpiryWidget OnHide="() => ToggleWidget(DashboardConstants.NextExpiry)" />
+                    </MudItem>
+                }
+            </Authorized>
+        </AuthorizeView>
 
-    @if (_widgetVisibility[DashboardConstants.UserShortcuts])
-    {
-        <MudItem xs="12" sm="4">
-            <UserShortcutWidget OnHide="() => ToggleWidget(DashboardConstants.UserShortcuts)"/>
-        </MudItem>
-    }
-    
-    <AuthorizeView Policy="@Permissions.CompetenciesRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.MyCompetencies])
-            {
-                <MudItem xs="12" sm="4">
-                    <MyCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.MyCompetencies)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
+        <AuthorizeView Policy="@Permissions.DocumentsRead">
+            <Authorized Context="_">
+                @if (_widgetVisibility[DashboardConstants.PendingSignatures])
+                {
+                    <MudItem xs="12" sm="6" md="6">
+                        <PendingSignaturesWidget OnHide="() => ToggleWidget(DashboardConstants.PendingSignatures)" />
+                    </MudItem>
+                }
+            </Authorized>
+        </AuthorizeView>
+    </MudGrid>
+</section>
 
-    <AuthorizeView Policy="@Permissions.DocumentsRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.MyDocuments])
-            {
-                <MudItem xs="12" sm="4">
-                    <MyDocumentsWidget OnHide="() => ToggleWidget(DashboardConstants.MyDocuments)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
-    
-    <AuthorizeView Policy="@Permissions.EquipmentRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.MyEquipment])
-            {
-                <MudItem xs="12" sm="4">
-                    <MyEquipmentWidget OnHide="() => ToggleWidget(DashboardConstants.MyEquipment)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
-    
-    <AuthorizeView Policy="@Permissions.CompetenciesRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.RecentCompetencies])
-            {
-                <MudItem xs="12" sm="4">
-                    <RecentCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.RecentCompetencies)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
+@* ======== SEKSJON 2: MINE OPPSUMMERINGER ======== *@
+<section class="cv-dashboard-section">
+    <div class="cv-dashboard-section-title">
+        <MudIcon Icon="@Icons.Material.Filled.Dashboard" Size="Size.Small" Color="Color.Primary" />
+        <MudText Typo="Typo.subtitle2">Mine oppsummeringer</MudText>
+    </div>
 
-    <AuthorizeView Policy="@Permissions.DocumentsRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.RecentDocuments])
-            {
-                <MudItem xs="12" sm="4">
-                    <RecentDocumentsWidget OnHide="() => ToggleWidget(DashboardConstants.RecentDocuments)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
-    
-    <AuthorizeView Policy="@Permissions.EquipmentRead">
-        <Authorized Context="_">
-            @if (_widgetVisibility[DashboardConstants.LatestEquipment])
-            {
-                <MudItem xs="12" sm="4">
-                    <LatestEquipmentWidget OnHide="() => ToggleWidget(DashboardConstants.LatestEquipment)"/>
-                </MudItem>
-            }
-        </Authorized>
-    </AuthorizeView>
-    
-</MudGrid>
+    <MudGrid Spacing="3">
+        <AuthorizeView Policy="@Permissions.CompetenciesRead">
+            <Authorized Context="_">
+                @if (_widgetVisibility[DashboardConstants.MyCompetencies])
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MyCompetenciesWidget OnHide="() => ToggleWidget(DashboardConstants.MyCompetencies)" />
+                    </MudItem>
+                }
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Policy="@Permissions.DocumentsRead">
+            <Authorized Context="_">
+                @if (_widgetVisibility[DashboardConstants.MyDocuments])
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MyDocumentsWidget OnHide="() => ToggleWidget(DashboardConstants.MyDocuments)" />
+                    </MudItem>
+                }
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Policy="@Permissions.EquipmentRead">
+            <Authorized Context="_">
+                @if (_widgetVisibility[DashboardConstants.MyEquipment])
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MyEquipmentWidget OnHide="() => ToggleWidget(DashboardConstants.MyEquipment)" />
+                    </MudItem>
+                }
+            </Authorized>
+        </AuthorizeView>
+    </MudGrid>
+</section>
+
+@if (_widgetVisibility[DashboardConstants.RecentActivity])
+{
+    <section class="cv-dashboard-section">
+        <div class="cv-dashboard-section-title">
+            <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Small" Color="Color.Secondary" />
+            <MudText Typo="Typo.subtitle2">Siste aktivitet</MudText>
+        </div>
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="12">
+                <RecentActivityWidget OnHide="() => ToggleWidget(DashboardConstants.RecentActivity)" />
+            </MudItem>
+        </MudGrid>
+    </section>
+}
 
 @code {
-    // ======================== Private felt ========================
     private IEnumerable<string> HiddenWidgets =>
         _widgetVisibility.Where(kv => !kv.Value).Select(kv => kv.Key);
 
@@ -140,32 +150,28 @@
         [DashboardConstants.MyCompetencies] = true,
         [DashboardConstants.NextExpiry] = true,
         [DashboardConstants.PendingSignatures] = true,
-        [DashboardConstants.UserShortcuts] = true,
-        [DashboardConstants.RecentCompetencies] = true,
+        [DashboardConstants.RecentActivity] = true,
         [DashboardConstants.MyEquipment] = true,
-        [DashboardConstants.LatestEquipment] = true,
         [DashboardConstants.MyDocuments] = true,
-        [DashboardConstants.RecentDocuments] = true,
     };
-    
+
     private AlertInfo? _alert;
-    
-    // ======================== Lifecycle ========================
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
-        
+
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = state.User;
-        
+
         var hasAnyAccess =
             (await AuthorizationService.AuthorizeAsync(user, Permissions.CompetenciesRead)).Succeeded ||
             (await AuthorizationService.AuthorizeAsync(user, Permissions.EquipmentRead)).Succeeded ||
             (await AuthorizationService.AuthorizeAsync(user, Permissions.DocumentsRead)).Succeeded;
-        
+
         if (!hasAnyAccess)
-            _alert = new AlertInfo("Du har ikke tilgang til å noen moduler. " +
+            _alert = new AlertInfo("Du har ikke tilgang til noen moduler. " +
                                    "Kontakt administrator for å få tildelt nødvendige tillatelser.",
                 Severity.Warning);
 
@@ -173,10 +179,17 @@
         StateHasChanged();
     }
 
-    // ======================== Private metoder ========================
     private async Task ToggleWidget(string widgetName)
     {
         _widgetVisibility[widgetName] = !_widgetVisibility[widgetName];
+        await SavePreferencesAsync();
+    }
+
+    private async Task ResetAllWidgets()
+    {
+        foreach (var key in _widgetVisibility.Keys.ToList())
+            _widgetVisibility[key] = true;
+
         await SavePreferencesAsync();
     }
 

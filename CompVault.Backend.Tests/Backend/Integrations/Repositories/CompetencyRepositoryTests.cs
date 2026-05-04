@@ -8,11 +8,8 @@ using CompVault.Backend.Tests.Common;
 using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Enums;
-
 using FluentAssertions;
-
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 namespace CompVault.Backend.Tests.Backend.Integrations.Repositories;
 
@@ -196,7 +193,8 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         CompetencyRepository sut = CreateSut(_departmentA.Id);
 
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, null, null);
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, 
+            null, null, null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
@@ -225,7 +223,8 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         CompetencyRepository sut = CreateSut(_departmentA.Id, Permissions.CompetenciesAll);
 
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, null, null);
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, 
+            null, null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
@@ -253,7 +252,8 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         CompetencyRepository sut = CreateSut(_departmentA.Id);
 
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, null, null);
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, 
+            null, null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
@@ -282,7 +282,8 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         CompetencyRepository sut = CreateSut(_departmentA.Id, Permissions.CompetenciesReadSub);
 
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, null, null);
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, 
+            null, null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);

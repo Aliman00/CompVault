@@ -1,58 +1,44 @@
 ﻿@inject CircuitUserContext UserContext
 
-@* Headeren til appen med Hamburgermeny for en drawer *@
-
-<MudAppBar Elevation="1"> @*  Gir headeren en skygge *@
+<MudAppBar Elevation="1">
     @if (ShowMenuButton)
     {
-        @* Hamburgermeny knappen med egen metode for å lukke og åpne sidemenyen (Drawer) *@
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
                        Color="Color.Inherit"
                        Edge="Edge.Start"
-                       OnClick="OnMenuButtonClick"/>
+                       OnClick="OnMenuButtonClick" />
     }
-    
-    @* Logo og tittel*@
-    <MudLink Href="/" 
-             Underline="Underline.None" 
-             Color="Color.Inherit" 
+
+    <!-- Logo + app navn -->
+    <MudLink Href="/dashboard"
+             Underline="Underline.None"
+             Color="Color.Inherit"
              Class="d-flex align-center">
-        <AppLogo Class="app-header-logo"/>
-        <MudText Typo="Typo.h6" Class="ml-3">CompVault</MudText>
+        <AppLogo Class="app-header-logo" />
+        <MudText Typo="Typo.h6"
+                 Class="ml-2"
+                 Style="font-weight:700; letter-spacing:-0.01em;">
+            CompVault
+        </MudText>
     </MudLink>
 
-    @* Fyller ledig plass i AppBar, skyver alle andre elementer til høyre *@
-    <MudSpacer/>
+    <MudSpacer />
 
-    @* Profilknapp som åpner høyredraweren med brukerinfo og innstillinger eller bytte av tema i sider
-        brukeren ikke er innlogget *@
-    @RightContent
+    <!-- Høyre side: profil + ev. ekstra innhold -->
+    <div class="d-flex align-center gap-3">
+        <MudText Typo="Typo.body2"
+                 Color="Color.Inherit"
+                 Class="d-none d-sm-block"
+                 Style="opacity:0.9">
+            @UserContext.FullName
+        </MudText>
+
+        @RightContent
+    </div>
 </MudAppBar>
 
 @code {
-    // ======================== PARAMETERS ========================
-    /// <summary>
-    /// Viser hamburgermeny-knappen. Default = true, settes til false i AuthLayout
-    /// </summary>
     [Parameter] public bool ShowMenuButton { get; set; } = true;
-    
-    /// <summary>
-    /// Kalles når hamburgermeny-knappen klikkes. Layoutet håndterer om sidebaren vises/skjules
-    /// </summary>
-    [Parameter]
-    public EventCallback OnMenuButtonClick { get; set; }
-    
-    /// <summary>
-    /// Kalles når profilknappen klikkes. Layoutet håndterer om profildraweren vises/skjules
-    /// </summary>
-    [Parameter]
-    public EventCallback OnProfileButtonClick { get; set; }
-    
-    /// <summary>
-    /// PLassen til høyre i navbaren for å bytte mellom MudAvatar eller mørkt/lyst tema
-    /// </summary>
+    [Parameter] public EventCallback OnMenuButtonClick { get; set; }
     [Parameter] public RenderFragment? RightContent { get; set; }
-    
-    // ======================== PRIVATE FIELDS ========================
-    private string Initials => UserContext.FullName.ToInitials();
 }

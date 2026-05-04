@@ -1,7 +1,6 @@
 ﻿@page "/equipment-items"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.EquipmentRead)]
-@attribute [Authorize(Policy = Permissions.AdminAccess)]
+@attribute [Authorize(Policy = Permissions.EquipmentWrite)]
 @inject IEquipmentItemService EquipmentItemService
 @inject NavigationManager NavigationManager
 

@@ -351,7 +351,7 @@ public class DepartmentServiceTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        _departmentRepositoryMock.Verify(x => x.SoftDeleteAsync(department, It.IsAny<CancellationToken>()), Times.Once);
+        _departmentRepositoryMock.Verify(x => x.SoftDeleteAsync(department), Times.Once);
         _departmentRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
