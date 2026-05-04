@@ -76,24 +76,22 @@
     {
         try
         {
-            var activities = new List<ActivityItem>();
-
             if (UserContext?.UserId != null)
             {
-                // Kaller asynkront separat for a unnga complex Task.WhenAll generics
-                var competencies = await LoadCompetenciesAsync();
-                var documents = await LoadDocumentsAsync();
-                var equipment = await LoadEquipmentAsync();
+                // Utfører kallene parallelt og legger alt til i listen med aktiviteter
+                var competencyTask = LoadCompetenciesAsync();
+                var documentTask   = LoadDocumentsAsync();
+                var equipmentTask  = LoadEquipmentAsync();
 
-                activities.AddRange(competencies);
-                activities.AddRange(documents);
-                activities.AddRange(equipment);
+                await Task.WhenAll(competencyTask, documentTask, equipmentTask);
+                
+                _activities = competencyTask.Result
+                    .Concat(documentTask.Result)
+                    .Concat(equipmentTask.Result)
+                    .OrderByDescending(a => a.Date)
+                    .Take(10)
+                    .ToList();
             }
-
-            _activities = activities
-                .OrderByDescending(a => a.Date)
-                .Take(10)
-                .ToList();
         }
         catch (OperationCanceledException)
         {
