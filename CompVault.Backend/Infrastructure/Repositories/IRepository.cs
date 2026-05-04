@@ -25,9 +25,6 @@ public interface IRepository<T> where T : class
     /// <summary>Markerer en entitet som endret i change-trackeren. Kall SaveChangesAsync() for å persistere.</summary>
     Task UpdateAsync(T entity, CancellationToken cancellationToken = default);
 
-    /// <summary>Markerer en entitet for sletting. Kall SaveChangesAsync() for å persistere.</summary>
-    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
-
     /// <summary>Sjekker om det finnes noen entitet som matcher predikatet.</summary>
     Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
 

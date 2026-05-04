@@ -115,12 +115,12 @@ public sealed class AuthController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RevokeAsync(
-        [FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        [FromBody] RefreshTokenRequest request, CancellationToken ct)
     {
         Guid currentUserId = User.GetUserId();
 
         Result result = await authService.RevokeRefreshTokenAsync(
-            request.RefreshToken, currentUserId, cancellationToken);
+            request.RefreshToken, currentUserId, ct);
 
         if (result.IsFailure)
             return HandleFailure(result);

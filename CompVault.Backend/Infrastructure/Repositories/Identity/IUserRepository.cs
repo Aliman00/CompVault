@@ -37,8 +37,7 @@ public interface IUserRepository : IRepository<ApplicationUser>
         int skip, int take, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Henter alle brukere en bruker har tilattelse til å se med avdeling og stillinge. Vi lar brukeren hente
-    /// underavdelinger hvis de har tilattelse eller permissions til det. Sortert etter etternavn
+    /// Henter alle brukere en bruker har tilattelse til å se med avdeling og stillinge.
     /// </summary>
     Task<IReadOnlyList<ApplicationUser>> GetLookupAsync(IReadOnlyList<Guid> allowedDepartmentIds, bool bypass,
         CancellationToken ct = default);

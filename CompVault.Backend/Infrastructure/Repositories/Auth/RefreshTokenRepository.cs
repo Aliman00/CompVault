@@ -14,7 +14,7 @@ public class RefreshTokenRepository(AppDbContext context)
             .IgnoreQueryFilters()
             .Where(r => r.Token == token && !r.IsRevoked && r.ExpiresAt > DateTime.UtcNow)
             .FirstOrDefaultAsync(ct);
-    
+
     /// <inheritdoc />
     public async Task DeleteExpiredTokensAsync(CancellationToken ct = default) =>
         await DbSet

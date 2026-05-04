@@ -1,0 +1,53 @@
+# Infrastructure/Data/Configurations
+
+> EF Core `IEntityTypeConfiguration<T>`-klasser som definerer kolonneoppsett, begrensninger, indekser og relasjoner. Holder `AppDbContext` ren.
+
+## Struktur
+
+Undermapper speiler `Domain/Entities/`-strukturen 1-til-1:
+
+```
+Configurations/
+  Auth/            <- OtpCode, RefreshToken
+  Competencies/    <- Competency, CompetencyType
+  Departments/     <- Department
+  Documents/       <- Document, DocumentType, DocumentTypeCategory, DocumentVersion, DocumentSignature, DocumentDepartment, DocumentJobTitle
+  Identity/        <- ApplicationUser, ApplicationRole, Permission, RolePermission
+  JobTitles/       <- JobTitle
+```
+
+## Automatisk oppdaging
+
+`AppDbContext` plukker opp alle konfigurasjoner automatisk via:
+
+```csharp
+builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+```
+
+Du trenger **ikke** registrere nye konfigurasjoner manuelt — opprett filen, og EF Core finner den.
+
+## Ny entitet? Gjør slik
+
+1. Opprett `<Domene>/<EntitetNavn>Configuration.cs` i riktig undermappe
+2. Implementer `IEntityTypeConfiguration<EntitetNavn>`
+
+```csharp
+namespace CompVault.Backend.Infrastructure.Data.Configurations.Identity;
+
+internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<ApplicationUser>
+{
+    public void Configure(EntityTypeBuilder<ApplicationUser> builder)
+    {
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.FirstName).HasMaxLength(100).IsRequired();
+        builder.Property(e => e.LastName).HasMaxLength(100).IsRequired();
+    }
+}
+```
+
+## Regler
+
+- Klassen skal alltid være `internal sealed`
+- Ingen forretningslogikk — kun kolonneoppsett og relasjoner
+- Bruk `HasConversion<string>()` på enums slik at DB-verdier er lesbare
+- Bruk `HasQueryFilter` for soft-delete-filtrering på entiteter med `DeletedAt`

@@ -176,7 +176,7 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
     /// Tester at brukeren i avdeling A ikke får sett kompetansebeviset til brukeren i avdeling B uten tilattelse
     /// </summary>
     [Fact]
-    public async Task GetAllWithDetailsAsync_UserInDepartmentA_DoesNotSeeCompetenciesFromDepartmentB()
+    public async Task GetAllWithDetailsPagedAsync_UserInDepartmentA_DoesNotSeeCompetenciesFromDepartmentB()
     {
         // Arrange
         using IServiceScope seedScope = factory.Services.CreateScope();
@@ -193,8 +193,8 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         CompetencyRepository sut = CreateSut(_departmentA.Id);
 
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(
-            skip: 0, take: 100, userId: null, status: null, competencyTypeId: null);
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, 
+            null, null, null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
@@ -206,7 +206,7 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
     /// CompetenciesAll-tilattelse
     /// </summary>
     [Fact]
-    public async Task GetAllWithDetailsAsync_UserInDepartmentA_SeesCompetenciesFromDepartmentB()
+    public async Task GetAllWithDetailsPagedAsync_UserInDepartmentA_SeesCompetenciesFromDepartmentB()
     {
         // Arrange
         using IServiceScope seedScope = factory.Services.CreateScope();
@@ -223,8 +223,8 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         CompetencyRepository sut = CreateSut(_departmentA.Id, Permissions.CompetenciesAll);
 
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(
-            skip: 0, take: 100, userId: null, status: null, competencyTypeId: null);
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, 
+            null, null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
@@ -235,7 +235,7 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
     /// Tester at brukeren i avdeling A ikke får sett kompetansebeviset til brukeren i underavdeling A uten tilattelse
     /// </summary>
     [Fact]
-    public async Task GetAllWithDetailsAsync_UserInDepartmentA_DoesNotSeeCompetenciesFromSubDepartment()
+    public async Task GetAllWithDetailsPagedAsync_UserInDepartmentA_DoesNotSeeCompetenciesFromSubDepartment()
     {
         // Arrange
         using IServiceScope seedScope = factory.Services.CreateScope();
@@ -252,8 +252,8 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         CompetencyRepository sut = CreateSut(_departmentA.Id);
 
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(
-            skip: 0, take: 100, userId: null, status: null, competencyTypeId: null);
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, 
+            null, null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);
@@ -265,7 +265,7 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
     /// CompetenciesReadSub-tilattelse
     /// </summary>
     [Fact]
-    public async Task GetAllWithDetailsAsync_UserInDepartmentA_SeesCompetenciesFromSubDepartment()
+    public async Task GetAllWithDetailsPagedAsync_UserInDepartmentA_SeesCompetenciesFromSubDepartment()
     {
         // Arrange
         using IServiceScope seedScope = factory.Services.CreateScope();
@@ -282,8 +282,8 @@ public class CompetencyRepositoryTests(BackendWebApplicationFactory factory) : I
         CompetencyRepository sut = CreateSut(_departmentA.Id, Permissions.CompetenciesReadSub);
 
         // Act
-        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(
-            skip: 0, take: 100, userId: null, status: null, competencyTypeId: null);
+        IReadOnlyList<Competency> result = await sut.GetAllWithDetailsPagedAsync(0, 100, null, 
+            null, null);
 
         // Assert
         result.Should().Contain(c => c.Id == competencyA.Id);

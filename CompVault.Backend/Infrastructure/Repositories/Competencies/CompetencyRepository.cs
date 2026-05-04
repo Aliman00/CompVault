@@ -49,7 +49,7 @@ public sealed class CompetencyRepository(AppDbContext dbContext, IDepartmentScop
 
     /// <summary>
     /// Bygger en IQueryable med navigasjon og valgfrie filtre.
-    /// Gjenbrukes av GetAllWithDetailsAsync, CountWithFiltersAsync og GetAllWithDetailsPagedAsync.
+    /// Gjenbrukes av CountWithFiltersAsync og GetAllWithDetailsPagedAsync.
     /// </summary>
     private IQueryable<Competency> BuildFilteredQuery(
         Guid? userId,
