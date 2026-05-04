@@ -44,7 +44,7 @@
             @foreach (var dt in _documentTypes)
             {
                 <MudChip T="string"
-                         Color="@(dt.PendingSignatureCount > 0 ? Color.Warning : Color.Default)"
+                         Color="@(dt.PendingSignatureCount > 0 ? Color.Warning : Color.Primary)"
                          Size="Size.Small"
                          Icon="@Icons.Material.Filled.Folder"
                          OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.UserDocuments.List(dt.Slug)))">
