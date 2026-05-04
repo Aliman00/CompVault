@@ -24,32 +24,6 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null, ct);
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<(ApplicationUser User, List<string> Roles)>>
-        GetActiveUsersWithRolesAsync(CancellationToken cancellationToken = default)
-    {
-        var result = await DbSet
-            .AsNoTracking()
-            .Include(u => u.Department)
-            .Include(u => u.Manager)
-            .Include(u => u.JobTitle)
-            .Where(u => u.IsActive && u.DeletedAt == null)
-            .Select(u => new
-            {
-                User = u,
-                Roles = DbContext.UserRoles
-                    .Where(ur => ur.UserId == u.Id)
-                    .Join(DbContext.Roles, ur => ur.RoleId, r => r.Id,
-                        (ur, r) => r.Name)
-                    .Where(name => name != null)
-                    .Select(name => name!)
-                    .ToList()
-            })
-            .ToListAsync(cancellationToken);
-
-        return result.Select(x => (x.User, x.Roles)).ToList();
-    }
-
-    /// <inheritdoc />
     public async Task<IReadOnlyList<ApplicationUser>> GetUsersByTargetAsync(IReadOnlyList<Guid> departmentIds,
         IReadOnlyList<Guid> jobTitleIds, CancellationToken ct = default) =>
         await DbSet
@@ -68,22 +42,6 @@ public sealed class UserRepository(AppDbContext dbContext) : BaseRepository<Appl
             .Include(u => u.Manager)
             .Include(u => u.JobTitle)
             .FirstOrDefaultAsync(u => u.Id == id, ct);
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<ApplicationUser>> GetActiveUsersAsync(CancellationToken cancellationToken = default) =>
-        await DbSet
-            .AsNoTracking()
-            .Where(u => u.IsActive)
-            .ToListAsync(cancellationToken);
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<ApplicationUser>> GetDirectReportsAsync(
-        Guid managerId,
-        CancellationToken cancellationToken = default) =>
-        await DbSet
-            .AsNoTracking()
-            .Where(u => u.ManagerId == managerId && u.IsActive)
-            .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<ApplicationUser>> GetPotentialManagersAsync(

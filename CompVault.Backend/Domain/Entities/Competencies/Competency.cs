@@ -50,6 +50,7 @@ public class Competency
     public DateTime? RevokedAt { get; set; }
 
     /// <summary>Årsak til tilbakekalling. Påkrevt hvis status settes til Revoked.</summary>
+    [MaxLength(1000)]
     public string? RevokedReason { get; set; }
 
     // ======================== Historikk ========================

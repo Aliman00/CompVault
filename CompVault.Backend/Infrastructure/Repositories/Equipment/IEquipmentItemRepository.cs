@@ -23,5 +23,5 @@ public interface IEquipmentItemRepository : IRepository<EquipmentItem>
     Task<bool> HasActiveIssuancesAsync(Guid itemId, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter utstyret.</summary>
-    Task SoftDeleteAsync(EquipmentItem item, CancellationToken cancellationToken = default);
+    Task SoftDeleteAsync(EquipmentItem item);
 }

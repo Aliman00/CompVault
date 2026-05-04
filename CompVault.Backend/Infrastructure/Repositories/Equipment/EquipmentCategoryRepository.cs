@@ -35,7 +35,7 @@ public sealed class EquipmentCategoryRepository(AppDbContext dbContext)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public Task SoftDeleteAsync(EquipmentCategory category, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(EquipmentCategory category)
     {
         category.DeletedAt = DateTime.UtcNow;
         category.IsActive = false;

@@ -133,7 +133,7 @@ public sealed class JobTitleService(
             return Result<bool>.Failure(
                 AppError.NotFound($"Stillingstittel med ID '{id}' ble ikke funnet."));
 
-        await jobTitleRepository.SoftDeleteAsync(jobTitle, ct);
+        await jobTitleRepository.SoftDeleteAsync(jobTitle);
         await jobTitleRepository.SaveChangesAsync(ct);
 
         logger.LogInformation("Stillingstittel {Id} slettet (soft delete)", id);

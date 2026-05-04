@@ -1,14 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
-
 using FluentAssertions;
-
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-
 namespace CompVault.Backend.Tests.Backend.Infrastructure.Auth;
 
 public class JwtServiceTests
@@ -37,7 +32,7 @@ public class JwtServiceTests
 
     public JwtServiceTests()
     {
-        _sut = new JwtService(Options.Create(JwtSettings), NullLogger<JwtService>.Instance);
+        _sut = new JwtService(Options.Create(JwtSettings));
     }
 
     /// <summary>
@@ -78,9 +73,7 @@ public class JwtServiceTests
         Assert.Equal(JwtSettings.Issuer, parsed.Issuer);
         Assert.Contains(JwtSettings.Audience, parsed.Audiences);
     }
-
-
-
+    
     /// <summary>
     /// Tester at GenerateAccessToken setter korrekt utløpstidspunkt basert på AccessTokenMinutes
     /// </summary>
@@ -98,44 +91,6 @@ public class JwtServiceTests
         // Assert — ValidTo skal være innenfor ett sekund av forventet utløpstidspunkt
         DateTime expectedExpiry = before.AddMinutes(JwtSettings.AccessTokenMinutes);
         parsed.ValidTo.Should().BeCloseTo(expectedExpiry, TimeSpan.FromSeconds(1));
-    }
-
-    /// <summary>
-    /// Tester at GetPrincipalFromExpiredToken klarer å lese claims korrekt.
-    /// Metoden bruker ValidateLifetime = false internt, så den fungerer
-    /// uavhengig av om tokenet er utløpt eller ikke.
-    /// </summary>
-    [Fact]
-    public void GetPrincipalFromExpiredToken_ReturnsPrincipalWithClaims()
-    {
-        // Arrange - Generer et normalt token — GetPrincipalFromExpiredToken
-        // validerer uansett med ValidateLifetime = false, så det holder
-        string token = _sut.GenerateAccessToken(_testUser, [], []);
-
-        // Act
-        ClaimsPrincipal? principal = _sut.GetPrincipalFromExpiredToken(token);
-
-        // Assert - Skal kunne lese claims uavhengig av levetid
-        Assert.NotNull(principal);
-        Assert.Equal(_testUser.Id.ToString(), principal.FindFirstValue(ClaimTypes.NameIdentifier));
-    }
-
-
-    /// <summary>
-    /// Tester at GetPrincipalFromExpiredToken returnerer null når tokenet er tuklet med
-    /// </summary>
-    [Fact]
-    public void GetPrincipalFromExpiredToken_WithTamperedToken_ReturnsNull()
-    {
-        // Arrange
-        string validToken = _sut.GenerateAccessToken(_testUser, [], []);
-        string tamperedToken = validToken[..^5] + "XXXXX"; // Ødelegger signaturen
-
-        // Act
-        ClaimsPrincipal? principal = _sut.GetPrincipalFromExpiredToken(tamperedToken);
-
-        // Assert
-        Assert.Null(principal);
     }
 
     /// <summary>

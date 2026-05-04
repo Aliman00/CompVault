@@ -10,7 +10,7 @@ public class CreateJobTitleModel
     [MaxLength(JobTitleValidations.NameMaxLength, ErrorMessage = JobTitleValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
 
-    public bool IsLeader { get; set; } = false;
+    public bool IsLeader { get; set; }
 
     public CreateJobTitleRequest ToRequest() => new()
     {

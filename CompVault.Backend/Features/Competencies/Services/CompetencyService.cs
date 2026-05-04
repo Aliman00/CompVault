@@ -223,7 +223,7 @@ public sealed class CompetencyService(
                 AppError.Create(ErrorCode.Forbidden,
                     "Du har ikke tilgang til å slette kompetansebevis for brukere i denne avdelingen."));
 
-        await competencyRepository.SoftDeleteAsync(competency, cancellationToken);
+        await competencyRepository.SoftDeleteAsync(competency);
         await competencyRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);

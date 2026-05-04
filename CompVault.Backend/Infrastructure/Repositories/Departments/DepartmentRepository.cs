@@ -62,7 +62,7 @@ public sealed class DepartmentRepository(AppDbContext dbContext) : BaseRepositor
     }
 
     /// <inheritdoc />
-    public Task SoftDeleteAsync(Department department, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(Department department)
     {
         department.DeletedAt = DateTime.UtcNow;
         department.IsActive = false;

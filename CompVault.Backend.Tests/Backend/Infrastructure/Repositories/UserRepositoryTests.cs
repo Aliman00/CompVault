@@ -84,20 +84,6 @@ public class UserRepositoryTests : IDisposable
     }
 
     /// <summary>
-    /// Tester at GetActiveUsersAsync kun returnerer aktive brukere — ikke slettede
-    /// </summary>
-    [Fact]
-    public async Task GetActiveUsersAsync_ReturnsOnlyActiveUsers()
-    {
-        // Act
-        IReadOnlyList<ApplicationUser> result = await _sut.GetActiveUsersAsync();
-
-        // Assert - Skal kun inneholde aktiv bruker, ikke den slettede
-        Assert.Single(result);
-        Assert.Equal(_activeUser.Email, result[0].Email);
-    }
-
-    /// <summary>
     /// Tester at GetByEmailAsync finner bruker på e-post
     /// </summary>
     [Fact]

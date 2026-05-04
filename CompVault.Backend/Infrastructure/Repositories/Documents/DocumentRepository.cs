@@ -163,8 +163,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         return version;
     }
 
-    public Task SoftDeleteAsync(
-        Document document, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(Document document)
     {
         document.IsActive = false;
         document.DeletedAt = DateTime.UtcNow;

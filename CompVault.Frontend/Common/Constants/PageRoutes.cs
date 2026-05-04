@@ -125,7 +125,7 @@ public static class PageRoutes
         public const string NotFound = "/not-found";
         public const string NotAuthorized = "/not-authorized";
     }
-
+    
     public static class Dev
     {
         public const string Panel = "/dev";
