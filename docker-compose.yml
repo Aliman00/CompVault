@@ -65,17 +65,6 @@ services:
     networks:
       - compvault-network
 
-  adminer:
-    image: adminer
-    container_name: compvault-adminer
-    ports:
-      - "5002:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - compvault-network
-
 volumes:
   postgres_data:
 
