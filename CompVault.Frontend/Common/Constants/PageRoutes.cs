@@ -9,12 +9,16 @@ public static class PageRoutes
     // =============================== AUTH =============================== 
     public static class Auth
     {
-        public const string LoginEmail = "/login-email";
+        public const string LoginEmail = "/";
         public const string LoginOtp = "/login-otp";
     }
 
     // =============================== EMPLOYEES =============================== 
-   
+    public static class Dashboard
+    {
+        public const string Home = "/dashboard";
+    }
+
     public static class UserCompetencies
     {
         public const string List = "/my-competencies";
@@ -111,9 +115,9 @@ public static class PageRoutes
         public const string Create = "/equipment-items/create";
     }
 
-    public static class Admin
+    public static class Audit
     {
-        public const string Dashboard = "/admin/dashboard";
+        public const string List = "/audit-log";
     }
 
     public static class Errors
@@ -121,12 +125,7 @@ public static class PageRoutes
         public const string NotFound = "/not-found";
         public const string NotAuthorized = "/not-authorized";
     }
-
-    public static class Audit
-    {
-        public const string List = "/audit-log";
-    }
-
+    
     public static class Dev
     {
         public const string Panel = "/dev";

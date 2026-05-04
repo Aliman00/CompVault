@@ -1,6 +1,6 @@
 ﻿@page "/competency-types/{Id:guid}"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.CompetenciesRead)]
+@attribute [Authorize(Policy = Permissions.CompetenciesWrite)]
 @inject ICompetencyService CompetencyService
 @inject ICompetencyTypeService CompetencyTypeService
 @inject NavigationManager NavigationManager

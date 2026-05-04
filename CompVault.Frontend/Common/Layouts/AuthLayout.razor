@@ -15,8 +15,10 @@
         </RightContent>
     </AppBar>
     
-    <MudMainContent>
-        @Body
+    <MudMainContent Class="@(_isDarkMode ? "cv-login-dark" : "cv-login-light")">
+        <CascadingValue Value="_isDarkMode" Name="IsDarkMode">
+            @Body
+        </CascadingValue>
     </MudMainContent>
 </MudLayout>
 
