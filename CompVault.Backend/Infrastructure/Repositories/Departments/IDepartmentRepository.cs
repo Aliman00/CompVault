@@ -23,5 +23,5 @@ public interface IDepartmentRepository : IRepository<Department>
     Task<IReadOnlyList<Guid>> GetAncestorIdsAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter avdelingen ved å sette DeletedAt og IsActive.</summary>
-    Task SoftDeleteAsync(Department department, CancellationToken cancellationToken = default);
+    Task SoftDeleteAsync(Department department);
 }

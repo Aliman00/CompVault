@@ -151,7 +151,7 @@ public static class ServiceCollectionExtensions
                     logger?.LogWarning(
                         context.Exception,
                         "JWT authentication failed: {Error}",
-                        context.Exception?.Message ?? "Unknown error");
+                        context.Exception.Message ?? "Unknown error");
                     return Task.CompletedTask;
                 }
             };

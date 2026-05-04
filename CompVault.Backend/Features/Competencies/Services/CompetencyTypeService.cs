@@ -124,7 +124,7 @@ public sealed class CompetencyTypeService(
             return Result<bool>.Failure(
                 AppError.Conflict("Kan ikke slette en kompetansetype som har aktive kompetansebevis."));
 
-        await competencyTypeRepository.SoftDeleteAsync(type, cancellationToken);
+        await competencyTypeRepository.SoftDeleteAsync(type);
         await competencyTypeRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);

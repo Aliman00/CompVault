@@ -18,19 +18,6 @@ public sealed class EquipmentIssuanceRepository(
     : BaseRepository<EquipmentIssuance>(dbContext), IEquipmentIssuanceRepository
 {
     /// <inheritdoc />
-    public async Task<IReadOnlyList<EquipmentIssuance>> GetAllWithDetailsAsync(
-        CancellationToken cancellationToken = default) =>
-        await DbSet
-            .IgnoreQueryFilters()
-            .Where(i => i.DeletedAt == null)
-            .AsNoTracking()
-            .Include(i => i.User)
-            .Include(i => i.Item!)
-                .ThenInclude(item => item!.Category)
-            .Include(i => i.IssuedBy)
-            .ToListAsync(cancellationToken);
-
-    /// <inheritdoc />
     public async Task<EquipmentIssuance?> GetByIdWithDetailsAsync(
         Guid id, CancellationToken cancellationToken = default)
     {
@@ -40,7 +27,7 @@ public sealed class EquipmentIssuanceRepository(
             .AsNoTracking()
             .Include(i => i.User)
             .Include(i => i.Item!)
-            .ThenInclude(item => item!.Category)
+            .ThenInclude(item => item.Category)
             .Include(i => i.IssuedBy);
 
         return await ApplyDepartmentFilter(query)
@@ -55,25 +42,13 @@ public sealed class EquipmentIssuanceRepository(
             .IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null)
             .Include(i => i.Item!)
-            .ThenInclude(item => item!.Category)
+            .ThenInclude(item => item.Category)
             .Include(i => i.User)
             .Include(i => i.IssuedBy);
 
         return await ApplyDepartmentFilter(query)
             .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
     }
-    /// <inheritdoc />
-    public async Task<IReadOnlyList<EquipmentIssuance>> GetByUserIdAsync(
-        Guid userId, CancellationToken cancellationToken = default) =>
-        await DbSet
-            .IgnoreQueryFilters()
-            .Where(i => i.DeletedAt == null && i.UserId == userId)
-            .AsNoTracking()
-            .Include(i => i.User)
-            .Include(i => i.Item!)
-                .ThenInclude(item => item.Category)
-            .Include(i => i.IssuedBy)
-            .ToListAsync(cancellationToken);
 
     /// <inheritdoc />
     public async Task<(IReadOnlyList<EquipmentIssuance> Items, int TotalCount)> GetByUserIdPagedAsync(
@@ -146,16 +121,9 @@ public sealed class EquipmentIssuanceRepository(
 
         return ApplyDepartmentFilter(query);
     }
-
+    
     /// <inheritdoc />
-    public async Task<int> CountByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
-        await DbSet
-            .IgnoreQueryFilters()
-            .Where(i => i.DeletedAt == null && i.UserId == userId)
-            .CountAsync(cancellationToken);
-
-    /// <inheritdoc />
-    public Task SoftDeleteAsync(EquipmentIssuance issuance, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(EquipmentIssuance issuance)
     {
         issuance.DeletedAt = DateTime.UtcNow;
         issuance.IsActive = false;

@@ -17,5 +17,5 @@ public interface IEquipmentCategoryRepository : IRepository<EquipmentCategory>
     Task<EquipmentCategory?> GetByIdWithItemsForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-sletter kategorien.</summary>
-    Task SoftDeleteAsync(EquipmentCategory category, CancellationToken cancellationToken = default);
+    Task SoftDeleteAsync(EquipmentCategory category);
 }

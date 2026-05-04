@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CompVault.Backend.Domain.Entities.Audit;
 
 /// <summary>
@@ -39,6 +41,7 @@ public class AuditLog
     /// Fleksible detaljer per action-type, lagret som JSONB.
     /// F.eks. changed_fields, revoked_reason, old_version/new_version.
     /// </summary>
+    [MaxLength(5000)]
     public string? Details { get; set; }
 
     /// <summary>Når handlingen ble utført (UTC).</summary>

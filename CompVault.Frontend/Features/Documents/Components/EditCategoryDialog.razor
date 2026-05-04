@@ -85,7 +85,7 @@
     /// Nanvet på dokumenttypen
     /// </summary>
     [Parameter, EditorRequired]
-    public DocumentTypeCategoryDto DocumentTypeCategory { get; set; }
+    public DocumentTypeCategoryDto DocumentTypeCategory { get; set; } = default!;
 
     // ===================== PRIVATE FIELDS =====================
 
@@ -142,7 +142,7 @@
         {
             { nameof(ConfirmDeleteDialog.Title), "Slett kategorien" },
             { nameof(ConfirmDeleteDialog.Message), 
-                $"Er du sikker på at du ønsker å slette kategori {DocumentTypeCategory!.Name}?" },
+                $"Er du sikker på at du ønsker å slette kategori {DocumentTypeCategory.Name}?" },
         };
 
         // Kaller dialogen

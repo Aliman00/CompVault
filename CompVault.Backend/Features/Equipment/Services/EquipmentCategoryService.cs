@@ -136,7 +136,7 @@ public sealed class EquipmentCategoryService(
                 AppError.Create(ErrorCode.Validation,
                     "Kan ikke slette en kategori som fortsatt har aktivt utstyr. Deaktiver eller slett utstyret først."));
 
-        await categoryRepository.SoftDeleteAsync(category, cancellationToken);
+        await categoryRepository.SoftDeleteAsync(category);
         await categoryRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);

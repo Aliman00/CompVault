@@ -13,7 +13,7 @@ public static class ProblemDetailBuilder
     public static ProblemDetail FromError(AppError error)
     {
         int statusCode = GetStatusCode(error.Code);
-        string message = error.Message ?? GetDefaultMessage(error.Code);
+        string message = error.Message;
 
         return new ProblemDetail
         {

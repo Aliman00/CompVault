@@ -168,7 +168,7 @@ public sealed class DepartmentService(
             return Result<bool>.Failure(
                 AppError.Conflict("Kan ikke slette en avdeling som har medlemmer."));
 
-        await departmentRepository.SoftDeleteAsync(department, cancellationToken);
+        await departmentRepository.SoftDeleteAsync(department);
         await departmentRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);

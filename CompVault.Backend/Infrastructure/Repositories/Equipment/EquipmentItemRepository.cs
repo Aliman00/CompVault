@@ -48,7 +48,7 @@ public sealed class EquipmentItemRepository(AppDbContext dbContext)
         await DbContext.EquipmentIssuances.AnyAsync(i => i.ItemId == itemId && i.IsActive, cancellationToken);
 
     /// <inheritdoc />
-    public Task SoftDeleteAsync(EquipmentItem item, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(EquipmentItem item)
     {
         item.DeletedAt = DateTime.UtcNow;
         item.IsActive = false;
