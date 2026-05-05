@@ -21,19 +21,18 @@ public static class CompetencyEmailTemplates
         DateTime expiryDate,
         int daysUntil)
     {
-        string encodedEmployeeName  = WebUtility.HtmlEncode(employeeName);
-        string encodedCompetencyName  = WebUtility.HtmlEncode(competencyName);
+        string encodedEmployeeName = WebUtility.HtmlEncode(employeeName);
+        string encodedCompetencyName = WebUtility.HtmlEncode(competencyName);
         return new(
-        Subject:
-        $"Kompetansebeviset «{encodedCompetencyName}» utløper om {daysUntil} dager",
-        Html:
-        $"""
-             <h2>Hei {encodedEmployeeName},</h2>
-             <p>Ditt kompetansebevis <strong>{encodedCompetencyName}</strong> utløper <strong>{expiryDate:dd. MMMM yyyy}</strong> — om <strong>{daysUntil} dager</strong>.</p>
-             <p>Vennligst ta kontakt med din leder for å fornye kompetansebeviset i god tid før utløp.</p>
-             <p><a href="https://compvault.no">Gå til CompVault</a></p>
-             {Footer}
-             """);
+            Subject: $"Kompetansebeviset «{competencyName}» utløper om {daysUntil} dager",
+            Html:
+            $"""
+                 <h2>Hei {encodedEmployeeName},</h2>
+                 <p>Ditt kompetansebevis <strong>{encodedCompetencyName}</strong> utløper <strong>{expiryDate:dd. MMMM yyyy}</strong> — om <strong>{daysUntil} dager</strong>.</p>
+                 <p>Vennligst ta kontakt med din leder for å fornye kompetansebeviset i god tid før utløp.</p>
+                 <p><a href="https://compvault.no">Gå til CompVault</a></p>
+                 {Footer}
+                 """);
     }
 
     /// <summary>
