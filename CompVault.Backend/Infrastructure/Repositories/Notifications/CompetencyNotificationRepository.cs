@@ -19,7 +19,7 @@ internal sealed class CompetencyNotificationRepository(AppDbContext dbContext) :
             l.ThresholdDays == thresholdDays &&
             l.RecipientEmail == recipientEmail, ct);
 
-    public async Task AddAsync(CompetencyNotificationLog log, CancellationToken ct = default) => 
+    public async Task AddAsync(CompetencyNotificationLog log, CancellationToken ct = default) =>
         await _dbSet.AddAsync(log, ct);
 
     public async Task DeleteForCompetencyAsync(Guid competencyId, CancellationToken ct = default)

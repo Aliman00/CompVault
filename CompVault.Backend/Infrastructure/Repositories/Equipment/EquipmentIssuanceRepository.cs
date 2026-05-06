@@ -121,7 +121,7 @@ public sealed class EquipmentIssuanceRepository(
 
         return ApplyDepartmentFilter(query);
     }
-    
+
     /// <inheritdoc />
     public Task SoftDeleteAsync(EquipmentIssuance issuance)
     {

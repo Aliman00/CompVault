@@ -1,6 +1,7 @@
 ﻿using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Shared.Constants;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;

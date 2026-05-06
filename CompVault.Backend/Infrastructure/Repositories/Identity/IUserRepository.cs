@@ -15,7 +15,7 @@ public interface IUserRepository : IRepository<ApplicationUser>
 
     /// <summary>Bruker ID til å hente en bruker, med Department og Manager-tabellene</summary>
     Task<ApplicationUser?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
-    
+
     /// <summary>Henter brukere som tilhører en målgruppe. Enten avdeling eller stillingstittel.</summary>
     Task<IReadOnlyList<ApplicationUser>> GetUsersByTargetAsync(IReadOnlyList<Guid> departmentIds,
         IReadOnlyList<Guid> jobTitleIds, CancellationToken ct = default);

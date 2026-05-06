@@ -1,8 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Auth;
+
 using FluentAssertions;
+
 using Microsoft.Extensions.Options;
 namespace CompVault.Backend.Tests.Backend.Infrastructure.Auth;
 
@@ -73,7 +76,7 @@ public class JwtServiceTests
         Assert.Equal(JwtSettings.Issuer, parsed.Issuer);
         Assert.Contains(JwtSettings.Audience, parsed.Audiences);
     }
-    
+
     /// <summary>
     /// Tester at GenerateAccessToken setter korrekt utløpstidspunkt basert på AccessTokenMinutes
     /// </summary>

@@ -1,5 +1,4 @@
-﻿using CompVault.Frontend.Common.Constants;
-namespace CompVault.Frontend.Common.Models;
+﻿namespace CompVault.Frontend.Common.Models;
 
 /// <summary>
 /// En gruppert mimetype. Eks: Dokumenter med mange MimeTypeOptions som PDF, Docs etc.
