@@ -1,0 +1,180 @@
+###############################################################################
+# CompVault — Sensor QuickStart
+###############################################################################
+#
+# Kjør stegene i rekkefølge fra topp til bunn.
+# Fyll inn tomme variabler med verdier fra responsene etter hvert steg.
+#
+# MERK: Hvis du tester via Docker, oppdater @baseUrl til container-porten,
+#       f.eks. http://localhost:5000 (se docker-compose.yml).
+###############################################################################
+
+@baseUrl = http://localhost:5010
+
+
+###############################################################################
+# STEG 1 — Hent tilgjengelige brukere (Development only)
+#
+# Kjør kallet nedenfor for å se alle seedede brukere.
+# Lise Hansen er administrator med alle tillatelser og er et godt valg for testing.
+# Lim inn e-posten til valgt bruker i @userEmail.
+###############################################################################
+
+### 1. Hent alle brukere vi har seedet inn ved oppstart
+GET {{baseUrl}}/api/auth/dev-get-users
+
+### Lim inn e-posten til valgt bruker her:
+@userEmail = lise.hansen@lekestua.no
+
+
+###############################################################################
+# STEG 2 — Opprett OTP-kode (Development only)
+#
+# Oppretter en fast OTP-kode på brukeren.
+# Koden er alltid: 123456
+###############################################################################
+
+### 2. Opprett fast OTP-kode
+POST {{baseUrl}}/api/auth/dev-create-otp
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}"
+}
+
+
+###############################################################################
+# STEG 3 — Verifiser OTP og hent admin-token
+#
+# Kopier "accessToken" fra responsen og lim den inn i @accessToken.
+###############################################################################
+
+### 3. Verifiser OTP
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "otpCode": "123456"
+}
+
+### Lim inn accessToken fra steg 3 her:
+@accessToken = FYLL INN HER
+
+
+###############################################################################
+# STEG 4 — Verifiser at tokenet fungerer
+###############################################################################
+
+### 4. Hvem er jeg?
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+
+###############################################################################
+# STEG 5 — Hent avdelinger
+#
+# Kjør kallet nedenfor og finn avdelingen du vil knytte sensor-brukeren til.
+# Kopier GUID-en fra "id"-feltet og lim den inn i @sensorDeptId i steg 6.
+# Avdelingene har alltid forskjllig GUID fra maskin til maskin.
+###############################################################################
+
+### 5. Hent alle avdelinger
+GET {{baseUrl}}/api/departments
+Authorization: Bearer {{accessToken}}
+
+
+###############################################################################
+# STEG 6 — Opprett sensor-bruker
+#
+# Fyll inn sensorens informasjon nedenfor.
+# Lim inn avdelings-GUID fra steg 5 i @sensorDeptId.
+#
+# • Ekte OTP-flyt (steg 7a): bruk en ekte e-postadresse.
+# • Dev-flyt (steg 7b): e-postadressen trenger ikke å være ekte.
+###############################################################################
+
+@sensorFirstName = Sensor
+@sensorLastName = Sensonsen
+@sensorEmail = din@epost.no
+@sensorDeptId = FYLL INN HER
+@sensorRoles = ["Admin"]
+
+### 6. Opprett ny bruker
+POST {{baseUrl}}/api/users
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "firstName": "{{sensorFirstName}}",
+  "lastName": "{{sensorLastName}}",
+  "email": "{{sensorEmail}}",
+  "departmentId": "{{sensorDeptId}}",
+  "employmentType": 0,
+  "roles": {{sensorRoles}}
+}
+
+###############################################################################
+# STEG 7 — OTP-innlogging som sensor
+# Ekte OTP-flyt: koden sendes til e-posten din.
+#
+# OTP-en har kort levetid — ikke vent for lenge mellom steg 7 og 8.
+###############################################################################
+
+### 7. Be om OTP-kode (sendes til e-post)
+POST {{baseUrl}}/api/auth/request-otp
+Content-Type: application/json
+
+{
+  "email": "{{sensorEmail}}"
+}
+
+
+### Lim inn OTP-koden her (Koden fra e-post):
+@sensorOtpCode =
+
+###############################################################################
+# STEG 8 — Verifiser OTP og hent sensor-token
+#
+# Kopier "accessToken" fra responsen og lim den inn i @sensorToken.
+###############################################################################
+
+### 8. Verifiser OTP
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "{{sensorEmail}}",
+  "otpCode": "{{sensorOtpCode}}"
+}
+
+### Lim inn accessToken fra steg 8 her:
+@sensorToken =
+
+
+###############################################################################
+# STEG 9 — Verifiser at sensor-tokenet fungerer
+###############################################################################
+
+### 9. Hvem er jeg?
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{sensorToken}}
+
+
+###############################################################################
+# VALGFRITT — Andre tester
+###############################################################################
+
+### Refresh token
+# ← Lim inn refreshToken fra responsen i steg 3 eller 8:
+@refreshToken =
+
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Health check
+GET {{baseUrl}}/health
