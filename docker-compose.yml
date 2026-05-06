@@ -26,7 +26,7 @@ services:
       dockerfile: CompVault.Backend/Dockerfile
     container_name: compvault-backend
     ports:
-      - "5000:8080"
+      - "5010:8080"
     env_file:
       - .env
     environment:
@@ -49,7 +49,7 @@ services:
       dockerfile: CompVault.Frontend/Dockerfile
     container_name: compvault-frontend
     ports:
-      - "5001:8080"
+      - "5020:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - BackendApi__BaseUrl=http://backend:8080

@@ -2,6 +2,7 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Data.Interceptors;
 using CompVault.Backend.Tests.Common;
 using CompVault.Shared.Constants;
 

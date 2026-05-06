@@ -1,0 +1,64 @@
+"Commons Clause" License Condition v1.0
+
+The Software is provided to you by the Licensor under the License, as defined
+below, subject to the following condition.
+
+Without limiting other conditions in the License, the grant of rights under
+the License will not include, and the License does not grant to you, the right
+to Sell the Software.
+
+For purposes of the foregoing, "Sell" means practicing any or all of the
+rights granted to you under the License to provide to third parties, for a
+fee or other consideration (including without limitation fees for hosting or
+consulting/support services related to the Software), a product or service
+whose value derives, entirely or substantially, from the functionality of the
+Software. Any license notice or attribution required by the License must also
+include this Commons Clause License Condition notice.
+
+Software: CompVault
+License: GNU General Public License v3.0
+Licensor: Aliman00
+
+---
+
+GNU GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
+
+Copyright (C) 2026 Aliman00
+
+TERMS AND CONDITIONS
+
+0. Definitions.
+"This License" refers to version 3 of the GNU General Public License.
+"The Program" refers to any copyrightable work licensed under this License.
+
+1. Source Code.
+The "source code" for a work means the preferred form of the work for making
+modifications to it.
+
+2. Basic Permissions.
+All rights granted under this License are granted for the term of copyright on
+the Program, and are irrevocable provided the stated conditions are met.
+
+3. No Sublicensing.
+You may not sublicense the Program. Any attempt to sublicense it is void.
+
+4. Commercial Use Restriction (via Commons Clause).
+Du kan IKKE selge, sublisensiere, eller bruke noen del av denne programvaren
+-- helt eller delvis -- til kommersielle formål uten skriftlig tillatelse
+fra Aliman00.
+
+5. Copyleft.
+Enhver modifisert versjon, eller programvare som bruker deler av denne koden,
+må distribueres under samme lisens (GPL v3 + Commons Clause).
+
+6. Disclaimer of Warranty.
+THERE IS NO WARRANTY FOR THE PROGRAM. THE PROGRAM IS PROVIDED "AS IS"
+WITHOUT WARRANTY OF ANY KIND.
+
+7. Contact.
+For commercial licensing inquiries:
+https://github.com/Aliman00
+
+---
+END OF LICENSE

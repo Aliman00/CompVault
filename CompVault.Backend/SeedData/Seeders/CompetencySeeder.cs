@@ -4,7 +4,6 @@ using CompVault.Backend.Features.Competencies;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Shared.Enums;
 
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CompVault.Backend.SeedData.Seeders;
@@ -12,7 +11,6 @@ namespace CompVault.Backend.SeedData.Seeders;
 public static class CompetencySeeder
 {
     public static async Task SeedAsync(
-        UserManager<ApplicationUser> userManager,
         AppDbContext dbContext,
         ILogger logger)
     {

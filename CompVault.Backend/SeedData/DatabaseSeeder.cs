@@ -34,7 +34,7 @@ public static class DatabaseSeeder
             Dictionary<string, Guid> departmentIds = await DepartmentSeeder.SeedAsync(dbContext, logger);
             await UserSeeder.SeedAsync(userManager, dbContext, logger, departmentIds);
             await CompetencyTypeSeeder.SeedAsync(dbContext, logger);
-            await CompetencySeeder.SeedAsync(userManager, dbContext, logger);
+            await CompetencySeeder.SeedAsync(dbContext, logger);
             await DocumentTypeSeeder.SeedAsync(dbContext, logger);
             await DocumentCategorySeeder.SeedAsync(dbContext, logger);
             await DocumentSeeder.SeedAsync(dbContext, logger);
