@@ -24,6 +24,12 @@ public sealed class UpdateDepartmentRequest
     /// <summary>Sett til true for å fjerne overordnet avdeling (flytte til toppnivå).</summary>
     public bool ClearParentDepartment { get; set; }
 
+    /// <summary>Ny leder for avdelingen.</summary>
+    public Guid? ManagerId { get; set; }
+
+    /// <summary>Sett til true for å fjerne leder fra avdelingen.</summary>
+    public bool ClearManagerId { get; set; }
+
     /// <summary>Om avdelingen skal være aktiv.</summary>
     public bool? IsActive { get; set; }
 }

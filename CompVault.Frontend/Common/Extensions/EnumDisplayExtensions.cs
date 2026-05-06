@@ -1,4 +1,5 @@
-﻿using CompVault.Shared.Enums;
+﻿using CompVault.Shared.DTOs.Users;
+using CompVault.Shared.Enums;
 namespace CompVault.Frontend.Common.Extensions;
 
 /// <summary>
@@ -30,6 +31,17 @@ public static class EnumDisplayExtensions
     };
 
     /// <summary>
+    /// Oversetter fra engelsk til norsk
+    /// </summary>
+    public static string ToDisplayString(this DocumentTargetMode mode) => mode switch
+    {
+        DocumentTargetMode.None => "Alle brukere",
+        DocumentTargetMode.Department => "Avdeling",
+        DocumentTargetMode.JobTitle => "Stillingstittel",
+        _ => mode.ToString()
+    };
+
+    /// <summary>
     /// Generisk metode for å oversette enums til norsk når EnumType kan variere
     /// </summary>
     /// <param name="value">Den valgte verdien til en enum. (feks EmploymentType.Permanent)</param>
@@ -39,6 +51,17 @@ public static class EnumDisplayExtensions
     {
         EmploymentType e => e.ToDisplayString(),
         CompetencyStatus s => s.ToDisplayString(),
+        DocumentTargetMode d => d.ToDisplayString(),
         _ => value.ToString()
     };
+
+    /// <summary>
+    /// Viser en bruker i en select eller autocomplete-felt. For å kunne skille mellom brukere med likt navn,
+    /// og evnetuelt lik avdeling
+    /// </summary>
+    /// <param name="user">Brukeren som vi gjør om som en UserLookupDto</param>
+    /// <returns>Formatert string i riktig format Lars Hansen - Utvikling - Systemutvikler</returns>
+    public static string ToDisplayLabel(this UserLookupDto user) =>
+        $"{user.FullName} - {user.DepartmentName} - {user.JobTitleName ?? ""}";
+
 }

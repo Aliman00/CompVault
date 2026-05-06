@@ -1,61 +1,44 @@
-﻿@inject IThemeService ThemeService
+﻿@inject CircuitUserContext UserContext
 
-@* Headeren til appen med Hamburgermeny for en drawer *@
-
-<MudAppBar Elevation="1"> <!-- Gir headeren en skygge -->
+<MudAppBar Elevation="1">
     @if (ShowMenuButton)
     {
-        <!-- Hamburgermeny knappen med egen metode for å lukke og åpne sidemenyen (Drawer) -->
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
                        Color="Color.Inherit"
                        Edge="Edge.Start"
-                       OnClick="OnMenuButtonClick"/>
+                       OnClick="OnMenuButtonClick" />
     }
-    
-    <!-- Header title -->
-    <AppLogo Class="app-header-logo"/>
-    <MudText Typo="Typo.h6" Class="ml-3">CompVault</MudText>
 
-    <!-- Fyller ledig plass i AppBar, skyver alle andre elementer til høyre -->
-    <MudSpacer/>
+    <!-- Logo + app navn -->
+    <MudLink Href="/dashboard"
+             Underline="Underline.None"
+             Color="Color.Inherit"
+             Class="d-flex align-center">
+        <AppLogo Class="app-header-logo" />
+        <MudText Typo="Typo.h6"
+                 Class="ml-2"
+                 Style="font-weight:700; letter-spacing:-0.01em;">
+            CompVault
+        </MudText>
+    </MudLink>
 
-    <!-- Knapp for å bytte mellom mørk og lys-modus. Skal flyttes senere -->
-    <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                   Color="Color.Inherit"
-                   OnClick="ToggleDarkMode"/>
+    <MudSpacer />
+
+    <!-- Høyre side: profil + ev. ekstra innhold -->
+    <div class="d-flex align-center gap-3">
+        <MudText Typo="Typo.body2"
+                 Color="Color.Inherit"
+                 Class="d-none d-sm-block"
+                 Style="opacity:0.9">
+            @UserContext.FullName
+        </MudText>
+
+        @RightContent
+    </div>
 </MudAppBar>
 
 @code {
-    // ======================== Parametere ========================
-    /// <summary>
-    /// Viser hamburgermeny-knappen. Default = true, settes til false i AuthLayout
-    /// </summary>
     [Parameter] public bool ShowMenuButton { get; set; } = true;
-    
-    /// <summary>
-    /// Kalles når hamburgermeny-knappen klikkes. Layoutet håndterer om sidebaren vises/skjules
-    /// </summary>
-    [Parameter]
-    public EventCallback OnMenuButtonClick { get; set; }
-    
-    /// <summary>
-    /// Mørkt/lyst tema
-    /// </summary>
-    [Parameter]
-    public bool IsDarkMode { get; set; }
-    
-    /// <summary>
-    /// Kalles når bytting av mørk/lys modus kalles
-    /// </summary>
-    [Parameter]
-    public EventCallback<bool> IsDarkModeChanged { get; set; }
-    
-    // ======================== Private metoder ========================
-    
-    private async Task ToggleDarkMode()
-    {
-        IsDarkMode = !IsDarkMode;
-        await IsDarkModeChanged.InvokeAsync(IsDarkMode);
-        await ThemeService.SaveDarkModeAsync(IsDarkMode);
-    }
+    [Parameter] public EventCallback OnMenuButtonClick { get; set; }
+    [Parameter] public RenderFragment? RightContent { get; set; }
 }

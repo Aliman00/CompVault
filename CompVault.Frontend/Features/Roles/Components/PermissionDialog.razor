@@ -148,7 +148,7 @@
             // Grupperer permissions etter kategori
             _permissionsByCategory = permissionResult.Value!
                 .GroupBy(p => p.Category)
-                .OrderBy(g => g.Key == "Admins" ? 1 : 0)
+                .OrderBy(g => g.Key)
                 .ToDictionary(grouping => grouping.Key, grouping => grouping.ToList());
 
         }

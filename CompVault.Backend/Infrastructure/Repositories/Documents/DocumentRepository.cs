@@ -1,5 +1,7 @@
 using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Shared.DTOs.Documents;
+using CompVault.Shared.Enums;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -18,19 +20,19 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
+            .AsSplitQuery()
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
     public async Task<Document?> GetForUpdateAsync(
-        Guid id, CancellationToken cancellationToken = default)
-    {
-        return await DbSet
+        Guid id, CancellationToken cancellationToken = default) => await DbSet
+            .IgnoreQueryFilters()
             .Include(d => d.DocumentType)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
-            .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
-    }
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(d => d.Id == id && d.DeletedAt == null, cancellationToken);
 
     public async Task<Document?> GetCurrentWithSignaturesAsync(
         Guid id, CancellationToken cancellationToken = default)
@@ -39,6 +41,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.Signatures)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
+            .AsSplitQuery()
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
@@ -53,6 +56,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
+            .AsSplitQuery()
             .Where(d => d.DocumentTypeId == documentTypeId && d.IsActive);
 
         if (documentTypeCategoryId.HasValue)
@@ -64,51 +68,92 @@ public sealed class DocumentRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Document>> GetPendingForUserAsync(
+    public async Task<IReadOnlyList<UserDocumentTypeDto>> GetDocumentTypesForUserAsync(Guid userId, Guid? departmentId,
+        Guid? jobTitleId, CancellationToken ct = default) =>
+        await ApplyTargetingFilter(DbSet.Where(d => d.IsActive), departmentId, jobTitleId)
+            .GroupBy(d => new
+            {  // Henter ut det vi trenger for DTO-en
+                d.DocumentTypeId,
+                d.DocumentType!.Name,
+                d.DocumentType.Slug,
+                d.DocumentType.Description
+            })
+            .Select(g => new UserDocumentTypeDto
+            {
+                Id = g.Key.DocumentTypeId,
+                Name = g.Key.Name,
+                Slug = g.Key.Slug,
+                Description = g.Key.Description,
+                DocumentCount = g.Count(), // Teller antall dokumenter til hver type
+                PendingSignatureCount = g.Count(d =>
+                    d.RequiresSignature &&
+                    !d.Signatures.Any(s => s.UserId == userId && s.SignatureVersion == d.Version))
+            })
+            .OrderBy(x => x.Name)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+
+    public async Task<int> CountDocumentsForUserAsync(
         Guid userId,
         Guid? departmentId,
         Guid? jobTitleId,
-        CancellationToken cancellationToken = default)
+        DocumentQueryParameters parameters,
+        CancellationToken ct = default)
     {
-        return await ApplyTargetingFilter(
-                DbSet
-                    .Include(d => d.DocumentType)
-                    .Include(d => d.Category)
-                    .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
-                    .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
-                    .Include(d => d.Uploader)
-                    .Where(d => d.IsActive),
-                departmentId, jobTitleId)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+        IQueryable<Document> query = ApplyTargetingFilter(DbSet.Where(d => d.IsActive),
+            departmentId, jobTitleId);
+
+        query = ApplySignatureFilter(query, userId, parameters.SignatureFilter);
+
+        if (parameters.DocumentTypeSlug is not null)
+            query = query.Where(d => d.DocumentType!.Slug == parameters.DocumentTypeSlug);
+
+        return await query.CountAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Document>> GetAccessibleByDocumentTypeAsync(
-        Guid documentTypeId,
+    public async Task<IReadOnlyList<Document>> GetDocumentsForUserAsync(
+        Guid userId,
         Guid? departmentId,
         Guid? jobTitleId,
-        CancellationToken cancellationToken = default)
+        DocumentQueryParameters parameters,
+        CancellationToken ct = default)
     {
-        return await ApplyTargetingFilter(
-                DbSet.Where(d => d.DocumentTypeId == documentTypeId && d.IsActive),
-                departmentId, jobTitleId)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-    }
+        // Henter alle hvis vi har tilattelse
+        IQueryable<Document> query = ApplyTargetingFilter(DbSet.Where(d => d.IsActive),
+            departmentId, jobTitleId);
 
-    public async Task<IReadOnlyList<Document>> GetByIdsAsync(
-        IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
-    {
-        var idList = ids.ToList();
-        return await DbSet
+        // Filterer bort utifra om vi har valgt alle, signatuerer eller ikke signaturer
+        query = ApplySignatureFilter(query, userId, parameters.SignatureFilter);
+
+        // Filtrerer etter dokumenttype
+        if (parameters.DocumentTypeSlug is not null)
+            query = query.Where(d => d.DocumentType!.Slug == parameters.DocumentTypeSlug);
+
+        IOrderedQueryable<Document> sorted = parameters.SortBy switch
+        {
+            DocumentSortField.Title => parameters.SortDescending
+                ? query.OrderByDescending(d => d.Title)
+                : query.OrderBy(d => d.Title),
+            DocumentSortField.Version => parameters.SortDescending
+                ? query.OrderByDescending(d => d.Version)
+                : query.OrderBy(d => d.Version),
+            _ => parameters.SortDescending
+                ? query.OrderByDescending(d => d.UploadedAt)
+                : query.OrderBy(d => d.UploadedAt)
+        };
+
+        return await sorted
             .Include(d => d.DocumentType)
             .Include(d => d.Category)
             .Include(d => d.DocumentDepartments).ThenInclude(dd => dd.Department)
             .Include(d => d.DocumentJobTitles).ThenInclude(dj => dj.JobTitle)
             .Include(d => d.Uploader)
-            .Where(d => idList.Contains(d.Id))
+            .AsSplitQuery()
+            .Skip(parameters.Skip)
+            .Take(parameters.PageSize)
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .ToListAsync(ct);
     }
 
     public async Task<DocumentVersion> AddVersionAsync(
@@ -118,8 +163,7 @@ public sealed class DocumentRepository(AppDbContext dbContext)
         return version;
     }
 
-    public Task SoftDeleteAsync(
-        Document document, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(Document document)
     {
         document.IsActive = false;
         document.DeletedAt = DateTime.UtcNow;
@@ -131,8 +175,8 @@ public sealed class DocumentRepository(AppDbContext dbContext)
     /// Dokumenter uten målgruppe er synlige for alle.
     /// Når både avdeling og jobbtittel er satt, kreves match på begge (AND-logikk).
     /// </summary>
-    private static IQueryable<Document> ApplyTargetingFilter(
-        IQueryable<Document> query, Guid? departmentId, Guid? jobTitleId)
+    private static IQueryable<Document> ApplyTargetingFilter(IQueryable<Document> query, Guid? departmentId,
+        Guid? jobTitleId)
     {
         return query.Where(d =>
             (!d.DocumentDepartments.Any() && !d.DocumentJobTitles.Any()) ||
@@ -144,4 +188,27 @@ public sealed class DocumentRepository(AppDbContext dbContext)
              d.DocumentDepartments.Any(dd => dd.DepartmentId == departmentId) &&
              d.DocumentJobTitles.Any(dj => dj.JobTitleId == jobTitleId)));
     }
+
+    /// <summary>
+    /// Vi filtrerer dokumenter utifra om vi ønsker å hente signerte, ikke-signerte eller alle.
+    /// Pending: dokumentet krever signatur, og brukeren har ikke signert gjeldende versjon.
+    /// Signed: brukeren har signert gjeldende versjon.
+    /// </summary>
+    private IQueryable<Document> ApplySignatureFilter(
+        IQueryable<Document> query,
+        Guid userId,
+        DocumentSignatureFilter signatureFilter) => signatureFilter switch
+        {
+            DocumentSignatureFilter.Signed => query
+                .Where(d => DbContext.Set<DocumentSignature>()
+                    .Any(s => s.DocumentId == d.Id && s.UserId == userId
+                              && s.SignatureVersion == d.Version)),
+            DocumentSignatureFilter.Pending => query
+                .Where(d =>
+                    d.RequiresSignature &&
+                    !DbContext.Set<DocumentSignature>()
+                        .Any(s => s.DocumentId == d.Id && s.UserId == userId
+                                  && s.SignatureVersion == d.Version)),
+            _ => query
+        };
 }

@@ -925,7 +925,7 @@ public class DocumentServiceTests
             .ReturnsAsync(document);
 
         _documentRepositoryMock
-            .Setup(x => x.SoftDeleteAsync(document, It.IsAny<CancellationToken>()))
+            .Setup(x => x.SoftDeleteAsync(document))
             .Returns(Task.CompletedTask);
 
         _documentRepositoryMock
@@ -940,7 +940,7 @@ public class DocumentServiceTests
         result.Value.Should().BeTrue();
 
         _documentRepositoryMock.Verify(
-            x => x.SoftDeleteAsync(document, It.IsAny<CancellationToken>()), Times.Once);
+            x => x.SoftDeleteAsync(document), Times.Once);
         _documentRepositoryMock.Verify(
             x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }

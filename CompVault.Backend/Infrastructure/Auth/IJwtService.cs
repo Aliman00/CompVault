@@ -14,12 +14,6 @@ public interface IJwtService
     /// <returns>En JWT-streng.</returns>
     string GenerateAccessToken(ApplicationUser user, IEnumerable<string> roles, IEnumerable<string> permissions);
 
-    /// <summary>
-    /// Validerer et (evt. utgått) access token og returnerer claims fra det.
-    /// Brukes i refresh-flyten for å hente ut bruker-ID fra det gamle tokenet.
-    /// </summary>
-    System.Security.Claims.ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
-
     /// <summary>Hvor lenge refresh token er gyldig (antall dager).</summary>
     int RefreshTokenLifetimeDays { get; }
 }

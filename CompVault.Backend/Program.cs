@@ -1,12 +1,13 @@
 using CompVault.Backend.Common.Authorization;
-using CompVault.Backend.Dev;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Extensions;
+using CompVault.Backend.SeedData;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Testing")
     ConfigurationLoader.LoadEnvironmentFile();
@@ -41,7 +42,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
 app.UseHttpsRedirection();
 app.UseCors(CorsSettings.PolicyName);
 app.UseAuthentication();
@@ -50,13 +50,15 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Seed testdata kun i Development-miljøet
+// Migrer og seed testdata kun i Development-miljøet
 if (app.Environment.IsDevelopment())
 {
     using IServiceScope scope = app.Services.CreateScope();
+    AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await dbContext.Database.MigrateAsync();
+
     UserManager<ApplicationUser> userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     RoleManager<ApplicationRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
-    AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     ILogger logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     await DatabaseSeeder.SeedAsync(userManager, roleManager, dbContext, logger);
 }

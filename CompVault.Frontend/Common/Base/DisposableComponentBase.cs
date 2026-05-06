@@ -8,7 +8,7 @@ public abstract class DisposableComponentBase : ComponentBase, IDisposable
 {
     protected readonly CancellationTokenSource Cts = new();
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         Cts.Cancel();
         Cts.Dispose();

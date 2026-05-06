@@ -36,15 +36,17 @@ public sealed class CompetencyTypeService(
     /// <inheritdoc />
     public async Task<Result<CompetencyTypeDto>> CreateAsync(CreateCompetencyTypeRequest request, CancellationToken cancellationToken = default)
     {
-        CompetencyType? existing = await competencyTypeRepository.GetByNameAsync(request.Name, cancellationToken);
+        string name = request.Name.Trim();
+
+        CompetencyType? existing = await competencyTypeRepository.GetByNameAsync(name, cancellationToken);
 
         if (existing is not null)
             return Result<CompetencyTypeDto>.Failure(
-                AppError.Create(ErrorCode.Validation, $"Kompetansetype med navn '{request.Name}' finnes allerede."));
+                AppError.Create(ErrorCode.Validation, $"Kompetansetype med navn '{name}' finnes allerede."));
 
         var type = new CompetencyType
         {
-            Name = request.Name,
+            Name = name,
             Description = request.Description,
             Category = request.Category,
             RequiresExpiration = request.RequiresExpiration,
@@ -68,16 +70,18 @@ public sealed class CompetencyTypeService(
 
         if (request.Name is not null)
         {
-            if (request.Name != type.Name)
+            string newName = request.Name.Trim();
+
+            if (newName != type.Name)
             {
-                CompetencyType? existing = await competencyTypeRepository.GetByNameAsync(request.Name, cancellationToken);
+                CompetencyType? existing = await competencyTypeRepository.GetByNameAsync(newName, cancellationToken);
 
                 if (existing is not null)
                     return Result<CompetencyTypeDto>.Failure(
-                        AppError.Create(ErrorCode.Validation, $"Kompetansetype med navn '{request.Name}' finnes allerede."));
+                        AppError.Create(ErrorCode.Validation, $"Kompetansetype med navn '{newName}' finnes allerede."));
             }
 
-            type.Name = request.Name;
+            type.Name = newName;
         }
 
         if (request.Description is not null)
@@ -120,7 +124,7 @@ public sealed class CompetencyTypeService(
             return Result<bool>.Failure(
                 AppError.Conflict("Kan ikke slette en kompetansetype som har aktive kompetansebevis."));
 
-        await competencyTypeRepository.SoftDeleteAsync(type, cancellationToken);
+        await competencyTypeRepository.SoftDeleteAsync(type);
         await competencyTypeRepository.SaveChangesAsync(cancellationToken);
 
         return Result<bool>.Success(true);

@@ -5,6 +5,7 @@
 @inject IDepartmentService DepartmentService
 @inject NavigationManager NavigationManager
 @inject IJobTitleService JobTitleService
+@inject IDialogService DialogService
 
 @* Side for å opprette en bruker *@
 
@@ -16,7 +17,7 @@
     <Fields>
         @* Fornavn *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.FirstName"
+            <TextField Value="@_editModel.FirstName"
                              ValueChanged="(string? v) => _editModel.FirstName = v ?? string.Empty"
                              Label="Fornavn"
                              IsEditing="true"
@@ -24,7 +25,7 @@
         </MudItem>
         @* Etternavn *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.LastName"
+            <TextField Value="@_editModel.LastName"
                              ValueChanged="(string? v) => _editModel.LastName = v ?? string.Empty"
                              Label="Etternavn"
                              IsEditing="true"
@@ -32,7 +33,7 @@
         </MudItem>
         @* Email *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Email"
+            <TextField Value="@_editModel.Email"
                              ValueChanged="(string? v) => _editModel.Email = v ?? string.Empty"
                              Label="Email"
                              IsEditing="true"
@@ -40,7 +41,7 @@
         </MudItem>
         @* Stillingstittel *@
         <MudItem xs="12" sm="6">
-            <DetailSelectWithLinkField Value="_editModel.JobTitleId"
+            <SelectWithLinkField Value="_editModel.JobTitleId"
                                        ValueChanged="(Guid? v) => _editModel.JobTitleId = v"
                                        Label="Stillingstittel"
                                        ToStringFunc="@(id => _jobTitles.FirstOrDefault(
@@ -52,36 +53,37 @@
                         <MudSelectItem Value="(Guid?)jobTitle.Id">@jobTitle.Name</MudSelectItem>
                     }
                 </Items>
-            </DetailSelectWithLinkField>
+            </SelectWithLinkField>
         </MudItem>
         
         @* Ansettelsestype *@
         <MudItem xs="12" sm="6">
-            <DetailEnumField Value="@_editModel.EmploymentType"
+            <EnumField Value="@_editModel.EmploymentType"
                              ValueChanged="(EmploymentType v) => _editModel.EmploymentType = v"
                              Label="Ansettelsestype"
                              IsEditing="true"/>
         </MudItem>
         @* Avdeling *@
         <MudItem xs="12" sm="6">
-            <DetailSelectWithLinkField Value="_editModel.DepartmentId"
-                                       ValueChanged="(Guid? v) => _editModel.DepartmentId = v"
-                                       Label="Avdeling"
-                                       ToStringFunc="@(id => _departments.FirstOrDefault(
+            <SelectWithLinkField Value="_editModel.DepartmentId"
+                                 ValueChanged="(Guid? v) => _editModel.DepartmentId = v ?? Guid.Empty"
+                                 Label="Avdeling"
+                                 ToStringFunc="@(id => _departments.FirstOrDefault(
                                                          d => d.Id == id)?.Name ?? string.Empty)"
-                                       IsEditing="true">
+                                 IsEditing="true"
+                                 For="() => _editModel.DepartmentId">
                 <Items>
                     @foreach (var department in _departments)
                     {
                         <MudSelectItem Value="(Guid?)department.Id">@department.Name</MudSelectItem>
                     }
                 </Items>
-            </DetailSelectWithLinkField>
+            </SelectWithLinkField>
         </MudItem>
         
         @* Nærmeste leder *@
         <MudItem xs="12" sm="6">
-            <DetailSelectWithLinkField Value="_editModel.ManagerId"
+            <SelectWithLinkField Value="_editModel.ManagerId"
                                        ValueChanged="(Guid? v) => _editModel.ManagerId = v"
                                        Label="Nærmeste leder"
                                        ToStringFunc="@(id => _allUsers.FirstOrDefault(
@@ -93,7 +95,7 @@
                         <MudSelectItem Value="(Guid?)user.Id">@user.FullName</MudSelectItem>
                     }
                 </Items>
-            </DetailSelectWithLinkField>
+            </SelectWithLinkField>
         </MudItem>
     </Fields>
 </CreateForm>
@@ -163,11 +165,11 @@
     
     private async Task LoadUsersAsync()
     {
-        var result = await UserService.GetAllAsync(Cts.Token);
+        var result = await UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
         if (result.IsFailure)
             _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
         else
-            _allUsers = result.Value!;
+            _allUsers = result.Value!.Items.ToList();
     }
     
     // Handlign som skjer når vi trykker på opprett bruker-knappen. Utfører et API-kall og
@@ -182,7 +184,33 @@
             _alert = new AlertInfo(createResult.Error!.ToString(), Severity.Error);
             return;
         }
-        
-        NavigationManager.NavigateTo(PageRoutes.Users.Detail(createResult.Value!.Id) + "?created=true");
+
+        var createdUser = createResult.Value!;
+
+        // Spør om brukeren ønsker å tildele rolle med en gang
+        var confirmDialog = await DialogService.ShowMessageBoxAsync(
+            "Bruker opprettet",
+            $"{createdUser.FullName} ble opprettet. Ønsker du å tildele en rolle nå?",
+            yesText: "Tildel rolle",
+            noText: "Ikke nå");
+
+        if (confirmDialog == true)
+        {
+            var parameters = new DialogParameters
+            {
+                { nameof(AssignRoleDialog.UserId), createdUser.Id },
+                { nameof(AssignRoleDialog.CurrentRoles), createdUser.Roles }
+            };
+
+            var dialog = await DialogService.ShowAsync<AssignRoleDialog>("", parameters, new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true
+            });
+            
+            await dialog.Result; 
+        }
+
+        NavigationManager.NavigateTo(PageRoutes.Users.Detail(createdUser.Id) + "?created=true", replace: true);
     }
 }

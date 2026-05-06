@@ -15,6 +15,9 @@ public class JobTitle
     /// <summary>Navn på stillingstittelen, f.eks. "Systemutvikler".</summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Om stillingers med denne tittelen regnes som ledere i organisasjonen.</summary>
+    public bool IsLeader { get; set; } = false;
+
     /// <summary>Om stillingstittelen er aktiv (ikke slettet).</summary>
     public bool IsActive { get; set; } = true;
 

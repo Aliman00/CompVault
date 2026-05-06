@@ -1,0 +1,201 @@
+﻿@page "/audit-log"
+@using CompVault.Frontend.Features.Audit.Services
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.AuditRead)]
+@inject IAuditService AuditService
+@inject IDialogService DialogService
+
+@* Revisjonslogg med filtrering *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@* Filterpanel med filteringsvalg for handling, entitet, og fra-til dato *@
+<MudPaper Class="pa-4 mb-4" Square="true" Elevation="0" Outlined="true">
+    <MudToolBar Dense="true" Class="pa-4 mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.History" Class="mr-2" Color="Color.Primary" />
+        <MudText Typo="Typo.h6">Revisjonslogg</MudText>
+    </MudToolBar>
+    <MudGrid>
+
+
+        @* Action-fitlering *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="string?"
+                       @bind-Value="_action"
+                       Label="Handling"
+                       Clearable="true">
+                <MudSelectItem Value="(string?)null">Alle</MudSelectItem>
+                @foreach (var action in AuditConstants.AllActions)
+                {
+                    <MudSelectItem Value="(string?)action">@action.ToNorwegianAction()</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        @* Entitetsfiltrering *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect T="string?"
+                       @bind-Value="_entityType"
+                       Label="Entitetstype"
+                       Clearable="true">
+                <MudSelectItem Value="(string?)null">Alle</MudSelectItem>
+                @foreach (var entityType in AuditConstants.AllEntityTypes)
+                {
+                    <MudSelectItem Value="(string?)entityType">@entityType.ToNorwegian()</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        @* Fra dato *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudDatePicker @bind-Date="_from"
+                           Label="Fra"
+                           Clearable="true"
+                           DateFormat="dd.MM.yyyy"/>
+        </MudItem>
+
+        @* Til dato *@
+        <MudItem xs="12" sm="6" md="3">
+            <MudDatePicker @bind-Date="_to"
+                           Label="Til"
+                           Clearable="true"
+                           DateFormat="dd.MM.yyyy"/>
+        </MudItem>
+
+        @* Knapper - en for å nullstille og en for å legge til filteret *@
+        <MudItem xs="12" Class="d-flex justify-end gap-2">
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="ResetFilters">
+                Nullstill
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="ApplyFilters">
+                Filtrer
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+
+    @* Tabellen med selve auditlog-entitetene *@
+    <MudDataGrid T="AuditLogDto"
+                 @ref="_grid"
+                 ServerData="LoadServerData"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Square="true"
+                 Bordered="true"
+                 RowsPerPage="20"
+                 RowClick="OnRowClick">
+        <Columns>
+            @* Tidspunkt *@
+            <TemplateColumn T="AuditLogDto" Title="Tidspunkt" SortBy="x => x.CreatedAt">
+                <CellTemplate>
+                    <MudTooltip Text="@context.Item.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss")">
+                        @context.Item.CreatedAt.ToRelativeNorwegian()
+                    </MudTooltip>
+                </CellTemplate>
+            </TemplateColumn>
+
+            @* Action *@
+            <PropertyColumn T="AuditLogDto" TProperty="string"
+                            Property="x => x.Action.ToNorwegianAction()"
+                            Title="Action"/>
+
+            @* Entitetstype *@
+            <PropertyColumn T="AuditLogDto" TProperty="string"
+                            Property="x => x.EntityType.ToNorwegian()"
+                            Title="Entitet"/>
+
+            @* Utført av *@
+            <TemplateColumn T="AuditLogDto" Title="Utført av">
+                <CellTemplate>
+                    @if (context.Item.UserName is not null)
+                    {
+                        <MudText Typo="Typo.body2">@context.Item.UserName</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.Item.UserEmail</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">System</MudText>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="AuditLogDto"
+                              RowsPerPageString="Rader pr side:"
+                              PageSizeOptions="new[] { 20, 50, 100 }"/>
+        </PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+
+
+@code {
+
+    // ===================== PRIVATE FELT =====================
+    private MudDataGrid<AuditLogDto> _grid = null!;
+    private AlertInfo? _alert;
+
+    // Filterfelter
+    private string? _action;
+    private string? _entityType;
+    private DateTime? _from;
+    private DateTime? _to;
+
+    // ===================== PRIVATE METHODS =====================
+
+    private async Task ApplyFilters() => await _grid.ReloadServerData();
+
+    private async Task ResetFilters()
+    {
+        _action = null;
+        _entityType = null;
+        _from = null;
+        _to = null;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task<GridData<AuditLogDto>> LoadServerData(GridState<AuditLogDto> state, CancellationToken ct)
+    {
+        var parameters = new AuditLogQueryParameters
+        {
+            Page = state.Page + 1,
+            PageSize = state.PageSize,
+            Action = _action,
+            EntityType = _entityType,
+            From = _from.HasValue ? DateTime.SpecifyKind(_from.Value, DateTimeKind.Utc) : null,
+            To = _to.HasValue ? DateTime.SpecifyKind(_to.Value, DateTimeKind.Utc) : null,
+        };
+
+        var result = await AuditService.GetAsync(parameters, ct);
+
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<AuditLogDto>();
+        }
+
+        return new GridData<AuditLogDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
+    }
+    
+    private async Task OnRowClick(DataGridRowClickEventArgs<AuditLogDto> args)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(AuditLogDetailDialog.Log), args.Item }
+        };
+
+        await DialogService.ShowAsync<AuditLogDetailDialog>("", parameters, new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        });
+    }
+}

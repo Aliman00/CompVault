@@ -1,0 +1,113 @@
+﻿@inject IDocumentService DocumentService
+@inject NavigationManager NavigationManager
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+
+@* Widget som viser dokumenter innlogget bruker ikke har signert ennå, med lenke til detaljside *@
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid var(--mud-palette-warning);" Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.PendingSignatures"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.Draw"
+                  AccentColor="var(--mud-palette-warning)"
+                  IconBackgroundColor="var(--mud-palette-warning-hover)" />
+
+    <AppAlert @bind-Alert="_alert" />
+
+    @if (_loading)
+    {
+        <AppSpinner />
+    }
+    else if (!_documents.Any())
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen ventende signeringer.</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <!-- Oppsummering -->
+        <MudStack Row="true" AlignItems="AlignItems.Baseline" Spacing="2" Class="mt-1 mb-2">
+            <MudText Typo="Typo.h5" Color="Color.Error">@_documents.Count</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Error">
+                dokument@(_documents.Count == 1 ? "" : "er") venter signering
+            </MudText>
+        </MudStack>
+
+        <MudList T="DocumentListDto" Dense="true" Class="pa-0">
+            @foreach (var doc in _documents)
+            {
+                <MudListItem T="DocumentListDto"
+                             Dense="true"
+                             Class="px-0 cursor-pointer"
+                             Style="border-radius:4px;"
+                             OnClick="() => NavigationManager.NavigateTo(
+                                 PageRoutes.UserDocuments.Detail(doc.Slug, doc.Id))">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                            <MudIcon Icon="@Icons.Material.Filled.Description"
+                                     Color="Color.Warning"
+                                     Size="Size.Small" />
+
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2" Class="text-truncate">
+                                    @doc.Title.Truncate(40)
+                                </MudText>
+                                @if (!string.IsNullOrWhiteSpace(doc.CategoryName))
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @doc.CategoryName
+                                    </MudText>
+                                }
+                            </MudStack>
+                        </MudStack>
+
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight"
+                                 Color="Color.Secondary"
+                                 Size="Size.Small" />
+                    </MudStack>
+                </MudListItem>
+                <MudDivider />
+            }
+        </MudList>
+        <MudLink Href="@PageRoutes.UserDocuments.Overview"
+                  Typo="Typo.caption"
+                  Class="mt-2 d-block">
+            Se alle mine dokumenter →
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private List<DocumentListDto> _documents = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var query = new DocumentQueryParameters
+            {
+                SignatureFilter = DocumentSignatureFilter.Pending,
+                PageSize = 5,
+                Page = 1
+            };
+
+            var result = await DocumentService.GetUserDocumentsAsync(query, Cts.Token);
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _documents = result.Value!.Items.ToList();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

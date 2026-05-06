@@ -23,7 +23,9 @@ public abstract class BaseController : ControllerBase
         if (result.IsSuccess)
             throw new InvalidOperationException("Kan ikke håndtere feil for et vellykket resultat.");
 
-        return BuildErrorResponse(result.Error!);
+        AppError error = result.Error
+            ?? throw new InvalidOperationException("Feil er null på et mislykket resultat.");
+        return BuildErrorResponse(error);
     }
 
     /// <summary>
@@ -37,7 +39,9 @@ public abstract class BaseController : ControllerBase
         if (result.IsSuccess)
             throw new InvalidOperationException("Kan ikke håndtere feil for et vellykket resultat.");
 
-        return BuildErrorResponse(result.Error!);
+        AppError error = result.Error
+            ?? throw new InvalidOperationException("Feil er null på et mislykket resultat.");
+        return BuildErrorResponse(error);
     }
 
     /// <summary>

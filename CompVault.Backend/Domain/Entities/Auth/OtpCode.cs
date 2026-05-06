@@ -37,12 +37,6 @@ public class OtpCode
     /// </summary>
     public bool IsUsed { get; set; }
 
-    // ======================== Beregnet  ========================
-    /// <summary>
-    /// Koden er gyldig hvis den ikke er brukt og ikke er utgått
-    /// </summary>
-    public bool IsValid => !IsUsed && ExpiresAt > DateTime.UtcNow;
-
     // ======================== Feil kodeforsøk ========================
 
     /// <summary>

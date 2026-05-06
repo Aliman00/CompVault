@@ -7,9 +7,6 @@ namespace CompVault.Backend.Infrastructure.Repositories.Identity;
 /// </summary>
 public interface IRoleRepository : IRepository<ApplicationRole>
 {
-    /// <summary>Finner en rolle basert på navn.</summary>
-    Task<ApplicationRole?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
-
     /// <summary> Henter en rolle med brukeren som opprettet rollen for å sende med brukernavn til frontend </summary>
     Task<ApplicationRole?> GetByIdWithCreatedByAsync(Guid id, CancellationToken ct = default);
 

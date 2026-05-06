@@ -1,0 +1,126 @@
+﻿@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IUserService UserService
+
+@* AutoComplete for UserLookup som fungerer med hierarkiet vårt. Viser brukerne på en fin måte med søking inkludert *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@if (IsEditing)
+{
+    <MudAutocomplete T="UserLookupDto"
+                     Label="@Label"
+                     Value="@Value"
+                     ValueChanged="ValueChanged"
+                     SearchFunc="SearchUsers"
+                     ToStringFunc="@(u => u?.ToDisplayLabel() ?? string.Empty)"
+                     Disabled="@(Disabled || _loadFailed)"
+                     Variant="Variant.Outlined"
+                     Class="@Class"
+                     ResetValueOnEmptyText="true"
+                     Clearable="true"
+                     MaxItems="100"/>
+}
+else
+{
+    <TextField Value="@(Value?.ToDisplayLabel().DashIfEmpty())"
+               Label="@Label"
+               IsEditing="false"/>
+}
+@code {
+    
+    // ===================== PARAMETER =====================
+    
+    /// <summary>
+    /// Det valgte elementet i Autocomplete-feltet. Optional
+    /// </summary>
+    [Parameter]
+    public UserLookupDto? Value { get; set; }
+    
+    /// <summary>
+    /// Hendelse som utføres ved endring av valgt element
+    /// </summary>
+    [Parameter] 
+    public EventCallback<UserLookupDto?> ValueChanged { get; set; }
+    
+    /// <summary>
+    /// En optional UserId hvis vi ikke har en Value for å sette en et element i komponenten ved innlastning
+    /// </summary>
+    [Parameter]
+    public Guid? InitialUserId { get; set; }
+    
+    /// <summary>
+    /// Foreldre-komponenten bestemmer når den er disabled
+    /// </summary>
+    [Parameter] 
+    public bool Disabled { get; set; }
+    
+    /// <summary>
+    /// Valgfri label. Default Bruker
+    /// </summary>
+    [Parameter] 
+    public string Label { get; set; } = "Bruker";
+
+    /// <summary>
+    /// Hvis vi trenger å endre CSS. Valgfri med default mb-4
+    /// </summary>
+    [Parameter]
+    public string Class { get; set; } = "mb-4";
+    
+    /// <summary>
+    /// Hvilke lese permission er påkrevd for å hente brukere
+    /// </summary>
+    [Parameter] 
+    public string ReadPermission { get; set; } = Permissions.UsersRead;
+    
+    /// <summary>
+    /// Hvilke permission er påkrevd for å hente ALLE brukere 
+    /// </summary>
+    [Parameter] 
+    public string AllPermission { get; set; } = Permissions.UsersAll;
+    
+    /// <summary>
+    /// Hvilke permission er påkrevd for å hente brukere i underavdelinger
+    /// </summary>
+    [Parameter] 
+    public string SubPermission { get; set; } = Permissions.UsersReadSub;
+    
+    /// <summary>
+    /// For å skille mellom lese- og redigeringsmodus
+    /// </summary>
+    [Parameter]
+    public bool IsEditing { get; set; } = true;
+    
+    // ===================== PRIVATE FIELD =====================
+    
+    private List<UserLookupDto> _users = [];
+    private AlertInfo? _alert;
+    private bool _loadFailed;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await UserService.LookupUsersAsync(ReadPermission, AllPermission, SubPermission, Cts.Token);
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            _loadFailed = true;
+            return;
+        }
+        
+        if (InitialUserId.HasValue)
+            await ValueChanged.InvokeAsync(_users.FirstOrDefault(u => u.Id == InitialUserId));
+            
+        _users = result.Value!.ToList();
+    }
+    
+    private Task<IEnumerable<UserLookupDto>> SearchUsers(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(_users.AsEnumerable());
+
+        return Task.FromResult(_users.Where(u =>
+            u.FullName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            (u.DepartmentName?.Contains(value, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (u.JobTitleName?.Contains(value, StringComparison.OrdinalIgnoreCase) ?? false)));
+    }
+}

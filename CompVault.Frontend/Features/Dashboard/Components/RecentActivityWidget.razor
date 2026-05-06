@@ -1,0 +1,220 @@
+@inject ICompetencyService CompetencyService
+@inject IDocumentService DocumentService
+@inject IEquipmentIssuancesService EquipmentIssuancesService
+@inject CircuitUserContext UserContext
+@inject NavigationManager NavigationManager
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+
+@* Samlet tidslinje for siste aktivitet pa tvers av kompetanser, dokumenter og utstyr *@
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid var(--mud-palette-primary);" Elevation="4">
+    <WidgetHeader Title="Siste aktivitet"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.History"
+                  AccentColor="var(--mud-palette-primary)"
+                  IconBackgroundColor="var(--mud-palette-background-gray)" />
+
+    <AppAlert @bind-Alert="_alert" />
+
+    @if (_loading)
+    {
+        <AppSpinner />
+    }
+    else if (!_activities.Any())
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.Inbox" Color="Color.Secondary" Size="Size.Small" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen nylig aktivitet.</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudList T="ActivityItem" Dense="true" Class="pa-0 mt-1">
+            @foreach (var item in _activities)
+            {
+                <MudListItem T="ActivityItem"
+                             Dense="true"
+                             Class="px-0"
+                             OnClick="() => Navigate(item)">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@item.Icon"
+                                 Color="@item.IconColor"
+                                 Size="Size.Small" />
+
+                        <MudStack Spacing="0" Style="flex:1; min-width:0;">
+                            <MudText Typo="Typo.body2" Class="text-truncate">
+                                @item.Title
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @item.Date.ToString("dd.MM.yyyy")
+                                @if (!string.IsNullOrWhiteSpace(item.Subtitle))
+                                {
+                                    <span> — @item.Subtitle</span>
+                                }
+                            </MudText>
+                        </MudStack>
+
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight"
+                                 Color="Color.Tertiary"
+                                 Size="Size.Small" />
+                    </MudStack>
+                </MudListItem>
+                <MudDivider />
+            }
+        </MudList>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private List<ActivityItem> _activities = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (UserContext?.UserId != null)
+            {
+                // Utfører kallene parallelt og legger alt til i listen med aktiviteter
+                var competencyTask = LoadCompetenciesAsync();
+                var documentTask   = LoadDocumentsAsync();
+                var equipmentTask  = LoadEquipmentAsync();
+
+                await Task.WhenAll(competencyTask, documentTask, equipmentTask);
+                
+                _activities = competencyTask.Result
+                    .Concat(documentTask.Result)
+                    .Concat(equipmentTask.Result)
+                    .OrderByDescending(a => a.Date)
+                    .Take(10)
+                    .ToList();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignorer -- komponenten kanskje allerede ble fjernet
+        }
+        catch (Exception ex)
+        {
+            _alert = new AlertInfo("Kunne ikke laste aktivitetsdata: " + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<List<ActivityItem>> LoadCompetenciesAsync()
+    {
+        var result = await CompetencyService.GetAllAsync(
+            new CompetencyFilterRequest
+            {
+                UserId = UserContext.UserId,
+                PageSize = 5,
+                Page = 1,
+            },
+            Cts.Token);
+
+        if (result.IsFailure) return [];
+
+        return result.Value!.Items
+            .Select(c => new ActivityItem
+            {
+                Id = c.Id,
+                Title = c.CompetencyTypeName ?? "Ukjent kompetanse",
+                Subtitle = c.Status == CompetencyStatus.Expired
+                    ? "Utlopt"
+                    : c.DaysUntilExpiry.HasValue
+                        ? $"{c.DaysUntilExpiry.Value} dager igjen"
+                        : null,
+                Date = c.CreatedAt,
+                Icon = Icons.Material.Filled.WorkspacePremium,
+                IconColor = c.Status switch
+                {
+                    CompetencyStatus.Valid => Color.Success,
+                    CompetencyStatus.ExpiringSoon => Color.Warning,
+                    CompetencyStatus.Expired => Color.Error,
+                    _ => Color.Secondary,
+                },
+                Url = PageRoutes.UserCompetencies.Detail(c.Id),
+            })
+            .ToList();
+    }
+
+    private async Task<List<ActivityItem>> LoadDocumentsAsync()
+    {
+        var result = await DocumentService.GetUserDocumentsAsync(
+            new DocumentQueryParameters
+            {
+                Page = 1,
+                PageSize = 5,
+                SortBy = DocumentSortField.UploadedAt,
+                SortDescending = true,
+            },
+            Cts.Token);
+
+        if (result.IsFailure) return [];
+
+        return result.Value!.Items
+            .Select(d => new ActivityItem
+            {
+                Id = d.Id,
+                Title = d.Title,
+                Subtitle = d.SlugName,
+                Date = d.UploadedAt,
+                Icon = d.RequiresSignature && !d.SignedByCurrentUser
+                    ? Icons.Material.Filled.Draw
+                    : Icons.Material.Filled.Description,
+                IconColor = d.RequiresSignature && !d.SignedByCurrentUser
+                    ? Color.Warning
+                    : Color.Primary,
+                Url = PageRoutes.UserDocuments.Detail(d.Slug, d.Id),
+            })
+            .ToList();
+    }
+
+    private async Task<List<ActivityItem>> LoadEquipmentAsync()
+    {
+        var result = await EquipmentIssuancesService.GetMyEquipmentAsync(
+            null,
+            new PagedQuery { Page = 1, PageSize = 5 },
+            Cts.Token);
+
+        if (result.IsFailure) return [];
+
+        return result.Value!.Items
+            .Select(e => new ActivityItem
+            {
+                Id = e.Id,
+                Title = e.ItemName ?? "Ukjent utstyr",
+                Subtitle = e.CategoryName,
+                Date = e.IssuedDate,
+                Icon = Icons.Material.Filled.Handyman,
+                IconColor = Color.Tertiary,
+                Url = e.CategoryId != null
+                    ? PageRoutes.UserEquipment.List(e.CategoryId.Value)
+                    : PageRoutes.UserEquipment.Overview,
+            })
+            .ToList();
+    }
+
+    private void Navigate(ActivityItem item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.Url))
+            NavigationManager.NavigateTo(item.Url);
+    }
+
+    private sealed record ActivityItem
+    {
+        public Guid Id { get; init; }
+        public string? Title { get; init; }
+        public string? Subtitle { get; init; }
+        public DateTime Date { get; init; }
+        public string? Icon { get; init; }
+        public Color IconColor { get; init; }
+        public string? Url { get; init; }
+    }
+}

@@ -5,9 +5,12 @@ using CompVault.Frontend.Common.Http;
 using CompVault.Frontend.Common.Localization;
 using CompVault.Frontend.Common.Services;
 using CompVault.Frontend.Dev;
+using CompVault.Frontend.Features.Audit.Services;
 using CompVault.Frontend.Features.Auth.Services;
 using CompVault.Frontend.Features.Competencies.Services;
 using CompVault.Frontend.Features.Departments.Services;
+using CompVault.Frontend.Features.Documents.Services;
+using CompVault.Frontend.Features.Equipment.Services;
 using CompVault.Frontend.Features.JobTitle.Services;
 using CompVault.Frontend.Features.Roles.Services;
 using CompVault.Frontend.Features.Users.Services;
@@ -152,6 +155,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICompetencyService, CompetencyService>();
         services.AddScoped<ICompetencyTypeService, CompetencyTypeService>();
         services.AddScoped<IJobTitleService, JobTitleService>();
+        services.AddScoped<IDocumentTypeService, DocumentTypeService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IDocumentTypeCategoryService, DocumentTypeCategoryService>();
+        services.AddScoped<ISignatureService, SignatureService>();
+        services.AddScoped<IEquipmentCategoryService, EquipmentCategoryService>();
+        services.AddScoped<IEquipmentItemService, EquipmentItemService>();
+        services.AddScoped<IEquipmentIssuancesService, EquipmentIssuancesService>();
+        services.AddScoped<IAuditService, AuditService>();
 
         return services;
     }

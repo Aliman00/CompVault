@@ -1,6 +1,7 @@
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Tests.Common;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -43,7 +44,7 @@ public class UserRepositoryTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        _dbContext = new AppDbContext(options);
+        _dbContext = new AppDbContext(options, new BypassDepartmentScopeService());
         _sut = new UserRepository(_dbContext);
 
         // Seeder testdata
@@ -80,20 +81,6 @@ public class UserRepositoryTests : IDisposable
 
         // Assert
         Assert.Null(result);
-    }
-
-    /// <summary>
-    /// Tester at GetActiveUsersAsync kun returnerer aktive brukere — ikke slettede
-    /// </summary>
-    [Fact]
-    public async Task GetActiveUsersAsync_ReturnsOnlyActiveUsers()
-    {
-        // Act
-        IReadOnlyList<ApplicationUser> result = await _sut.GetActiveUsersAsync();
-
-        // Assert - Skal kun inneholde aktiv bruker, ikke den slettede
-        Assert.Single(result);
-        Assert.Equal(_activeUser.Email, result[0].Email);
     }
 
     /// <summary>

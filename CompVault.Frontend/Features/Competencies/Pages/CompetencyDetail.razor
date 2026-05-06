@@ -1,7 +1,7 @@
 ﻿@page "/competencies/{Id:guid}"
 @using CompVault.Frontend.Features.Competencies.Components
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.CompetenciesRead)]
+@attribute [Authorize(Policy = Permissions.CompetenciesWrite)]
 @inject ICompetencyService CompetencyService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
@@ -66,7 +66,7 @@ else if (_competency != null)
            
             @* Brukeren *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_competency!.FullName"
+                <TextField Value="@_competency!.FullName"
                                  Label="Bruker"
                                  IsEditing="false"
                                  ShowLink="true"
@@ -76,7 +76,7 @@ else if (_competency != null)
 
             @* Kompetansetype *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_competency!.CompetencyTypeName"
+                <TextField Value="@_competency!.CompetencyTypeName"
                                  Label="Kurstype"
                                  IsEditing="false"
                                  ShowLink="true"
@@ -88,7 +88,7 @@ else if (_competency != null)
             <MudItem xs="12" sm="6">
                 @if (!_isEditing)
                 {
-                    <DetailTextField Value="@(_competency!.IssuedDate.ToString("dd.MM.yyyy"))"
+                    <TextField Value="@(_competency!.IssuedDate.ToString("dd.MM.yyyy"))"
                                      Label="Utstedt"
                                      IsEditing="false"/>
                 }
@@ -108,7 +108,7 @@ else if (_competency != null)
                 <MudItem xs="12" sm="6">
                 @if (!_isEditing)
                 {
-                        <DetailTextField Value="@(_competency!.ExpiryDate?.ToString("dd.MM.yyyy") 
+                        <TextField Value="@(_competency!.ExpiryDate?.ToString("dd.MM.yyyy") 
                                                   ?? string.Empty)"
                                          Label="Utløpsdato"
                                          IsEditing="false"/>
@@ -127,7 +127,7 @@ else if (_competency != null)
 
             @* CertificateNumber *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.CertificateNumber"
+                <TextField Value="@_editModel.CertificateNumber"
                                  ValueChanged="(string? v) => _editModel.CertificateNumber = v ?? string.Empty"
                                  Label="Sertifikatnummer (valgfritt)"
                                  IsEditing="_isEditing"
@@ -136,14 +136,14 @@ else if (_competency != null)
 
             @* Opprettet *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@(_competency!.CreatedAt.ToString("dd.MM.yyyy"))"
+                <TextField Value="@(_competency!.CreatedAt.ToString("dd.MM.yyyy"))"
                                  Label="Opprettet"
                                  IsEditing="false"/>
             </MudItem>
             
             @* Notat *@
             <MudItem xs="12">
-                <DetailTextField Value="@_editModel.Notes"
+                <TextField Value="@_editModel.Notes"
                                  ValueChanged="(string? v) => _editModel.Notes = v ?? string.Empty"
                                  Label=@(_isEditing ? $"Notat (valgfritt). Maks lengde: " +
                                                       $"{CompValidations.NotesMaxLength}" : "Notat")
@@ -156,7 +156,7 @@ else if (_competency != null)
             <MudItem xs="12" sm="6">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
-                    <div style=" width: fit-content">
+                    <div class="cv-status">
                         <MudChip T="string"
                                  Color="@_competency.Status.ToStatusColor()"
                                  Size="Size.Medium"
@@ -171,13 +171,13 @@ else if (_competency != null)
             @if (_competency.Status == CompetencyStatus.Revoked)
             {
                 <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@_editModel.RevokedReason"
+                    <TextField Value="@_editModel.RevokedReason"
                                      Label="Årsak til tilbakekalling"
                                      IsEditing="false"/>
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
-                    <DetailTextField Value="@(_competency!.RevokedAt?.ToString("dd.MM.yyyy") ?? string.Empty)"
+                    <TextField Value="@(_competency!.RevokedAt?.ToString("dd.MM.yyyy") ?? string.Empty)"
                                      Label="Tilbakekalt"
                                      IsEditing="false"/>
                 </MudItem>

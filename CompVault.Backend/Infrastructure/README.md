@@ -8,16 +8,15 @@ Det viktigste skillet her er at EF Core og andre eksterne avhengigheter holdes s
 
 ```text
 Infrastructure/
-├── Data/              <- AppDbContext, IUnitOfWork, EF-konfigurasjoner
-├── Auth/              <- JWT-tjenester og innstillinger
-├── Email/             <- E-posttjeneste, maler og konfigurasjon
-├── Repositories/      <- Generisk repository-base (IRepository<T>, BaseRepository<T>)
-├── Jobs/              <- Bakgrunnsjobber
-└── Extensions/        <- DI-registrering og middleware-oppsett
+├── <Kategori>/       <- f.eks. Data, Auth, Email, Extensions, FileStorage, Jobs, Repositories
+├── <Kategori>/
+└── <Kategori>/       <- ny kategori ved behov
 ```
+
+Hver undermappe har som regel sin egen README som forklarer hva som ligger der og hvordan det brukes.
 
 ## Retningslinjer
 
-- Kode utenfor `Infrastructure` bør ikke importere EF Core-navnerom direkte.
-- `AppDbContext` brukes i utgangspunktet bare fra `Infrastructure` og eventuelt i entrypointet (`Program.cs`).
+- Feature-kode bør gå via repositories og services, ikke bruke `AppDbContext` eller EF Core direkte. Unntak finnes for interceptorer og enkelte services der komplekse spørringer gjør det upraktisk å gå via repository.
+- Repositories skal håndtere dataaksess og change tracking — forretningslogikk hører hjemme i service-laget.
 - Nye eksterne tjenester legges i egne undermapper under `Infrastructure/` når det gir mening.

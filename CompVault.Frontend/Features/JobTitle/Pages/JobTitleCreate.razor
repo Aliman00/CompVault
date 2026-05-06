@@ -13,11 +13,21 @@
     <Fields>
         @* Navn *@
         <MudItem xs="12" sm="6">
-            <DetailTextField Value="@_editModel.Name"
-                             ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                             Label="Stillingstittel"
-                             IsEditing="true"
-                             For="() => _editModel.Name"/>
+            <TextField Value="@_editModel.Name"
+                       ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                       Label="Stillingstittel"
+                       IsEditing="true"
+                       For="() => _editModel.Name"/>
+        </MudItem>
+        
+        @* Er stillingen for en leder? *@
+        <MudItem xs="12" sm="6">
+            <ToggleButton Label="Lederrolle"
+                          @bind-Value="_editModel.IsLeader"
+                          IsEditing="true">
+                <MudToggleItem Value="(bool?)true" Text="Leder"/>
+                <MudToggleItem Value="(bool?)false" Text="Ikke leder"/>
+            </ToggleButton>
         </MudItem>
         
     </Fields>
@@ -52,6 +62,7 @@
             return;
         }
 
-        NavigationManager.NavigateTo(PageRoutes.JobTitles.Detail(createResult.Value!.Id) + "?created=true");
+        NavigationManager.NavigateTo(PageRoutes.JobTitles.Detail(createResult.Value!.Id) + "?created=true",
+            replace: true);
     }
 }

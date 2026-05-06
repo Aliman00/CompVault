@@ -1,0 +1,375 @@
+﻿@page "/equipment-items/{Id:guid}"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.EquipmentWrite)]
+@inject IEquipmentItemService EquipmentItemService
+@inject IEquipmentIssuancesService EquipmentIssuanceService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+@* Detalje visning av en kompetansetype med mulighet for oppdatering *@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else if (_equipmentItem != null)
+{
+    <DetailForm Title="@_equipmentItem?.Name"
+                Subtitle="@_equipmentItem?.CategoryName"
+                EditPolicy="@Permissions.EquipmentWrite"
+                EditContext="_editContext"
+                OnValidSubmit="SaveEdit"
+                IsEditing="_isEditing"
+                OnStartEdit="StartEdit"
+                OnCancelEdit="CancelEdit">
+        <DropdownActions>
+            <AuthorizeView Policy="@Permissions.EquipmentDelete">
+                <Authorized>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                 IconColor="Color.Error"
+                                 OnClick="Delete">
+                        <MudText Color="Color.Error">Slett utstyret</MudText>
+                    </MudMenuItem>
+                </Authorized>
+                <NotAuthorized>
+                    <MudTooltip Text="Du har ikke tilgang til å slette utstyret">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     IconColor="Color.Default"
+                                     Disabled="true">
+                            <MudText>Slett utstyret</MudText>
+                        </MudMenuItem>
+                    </MudTooltip>
+                </NotAuthorized>
+            </AuthorizeView>
+        </DropdownActions>
+        <Fields>
+            @* Navn *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_editModel.Name"
+                           ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                           Label="Navn"
+                           IsEditing="_isEditing"
+                           For="() => _editModel.Name"/>
+            </MudItem>
+            
+            @* Har størrelse *@
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Har utstyret størrelser?"
+                              @bind-Value="_editModel.HasSize"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Har størrelse"/>
+                    <MudToggleItem Value="(bool?)false" Text="Har ikke størrelse"/>
+                </ToggleButton>
+            </MudItem>
+            
+            @* Status *@
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Status"
+                              @bind-Value="_editModel.IsActive"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
+                    <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
+                </ToggleButton>
+            </MudItem>
+            
+            @* Opprettelsesdato *@
+            <MudItem xs="12" sm="6">
+                <TextField Value="@_equipmentItem!.CreatedAt.ToString(CultureInfo.InvariantCulture)"
+                           Label="Opprettet"
+                           IsEditing="false"/>
+            </MudItem>
+            
+            @* Utleveringer *@
+            <MudItem xs="12">
+                <ListHeader Title="@($"Utleveringer ({_equipmentIssuances.Count} antall utleveringer)")"
+                            PageIcon="@Icons.Material.Filled.Headset">
+                    <Actions>
+                        
+                        @* Ikke lov å leverfe ut utstyr hvis den er inaktive, eller bruker ikke har tilattelse *@
+                        <AuthorizeView Policy="@Permissions.EquipmentWrite">
+                            <Authorized>
+                                @if (_equipmentItem!.IsActive)
+                                {
+                                    <ResponsiveButton Label="Utlever"
+                                                      Icon="@Icons.Material.Filled.Add"
+                                                      OnClick="IssueEquipment"/>
+                                }
+                                else
+                                {
+                                    <MudTooltip Text="Utstyret er inaktivt og kan ikke utleveres">
+                                        <ResponsiveButton Label="Utlever"
+                                                          Icon="@Icons.Material.Filled.Add"
+                                                          Disabled="true"/>
+                                    </MudTooltip>
+                                }
+                            </Authorized>
+                            <NotAuthorized>
+                                <MudTooltip Text="@(_equipmentItem!.IsActive
+                                                      ? "Du har ikke tilgang til å utlevere utstyr"
+                                                      : "Utstyret er inaktivt og kan ikke utleveres")">
+                                    <ResponsiveButton Label="Utlever"
+                                                      Icon="@Icons.Material.Filled.Add"
+                                                      Disabled="true"/>
+                                </MudTooltip>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </Actions>
+                </ListHeader>
+
+                <MudDataGrid T="EquipmentIssuanceDto"
+                             Items="_equipmentIssuances"
+                             Dense="true"
+                             Hover="true"
+                             Striped="true"
+                             Square="true"
+                             Bordered="true"
+                             SortMode="SortMode.Multiple"
+                             RowClick="OnIssuanceClick"
+                             Filterable="true">
+                    <Columns>
+                        @* Brukeren *@
+                        <TemplateColumn T="EquipmentIssuanceDto" Title="Bruker">
+                            <CellTemplate>
+                                <MudLink Href="@PageRoutes.Users.Detail(context.Item.UserId)">
+                                    @context.Item.UserFullName
+                                </MudLink>
+                            </CellTemplate>
+                        </TemplateColumn>
+
+                        @* Antall *@
+                        <PropertyColumn T="EquipmentIssuanceDto" TProperty="int"
+                                        Property="i => i.Quantity" Title="Antall"/>
+
+                        @* Størrelse *@
+                        <PropertyColumn T="EquipmentIssuanceDto" TProperty="string?"
+                                        Property="i => i.Size" Title="Størrelse"/>
+
+                        @* Utlevert av *@
+                        <TemplateColumn T="EquipmentIssuanceDto" Title="Utlevert av">
+                            <CellTemplate>
+                                <MudLink Href="@PageRoutes.Users.Detail(context.Item.IssuedById)">
+                                    @context.Item.IssuedByName
+                                </MudLink>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        
+                        @* Utlevert dato *@
+                        <TemplateColumn T="EquipmentIssuanceDto" 
+                                        Title="Dato" 
+                                        SortBy="i => i.IssuedDate">
+                            <CellTemplate>
+                                <MudTooltip Text="@context.Item.IssuedDate.ToString("dd.MM.yyyy HH:mm")">
+                                    @context.Item.IssuedDate.ToRelativeNorwegian()
+                                </MudTooltip>
+                            </CellTemplate>
+                        </TemplateColumn>
+
+                        @* Notat *@
+                        <PropertyColumn T="EquipmentIssuanceDto" TProperty="string?"
+                                        Property="i => i.Notes" Title="Notater"/>
+                    </Columns>
+                </MudDataGrid>
+            </MudItem>
+            
+        </Fields>
+    </DetailForm>
+}
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "created")] // Optional parameter ved vellykket oppretting
+    public bool Created { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private EquipmentItemDto? _equipmentItem;
+    private List<EquipmentIssuanceDto> _equipmentIssuances = [];
+
+    private EquipmentItemEditModel _editModel = new();
+
+    private bool _isLoading = true;
+
+    // Forskjellige feilmeldinger for forkjellige beskjeder
+    private AlertInfo? _alert;
+
+    private EditContext _editContext = null!;
+
+    private bool _isEditing; // Bool som bytter feltene mellom lese-modus og redigeringsmodus
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnParametersSetAsync()
+    {
+        // Resetter alle feltene ved oppdatering/navigering til siden
+        _isLoading = true;
+        _isEditing = false;
+        _equipmentIssuances = [];
+        _editModel = new();
+
+        try
+        {
+            _editContext = new EditContext(_editModel);
+            
+            var equipmentItemTask = EquipmentItemService.GetByIdAsync(Id, Cts.Token);
+            var equipmentIssuanceTask = EquipmentIssuanceService.GetByItemAsync(Id, Cts.Token);
+            
+            await Task.WhenAll(equipmentItemTask, equipmentIssuanceTask);
+            
+            var equipmentItemResult = await equipmentItemTask;
+            var equipmentIssuanceResult = await equipmentIssuanceTask;
+
+            if (equipmentItemResult.IsFailure)
+            {
+                _alert = new AlertInfo(equipmentItemResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+            _equipmentItem = equipmentItemResult.Value;
+            
+            if (equipmentIssuanceResult.IsFailure)
+                _alert = new AlertInfo(equipmentIssuanceResult.Error!.ToString(), Severity.Error);
+            else
+                _equipmentIssuances = equipmentIssuanceResult.Value!;
+
+            ResetEditModel();
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste utstyret. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+
+            if (Created)
+                _alert = new AlertInfo("Utstyret ble opprettet", Severity.Success);
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+
+    // Handling når vi trykker på Edit-knappen. Fjerner feilmeldinger og resetter modell
+    private void StartEdit()
+    {
+        _alert = null;
+        ResetEditModel();
+        _isEditing = true;
+    }
+
+    // Handling når vi avbryter redigering - Resetter modellene og fjerner redigeringsmodus
+    private void CancelEdit()
+    {
+        ResetEditModel();
+        _isEditing = false;
+    }
+
+    // Resetter redigeringsmodellen og editcontexten
+    private void ResetEditModel()
+    {
+        _editModel = EquipmentItemEditModel.FromDto(_equipmentItem!);
+        _editContext = new EditContext(_editModel);
+    }
+
+    // Handling som utføres når vi trykker på lagring - Bygger en request og utfører kall til backend
+    private async Task SaveEdit()
+    {
+        var request = _editModel.ToRequest();
+
+        var updateResult = await EquipmentItemService.UpdateAsync(Id, request, Cts.Token);
+        if (updateResult.IsFailure)
+        {
+            _alert = new AlertInfo(updateResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+
+        // Resetter feltene kun hvis det var vellykket
+        _equipmentItem = updateResult.Value;
+        ResetEditModel();
+        _isEditing = false;
+        _alert = new AlertInfo("Utstyret ble oppdatert", Severity.Success);
+    }
+
+    // Viser en dialog som brukeren må godkjenne for å kunne slette entiteten. Navigerer til List-siden hviss vellykket
+    private async Task Delete()
+    {
+        // Oppretter parameterne for dialogen
+        var parameters = new DialogParameters
+        {
+            { nameof(ConfirmDeleteDialog.Title), "Slett utstyret" },
+            { nameof(ConfirmDeleteDialog.Message), $"Er du sikker på at du ønsker å slette {_equipmentItem!.Name}?" },
+        };
+
+        // Kaller dialogen
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        var deleteResult = await EquipmentItemService.DeleteAsync(Id, Cts.Token);
+        if (deleteResult.IsFailure)
+        {
+            _alert = new AlertInfo(deleteResult.Error!.ToString(), Severity.Error);
+            return;
+        }
+        
+        var categoryId = _equipmentItem.CategoryId;
+        NavigationManager.NavigateTo(
+            PageRoutes.EquipmentItems.ListByCategory(categoryId) + "&deleted=true");
+    }
+    
+    private async Task IssueEquipment()
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(IssueEquipmentDialog.PreselectedItemId), Id },
+        };
+
+        var dialog = await DialogService.ShowAsync<IssueEquipmentDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        await RefreshIssuancesAsync();
+        _alert = new AlertInfo("Utstyret ble utlevert", Severity.Success);
+    }
+    
+    private async Task OnIssuanceClick(DataGridRowClickEventArgs<EquipmentIssuanceDto> args)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(EditEquipmentIssuanceDialog.Issuance), args.Item },
+            { nameof(EditEquipmentIssuanceDialog.HasSize), args.Item.HasSize },
+        };
+
+        var dialog = await DialogService.ShowAsync<EditEquipmentIssuanceDialog>("", parameters);
+        var dialogResult = await dialog.Result;
+        if (dialogResult!.Canceled)
+            return;
+
+        await RefreshIssuancesAsync();
+        
+        // Er resultatet fra dialogen Guid så er den slettet, ellers er den oppdatert
+        _alert = dialogResult.Data is Guid
+            ? new AlertInfo("Utleveringen ble slettet", Severity.Info)
+            : new AlertInfo("Utleveringen ble oppdatert", Severity.Success);
+    }
+
+    private async Task RefreshIssuancesAsync()
+    {
+        var result = await EquipmentIssuanceService.GetByItemAsync(Id, Cts.Token);
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return;
+        }
+        
+        _equipmentIssuances = result.Value!;
+    }
+}

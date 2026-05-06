@@ -29,6 +29,12 @@ public sealed class DepartmentDto
     /// <summary>Når avdelingen ble opprettet (UTC).</summary>
     public DateTime CreatedAt { get; set; }
 
+    /// <summary>ID til brukeren som leder avdelingen.</summary>
+    public Guid? ManagerId { get; set; }
+
+    /// <summary>Navn på brukeren som leder avdelingen.</summary>
+    public string? ManagerName { get; set; }
+
     /// <summary>ID til brukeren som opprettet avdelingen.</summary>
     public Guid? CreatedById { get; set; }
 

@@ -13,19 +13,7 @@ public interface IDocumentSignatureService
     Task<Result<bool>> SignAsync(Guid documentId, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>Henter signaturer for et dokument (gjeldende versjon).</summary>
-    Task<Result<IReadOnlyList<DocumentSignatureDto>>> GetSignaturesAsync(
+    Task<Result<IReadOnlyList<UserSignatureStatusDto>>> GetSignatureStatusAsync(
         Guid documentId, Guid? currentUserId = null, bool bypassTargeting = false,
         CancellationToken cancellationToken = default);
-
-    /// <summary>Henter alle dokumenter brukeren har signert (på tvers av typer).</summary>
-    Task<Result<IReadOnlyList<DocumentListDto>>> GetMySignedDocumentsAsync(
-        Guid userId, CancellationToken cancellationToken = default);
-
-    /// <summary>Henter alle dokumenter brukeren trenger å signere.</summary>
-    Task<Result<IReadOnlyList<DocumentListDto>>> GetMyPendingDocumentsAsync(
-        Guid userId, CancellationToken cancellationToken = default);
-
-    /// <summary>Henter fremdriftsstatistikk for en dokumenttype for en spesifikk bruker.</summary>
-    Task<Result<DocumentProgressDto>> GetProgressAsync(
-        string documentTypeSlug, Guid userId, CancellationToken cancellationToken = default);
 }

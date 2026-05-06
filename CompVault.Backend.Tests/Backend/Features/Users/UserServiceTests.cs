@@ -8,6 +8,9 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Backend.Tests.Common;
+using CompVault.Backend.Tests.Common.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Users;
 using CompVault.Shared.Result;
 
@@ -77,6 +80,7 @@ public class UserServiceTests
             _jobTitleRepositoryMock.Object,
             _userManagerMock.Object,
             roleManagerMock.Object,
+            new BypassDepartmentScopeService(),
             loggerMock.Object,
             unitOfWorkMock.Object);
     }
@@ -135,7 +139,8 @@ public class UserServiceTests
             Email = "ny@example.com",
             FirstName = "Ny",
             LastName = "Bruker",
-            Roles = []
+            Roles = [],
+            DepartmentId = TestConstants.Departments.DefaultDepartmentId
         };
 
         _userRepositoryMock
@@ -150,6 +155,11 @@ public class UserServiceTests
         _userManagerMock
             .Setup(m => m.GetRolesAsync(It.IsAny<ApplicationUser>()))
             .ReturnsAsync(new List<string>());
+
+        _departmentRepositoryMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Expression<Func<Department, bool>>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         // Act
         Result<UserDto> result = await _sut.CreateUserAsync(request);
@@ -274,17 +284,20 @@ public class UserServiceTests
         };
 
         _userRepositoryMock
-            .Setup(r => r.GetActiveUsersWithRolesAsync(It.IsAny<CancellationToken>()))
+            .Setup(r => r.CountActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(2);
+        _userRepositoryMock
+            .Setup(r => r.GetActiveUsersWithRolesPagedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(usersWithRoles);
 
         // Act
-        Result<IReadOnlyList<UserDto>> result = await _sut.GetAllUsersAsync();
+        Result<PagedResult<UserDto>> result = await _sut.GetAllUsersAsync(new PagedQuery());
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Should().HaveCount(2);
-        result.Value!.Should().Contain(u => u.Email == user1.Email);
-        result.Value!.Should().Contain(u => u.Email == user2.Email);
+        result.Value!.Items.Should().HaveCount(2);
+        result.Value!.Items.Should().Contain(u => u.Email == user1.Email);
+        result.Value!.Items.Should().Contain(u => u.Email == user2.Email);
     }
 
     /// <summary>
@@ -295,15 +308,18 @@ public class UserServiceTests
     {
         // Arrange
         _userRepositoryMock
-            .Setup(r => r.GetActiveUsersWithRolesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<(ApplicationUser, List<string>)>());
+            .Setup(r => r.CountActiveAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+        _userRepositoryMock
+            .Setup(r => r.GetActiveUsersWithRolesPagedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<(ApplicationUser User, List<string> Roles)>());
 
         // Act
-        Result<IReadOnlyList<UserDto>> result = await _sut.GetAllUsersAsync();
+        Result<PagedResult<UserDto>> result = await _sut.GetAllUsersAsync(new PagedQuery());
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Should().BeEmpty();
+        result.Value!.Items.Should().BeEmpty();
     }
 
     // -------------------------------------------------------------------------

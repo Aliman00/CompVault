@@ -1,34 +1,21 @@
-﻿@* Gjenbrukbar drawer fra MudBlazor. NavMenu sendes inn via ChildContent slik at
-   MainLayout og AdminLayout kan bruke sin egen navigasjon *@
+﻿@* Gjenbrukbar drawer fra MudBlazor *@
 
-<MudDrawer Open="_isOpen" OpenChanged="OnDrawerOpenChanged" Elevation="2" ClipMode="DrawerClipMode.Always">
-    <!-- Headeren til sidebaren -->
+<MudDrawer Open="_isOpen"
+          OpenChanged="OnDrawerOpenChanged"
+          Elevation="2"
+          ClipMode="DrawerClipMode.Always">
     @ChildContent
 </MudDrawer>
 
 @code {
-    // ======================== Parametere ========================
-    // Bool som bestemmer om Draweren er åpen
-    [Parameter]
-    public bool IsOpen { get; set; }
-    
-    // Forteller foreldre komponenten om draweren har blitt lukket innen ifra
-    [Parameter]
-    public EventCallback<bool> IsOpenChanged { get; set; }
-    
-    // Her skal det en NavMenu, egen for MainLayout og egen for AdminLayout
-    [Parameter]
-    public RenderFragment? ChildContent { get; set; }
-    
-    // ======================== Private felt ========================
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
     private bool _isOpen;
-    
-    
-    // ======================== Lifecycle ========================
+
     protected override void OnParametersSet() => _isOpen = IsOpen;
-    
-    // ======================== Private metoder ========================
-    
+
     private async Task OnDrawerOpenChanged(bool verdi)
     {
         _isOpen = verdi;

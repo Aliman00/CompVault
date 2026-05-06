@@ -20,4 +20,7 @@ public sealed class CreateDepartmentRequest
 
     /// <summary>ID til overordnet avdeling (valgfritt — null = toppnivå).</summary>
     public Guid? ParentDepartmentId { get; set; }
+
+    /// <summary>ID til brukeren som skal lede avdelingen.</summary>
+    public Guid? ManagerId { get; set; }
 }

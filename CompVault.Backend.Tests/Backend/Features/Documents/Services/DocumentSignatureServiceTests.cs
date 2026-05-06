@@ -3,8 +3,8 @@ using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Features.Documents.Services;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Tests.Common.Constants;
 using CompVault.Shared.DTOs.Documents;
-using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
 
 using FluentAssertions;
@@ -19,7 +19,6 @@ public class DocumentSignatureServiceTests
 {
     private readonly Mock<IDocumentRepository> _documentRepositoryMock;
     private readonly Mock<IDocumentSignatureRepository> _signatureRepositoryMock;
-    private readonly Mock<IDocumentTypeRepository> _documentTypeRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IDocumentTargetingService> _targetingServiceMock;
     private readonly Mock<ILogger<DocumentSignatureService>> _loggerMock;
@@ -29,7 +28,6 @@ public class DocumentSignatureServiceTests
     {
         _documentRepositoryMock = new Mock<IDocumentRepository>();
         _signatureRepositoryMock = new Mock<IDocumentSignatureRepository>();
-        _documentTypeRepositoryMock = new Mock<IDocumentTypeRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
         _targetingServiceMock = new Mock<IDocumentTargetingService>();
         _loggerMock = new Mock<ILogger<DocumentSignatureService>>();
@@ -43,26 +41,9 @@ public class DocumentSignatureServiceTests
         _sut = new DocumentSignatureService(
             _documentRepositoryMock.Object,
             _signatureRepositoryMock.Object,
-            _documentTypeRepositoryMock.Object,
             _userRepositoryMock.Object,
             _targetingServiceMock.Object,
             _loggerMock.Object);
-    }
-
-    private static DocumentType CreateDocumentType(
-        DocumentTargetMode targetMode = DocumentTargetMode.None,
-        Guid? id = null)
-    {
-        return new DocumentType
-        {
-            Id = id ?? Guid.NewGuid(),
-            Name = "Test Type",
-            Slug = "test-type",
-            TargetMode = targetMode,
-            IsActive = true,
-            StorageFolder = "test-type",
-            AllowedMimeTypes = ["application/pdf"]
-        };
     }
 
     private static ApplicationUser CreateUser(
@@ -74,7 +55,7 @@ public class DocumentSignatureServiceTests
             FirstName = "Test",
             LastName = "Bruker",
             Email = "test@test.no",
-            DepartmentId = departmentId,
+            DepartmentId = departmentId ?? TestConstants.Departments.DefaultDepartmentId,
             JobTitleId = jobTitleId
         };
     }
@@ -180,7 +161,7 @@ public class DocumentSignatureServiceTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public async Task GetSignaturesAsync_DocumentNotFound_ReturnsFailure()
+    public async Task GetSignatureStatus_DocumentNotFound_ReturnsFailure()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -189,219 +170,107 @@ public class DocumentSignatureServiceTests
             .ReturnsAsync((Document?)null);
 
         // Act
-        Result<IReadOnlyList<DocumentSignatureDto>> result =
-            await _sut.GetSignaturesAsync(id);
+        Result<IReadOnlyList<UserSignatureStatusDto>> result =
+            await _sut.GetSignatureStatusAsync(id);
 
         // Assert
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(ErrorCode.NotFound);
     }
 
-    // -------------------------------------------------------------------------
-    // GetMySignedDocumentsAsync
-    // -------------------------------------------------------------------------
-
+    /// <summary>
+    /// Tester at brukeren ikke riktig tilattelse eller er ikke i målgruppen
+    /// </summary>
     [Fact]
-    public async Task GetMySignedDocumentsAsync_NoSignatures_ReturnsEmptyList()
+    public async Task GetSignatureStatus_AccessDenied_ReturnsFailure()
     {
         // Arrange
-        var userId = Guid.NewGuid();
-        _signatureRepositoryMock
-            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+        var docId = Guid.NewGuid();
+        var document = new Document { Id = docId, Version = 1 };
+
+        _documentRepositoryMock
+            .Setup(x => x.GetWithDetailsAsync(docId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        // Mocker at vi får feilmelding når vi sjekker om vi har tilgang
+        _targetingServiceMock
+            .Setup(x => x.CheckAccessAsync(
+                document, It.IsAny<Guid?>(), false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(AppError.Create(ErrorCode.Forbidden,
+                "Du har ikke tilgang til dette dokumentet.")));
 
         // Act
-        Result<IReadOnlyList<DocumentListDto>> result =
-            await _sut.GetMySignedDocumentsAsync(userId);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
-    }
-
-    // -------------------------------------------------------------------------
-    // GetMyPendingDocumentsAsync
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public async Task GetMyPendingDocumentsAsync_UserNotFound_ReturnsFailure()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ApplicationUser?)null);
-
-        // Act
-        Result<IReadOnlyList<DocumentListDto>> result =
-            await _sut.GetMyPendingDocumentsAsync(userId);
+        Result<IReadOnlyList<UserSignatureStatusDto>> result =
+            await _sut.GetSignatureStatusAsync(docId, currentUserId: Guid.NewGuid());
 
         // Assert
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be(ErrorCode.NotFound);
+        result.Error!.Code.Should().Be(ErrorCode.Forbidden);
     }
 
+    /// <summary>
+    /// Tester happy path at vi henter dokumentet, brukeren har tilattelse og vi returner en bruker som har singert
+    /// og en som ikke har signert. Tester for alle brukere
+    /// </summary>
     [Fact]
-    public async Task GetMyPendingDocumentsAsync_DepartmentMode_ReturnsPendingDocs()
+    public async Task GetSignatureStatus_ValidDocument_ReturnsSignatureStatus()
     {
         // Arrange
-        var userId = Guid.NewGuid();
-        var departmentId = Guid.NewGuid();
-        ApplicationUser user = CreateUser(userId, departmentId);
-
-        var typeId = Guid.NewGuid();
-        DocumentType type = CreateDocumentType(DocumentTargetMode.Department, typeId);
-
         var docId = Guid.NewGuid();
-        var documents = new List<Document>
+        var signedUserId = Guid.NewGuid();
+        var unsignedUserId = Guid.NewGuid();
+
+        var document = new Document
         {
-            new()
-            {
-                Id = docId, DocumentTypeId = typeId,
-                DocumentType = type,
-                Title = "Avdelingsdok", Version = 1, IsActive = true,
-                RequiresSignature = true
-            }
+            Id = docId,
+            Version = 2,
+            DocumentDepartments = [],
+            DocumentJobTitles = []
         };
 
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
+        ApplicationUser signedUser = CreateUser(signedUserId);
+        ApplicationUser unsignedUser = CreateUser(unsignedUserId);
 
-        _signatureRepositoryMock
-            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
-
-        _documentRepositoryMock
-            .Setup(x => x.GetPendingForUserAsync(
-                userId, departmentId, It.IsAny<Guid?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(documents);
-
-        _signatureRepositoryMock
-            .Setup(x => x.GetByDocumentIdsAsync(
-                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<DocumentSignature> { new() { DocumentId = docId, SignatureVersion = 1 } });
-
-        // Act
-        Result<IReadOnlyList<DocumentListDto>> result =
-            await _sut.GetMyPendingDocumentsAsync(userId);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value[0].SignedByCurrentUser.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task GetMyPendingDocumentsAsync_JobTitleMode_ReturnsPendingDocs()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        var jobTitleId = Guid.NewGuid();
-        ApplicationUser user = CreateUser(userId, jobTitleId: jobTitleId);
-
-        var typeId = Guid.NewGuid();
-        DocumentType type = CreateDocumentType(DocumentTargetMode.JobTitle, typeId);
-
-        var docId = Guid.NewGuid();
-        var documents = new List<Document>
+        var signature = new DocumentSignature
         {
-            new()
-            {
-                Id = docId, DocumentTypeId = typeId,
-                DocumentType = type,
-                Title = "Lederdok", Version = 1, IsActive = true,
-                RequiresSignature = true
-            }
+            UserId = signedUserId,
+            DocumentId = docId,
+            SignatureVersion = 2,
+            SignedAt = DateTime.UtcNow
         };
 
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _signatureRepositoryMock
-            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
-
+        // Mocker at vi henter dokumentet
         _documentRepositoryMock
-            .Setup(x => x.GetPendingForUserAsync(
-                userId, It.IsAny<Guid?>(), jobTitleId,
+            .Setup(x => x.GetWithDetailsAsync(docId,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(documents);
+            .ReturnsAsync(document);
 
+        // Mocker at vi returner en bruker som har signert
         _signatureRepositoryMock
-            .Setup(x => x.GetByDocumentIdsAsync(
-                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
+            .Setup(x => x.GetForDocumentVersionAsync(docId, 2,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([signature]);
+
+        // Mocker at vi henter alle brukerne. Vi har ingen målgruppe, så vi henter begge
+        _userRepositoryMock
+            .Setup(x => x.GetUsersByTargetAsync(
+                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<IReadOnlyList<Guid>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([signedUser, unsignedUser]);
 
         // Act
-        Result<IReadOnlyList<DocumentListDto>> result =
-            await _sut.GetMyPendingDocumentsAsync(userId);
+        Result<IReadOnlyList<UserSignatureStatusDto>> result = await _sut.GetSignatureStatusAsync(docId);
 
-        // Assert
+        // Assert - Sjekker egenskapene og at en bruker har singert og den andre har ikke signert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value[0].Title.Should().Be("Lederdok");
-    }
+        result.Value.Should().HaveCount(2);
 
-    [Fact]
-    public async Task GetMyPendingDocumentsAsync_AlreadySigned_FiltersOutSigned()
-    {
-        // Arrange
-        var userId = Guid.NewGuid();
-        ApplicationUser user = CreateUser(userId);
+        UserSignatureStatusDto signed = result.Value.First(u => u.UserId == signedUserId);
+        signed.HasSigned.Should().BeTrue();
+        signed.SignatureVersion.Should().Be(2);
 
-        var typeId = Guid.NewGuid();
-        DocumentType type = CreateDocumentType(DocumentTargetMode.None, typeId);
-
-        var signedDocId = Guid.NewGuid();
-        var unsignedDocId = Guid.NewGuid();
-
-        var documents = new List<Document>
-        {
-            new()
-            {
-                Id = signedDocId, DocumentTypeId = typeId,
-                DocumentType = type,
-                Title = "Allerede signert", Version = 1, IsActive = true,
-                RequiresSignature = true
-            },
-            new()
-            {
-                Id = unsignedDocId, DocumentTypeId = typeId,
-                DocumentType = type,
-                Title = "Usignert", Version = 1, IsActive = true,
-                RequiresSignature = true
-            }
-        };
-
-        _userRepositoryMock
-            .Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        _signatureRepositoryMock
-            .Setup(x => x.GetSignedDocumentIdsAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([signedDocId]);
-
-        _documentRepositoryMock
-            .Setup(x => x.GetPendingForUserAsync(
-                userId, It.IsAny<Guid?>(), It.IsAny<Guid?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(documents);
-
-        _signatureRepositoryMock
-            .Setup(x => x.GetByDocumentIdsAsync(
-                It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
-
-        // Act
-        Result<IReadOnlyList<DocumentListDto>> result =
-            await _sut.GetMyPendingDocumentsAsync(userId);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value[0].Title.Should().Be("Usignert");
+        UserSignatureStatusDto unsigned = result.Value.First(u => u.UserId == unsignedUserId);
+        unsigned.HasSigned.Should().BeFalse();
+        unsigned.SignedAt.Should().BeNull();
     }
 }

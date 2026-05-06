@@ -28,6 +28,10 @@ RUN dotnet publish "CompVault.Frontend.csproj" -c Release -o /app/publish \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 WORKDIR /app
 
+# Alpine mangler ICU-biblioteker — nb-NO lokalisering krever dette
+RUN apk add --no-cache icu-libs icu-data-full
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
 # OCI-metadata som kobler Docker-imaget til GitHub-repoet
 LABEL org.opencontainers.image.source=https://github.com/aliman00/CompVault
 LABEL org.opencontainers.image.description="CompVault Frontend – Blazor Server"

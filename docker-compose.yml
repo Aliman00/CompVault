@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: compvault-db
     environment:
       POSTGRES_USER: compvault_user
@@ -26,7 +26,7 @@ services:
       dockerfile: CompVault.Backend/Dockerfile
     container_name: compvault-backend
     ports:
-      - "5000:8080"
+      - "5010:8080"
     env_file:
       - .env
     environment:
@@ -49,7 +49,7 @@ services:
       dockerfile: CompVault.Frontend/Dockerfile
     container_name: compvault-frontend
     ports:
-      - "5001:8080"
+      - "5020:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - BackendApi__BaseUrl=http://backend:8080
@@ -62,17 +62,6 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
-    networks:
-      - compvault-network
-
-  adminer:
-    image: adminer
-    container_name: compvault-adminer
-    ports:
-      - "5002:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - compvault-network
 

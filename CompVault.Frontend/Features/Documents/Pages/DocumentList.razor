@@ -1,0 +1,117 @@
+﻿@page "/documents/{slug}/{typeName}"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.DocumentsWrite)]
+@inject IDocumentService DocumentService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle dokumenttyper *@
+
+<ListPage TItem="DocumentListDto"
+          Items="_documents"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          RowClick="@(args => OnDocumentClick(args))">
+    <Header>
+        <ListHeader Title="@($"Dokumenter for {TypeName}")"
+                    PageIcon="@Icons.Material.Filled.Article"
+                    CreateHref="@PageRoutes.Documents.Create(Slug)"
+                    CreateLabel="Opprett dokument"
+                    CreateIcon="@Icons.Material.Filled.Article"
+                    CreatePolicy="@Permissions.DocumentsWrite"/>
+    </Header>
+    <Columns>
+        @* Dokumenttype navn *@
+        <PropertyColumn T="DocumentListDto" TProperty="string"
+                        Property="ct => ct.Title.Truncate(40)" Title="Tittel"/>
+
+        <PropertyColumn T="DocumentListDto" TProperty="string" Property='x => x.CategoryName.Truncate(40)'
+                        Title="Kategori" />
+
+        <PropertyColumn T="DocumentListDto" TProperty="string" Property='x => x.Version.ToString()'
+                        Title="Version" />
+
+        <TemplateColumn T="DocumentListDto"
+                        Title="Signering"
+                        Sortable="true"
+                        SortBy="@(x => x.RequiresSignature)"
+                        HeaderStyle="width: 90px;">
+            <CellTemplate>
+                @if (context.Item.RequiresSignature)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Draw"
+                             Color="Color.Warning"
+                             Size="Size.Small"
+                             Title="Krever signering"/>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn T="DocumentListDto"
+                        Title="Lastet opp"
+                        Sortable="true"
+                        SortBy="@(x => x.UploadedAt)">
+            <CellTemplate>
+                <MudTooltip Text="@context.Item.UploadedAt.ToString("dd.MM.yyyy",
+                                      new CultureInfo("nb-NO"))">
+                    @context.Item.UploadedAt.ToRelativeNorwegian()
+                </MudTooltip>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</ListPage>
+
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+    
+    [Parameter]
+    public string Slug { get; set; } = string.Empty;
+    
+    [Parameter]
+    public string TypeName { get; set; } = string.Empty;
+
+    // ===================== PRIVATE FELT =====================
+    private List<DocumentListDto> _documents = [];
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getDocumentsResult = await DocumentService.GetAllAsync(Slug, Cts.Token);
+
+            if (getDocumentsResult.IsFailure)
+            {
+                _alert = new AlertInfo(getDocumentsResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _documents = getDocumentsResult.Value!;
+
+            if (Deleted)
+                _alert = new AlertInfo("Dokumentet er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste dokumentet. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnDocumentClick(DataGridRowClickEventArgs<DocumentListDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.Documents.Detail(Slug, args.Item.Id));
+}

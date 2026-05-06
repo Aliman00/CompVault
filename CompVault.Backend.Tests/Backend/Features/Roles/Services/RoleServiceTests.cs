@@ -11,6 +11,7 @@ using CompVault.Shared.Result;
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Moq;
@@ -36,11 +37,18 @@ public class RoleServiceTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _loggerMock = new Mock<ILogger<RoleService>>();
 
+        // Use InMemoryDatabase for AppDbContext in unit tests
+        DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        AppDbContext dbContext = new(options, new BypassDepartmentScopeService());
+
         _sut = new RoleService(
             _roleManagerMock.Object,
             _userManagerMock.Object,
             _roleRepositoryMock.Object,
             _unitOfWorkMock.Object,
+            dbContext,
             _loggerMock.Object);
     }
 

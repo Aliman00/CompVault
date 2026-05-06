@@ -1,0 +1,166 @@
+﻿@inject IDocumentService DocumentService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+
+@*  Dialog for å oppdatere filversjonen til et dokument. Den gamle blir arkivtert, vi øker versjonnummeret
+    og signaturer blir slettet *@
+<MudDialog>
+
+    @* Tittel *@
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Upload" Class="mr-2"/>
+            Last opp ny versjon for @Title
+        </MudText>
+    </TitleContent>
+
+    @* Body til dialogen *@
+    <DialogContent>
+        <AppAlert @bind-Alert="_alert"/>
+
+        @* Advarsel om konsekvenser *@
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            Å laste opp en ny versjon vil slette alle eksisterende signaturer.
+            Alle som har signert eller skal signere, må gjøre det på nytt.
+        </MudAlert>
+
+        @* Nåværende versjon *@
+        @if (CurrentFile != null)
+        {
+            <MudText Typo="Typo.body1" Class="mt-4">Nåværende fil:</MudText>
+            <MudPaper Outlined="true" Class="pa-4 ma-4 d-flex align-center gap-4">
+                @* Ikonet til filen - forskjellig fra forskjellige typer mimefiles*@
+                <MudIcon Icon="@(CurrentFile.MimeType.GetFileIcon())"
+                         Color="Color.Primary"
+                         Size="Size.Large"/>
+
+                @* Informasjon samlet over og under hverandre*@
+                <MudStack Spacing="0" Class="flex-grow-1">
+                    <MudText Typo="Typo.body1">@CurrentFile.FileName</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @(CurrentFile.FileSize.FormatFileSize()) - Versjon @CurrentFile.Version -
+                        Lastet opp av
+                        <MudLink Href="@PageRoutes.Users.Detail(CurrentFile.UploadedBy)">
+                            @CurrentFile.UploadedByName
+                        </MudLink>
+                        - @CurrentFile.UploadedAt.ToRelativeNorwegian()
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        }
+
+        <MudItem xs="12">
+            <FileUploadField File="_selectedFile"
+                             FileChanged="OnFileSelected"
+                             AcceptedFileTypes="@AcceptedMimeTypes"
+                             Disabled="_isSaving"/>
+        </MudItem>
+    </DialogContent>
+
+    @* Knapp for sletting, godkjenn handling og avbryt handling *@
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel"
+                   Disabled="_isSaving">
+            Avbryt
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="UpdateVersion"
+                   Disabled="_isSaving || _selectedFile is null">
+            Last opp
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    // ===================== PARAMETER =====================
+    /// <summary>
+    /// Parameter som kreves av Mudblazor - settes når dialogen åpnes
+    /// </summary>
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Slug til dokumenttypen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string Slug { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// ID til dokumentet
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Guid DocumentId { get; set; }
+    
+    /// <summary>
+    /// Tittelen på dokumentet
+    /// </summary>
+    [Parameter, EditorRequired] 
+    public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Maks størrelse på filen
+    /// </summary>
+    [Parameter, EditorRequired]
+    public long MaxFileSizeInBytes { get; set; }
+    
+    /// <summary>
+    /// Tillatte MIME-typer fra DocumentTypeDto. Eks: ".pdf,.doc,.docx"
+    /// </summary>
+    [Parameter, EditorRequired] 
+    public string AcceptedMimeTypes { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Filinformasjon for nåværende versjon, vises før opplasting
+    /// </summary>
+    [Parameter]
+    public DocumentFileRecord? CurrentFile { get; set; }
+
+    // ===================== PRIVATE FIELDS =====================
+    private IBrowserFile? _selectedFile;
+    
+    private bool _isSaving;
+    
+    private AlertInfo? _alert;
+    
+    // ===================== PRIVATE METHODS =====================
+
+    // Prøver å opprette en kategori ved å sende request til backend
+    private async Task UpdateVersion()
+    {
+        if (_selectedFile == null)
+            return;
+        
+        Result fileResult = _selectedFile.ValidateFile(AcceptedMimeTypes.Split(','));
+        if (fileResult.IsFailure)
+        {
+            _alert = new AlertInfo(fileResult.Error!.ToString(), Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        
+        try
+        {
+            FileAttachment file = await _selectedFile.ToFileAttachmentAsync(MaxFileSizeInBytes, Cts.Token);
+             
+            var updateVersionResult = await DocumentService.UpdateVersionAsync(Slug, DocumentId, file, Cts.Token);
+            if (updateVersionResult.IsFailure)
+            {
+                _alert = new AlertInfo(updateVersionResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(updateVersionResult.Value));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+    
+    private void OnFileSelected(IBrowserFile? file) => _selectedFile = file;
+    
+    private void Cancel() => MudDialog.Cancel();
+}

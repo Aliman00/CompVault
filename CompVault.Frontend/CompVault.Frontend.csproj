@@ -12,11 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Common\Helpers\" />
-    <Folder Include="Features\Auth\Components\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <_ContentIncludedByDefault Remove="Layout\Errors\Error.razor" />
     <_ContentIncludedByDefault Remove="Layout\Errors\NotFound.razor" />
     <_ContentIncludedByDefault Remove="Layout\MainLayout.razor" />
@@ -31,6 +26,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <NoWarn>$(NoWarn);CS8669</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

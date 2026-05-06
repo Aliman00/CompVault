@@ -1,0 +1,47 @@
+﻿@* Gjenbrukbar header til alle widgets *@
+
+<section class="widget-header">
+    <div class="statistic-header-left-section">
+        @if (Icon != null)
+        {
+            <SmallIcon Icon="@Icon"
+                       AccentColor="@AccentColor"
+                       IconBackgroundColor="@IconBackgroundColor"/>
+        }
+        <MudText Typo="Typo.subtitle1"
+                 Style="font-weight:600">
+            @Title
+        </MudText>
+    </div>
+    <WidgetMenu OnHide="OnHide"/>
+</section>
+
+@code {
+    // ======================== PARAMETERS ========================
+    
+    /// <summary>
+    /// Tittelen til headeren
+    /// </summary>
+    [Parameter] public string Title { get; set; } = ""; 
+    
+    /// <summary>
+    /// Handling som utføres ved skjuling av widget
+    /// </summary>
+    [Parameter] public EventCallback OnHide { get; set; }
+    
+    /// <summary>
+    /// Ikon hvis det skal vises øverst til venstre
+    /// </summary>
+    [Parameter] public string? Icon { get; set; }
+    
+    /// <summary>
+    /// Farge til ikonet
+    /// </summary>
+    [Parameter] public string AccentColor { get; set; } = "#555555";
+    
+    /// <summary>
+    /// Bakgrunnsfargen til ikonet
+    /// </summary>
+    [Parameter] public string IconBackgroundColor { get; set; } = "#eeeeee";
+    
+}

@@ -13,7 +13,11 @@ Infrastructure/Jobs/
 
 Jobbene her kjører som hosted services og er ment for arbeid som ikke passer inn i en vanlig request/response-flyt. I prosjektet brukes dette blant annet til å rydde opp i tokens og til å oppdatere kompetansestatus automatisk.
 
-Eksisterende jobber akkurat nå er `CompetencyStatusJob`, som oppdaterer status på kompetanser, og `TokenCleanupJob`, som rydder opp i utløpte eller revokerte refresh-tokens.
+Eksisterende jobber akkurat nå er:
+
+- **CompetencyStatusJob** — oppdaterer status på kompetansebevis (Valid/ExpiringSoon/Expired) og logger endringer i AuditLog
+- **TokenCleanupJob** — rydder opp i utløpte og revokerte refresh tokens og OTP-koder
+- **ExpiryNotificationJob** — sender e-postvarsler til ansatte og ledere når kompetansebevis nærmer seg utløp
 
 ## Registrering
 
@@ -24,6 +28,7 @@ public static IServiceCollection AddInfrastructure(this IServiceCollection servi
 {
     services.AddHostedService<TokenCleanupJob>();
     services.AddHostedService<CompetencyStatusJob>();
+    services.AddHostedService<ExpiryNotificationJob>();
     return services;
 }
 ```

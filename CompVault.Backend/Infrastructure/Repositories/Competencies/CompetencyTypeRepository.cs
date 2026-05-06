@@ -33,7 +33,7 @@ public sealed class CompetencyTypeRepository(AppDbContext dbContext) : BaseRepos
                 cancellationToken);
 
     /// <inheritdoc />
-    public Task SoftDeleteAsync(CompetencyType competencyType, CancellationToken cancellationToken = default)
+    public Task SoftDeleteAsync(CompetencyType competencyType)
     {
         competencyType.DeletedAt = DateTime.UtcNow;
         competencyType.IsActive = false;

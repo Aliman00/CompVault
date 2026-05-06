@@ -2,15 +2,14 @@
 @using System.Security.Claims
 @using CompVault.Frontend.Common.Configuration
 @using CompVault.Frontend.Features.Auth.Services
-@using CompVault.Shared.DTOs.Users
 @inject IWebHostEnvironment Env
 @inject IAuthService AuthService
 @inject AuthStateProvider AuthStateProvider
 @inject IServiceProvider ServiceProvider
 @inject IJSRuntime JsRuntime
-@implements IAsyncDisposable
 @layout AuthLayout
 @inject IHttpClientFactory HttpClientFactory
+@inject AntiforgeryStateProvider AntiforgeryStateProvider
 
 @* Denne siden er kun tilgjengelig i development *@
 
@@ -23,14 +22,14 @@
 <PageTitle>CompVault Dev Panel</PageTitle>
 
 @* En skjult form som gjør at vi kan sette auth-cookie ved å poste til en Razor Page, som lagrer token i nettleseren *@
-<form id="dev-login-form" method="post" action="/login-callback">
+<form id="login-form" method="post" action="/login-callback">
     <AntiforgeryToken/>
-    <input type="hidden" name="OtpRequest.Email"/>
-    <input type="hidden" name="OtpRequest.OtpCode" value="123456"/>
+    <input type="hidden" name="TokenResponse.AccessToken" id="access-token-input" value="" />
+    <input type="hidden" name="TokenResponse.RefreshToken" id="refresh-token-input" value="" />
 </form>
 
 @* Skjult form for å slette auth-cookie fra nettleseren *@
-<form id="dev-logout-form" method="post" action="/logout-callback">
+<form id="profile-drawer-logout-form" method="post" action="/logout-callback">
     <AntiforgeryToken />
 </form>
 
@@ -70,7 +69,7 @@
                         </tr>
                         <tr>
                             <td><strong>Avdeling</strong></td>
-                            <td>@(_currentUser.DepartmentId?.ToString() ?? "—")</td>
+                            <td>@(_currentUser.DepartmentId.ToString())</td>
                         </tr>
                         <tr>
                             <td><strong>Leder</strong></td>
@@ -146,8 +145,8 @@
             
             var httpClient = HttpClientFactory.CreateClient(BackendApiSettings.AuthClientName);
             
-            HttpResponseMessage response = await httpClient.GetAsync("api/auth/dev-get-users", 
-                CancellationToken.None);
+            HttpResponseMessage response = await httpClient.GetAsync(
+                "api/auth/dev-get-users?Page=1&PageSize=100", CancellationToken.None);
 
             Result<List<UserDto>> getUsersResult =
                 await HttpClientExtensions.ParseResponseAsync<List<UserDto>>(response, CancellationToken.None);
@@ -172,33 +171,8 @@
         await RefreshClaimsAsync();
     }
     
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-            _jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./Dev/DevPanel.razor.js");
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_jsModule is not null)
-        {
-            try
-            {
-                await _jsModule.DisposeAsync();
-            }
-            catch (JSDisconnectedException)
-            {
-                // Kretsen er allerede disconnectet — ingenting å rydde opp
-            }
-        }
-    }
-    
     
     // ===================== LOGIN =====================
-    
-    private IJSObjectReference? _jsModule;
-    
     private bool _isLoading;
     private string? _loginErrorMessage;
 
@@ -215,30 +189,43 @@
     {
         if (_devService == null)
             return;
-        
+
         _isLoading = true;
         _loginErrorMessage = null;
-        
-        var requestOtpRequest = new RequestOtpRequest { Email = testUser.Email, 
-            DeliveryMethod = OtpDeliveryMethod.Email };
-        
+
+        var requestOtpRequest = new RequestOtpRequest { Email = testUser.Email };
+
         Result requestOtpResult = await _devService.RequestOtpAsync(requestOtpRequest);
-        
+
         if (requestOtpResult.IsFailure)
         {
             _loginErrorMessage = requestOtpResult.Error!.Message;
             _isLoading = false;
             return;
         }
-        
-        await _jsModule!.InvokeVoidAsync("submitLoginForm", testUser.Email);
+
+        var verifyRequest = new VerifyOtpRequest { Email = testUser.Email, OtpCode = "123456" };
+        Result<TokenResponse> verifyResult = await AuthService.VerifyOtpAsync(verifyRequest, CancellationToken.None);
+
+        if (verifyResult.IsFailure)
+        {
+            _loginErrorMessage = verifyResult.Error!.Message;
+            _isLoading = false;
+            return;
+        }
+
+        var token = AntiforgeryStateProvider.GetAntiforgeryToken();
+        await JsRuntime.InvokeVoidAsync("loginFormSubmit",
+            verifyResult.Value!.AccessToken,
+            verifyResult.Value!.RefreshToken,
+            token?.Value);
     }
     
     private async Task LogOutAsync()
     {
         _isLoading = true;
         await AuthService.LogOutAsync(CancellationToken.None);
-        await _jsModule!.InvokeVoidAsync("submitLogoutForm");
+        await JsRuntime.InvokeVoidAsync("logoutFormSubmit");
     }
 
     private async Task RefreshClaimsAsync()

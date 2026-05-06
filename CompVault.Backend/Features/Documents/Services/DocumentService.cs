@@ -2,7 +2,9 @@ using CompVault.Backend.Domain.Entities.Documents;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Documents;
+using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
 
 using Microsoft.EntityFrameworkCore;
@@ -75,7 +77,59 @@ public sealed class DocumentService(
         if (accessResult.IsFailure)
             return Result<DocumentDto>.Failure(accessResult.Error!);
 
-        return Result<DocumentDto>.Success(DocumentMapper.ToDto(document));
+        // Sjekker om brukeren har signert nyeste versjon
+        bool hasSigned = false;
+        if (document.RequiresSignature && currentUserId.HasValue)
+            hasSigned = await signatureRepository.HasUserSignedVersionAsync(document.Id, currentUserId.Value,
+                document.Version, cancellationToken);
+
+        return Result<DocumentDto>.Success(DocumentMapper.ToDtoWithUserSignature(document, hasSigned));
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<PagedResult<DocumentListDto>>> GetDocumentsForUserAsync(
+        Guid userId,
+        DocumentQueryParameters query,
+        bool hasPermission,
+        CancellationToken ct = default)
+    {
+        if (query.UserId.HasValue && query.UserId.Value != userId && !hasPermission)
+        {
+            logger.LogWarning("Bruker med ID {RequestingUserId} prøver å hente dokumenter for " +
+                              "bruker {TargetUserId} uten tilattelse", userId, query.UserId);
+            return Result<PagedResult<DocumentListDto>>.Failure(AppError.Create(ErrorCode.Forbidden,
+                    "Du har ikke tilgang til å hente dokumenter for andre brukere."));
+        }
+
+        ApplicationUser? user = await userRepository.GetByIdAsync(userId, ct);
+        if (user is null)
+        {
+            logger.LogWarning("Bruker med ID {UserId} ble ikke funnet ved henting av dokumenter", userId);
+            return Result<PagedResult<DocumentListDto>>.Failure(
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        }
+
+        // Setter enten vår egen UserId eller brukeren sin UserId hvis vi har tilattelse
+        if (query.UserId.HasValue && hasPermission)
+            userId = query.UserId.Value;
+
+        // Henter antall dokumenter
+        int totalCount = await documentRepository.CountDocumentsForUserAsync(
+            userId, user.DepartmentId, user.JobTitleId, query, ct);
+
+        // Henter alle dokumentene med for brukeren
+        IReadOnlyList<Document> documents = await documentRepository.GetDocumentsForUserAsync(
+            userId, user.DepartmentId, user.JobTitleId, query, ct);
+
+        // Henter ut de signerte dokumentene og henter DocumentSignature for å kunne bygge med MapToListDtos
+        var signedDocumentIds = documents.Select(d => d.Id).ToList();
+        IReadOnlyList<DocumentSignature> signatures = await signatureRepository.GetByDocumentIdsAsync(
+            signedDocumentIds, ct);
+
+        List<DocumentListDto> dtos = DocumentMapper.MapToListDtos(documents, signatures, currentUserId: userId);
+
+        return Result<PagedResult<DocumentListDto>>.Success(
+            PagedResult<DocumentListDto>.Create(dtos, totalCount, query));
     }
 
     /// <inheritdoc />
@@ -268,6 +322,7 @@ public sealed class DocumentService(
                     AppError.NotFound($"Kategori med ID '{request.DocumentTypeCategoryId.Value}' finnes ikke for dokumentets dokumenttype."));
         }
 
+        ApplyTargetingUpdate(document, request);
         ApplyUpdate(document, request);
 
         try
@@ -300,7 +355,7 @@ public sealed class DocumentService(
             return Result<bool>.Failure(
                 AppError.NotFound($"Dokument med ID '{id}' ble ikke funnet."));
 
-        await documentRepository.SoftDeleteAsync(document, cancellationToken);
+        await documentRepository.SoftDeleteAsync(document);
         await documentRepository.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Dokument {DocumentId} slettet (soft delete)", id);
@@ -331,21 +386,40 @@ public sealed class DocumentService(
             document.ExternalUrl = null;
         else if (request.ExternalUrl is not null)
             document.ExternalUrl = request.ExternalUrl;
+    }
 
-        // Oppdater mål-avdelinger: null = ikke endret, liste = erstatt
-        if (request.TargetDepartmentIds is not null)
+    // Ved endring av målgruppe til en dokumenttype så kan dokumenter sitte igjen med verdier i listen til gamle
+    // måltyper. Vi rydder opp i listene og legger til og fjerner gamle utifra hva brukeren legger til i requesten
+    private static void ApplyTargetingUpdate(Document document, UpdateDocumentRequest request)
+    {
+        switch (document.DocumentType!.TargetMode)
         {
-            document.DocumentDepartments = request.TargetDepartmentIds
-                .Select(id => new DocumentDepartment { DocumentId = document.Id, DepartmentId = id })
-                .ToList();
-        }
+            case DocumentTargetMode.Department when request.TargetDepartmentIds is not null:
+                document.DocumentDepartments.Clear();
+                foreach (Guid departmentId in request.TargetDepartmentIds)
+                {
+                    document.DocumentDepartments.Add(
+                        new DocumentDepartment { DocumentId = document.Id, DepartmentId = departmentId });
+                }
 
-        // Oppdater mål-jobbtitler: null = ikke endret, liste = erstatt
-        if (request.TargetJobTitleIds is not null)
-        {
-            document.DocumentJobTitles = request.TargetJobTitleIds
-                .Select(id => new DocumentJobTitle { DocumentId = document.Id, JobTitleId = id })
-                .ToList();
+                document.DocumentJobTitles.Clear();
+                break;
+
+            case DocumentTargetMode.JobTitle when request.TargetJobTitleIds is not null:
+                document.DocumentJobTitles.Clear();
+                foreach (Guid jobTitleId in request.TargetJobTitleIds)
+                {
+                    document.DocumentJobTitles.Add(
+                        new DocumentJobTitle { DocumentId = document.Id, JobTitleId = jobTitleId });
+                }
+
+                document.DocumentDepartments.Clear();
+                break;
+
+            case DocumentTargetMode.None:
+                document.DocumentDepartments.Clear();
+                document.DocumentJobTitles.Clear();
+                break;
         }
     }
 }

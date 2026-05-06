@@ -1,0 +1,66 @@
+@using System.Linq.Expressions
+@typeparam T where T : struct, IComparable<T>
+
+@* Nummer felt som bytter mellom lese- og redigeringsmodus. generisk og brukes i alle skjemar som trenger det *@
+
+@if (IsEditing)
+{
+    <MudNumericField T="T"
+                     Value="Value"
+                     ValueChanged="ValueChanged"
+                     Label="@Label"
+                     Variant="Variant.Outlined"
+                     Adornment="@(AdornmentText != null ? Adornment.End : Adornment.None)"
+                     AdornmentText="@AdornmentText"
+                     Min="@(Min ?? default)"
+                     Max="@(Max ?? default)"
+                     For="For"/>
+}
+else
+{
+    <TextField Value="@(Value + (AdornmentText != null ? $" {AdornmentText}" : string.Empty))"
+               Label="@Label"
+               IsEditing="false"/>
+}
+
+@code {
+    /// <summary>
+    /// Verdien til for input - datatype
+    /// </summary>
+    [Parameter, EditorRequired] public T Value { get; set; }
+
+    /// <summary>
+    /// Handling som skjer når verdi endres
+    /// </summary>
+    [Parameter] public EventCallback<T> ValueChanged { get; set; }
+
+    /// <summary>
+    /// Label som vises over feltet
+    /// </summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Endrer utseende i UI for å skille mellom redigering og visning
+    /// </summary>
+    [Parameter, EditorRequired] public bool IsEditing { get; set; }
+
+    /// <summary>
+    /// Kobling mot en egenskap i en modell for å vise DataAnnotations
+    /// </summary>
+    [Parameter] public Expression<Func<T>>? For { get; set; }
+
+    /// <summary>
+    /// Tekst som vises som enhet i feltet. Eks: "MB" eller "kr"
+    /// </summary>
+    [Parameter] public string? AdornmentText { get; set; }
+
+    /// <summary>
+    /// Minste tillatte verdi
+    /// </summary>
+    [Parameter] public T? Min { get; set; }
+
+    /// <summary>
+    /// Største tillatte verdi
+    /// </summary>
+    [Parameter] public T? Max { get; set; }
+}

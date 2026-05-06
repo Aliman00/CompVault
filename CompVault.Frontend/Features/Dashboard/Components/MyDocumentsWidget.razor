@@ -1,0 +1,103 @@
+﻿@inject IDocumentTypeService DocumentTypeService
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject NavigationManager NavigationManager
+
+@* Viser innlogget brukers dokumentkategorier med signeringsstatus *@
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid #00695c;" Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.MyDocuments"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.Article"
+                  AccentColor="#00695c"
+                  IconBackgroundColor="#e0f2f1"/>
+
+    <AppAlert @bind-Alert="_alert"/>
+
+    @if (_loading)
+    {
+        <AppSpinner/>
+    }
+    else if (!_documentTypes.Any())
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.FolderOff" Color="Color.Secondary" Size="Size.Small"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen dokumenter tildelt.</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudText Typo="Typo.h5" Class="mt-1">
+            @_totalDocuments dokument@(_totalDocuments == 1 ? "" : "er")
+        </MudText>
+
+        @if (_totalPending > 0)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+                <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Color="Color.Error" Size="Size.Small" />
+                <MudText Typo="Typo.body2" Color="Color.Error">
+                    @_totalPending venter signering
+                </MudText>
+            </MudStack>
+        }
+
+        <MudStack Row="true" Spacing="2" Class="mt-3" Wrap="Wrap.Wrap">
+            @foreach (var dt in _documentTypes)
+            {
+                <MudChip T="string"
+                         Color="@(dt.PendingSignatureCount > 0 ? Color.Warning : Color.Primary)"
+                         Size="Size.Small"
+                         Icon="@Icons.Material.Filled.Folder"
+                         OnClick="@(() => NavigationManager.NavigateTo(PageRoutes.UserDocuments.List(dt.Slug)))">
+                    @dt.Name (@dt.DocumentCount)
+                </MudChip>
+            }
+        </MudStack>
+
+        <MudLink Href="@PageRoutes.UserDocuments.Overview"
+                  Typo="Typo.caption"
+                  Class="mt-3 d-block">
+            Se alle dokumenter →
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    // ======================== PARAMETERS ========================
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    // ======================== PRIVATE FIELDS ========================
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private List<UserDocumentTypeDto> _documentTypes = [];
+    private int _totalDocuments;
+    private int _totalPending;
+    
+
+    // ======================== PRIVATE METHODS ========================
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await DocumentTypeService.GetMyDocumentTypesAsync(Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _documentTypes  = result.Value!;
+            _totalDocuments = _documentTypes.Sum(dt => dt.DocumentCount);
+            _totalPending   = _documentTypes.Sum(dt => dt.PendingSignatureCount);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

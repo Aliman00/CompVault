@@ -3,17 +3,20 @@ using System.Text;
 using CompVault.Backend.Common.Middleware;
 using CompVault.Backend.Common.Responses;
 using CompVault.Backend.Domain.Entities.Identity;
+using CompVault.Backend.Features.Audit.Services;
 using CompVault.Backend.Features.Auth.Configuration;
 using CompVault.Backend.Features.Auth.Services;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Features.Documents.Services;
+using CompVault.Backend.Features.Equipment.Services;
 using CompVault.Backend.Features.JobTitles.Services;
 using CompVault.Backend.Features.Roles.Services;
 using CompVault.Backend.Features.Users.Services;
 using CompVault.Backend.Infrastructure.Auth;
 using CompVault.Backend.Infrastructure.Configuration;
 using CompVault.Backend.Infrastructure.Data;
+using CompVault.Backend.Infrastructure.Data.Interceptors;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Config;
 using CompVault.Backend.Infrastructure.FileStorage;
@@ -23,8 +26,10 @@ using CompVault.Backend.Infrastructure.Repositories.Auth;
 using CompVault.Backend.Infrastructure.Repositories.Competencies;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
+using CompVault.Backend.Infrastructure.Repositories.Equipment;
 using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Infrastructure.Repositories.JobTitles;
+using CompVault.Backend.Infrastructure.Repositories.Notifications;
 using CompVault.Shared.Constants;
 using CompVault.Shared.Result;
 
@@ -57,10 +62,15 @@ public static class ServiceCollectionExtensions
                 .GetSection(DatabaseSettings.SectionName)
                 .Get<DatabaseSettings>() ?? throw new InvalidOperationException("Database-konfigurasjon mangler.");
 
-            services.AddDbContext<AppDbContext>(options =>
+            services.AddDbContext<AppDbContext>((sp, options) =>
+            {
                 options.UseNpgsql(
                     dbSettings.BuildConnectionString(),
-                    npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
+                    npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
+                options.AddInterceptors(
+                    new AuditSaveChangesInterceptor(sp),
+                    new UserDepartmentWriteInterceptor(sp));
+            });
         }
 
         services.AddIdentityCore<ApplicationUser>(opts =>
@@ -141,7 +151,7 @@ public static class ServiceCollectionExtensions
                     logger?.LogWarning(
                         context.Exception,
                         "JWT authentication failed: {Error}",
-                        context.Exception?.Message ?? "Unknown error");
+                        context.Exception.Message ?? "Unknown error");
                     return Task.CompletedTask;
                 }
             };
@@ -208,6 +218,9 @@ public static class ServiceCollectionExtensions
 
             // Beregner status på kompetansebevis én gang i døgnet
             services.AddHostedService<CompetencyStatusJob>();
+
+            // Sender e-postvarsler for kompetanseutløp én gang i døgnet
+            services.AddHostedService<ExpiryNotificationJob>();
         }
 
         // Fillagring
@@ -262,6 +275,14 @@ public static class ServiceCollectionExtensions
         // JobTitles
         services.AddScoped<IJobTitleRepository, JobTitleRepository>();
 
+        // Equipment
+        services.AddScoped<IEquipmentCategoryRepository, EquipmentCategoryRepository>();
+        services.AddScoped<IEquipmentItemRepository, EquipmentItemRepository>();
+        services.AddScoped<IEquipmentIssuanceRepository, EquipmentIssuanceRepository>();
+
+        // Notifications
+        services.AddScoped<ICompetencyNotificationRepository, CompetencyNotificationRepository>();
+
         return services;
     }
 
@@ -270,6 +291,13 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        // Hierarki-sjekk
+        services.AddScoped<IDepartmentScopeService, DepartmentScopeService>();
+
+        // Audit
+        services.AddScoped<IAuditContext, AuditContext>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
+
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
@@ -290,6 +318,11 @@ public static class ServiceCollectionExtensions
 
         // JobTitles
         services.AddScoped<IJobTitleService, JobTitleService>();
+
+        // Equipment
+        services.AddScoped<IEquipmentCategoryService, EquipmentCategoryService>();
+        services.AddScoped<IEquipmentItemService, EquipmentItemService>();
+        services.AddScoped<IEquipmentIssuanceService, EquipmentIssuanceService>();
 
         return services;
     }

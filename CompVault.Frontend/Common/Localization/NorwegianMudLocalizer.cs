@@ -39,7 +39,7 @@ public class NorwegianMudLocalizer : MudLocalizer
         // Paginering
         { "MudDataGrid_RowsPerPage", "Rader per side" },
         { "MudDataGridPager_RowsPerPage", "Rader per side" },
-        { "MudDataGrid_of", "av" },
+        { "MudDataGridPager_InfoFormat", "{0}-{1} av {2}" },
 
         // Valg og gruppering
         { "MudDataGrid_SelectAll", "Velg alle" },

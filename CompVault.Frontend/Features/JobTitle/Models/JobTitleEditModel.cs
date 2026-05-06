@@ -10,7 +10,21 @@ public class JobTitleEditModel
     [MaxLength(JobTitleValidations.NameMaxLength, ErrorMessage = JobTitleValidations.Errors.NameMaxLength)]
     public string Name { get; set; } = string.Empty;
 
-    public static JobTitleEditModel FromDto(JobTitleDto dto) => new() { Name = dto.Name };
+    public bool IsActive { get; set; }
 
-    public UpdateJobTitleRequest ToRequest() => new() { Name = Name };
+    public bool IsLeader { get; set; }
+
+    public static JobTitleEditModel FromDto(JobTitleDto dto) => new()
+    {
+        Name = dto.Name,
+        IsActive = dto.IsActive,
+        IsLeader = dto.IsLeader
+    };
+
+    public UpdateJobTitleRequest ToRequest() => new()
+    {
+        Name = Name,
+        IsActive = IsActive,
+        IsLeader = IsLeader
+    };
 }

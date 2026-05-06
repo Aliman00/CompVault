@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
-
 using CompVault.Backend.Domain.Entities.Identity;
 
 namespace CompVault.Backend.Domain.Entities.Auth;
@@ -27,7 +25,7 @@ public class RefreshToken
     /// <summary>
     /// Når tokenet ble opprettet.
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
     /// Når tokenet går ut.
@@ -38,13 +36,6 @@ public class RefreshToken
     /// Satt til true når tokenet er tilbakekalt manuelt (logout/revoke).
     /// </summary>
     public bool IsRevoked { get; set; }
-
-    // ======================== Beregnet ========================
-    /// <summary>
-    /// Tokenet er gyldig hvis det ikke er tilbakekalt og ikke er utgått.
-    /// </summary>
-    [NotMapped]
-    public bool IsValid => !IsRevoked && ExpiresAt > DateTime.UtcNow;
 
     // ======================== Navigasjonsegenskaper ========================
     public ApplicationUser User { get; set; } = null!;

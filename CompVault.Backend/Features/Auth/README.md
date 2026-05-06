@@ -38,7 +38,7 @@ håndtere antall forsøk, men backend teller og har en maksgrense den også.
 4. Verifiserer OTP-koden mot lagret hash. Vi oppdaterer OTP-koden med antall feilede forsøk alltid - dette skal ikke være med i transaksjonen som ruller tilbake ved Failure
 5. Returnerer generisk feilmelding hvis ingen aktiv kode finnes, eller koden ikke stemmer
 6. Ved suksess: `IsUsed = true` og Refresh Token lagres samtidig i en transaksjon. Lykkes IsUsed = true, og Refresh Token feiler, så er ikke OTP-koden satt som brukt
-7. Returnerer access token og refresh token i `RefreshTokenResponse`
+7. Returnerer access token og refresh token i `TokenResponse`
 
 ### Beskyttelse mot misbruk
 
@@ -60,7 +60,7 @@ Refresh Token lagres i databasen.
 2. Returnerer feilmelding hvis tokenet er ugyldig, utgått eller revokert
 3. Henter brukeren og validerer at den er aktiv
 4. Revoker det gamle tokenet og oppretter et nytt i en transaksjon, med mulighet for rollback
-5. Returnerer nytt access token og refresh token i `RefreshTokenResponse`
+5. Returnerer nytt access token og refresh token i `TokenResponse`
 
 ### Token rotation
 
@@ -79,7 +79,8 @@ Revoker et aktivt refresh token, og logger brukeren effektivt ut.
 
 1. Henter tokenet fra databasen — kun gyldige tokens kan revokers
 2. Returnerer feilmelding hvis tokenet er ugyldig eller allerede revokert
-3. Setter `IsRevoked = true` og lagrer
+3. Sjekker at tokenet tilhører den innloggede brukeren — returnerer feilmelding hvis det ikke stemmer
+4. Setter `IsRevoked = true` og lagrer
 
 ---
 

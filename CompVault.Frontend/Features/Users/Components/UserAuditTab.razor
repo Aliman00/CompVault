@@ -1,0 +1,93 @@
+﻿@using CompVault.Frontend.Features.Audit.Services
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject IAuditService AuditService
+@inject IDialogService DialogService
+
+@* Revisjonslogg fanen med visning av alle handlinger brukeren har utført*@
+
+<AppAlert @bind-Alert="_alert"/>
+
+<ListHeader Title="Revisjonslogg"
+            PageIcon="@Icons.Material.Filled.History"/>
+
+<MudDataGrid T="AuditLogDto"
+             @ref="_grid"
+             ServerData="LoadServerData"
+             Dense="true"
+             Hover="true"
+             Striped="true"
+             Square="true"
+             Bordered="true"
+             RowClick="OnRowClick"
+             RowsPerPage="10">
+    <Columns>
+        <TemplateColumn T="AuditLogDto" Title="Tidspunkt">
+            <CellTemplate Context="cell">
+                <MudTooltip Text="@cell.Item.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss")">
+                    @cell.Item.CreatedAt.ToRelativeNorwegian()
+                </MudTooltip>
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn T="AuditLogDto" TProperty="string"
+                        Property="x => x.Action.ToNorwegianAction()"
+                        Title="Handling"/>
+        <PropertyColumn T="AuditLogDto" TProperty="string"
+                        Property="x => x.EntityType.ToNorwegian()"
+                        Title="Entitet"/>
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="AuditLogDto"
+                          RowsPerPageString="Rader pr side:"
+                          PageSizeOptions="new[] { 10, 20, 50 }"/>
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    
+    // ===================== PARAMETER =====================
+    [Parameter, EditorRequired] public Guid UserId { get; set; }
+    
+    // ===================== PRIVATE FIELDS =====================
+    private MudDataGrid<AuditLogDto> _grid = null!;
+    
+    private AlertInfo? _alert;
+    // ===================== PRVIATE METHODS =====================
+    private async Task<GridData<AuditLogDto>> LoadServerData(GridState<AuditLogDto> state, CancellationToken ct)
+    {
+        var parameters = new AuditLogQueryParameters
+        {
+            Page = state.Page + 1,
+            PageSize = state.PageSize,
+            UserId = UserId
+        };
+
+        var result = await AuditService.GetAsync(parameters, ct);
+
+        if (result.IsFailure)
+        {
+            _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+            return new GridData<AuditLogDto>();
+        }
+            
+
+        return new GridData<AuditLogDto>
+        {
+            Items = result.Value!.Items,
+            TotalItems = result.Value!.TotalCount
+        };
+    }
+
+    private async Task OnRowClick(DataGridRowClickEventArgs<AuditLogDto> args)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(AuditLogDetailDialog.Log), args.Item }
+        };
+
+        await DialogService.ShowAsync<AuditLogDetailDialog>("", parameters, new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        });
+    }
+}

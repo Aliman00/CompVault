@@ -1,8 +1,11 @@
 ﻿using CompVault.Backend.Common.Security;
 using CompVault.Backend.Domain.Entities.Auth;
+using CompVault.Backend.Domain.Entities.Competencies;
 using CompVault.Backend.Domain.Entities.Departments;
+using CompVault.Backend.Domain.Entities.Equipment;
 using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Tests.Common.Constants;
+using CompVault.Shared.Enums;
 
 namespace CompVault.Backend.Tests.Common;
 
@@ -21,13 +24,14 @@ public static class TestDataFactory
     ///  <param name="firstName">Optional first name som er satt til TestConstant.Users</param>
     /// <param name="lastName">Optional last name som er satt til TestConstant.Users</param>
     /// <param name="deletedAt">DateTime som bestemmer om brukeren er aktive/slettet</param>
-
+    /// <param name="departmentId">ID til avdeling</param>
     /// <returns>En ferdig opprettet ApplicationUser for testing</returns>
     public static ApplicationUser CreateApplicationUser(Guid? id = null,
         string email = TestConstants.Users.DefaultEmailForActiveUser,
         string firstName = TestConstants.Users.FirstName,
         string lastName = TestConstants.Users.LastName,
-        DateTime? deletedAt = null) => new()
+        DateTime? deletedAt = null,
+        Guid? departmentId = null) => new()
         {
             Id = id ?? Guid.NewGuid(),
             Email = email,
@@ -35,7 +39,8 @@ public static class TestDataFactory
             FirstName = firstName,
             LastName = lastName,
             IsActive = deletedAt == null,
-            DeletedAt = deletedAt
+            DeletedAt = deletedAt,
+            DepartmentId = departmentId ?? TestConstants.Departments.DefaultDepartmentId
         };
 
     /// <summary>
@@ -80,7 +85,7 @@ public static class TestDataFactory
         };
 
     /// <summary>
-    /// Oppretter en Department for testing.
+    /// Oppretter en Department for testing
     /// </summary>
     public static Department CreateDepartment(
         Guid? id = null,
@@ -99,4 +104,120 @@ public static class TestDataFactory
             CreatedAt = createdAt ?? DateTime.UtcNow,
             DeletedAt = deletedAt
         };
+
+
+    /// <summary>
+    /// Oppretter en kompetansetype for testing
+    /// </summary>
+    /// <param name="id">ID-en til kompetansetypen</param>
+    /// <param name="name">Navnet på kompetansetypen. Default Dykkekurs</param>
+    /// <param name="category">Valgfri kategori. Default null</param>
+    /// <param name="requiresExpiration">Utgår kompetansetypen. Default false</param>
+    /// <returns>Ferdig bygget CompetencyType for testing</returns>
+    public static CompetencyType CreateCompetencyType(
+        Guid? id = null,
+        string name = "Dykkekurs",
+        string? category = null,
+        bool requiresExpiration = false) => new()
+        {
+            Id = id ?? Guid.NewGuid(),
+            Name = name,
+            Category = category,
+            RequiresExpiration = requiresExpiration,
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true
+        };
+
+    /// <summary>
+    /// Oppretter en kompetanse for å teste mot. Egenskaper for revoke og soft delete er utelatt
+    /// </summary>
+    /// <param name="id">ID-en til kompetansen. Defualt new Guid</param>
+    /// <param name="userId">Brukeren som blir tildelt kompetansen. Defualt new Guid</param>
+    /// <param name="competencyTypeId">Kompetansetypen. Defualt new Guid</param>
+    /// <param name="status">CompetencyStatus. Defualt Valid</param>
+    /// <param name="expiryDate">Når den går ut hvis den går ut (Se typen). Default null</param>
+    /// <param name="issuedDate">Når den er utlevert. Defualt UtcNow</param>
+    /// <returns>Ferdig bygget Competency for testing</returns>
+    public static Competency CreateCompetency(
+        Guid? id = null,
+        Guid? userId = null,
+        Guid? competencyTypeId = null,
+        CompetencyStatus status = CompetencyStatus.Valid,
+        DateTime? expiryDate = null,
+        DateTime? issuedDate = null) => new()
+        {
+            Id = id ?? Guid.NewGuid(),
+            UserId = userId ?? Guid.NewGuid(),
+            CompetencyTypeId = competencyTypeId ?? Guid.NewGuid(),
+            Status = status,
+            ExpiryDate = expiryDate,
+            IssuedDate = issuedDate ?? DateTime.UtcNow,
+            IsActive = true
+        };
+
+    /// <summary>
+    /// Oppretter en utstyrskategori for testing
+    /// </summary>
+    /// <param name="id">ID-en tit kategorien. Default oppretter egen Guid</param>
+    /// <param name="name">Navn. Default er Test kategori</param>
+    /// <returns>Ferdig bygget EquipmentCategory klar til testing</returns>
+    public static EquipmentCategory CreateEquipmentCategory(Guid? id = null, string name = "Test kategori") => new()
+    {
+        Id = id ?? Guid.NewGuid(),
+        Name = name,
+        IsActive = true,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    /// <summary>
+    /// Oppretter et utstyr
+    /// </summary>
+    /// <param name="id">ID-til utsyret. Default new Guid</param>
+    /// <param name="categoryId">ID-til EquipmentCateogry. Default new Guid</param>
+    /// <param name="name">Navn. Default er Test utstyr</param>
+    /// <param name="hasSize">Har item størrelse. Default false</param>
+    /// <returns>EquipmentItem for testing</returns>
+    public static EquipmentItem CreateEquipmentItem(
+        Guid? id = null,
+        Guid? categoryId = null,
+        string name = "Test utstyr",
+        bool hasSize = false) => new()
+        {
+            Id = id ?? Guid.NewGuid(),
+            CategoryId = categoryId ?? Guid.NewGuid(),
+            Name = name,
+            HasSize = hasSize,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+    /// <summary>
+    /// Tilknytter et utstyr en bruker
+    /// </summary>
+    /// <param name="id">ID til tilknyttingen. Default new Guid</param>
+    /// <param name="userId">Brukerens ID. Default new Guid</param>
+    /// <param name="itemId">Utstyrets ID. Default new Guid</param>
+    /// <param name="issuedById">Brukeren som har utlevert. Default new Guid</param>
+    /// <param name="quantity">Antall utlevert. Default 1</param>
+    /// <param name="size">Størrelse hvis satt. Default null</param>
+    /// <returns>EquipmentIssuance for testing</returns>
+    public static EquipmentIssuance CreateEquipmentIssuance(
+        Guid? id = null,
+        Guid? userId = null,
+        Guid? itemId = null,
+        Guid? issuedById = null,
+        int quantity = 1,
+        string? size = null) => new()
+        {
+            Id = id ?? Guid.NewGuid(),
+            UserId = userId ?? Guid.NewGuid(),
+            ItemId = itemId ?? Guid.NewGuid(),
+            IssuedById = issuedById ?? Guid.NewGuid(),
+            Quantity = quantity,
+            IssuedDate = DateTime.UtcNow,
+            Size = size,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
 }

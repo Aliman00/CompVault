@@ -1,6 +1,6 @@
 ﻿@page "/competency-types"
 @inherits CompVault.Frontend.Common.Base.DisposableComponentBase
-@attribute [Authorize(Policy = Permissions.CompetenciesRead)]
+@attribute [Authorize(Policy = Permissions.CompetenciesWrite)]
 @inject ICompetencyTypeService CompetencyTypeService
 @inject NavigationManager NavigationManager
 
@@ -10,10 +10,9 @@
           Items="_competencyTypes"
           IsLoading="_isLoading"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedCompetencyTypes = s)"
           RowClick="@(args => OnCompetencyTypeClick(args))">
     <Header>
-        <ListHeader Title="Kompetansetyper"
+        <ListHeader Title="Kompetanser"
                     PageIcon="@Icons.Material.Filled.Category"
                     CreateHref="@PageRoutes.CompetencyTypes.Create"
                     CreateLabel="Opprett kompetansetype"
@@ -57,8 +56,6 @@
 
     // ===================== PRIVATE FELT =====================
     private List<CompetencyTypeDto> _competencyTypes = [];
-    private HashSet<CompetencyTypeDto> _selectedCompetencyTypes = [];
-
     private bool _isLoading = true;
     private AlertInfo? _alert;
 

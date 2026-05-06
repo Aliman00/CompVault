@@ -1,0 +1,88 @@
+﻿@page "/my-equipment"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize]
+@inject IEquipmentIssuancesService EquipmentIssuancesService
+@inject NavigationManager NavigationManager
+
+@* Oversikt over utstyrskategoriene en bruker har fått utlevert utstyr til*@
+
+<AppAlert @bind-Alert="_alert"/>
+
+@if (_isLoading)
+{
+    <AppSpinner Class="pa-20"/>
+}
+else
+{
+    <MudPaper Elevation="1" Square="true" Class="p-2 mt-4">
+        <MudToolBar Dense="true">
+            <MudIcon Icon="@Icons.Material.Filled.Headphones" Class="mr-2" Color="Color.Primary"/>
+            <MudText Typo="Typo.h6">Mitt utstyr</MudText>
+            <MudSpacer/>
+        </MudToolBar>
+
+        <MudList T="UserEquipmentCategoryDto" Dense="true" Class="pa-2">
+            @if (!_categories.Any())
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                    Det er ikke registert utlevert utstyr til deg.
+                </MudText>
+            }
+            @foreach (var category in _categories)
+            {
+                <MudListItem T="UserEquipmentCategoryDto"
+                             Class="cursor-pointer"
+                             OnClick="@(() => NavigationManager.NavigateTo(
+                                          PageRoutes.UserEquipment.List(category.Id)))">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                        <MudIcon Icon="@Icons.Material.Filled.Checkroom"
+                                 Color="Color.Primary"
+                                 Size="Size.Medium"/>
+                        <MudText Typo="Typo.body1">@category.Name</MudText>
+                        <MudSpacer/>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @category.ItemCount utstyr
+                        </MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary"/>
+                    </MudStack>
+                </MudListItem>
+                <MudDivider/>
+            }
+        </MudList>
+    </MudPaper>
+}
+
+@code {
+    // ===================== PRIVATE FELT =====================
+    private List<UserEquipmentCategoryDto> _categories = [];
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+    
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await EquipmentIssuancesService.GetMyCategoriesAsync(Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _categories = result.Value!;
+        }
+        catch (OperationCanceledException) { }
+        catch
+        {
+            _alert = new AlertInfo(
+                "Klarte ikke å laste utstyrskategorier. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

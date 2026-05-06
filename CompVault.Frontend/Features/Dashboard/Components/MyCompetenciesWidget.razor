@@ -1,0 +1,107 @@
+﻿@inject ICompetencyService CompetencyService
+@inject CircuitUserContext UserContext
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+
+@* Viser oppsummering av brukerens kompetanser. Teller antall gyldige, snart-utløpende, utløpte *@
+
+<MudPaper Class="pa-3" Style="border-top: 3px solid #2d7a4f;" Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.MyCompetencies"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.WorkspacePremium"
+                  AccentColor="#2d7a4f"
+                  IconBackgroundColor="#e8f5ee"/>
+
+    <AppAlert @bind-Alert="_alert"/>
+
+    @if (_loading)
+    {
+        <AppSpinner/>
+    }
+    else if (_total == 0)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.WorkspacePremium" Color="Color.Secondary" Size="Size.Small"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen registrerte kompetanser</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudText Typo="Typo.h5" Class="mt-1">Du har: @_total kompetanse@(_total == 1 ? "" : "r")</MudText>
+        <MudStack Row="true" Spacing="2" Class="mt-2" Wrap="Wrap.Wrap">
+            
+            @* Ikonene med antall kompetanser til hver status*@
+            <MudChip T="string" Color="Color.Success" Size="Size.Small"
+                     Icon="@Icons.Material.Filled.CheckCircle">
+                @_valid gyldige
+            </MudChip>
+            @if (_expiringSoon > 0)
+            {
+                <MudChip T="string" Color="Color.Warning" Size="Size.Small"
+                         Icon="@Icons.Material.Filled.Warning">
+                    @_expiringSoon snart utløper
+                </MudChip>
+            }
+            @if (_expired > 0)
+            {
+                <MudChip T="string" Color="Color.Error" Size="Size.Small"
+                         Icon="@Icons.Material.Filled.Cancel">
+                    @_expired utløpt
+                </MudChip>
+            }
+        </MudStack>
+        <MudLink Href="@PageRoutes.UserCompetencies.List" Typo="Typo.caption" Class="mt-2 d-block">
+            Se alle kompetanser →
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    // ======================== PARAMETERS ========================
+    
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    // ======================== PRIVATE FIELDS ========================
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private int _total;
+    private int _valid;
+    private int _expiringSoon;
+    private int _expired;
+
+    // ======================== PRIVATE METHODS ========================
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (UserContext.UserId is null)
+            {
+                _alert = new AlertInfo("Kunne ikke hente bruker-ID.", Severity.Error);
+                return;
+            }
+
+            var filter = new CompetencyFilterRequest { UserId = UserContext.UserId, PageSize = 100 };
+            var result = await CompetencyService.GetAllAsync(filter, Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+            
+            var items     = result.Value!.Items;
+            _total = items.Count;
+            _valid = items.Count(c => c.Status == CompetencyStatus.Valid);
+            _expiringSoon = items.Count(c => c.Status == CompetencyStatus.ExpiringSoon);
+            _expired = items.Count(c => c.Status == CompetencyStatus.Expired);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

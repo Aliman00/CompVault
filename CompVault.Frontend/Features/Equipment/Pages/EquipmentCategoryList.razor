@@ -1,0 +1,114 @@
+﻿@page "/equipment-categories"
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@attribute [Authorize(Policy = Permissions.EquipmentWrite)]
+@inject IEquipmentCategoryService EquipmentCategoryService
+@inject NavigationManager NavigationManager
+
+@* Side for liste visning av alle utstyrskategorier *@
+
+<ListPage TItem="EquipmentCategoryDto"
+          Items="_equipmentCategories"
+          IsLoading="_isLoading"
+          @bind-Alert="_alert"
+          RowClick="@(args => OnCategoryClick(args))">
+    <Header>
+        <ListHeader Title="Utstyr"
+                    PageIcon="@Icons.Material.Filled.Storage"
+                    CreateHref="@PageRoutes.EquipmentCategories.Create"
+                    CreateLabel="Opprett utstyrskategori"
+                    CreateIcon="@Icons.Material.Filled.Storage"
+                    CreatePolicy="@Permissions.EquipmentWrite"/>
+    </Header>
+    <Columns>
+        @* Navn *@
+        <PropertyColumn T="EquipmentCategoryDto" TProperty="string"
+                        Property="ec => ec.Name.Truncate(40)" Title="Navn"/>
+        
+        @* Beskrivelse *@
+        <PropertyColumn T="EquipmentCategoryDto" TProperty="string"
+                        Property="ec => ec.Description.Truncate(50)"
+                        Title="Beskrivelse"
+                        Sortable="true"/>
+
+        <PropertyColumn T="EquipmentCategoryDto" TProperty="int"
+                        Property="ec => ec.ItemCount"
+                        Title="Antall utstyr"
+                        Sortable="true"
+                        HeaderStyle="width: 200px"/>
+
+        @* Er kategorien aktiv *@
+        <TemplateColumn T="EquipmentCategoryDto"
+                        Title=""
+                        Sortable="false"
+                        HeaderStyle="width: 120px">
+            <CellTemplate>
+                <AuthorizeView Policy="@Permissions.EquipmentWrite">
+                    <Authorized Context="_">
+                        <ResponsiveButton Label="Rediger"
+                                          Icon="@Icons.Material.Filled.Edit"
+                                          OnClick="@(() => NavigationManager.NavigateTo(
+                                                       PageRoutes.EquipmentCategories.Detail(context.Item.Id)))"/>
+                    </Authorized>
+                    <NotAuthorized Context="_">
+                        <MudTooltip Text="Du har ikke tilgang til å redigere utstyrskategorier">
+                            <ResponsiveButton Label="Rediger"
+                                              Icon="@Icons.Material.Filled.Edit"
+                                              Disabled="true"/>
+                        </MudTooltip>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</ListPage>
+
+
+@code {
+
+    // ===================== PARAMETER =====================
+    [SupplyParameterFromQuery(Name = "deleted")]
+    public bool Deleted { get; set; }
+
+    // ===================== PRIVATE FELT =====================
+    private List<EquipmentCategoryDto> _equipmentCategories = [];
+
+    private bool _isLoading = true;
+    private AlertInfo? _alert;
+
+    // ===================== LIFECYCLE =====================
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var getEquipmentCategoriesResult = await EquipmentCategoryService.GetAllAsync(Cts.Token);
+
+            if (getEquipmentCategoriesResult.IsFailure)
+            {
+                _alert = new AlertInfo(getEquipmentCategoriesResult.Error!.ToString(), Severity.Error);
+                return;
+            }
+
+            _equipmentCategories = getEquipmentCategoriesResult.Value!;
+
+            if (Deleted)
+                _alert = new AlertInfo("Utstyrskategorien er slettet", Severity.Info);
+        }
+        catch (OperationCanceledException)
+        {
+            // Brukeren navigerte bort, fang opp stille
+        }
+        catch
+        {
+            _alert = new AlertInfo("Klarte ikke å laste utstyrskategorier. Oppdater siden for å prøve igjen",
+                Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // ===================== PRIVATE METHODS =====================
+    private void OnCategoryClick(DataGridRowClickEventArgs<EquipmentCategoryDto> args) =>
+        NavigationManager.NavigateTo(PageRoutes.EquipmentItems.ListByCategory(args.Item.Id));
+}

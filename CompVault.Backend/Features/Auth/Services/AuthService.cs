@@ -10,13 +10,12 @@ using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Backend.Infrastructure.Email.Templates;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Auth;
-using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-
 namespace CompVault.Backend.Features.Auth.Services;
 
 /// <summary>
@@ -24,6 +23,7 @@ namespace CompVault.Backend.Features.Auth.Services;
 /// </summary>
 public sealed class AuthService(
     UserManager<ApplicationUser> userManager,
+    IUserRepository userRepository,
     ILogger<IAuthService> logger,
     IJwtService jwtService,
     IOtpCodeService otpCodeService,
@@ -46,7 +46,7 @@ public sealed class AuthService(
         {
             // Finn brukeren — returner suksess uansett utfall med unntak av interne feil (f.eks. e-postleveringsfeil)
             // for å unngå at angripere kan kartlegge hvilke e-poster som er registrert.
-            ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
+            ApplicationUser? user = await userRepository.GetByEmailAsync(request.Email, ct);
             if (user == null || !user.IsActive)
             {
                 logger.LogWarning("OTP request for {Reason}. Email: {Email}",
@@ -62,29 +62,22 @@ public sealed class AuthService(
                 if (codeResult.IsFailure)
                     return Result.Success(); // returnerer Success for å unngå epostkartlegging
 
-                Result deliverCodeResult;
-                if (request.DeliveryMethod == OtpDeliveryMethod.Email)
-                {
-                    // Oppretter en EmailBody med ferdig template
-                    // codeResult.Value er garantert å eksistere siden IsFailure er false
-                    string otpCode = codeResult.Value ?? throw new InvalidOperationException(
-                        "OTP-kode er null til tross for at genereringen var vellykket.");
-                    EmailBody emailBody = EmailTemplates.OtpCode(otpCode);
+                // Oppretter en EmailBody med ferdig template
+                // codeResult.Value er garantert å eksistere siden IsFailure er false
+                string otpCode = codeResult.Value ?? throw new InvalidOperationException(
+                    "OTP-kode er null til tross for at genereringen var vellykket.");
+                EmailBody emailBody = EmailTemplates.OtpCode(otpCode);
 
-                    // Sender epost og sjekker at det er ingen feil med epost sending
-                    deliverCodeResult = await emailService.SendAsync(request.Email, emailBody, ct);
-                    if (deliverCodeResult.IsFailure)
-                    {
-                        // Skjer det en uventet feil så vil frontend få en melding om det. Skal ikke skje
-                        // i produksjon. Denne returnen bryr seg ikke om stopwatch
-                        logger.LogError("OTP delivery failed for UserId: {UserId}", user.Id);
-                        return Result.Failure(
-                            deliverCodeResult.Error ?? throw new InvalidOperationException(
-                                "E-postlevering feilet uten feilmelding."));
-                    }
+                // Sender epost og sjekker at det er ingen feil med epost sending
+                Result emailCodeResult = await emailService.SendAsync(request.Email, emailBody, ct);
+                if (emailCodeResult.IsFailure)
+                {
+                    // Skjer det en uventet feil så vil frontend få en melding om det. Skal ikke skje
+                    // i produksjon. Denne returnen bryr seg ikke om stopwatch
+                    logger.LogError("OTP delivery failed for UserId: {UserId}", user.Id);
+                    return Result.Failure(emailCodeResult.Error ?? throw new InvalidOperationException(
+                            "E-postlevering feilet uten feilmelding."));
                 }
-                // else
-                //     deliverCodeResult = await smsService.SendAsync();
 
                 return Result.Success();
             }, ct);
@@ -107,7 +100,7 @@ public sealed class AuthService(
         try
         {
             // Henter brukeren for å sjekke om e-posten er korrekt. Returner ingen feilmeldinger, kun logger
-            ApplicationUser? user = await userManager.FindByEmailAsync(request.Email);
+            ApplicationUser? user = await userRepository.GetByEmailAsync(request.Email, ct);
             if (user == null)
                 logger.LogWarning("OTP-verification attempted for unknown email. Email: {Email}", request.Email);
             else if (!user.IsActive)
@@ -153,6 +146,10 @@ public sealed class AuthService(
                 return Result<TokenResponse>.Success(BuildRefreshTokenResponse(user, roles, permissions, rawRefreshToken));
             }, ct);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error in {MethodName}", nameof(VerifyOtpAsync));
@@ -181,7 +178,7 @@ public sealed class AuthService(
                 return Result<TokenResponse>.Failure(
                     AppError.Create(ErrorCode.InvalidToken, "Ugyldig eller utgått refresh token."));
 
-            ApplicationUser? user = await userManager.FindByIdAsync(storedToken.UserId.ToString());
+            ApplicationUser? user = await userRepository.GetByIdIgnoringFiltersAsync(storedToken.UserId, ct);
 
             if (user is null || !user.IsActive || user.DeletedAt is not null)
                 return Result<TokenResponse>.Failure(
@@ -211,6 +208,10 @@ public sealed class AuthService(
 
                 return Result<TokenResponse>.Success(BuildRefreshTokenResponse(user, roles, permissions, rawRefreshToken));
             }, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

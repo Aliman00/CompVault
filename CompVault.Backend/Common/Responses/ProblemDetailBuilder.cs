@@ -13,7 +13,7 @@ public static class ProblemDetailBuilder
     public static ProblemDetail FromError(AppError error)
     {
         int statusCode = GetStatusCode(error.Code);
-        string message = error.Message ?? GetDefaultMessage(error.Code);
+        string message = error.Message;
 
         return new ProblemDetail
         {
@@ -28,21 +28,21 @@ public static class ProblemDetailBuilder
     /// </summary>
     public static ProblemDetail FromException(Exception exception)
     {
-        (int status, ErrorCode code, string? message) = exception switch
+        (int status, ErrorCode code, string message) = exception switch
         {
             ArgumentException argEx => (400, ErrorCode.Validation, argEx.Message),
-            KeyNotFoundException => (404, ErrorCode.NotFound, "Ressursen ble ikke funnet."),
-            UnauthorizedAccessException => (403, ErrorCode.Forbidden, "Du har ikke tilgang."),
+            KeyNotFoundException => (404, ErrorCode.NotFound, GetDefaultMessage(ErrorCode.NotFound)),
+            UnauthorizedAccessException => (403, ErrorCode.Forbidden, GetDefaultMessage(ErrorCode.Forbidden)),
             NotImplementedException => (501, ErrorCode.Unknown, "Denne funksjonen er ikke tilgjengelig ennå."),
             OperationCanceledException => (499, ErrorCode.Unknown, "Forespørselen ble avbrutt."),
-            _ => (500, ErrorCode.Unknown, "Noe gikk galt på vår side. Prøv igjen litt senere.")
+            _ => (500, ErrorCode.Unknown, GetDefaultMessage(ErrorCode.InternalError))
         };
 
         return new ProblemDetail
         {
             Status = status,
             Code = code.ToString(),
-            Message = message ?? GetDefaultMessage(code)
+            Message = message
         };
     }
 

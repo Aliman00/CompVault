@@ -46,11 +46,31 @@ else if (_jobTitle != null)
         <Fields>
             @* Stillingstittel *@
             <MudItem xs="12" sm="6">
-                <DetailTextField Value="@_editModel.Name"
-                                 ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
-                                 Label="Stillingstittel"
-                                 IsEditing="_isEditing"
-                                 For="() => _editModel.Name"/>
+                <TextField Value="@_editModel.Name"
+                           ValueChanged="(string? v) => _editModel.Name = v ?? string.Empty"
+                           Label="Stillingstittel"
+                           IsEditing="_isEditing"
+                           For="() => _editModel.Name"/>
+            </MudItem>
+
+            @* Er stillingen for en leder? *@
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Lederrolle"
+                              @bind-Value="_editModel.IsLeader"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Leder"/>
+                    <MudToggleItem Value="(bool?)false" Text="Ikke leder"/>
+                </ToggleButton>
+            </MudItem>
+            
+            @* Aktiv/inaktiv *@
+            <MudItem xs="12" sm="6">
+                <ToggleButton Label="Status"
+                              @bind-Value="_editModel.IsActive"
+                              IsEditing="_isEditing">
+                    <MudToggleItem Value="(bool?)true" Text="Aktiv"/>
+                    <MudToggleItem Value="(bool?)false" Text="Inaktiv"/>
+                </ToggleButton>
             </MudItem>
            
             @* Brukere med denne rollen *@
@@ -102,7 +122,7 @@ else if (_jobTitle != null)
 
             // Henter jobtitle og brukere for å vise en oversikt over brukere tildelt tittelen - Kalles parallelt
             var jobTitleTask = JobTitleService.GetByIdAsync(Id, Cts.Token);
-            var usersTask = UserService.GetAllAsync(Cts.Token);
+            var usersTask = UserService.GetAllAsync(new PagedQuery { PageSize = 100 }, Cts.Token);
 
             await Task.WhenAll(jobTitleTask, usersTask);
 
@@ -125,7 +145,7 @@ else if (_jobTitle != null)
             if (usersResult.IsFailure)
                 _alert = new AlertInfo(usersResult.Error!.ToString(), Severity.Error);
             else
-                _usersWithJobTitle = usersResult.Value!.Where(u => u.JobTitleId == Id).ToList();
+                _usersWithJobTitle = usersResult.Value!.Items.Where(u => u.JobTitleId == Id).ToList();
 
             ResetEditModel();
         }

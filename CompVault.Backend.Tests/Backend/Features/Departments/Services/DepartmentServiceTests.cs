@@ -3,11 +3,15 @@ using System.Linq.Expressions;
 using CompVault.Backend.Domain.Entities.Departments;
 using CompVault.Backend.Features.Departments.Services;
 using CompVault.Backend.Infrastructure.Repositories.Departments;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
+using CompVault.Backend.Infrastructure.Repositories.JobTitles;
 using CompVault.Backend.Tests.Common;
 using CompVault.Shared.DTOs.Departments;
 using CompVault.Shared.Result;
 
 using FluentAssertions;
+
+using Microsoft.Extensions.Logging;
 
 using Moq;
 
@@ -16,12 +20,20 @@ namespace CompVault.Backend.Tests.Backend.Features.Departments.Services;
 public class DepartmentServiceTests
 {
     private readonly Mock<IDepartmentRepository> _departmentRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IJobTitleRepository> _jobTitleRepositoryMock;
     private readonly DepartmentService _sut;
 
     public DepartmentServiceTests()
     {
         _departmentRepositoryMock = new Mock<IDepartmentRepository>();
-        _sut = new DepartmentService(_departmentRepositoryMock.Object);
+        _userRepositoryMock = new Mock<IUserRepository>();
+        _jobTitleRepositoryMock = new Mock<IJobTitleRepository>();
+        _sut = new DepartmentService(
+            _departmentRepositoryMock.Object,
+            _userRepositoryMock.Object,
+            _jobTitleRepositoryMock.Object,
+            Mock.Of<ILogger<DepartmentService>>());
     }
 
     [Fact]
@@ -339,7 +351,7 @@ public class DepartmentServiceTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeTrue();
-        _departmentRepositoryMock.Verify(x => x.SoftDeleteAsync(department, It.IsAny<CancellationToken>()), Times.Once);
+        _departmentRepositoryMock.Verify(x => x.SoftDeleteAsync(department), Times.Once);
         _departmentRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 

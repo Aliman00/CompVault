@@ -32,14 +32,8 @@ public sealed class UpdateUserRequest
     /// <summary>Ny ansettelsestype (valgfritt).</summary>
     public EmploymentType? EmploymentType { get; set; }
 
-    /// <summary>Aktiver eller deaktiver kontoen (valgfritt).</summary>
-    public bool? IsActive { get; set; }
-
     /// <summary>Flytt brukeren til en annen avdeling (valgfritt).</summary>
     public Guid? DepartmentId { get; set; }
-
-    /// <summary>Sett til true for å fjerne avdelingstilknytning.</summary>
-    public bool ClearDepartmentId { get; set; }
 
     /// <summary>Bytt leder (valgfritt).</summary>
     public Guid? ManagerId { get; set; }

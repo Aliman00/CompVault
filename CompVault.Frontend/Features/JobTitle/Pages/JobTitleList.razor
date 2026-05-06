@@ -10,7 +10,6 @@
           Items="_jobTitles"
           IsLoading="_isLoading"
           @bind-Alert="_alert"
-          SelectedItemsChanged="@(s => _selectedJobTitles = s)"
           RowClick="@(args => OnJobTitleClick(args))">
     <Header>
         <ListHeader Title="Stillingstitler"
@@ -23,7 +22,22 @@
     <Columns>
         <PropertyColumn T="JobTitleDto" TProperty="string"
                         Property="r => r.Name.Truncate(40)" Title="Navn"/>
+        
+        <TemplateColumn T="JobTitleDto"
+                        Title="Status"
+                        Sortable="true"
+                        SortBy="@(ct => ct.IsActive)">
+            <CellTemplate>
+                <MudChip T="string"
+                         Color="@(context.Item.IsActive ? Color.Success : Color.Default)"
+                         Size="Size.Small"
+                         Class="cv-rounded">
+                    @(context.Item.IsActive ? "Aktiv" : "Inaktiv")
+                </MudChip>
+            </CellTemplate>
+        </TemplateColumn>
     </Columns>
+   
 </ListPage>
 
 
@@ -35,7 +49,6 @@
 
     // ===================== PRIVATE FELT =====================
     private List<JobTitleDto> _jobTitles = [];
-    private HashSet<JobTitleDto> _selectedJobTitles = [];
 
     private bool _isLoading = true;
     private AlertInfo? _alert;

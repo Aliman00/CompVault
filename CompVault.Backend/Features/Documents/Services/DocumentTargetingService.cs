@@ -124,7 +124,7 @@ public sealed class DocumentTargetingService(
                 AppError.Create(ErrorCode.Forbidden, "Bruker har ingen tilknyttet avdeling"));
         }
 
-        IReadOnlySet<Guid> allowedIds = GetDepartmentAndDescendantIds(allDepartments, user.DepartmentId.Value);
+        IReadOnlySet<Guid> allowedIds = GetDepartmentAndDescendantIds(allDepartments, user.DepartmentId);
 
         var forbiddenIds = addedDepartmentIds.Concat(removedDepartmentIds)
             .Where(guid => !allowedIds.Contains(guid))

@@ -1,32 +1,46 @@
 ﻿@inherits LayoutComponentBase
 @inject IThemeService ThemeService
+@inject CircuitUserContext UserContext
 
 @* Layout for alle sider til CompVault som ikke er admin *@
 
-<!-- Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema -->
+@* Tema: Setter aktivt tema og styrer mørk/lys-modus for hele appen. Bruker eget tema *@
 <MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
-<!-- Popup: Håndterer alle popover-elementer. Eks: Dropdowns, Tooltips, Menyer -->
+@* Popup: Håndterer alle popover-elementer. Eks: Dropdowns, Tooltips, Menyer *@
 <MudPopoverProvider />
-<!-- Dialog/Modal: Håndterer alle DialogerModaler. Sikrer at vi kan bruke MudBlazor sine egne komponenter -->
+@* Dialog/Modal: Håndterer alle DialogerModaler. Sikrer at vi kan bruke MudBlazor sine egne komponenter *@
 <MudDialogProvider />
-<!-- Toasts: Gir oss mulighet til å implementere toasts med Mudblazor -->
+@* Toasts: Gir oss mulighet til å implementere toasts med Mudblazor *@
 <MudSnackbarProvider />
 
-<!-- MainLayout med Mudblazor -->
+@* MainLayout med Mudblazor *@
 <MudLayout>
     <AuthorizeView>
         <Authorized>
-            <AppBar ShowMenuButton="true"
-                    OnMenuButtonClick="ToggleDrawer"
-                    @bind-IsDarkMode="_isDarkMode"/>
-
+            <AppBar ShowMenuButton="true" OnMenuButtonClick="ToggleDrawer">
+                <RightContent>
+                    <MudAvatar Color="Color.Primary"
+                               Size="Size.Medium"
+                               Class="cv-pointer"
+                               @onclick="OnProfileButtonClick">
+                        @UserContext.FullName.ToInitials()
+                    </MudAvatar>
+                </RightContent>
+            </AppBar>
+            
             <AppDrawer @bind-IsOpen="_drawerOpen">
                 <AppNavMenu/>
             </AppDrawer>
+                
+            <UserProfileDrawer IsOpen="_profileDrawerOpen"
+                               IsOpenChanged="val => _profileDrawerOpen = val"
+                               IsDarkMode="@_isDarkMode"
+                               IsDarkModeChanged="OnDarkModeChanged"
+                               FullName="@UserContext.FullName"/>
 
-            <!-- Hovedcontent med Body - tilpasser seg MudDrawer automatisk -->
+            @* Hovedcontent med Body - tilpasser seg MudDrawer automatisk *@
             <MudMainContent>
-                <!-- Hovedcontent med Body - MaxWidth senterer inneholdet på store skjermer. pa-4 mt-4 er padding/margin -->
+                @* Hovedcontent med Body - MaxWidth senterer inneholdet på store skjermer. pa-4 mt-4 er padding/margin *@
                 <MudContainer MaxWidth="MaxWidth.Large" Class="pa-4 mt-4">
                     @Body
                 </MudContainer>
@@ -44,6 +58,7 @@
     // ======================== Private felt ========================
     // Variabel for sidebar og mørkemodus
     private bool _drawerOpen = true;
+    private bool _profileDrawerOpen;
     private bool _isDarkMode;
     
     // Referansen til ThemeProvider komponenten for å endre tema
@@ -68,5 +83,12 @@
     
     // ======================== Private metoder ========================
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+    private void OnProfileButtonClick() => _profileDrawerOpen = !_profileDrawerOpen;
+    
+    private Task OnDarkModeChanged(bool value)
+    {
+        _isDarkMode = value;
+        return Task.CompletedTask;
+    }
     
 }

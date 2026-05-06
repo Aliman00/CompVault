@@ -1,6 +1,8 @@
 using CompVault.Backend.Common.Utils;
 using CompVault.Backend.Domain.Entities.Documents;
+using CompVault.Backend.Domain.Entities.Identity;
 using CompVault.Backend.Infrastructure.Repositories.Documents;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Shared.DTOs.Documents;
 using CompVault.Shared.Result;
 
@@ -11,7 +13,10 @@ namespace CompVault.Backend.Features.Documents.Services;
 /// <inheritdoc />
 public sealed class DocumentTypeService(
     IDocumentTypeRepository documentTypeRepository,
-    IDocumentTypeCategoryRepository categoryRepository) : IDocumentTypeService
+    IDocumentTypeCategoryRepository categoryRepository,
+    ILogger<DocumentTypeService> logger,
+    IUserRepository userRepository,
+    IDocumentRepository documentRepository) : IDocumentTypeService
 {
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<DocumentTypeDto>>> GetAllAsync(
@@ -36,20 +41,39 @@ public sealed class DocumentTypeService(
     }
 
     /// <inheritdoc />
+    public async Task<Result<IReadOnlyList<UserDocumentTypeDto>>> GetMyDocumentTypesAsync(Guid userId,
+        CancellationToken ct = default)
+    {
+        ApplicationUser? user = await userRepository.GetByIdIgnoringFiltersAsync(userId, ct);
+        if (user is null)
+        {
+            logger.LogWarning("Bruker med ID {UserId} ble ikke funnet ved henting av dokumenttyper", userId);
+            return Result<IReadOnlyList<UserDocumentTypeDto>>.Failure(
+                AppError.NotFound($"Bruker med ID '{userId}' ble ikke funnet."));
+        }
+
+        IReadOnlyList<UserDocumentTypeDto> result =
+            await documentRepository.GetDocumentTypesForUserAsync(userId, user.DepartmentId, user.JobTitleId, ct);
+
+        return Result<IReadOnlyList<UserDocumentTypeDto>>.Success(result);
+    }
+
+    /// <inheritdoc />
     public async Task<Result<DocumentTypeDto>> CreateAsync(
         CreateDocumentTypeRequest request, Guid createdById, CancellationToken cancellationToken = default)
     {
-        string slug = SlugUtility.GenerateSlug(request.Name);
+        string name = request.Name.Trim();
+        string slug = SlugUtility.GenerateSlug(name);
 
         // Sjekk at slug er unik
         bool slugExists = await documentTypeRepository.SlugExistsAsync(slug, cancellationToken: cancellationToken);
         if (slugExists)
             return Result<DocumentTypeDto>.Failure(
-                AppError.Conflict($"Dokumenttype med navn '{request.Name}' kunne ikke opprettes — slug '{slug}' er allerede i bruk."));
+                AppError.Conflict($"Dokumenttype med navn '{name}' kunne ikke opprettes — slug '{slug}' er allerede i bruk."));
 
         var documentType = new DocumentType
         {
-            Name = request.Name,
+            Name = name,
             Slug = slug,
             Description = request.Description,
             TargetMode = request.TargetMode,
@@ -173,19 +197,20 @@ public sealed class DocumentTypeService(
             return Result<DocumentTypeCategoryDto>.Failure(
                 AppError.NotFound($"Dokumenttype med slug '{documentTypeSlug}' ble ikke funnet."));
 
-        string slug = SlugUtility.GenerateSlug(request.Name);
+        string name = request.Name.Trim();
+        string slug = SlugUtility.GenerateSlug(name);
 
         bool slugExists = await categoryRepository.SlugExistsAsync(
             documentType.Id, slug, cancellationToken: cancellationToken);
 
         if (slugExists)
             return Result<DocumentTypeCategoryDto>.Failure(
-                AppError.Conflict($"Kategori med navn '{request.Name}' kunne ikke opprettes — slug '{slug}' finnes allerede for denne dokumenttypen."));
+                AppError.Conflict($"Kategori med navn '{name}' kunne ikke opprettes — slug '{slug}' finnes allerede for denne dokumenttypen."));
 
         var category = new DocumentTypeCategory
         {
             DocumentTypeId = documentType.Id,
-            Name = request.Name,
+            Name = name,
             Slug = slug
         };
 

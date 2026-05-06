@@ -29,6 +29,14 @@ internal sealed class DepartmentConfiguration : IEntityTypeConfiguration<Departm
             .HasForeignKey(d => d.ParentDepartmentId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // Referer til ApplicationUser som leder avdelingen
+        builder.HasOne(d => d.Manager)
+            .WithMany()
+            .HasForeignKey(d => d.ManagerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasIndex(d => d.ManagerId);
+
         // Referer til ApplicationUser som har opprettet avdelingen
         builder.HasOne(d => d.CreatedBy)
             .WithMany()

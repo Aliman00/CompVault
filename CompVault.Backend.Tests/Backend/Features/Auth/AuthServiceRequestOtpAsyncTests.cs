@@ -6,6 +6,7 @@ using CompVault.Backend.Infrastructure.Data;
 using CompVault.Backend.Infrastructure.Email;
 using CompVault.Backend.Infrastructure.Email.Models;
 using CompVault.Backend.Infrastructure.Repositories.Auth;
+using CompVault.Backend.Infrastructure.Repositories.Identity;
 using CompVault.Backend.Tests.Backend.Features.Auth.Builders;
 using CompVault.Backend.Tests.Common;
 using CompVault.Backend.Tests.Common.Constants;
@@ -25,6 +26,7 @@ namespace CompVault.Backend.Tests.Backend.Features.Auth;
 public class AuthServiceRequestOtpAsyncTests
 {
     private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IOtpCodeService> _otpCodeServiceMock;
     private readonly Mock<IEmailService> _emailServiceMock;
     private readonly Mock<IPermissionService> _permissionServiceMock;
@@ -47,6 +49,7 @@ public class AuthServiceRequestOtpAsyncTests
         var refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         var unitOfWorkMock = new Mock<IUnitOfWork>();
         _permissionServiceMock = new Mock<IPermissionService>();
+        _userRepositoryMock = new Mock<IUserRepository>();
 
         // Mocker ExecuteInTransactionAsync til å kjøre operasjonen direkte uten ekte database
         unitOfWorkMock
@@ -68,6 +71,7 @@ public class AuthServiceRequestOtpAsyncTests
 
         _sut = new AuthService(
             _userManagerMock.Object,
+            _userRepositoryMock.Object,
             loggerMock.Object,
             jwtServiceMock.Object,
             _otpCodeServiceMock.Object,
@@ -95,8 +99,9 @@ public class AuthServiceRequestOtpAsyncTests
         const string otpCode = TestConstants.Otp.PlainTextOtpCode;
 
         // mocker UserManager til å returerne opprettet bruker
-        _userManagerMock
-            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+        _userRepositoryMock
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // mocker OtpCodeService til å returnere Result med Success
@@ -137,10 +142,10 @@ public class AuthServiceRequestOtpAsyncTests
         RequestOtpRequest request = AuthRequestBuilder.CreateRequestOtpRequest();
 
         // mocker UserManager til å returnere inaktive bruker
-        _userManagerMock
-            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+        _userRepositoryMock
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync((ApplicationUser?)null);
-
         // Act
         Result result = await _sut.RequestOtpAsync(request);
 
@@ -168,8 +173,9 @@ public class AuthServiceRequestOtpAsyncTests
         user.IsActive = false;
 
         // mocker UserManager til å returnere null
-        _userManagerMock
-            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+        _userRepositoryMock
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // Act
@@ -199,8 +205,9 @@ public class AuthServiceRequestOtpAsyncTests
         var emailError = AppError.Create(ErrorCode.EmailSendFailed, "Email service down");
 
         // mocker UserManager til å returerne opprettet bruker
-        _userManagerMock
-            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+        _userRepositoryMock
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // mocker OtpCodeService til å returnere Result med Success
@@ -237,8 +244,9 @@ public class AuthServiceRequestOtpAsyncTests
         var otpCodeError = AppError.Create(ErrorCode.OtpMaxAttemptsExceeded, "Max attempts exceeded");
 
         // mocker UserManager til å returerne opprettet bruker
-        _userManagerMock
-            .Setup(x => x.FindByEmailAsync(It.IsAny<string>()))
+        _userRepositoryMock
+            .Setup(x => x.GetByEmailAsync(It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // mocker OtpCodeService til å returnere Result med Failure

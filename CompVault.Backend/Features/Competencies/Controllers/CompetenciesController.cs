@@ -1,8 +1,8 @@
 using CompVault.Backend.Common.Controller;
 using CompVault.Backend.Features.Competencies.Services;
 using CompVault.Shared.Constants;
+using CompVault.Shared.DTOs.Common.Pagination;
 using CompVault.Shared.DTOs.Competencies;
-using CompVault.Shared.Enums;
 using CompVault.Shared.Result;
 
 using Microsoft.AspNetCore.Authorization;
@@ -22,22 +22,15 @@ namespace CompVault.Backend.Features.Competencies.Controllers;
 [Produces("application/json")]
 public sealed class CompetenciesController(ICompetencyService competencyService) : BaseController
 {
-    /// <summary>Henter kompetansebevis med filtrering.</summary>
-    /// <param name="userId">Valgfritt — filtrer på bruker-ID.</param>
-    /// <param name="status">Valgfritt — filtrer på status.</param>
-    /// <param name="competencyTypeId">Valgfritt — filtrer på kompetansetype-ID.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="200">Liste med kompetansebevis.</response>
+    /// <summary>Henter kompetansebevis med filtrering og paginering.</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<CompetencyDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<CompetencyDto>>> GetAllAsync(
-        [FromQuery] Guid? userId,
-        [FromQuery] CompetencyStatus? status,
-        [FromQuery] Guid? competencyTypeId,
+    [ProducesResponseType(typeof(PagedResult<CompetencyDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<CompetencyDto>>> GetAllAsync(
+        [FromQuery] CompetencyQueryParameters queryParameters,
         CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<CompetencyDto>> result = await competencyService.GetAllAsync(
-            userId, status, competencyTypeId, cancellationToken);
+        Result<PagedResult<CompetencyDto>> result = await competencyService.GetAllAsync(
+            queryParameters, cancellationToken);
 
         if (result.IsFailure)
             return HandleFailure(result);
@@ -120,26 +113,5 @@ public sealed class CompetenciesController(ICompetencyService competencyService)
             return HandleFailure(result);
 
         return NoContent();
-    }
-
-    /// <summary>Henter utløpende og utløpte kompetansebevis.</summary>
-    /// <param name="userId">Valgfritt — filtrer på bruker-ID.</param>
-    /// <param name="departmentId">Valgfritt — filtrer på avdeling-ID.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="200">Liste med utløpende/utløpte kompetansebevis.</response>
-    [HttpGet("expiring")]
-    [ProducesResponseType(typeof(IReadOnlyList<ExpiringCompetencyDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ExpiringCompetencyDto>>> GetExpiringAsync(
-        [FromQuery] Guid? userId,
-        [FromQuery] Guid? departmentId,
-        CancellationToken cancellationToken)
-    {
-        Result<IReadOnlyList<ExpiringCompetencyDto>> result = await competencyService.GetExpiringAsync(
-            userId, departmentId, cancellationToken);
-
-        if (result.IsFailure)
-            return HandleFailure(result);
-
-        return Ok(result.Value);
     }
 }

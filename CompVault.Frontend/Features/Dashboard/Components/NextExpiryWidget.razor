@@ -1,0 +1,91 @@
+﻿@inject ICompetencyService CompetencyService
+@inject CircuitUserContext UserContext
+@inherits CompVault.Frontend.Common.Base.DisposableComponentBase
+@inject NavigationManager NavigationManager
+
+@* Viser kompetansen som utløper først *@
+
+<MudPaper Class="pa-3" 
+          Style="@($"border-top: 3px solid {_nextExpiringComptency?.DaysUntilExpiry.ToExpiryBorderColor()};")" 
+          Elevation="4">
+    <WidgetHeader Title="@DashboardConstants.NextExpiry"
+                  OnHide="OnHide"
+                  Icon="@Icons.Material.Filled.Schedule"
+                  AccentColor="@_nextExpiringComptency?.DaysUntilExpiry.ToExpiryBorderColor()"
+                  IconBackgroundColor="@_nextExpiringComptency?.DaysUntilExpiry.ToExpiryIconBgColor()"/>
+
+    <AppAlert @bind-Alert="_alert"/>
+
+    @if (_loading)
+    {
+        <AppSpinner/>
+    }
+    else if (_nextExpiringComptency is null)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Ingen kompetanser med utløpsdato.</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudLink Href="@PageRoutes.UserCompetencies.Detail(_nextExpiringComptency!.Id)" 
+                 Underline="Underline.None">
+            <MudText Typo="Typo.subtitle1" Class="mt-1">
+                <strong>@_nextExpiringComptency.CompetencyTypeName</strong>
+            </MudText>
+            @if (_nextExpiringComptency.DaysUntilExpiry.HasValue)
+            {
+                <MudText Typo="Typo.h4" Color="@_nextExpiringComptency.DaysUntilExpiry!.Value.ToExpiryColor()">
+                    @(_nextExpiringComptency.DaysUntilExpiry.Value >= 0 
+                        ? $"{_nextExpiringComptency.DaysUntilExpiry.Value} dager" 
+                        : "Utløpt")
+                </MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Utløper @_nextExpiringComptency.ExpiryDate!.Value.ToShortDateString()
+                </MudText>
+            }
+        </MudLink>
+    }
+</MudPaper>
+
+@code {
+    // ======================== PARAMETERS ========================
+    /// <summary>
+    /// Handling som utføres ved trykk på 'Skjul'-knappen
+    /// </summary>
+    [Parameter] public EventCallback OnHide { get; set; }
+
+    // ======================== PRIVATE FIELDS ========================
+
+    private AlertInfo? _alert;
+    private bool _loading = true;
+    private CompetencyDto? _nextExpiringComptency;
+
+    // ======================== PRIVATE METHODS ========================
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var filter = new CompetencyFilterRequest { UserId = UserContext.UserId, PageSize = 100 };
+            var result = await CompetencyService.GetAllAsync(filter, Cts.Token);
+
+            if (result.IsFailure)
+            {
+                _alert = new AlertInfo(result.Error!.ToString(), Severity.Error);
+                return;
+            }
+            
+            // Finner første utgåeende kompetanse
+            _nextExpiringComptency = result.Value!.Items
+                .Where(c => c.ExpiryDate.HasValue && c.Status != CompetencyStatus.Expired)
+                .OrderBy(c => c.ExpiryDate)
+                .FirstOrDefault();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
