@@ -5,8 +5,6 @@
 # Kjør stegene i rekkefølge fra topp til bunn.
 # Fyll inn tomme variabler med verdier fra responsene etter hvert steg.
 #
-# MERK: Hvis du tester via Docker, oppdater @baseUrl til container-porten,
-#       f.eks. http://localhost:5000 (se docker-compose.yml).
 ###############################################################################
 
 @baseUrl = http://localhost:5010
