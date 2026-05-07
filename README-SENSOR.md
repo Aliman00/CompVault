@@ -33,15 +33,12 @@ Backend krever at databasen kjører, da den prøver å seede inn eksempeldata ve
 docker compose up postgres -d
 ```
 
-> **Merk:** Kjører du databasen på en annen måte, oppdater tilkoblingsstrengen i `.env`-filen i rotmappen (`CompVault/`).
+**Merk:** Kjører du databasen på en annen måte, oppdater tilkoblingsstrengen i `.env`-filen i rotmappen (`CompVault/`). Endre Database__Host=postgres til f.eks. Database__Host=localhost
 
 ### 2. Backend
 
-Viktig å kjøre migrering manuelt før applikasjonen prøver å seede inn eksempeldata.
-
 ```bash
 cd CompVault.Backend
-dotnet ef database update   # Kjører migreringer og seed-data
 dotnet run                  # Starter API på http://localhost:5010
 ```
 
