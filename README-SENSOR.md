@@ -6,6 +6,8 @@ CompVault er et lukket system: brukere kan **ikke** registrere seg selv. En admi
 
 Denne guiden forklarer hvordan du får systemet i gang og oppretter en testbruker for deg selv.
 
+Vedlagt i zip-filen ligger vår originale .env-filen. Hvis du kloner fra repository i Github, eller annen feil ved .env-filen, se ENV-fil.txt i root-mappen.
+
 ---
 
 ## Hurtigstart (anbefalt)
@@ -37,11 +39,8 @@ docker compose up postgres -d
 
 ### 2. Backend
 
-Viktig å kjøre migrering manuelt før applikasjonen prøver å seede inn eksempeldata.
-
 ```bash
 cd CompVault.Backend
-dotnet ef database update   # Kjører migreringer og seed-data
 dotnet run                  # Starter API på http://localhost:5010
 ```
 
